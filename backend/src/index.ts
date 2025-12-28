@@ -39,6 +39,17 @@ app.use('/notifications', notificationRoutes);
 // Start Scheduler
 runNotificationScheduler();
 
+app.get('/', (req, res) => {
+    res.send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #6366f1;">🚀 7Pet API está Ativa!</h1>
+            <p style="color: #64748b;">O banco de dados Supabase foi conectado com sucesso.</p>
+            <hr style="width: 100px; margin: 20px auto; border: 1px solid #e2e8f0;">
+            <p style="font-size: 0.9rem; color: #94a3b8;">Status: <span style="color: #10b981; font-weight: bold;">ONLINE</span></p>
+        </div>
+    `);
+});
+
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
