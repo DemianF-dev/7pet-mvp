@@ -22,8 +22,7 @@ const statusConfig: any = {
     'RECALCULADO': { label: 'Recalculado', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
     'APROVADO': { label: 'Aprovado', color: 'bg-green-100 text-green-700 border-green-200' },
     'REJEITADO': { label: 'Reprovado', color: 'bg-red-100 text-red-700 border-red-200' },
-    'REPROVADO': { label: 'Reprovado', color: 'bg-red-100 text-red-700 border-red-200' }, // Backwards compatibility if any
-    'AGENDAR': { label: 'Pronto p/ Agendar', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+    'AGENDAR': { label: 'Agendar Atendimento', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
 };
 
 export default function QuoteList() {
@@ -223,6 +222,23 @@ export default function QuoteList() {
                                                     className="flex-2 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
                                                 >
                                                     <CheckCircle2 size={18} /> Aprovar Agora
+                                                </button>
+                                            </div>
+                                        )}
+                                        {selectedQuote.status === 'AGENDAR' && (
+                                            <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 text-center space-y-4">
+                                                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                                                    <CheckCircle2 size={24} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-emerald-800">Orçamento Aprovado!</h4>
+                                                    <p className="text-sm text-emerald-600">Agora você já pode agendar o horário do seu pet. Chame-nos no WhatsApp para finalizar.</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero agendar o serviço do orçamento ${selectedQuote.id.substring(0, 8)}`, '_blank')}
+                                                    className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    Agendar via WhatsApp
                                                 </button>
                                             </div>
                                         )}

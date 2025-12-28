@@ -750,12 +750,20 @@ export default function QuoteManager() {
                                                 <select
                                                     value={item.serviceId || ''}
                                                     onChange={(e) => {
-                                                        const s = services.find(sv => sv.id === e.target.value);
+                                                        const val = e.target.value;
+                                                        const s = services.find(sv => sv.id === val);
+                                                        const newItems = [...selectedQuote.items];
+
                                                         if (s) {
-                                                            const newItems = [...selectedQuote.items];
                                                             newItems[index] = { ...newItems[index], serviceId: s.id, description: s.name, price: s.basePrice };
-                                                            setSelectedQuote({ ...selectedQuote, items: newItems });
+                                                        } else {
+                                                            newItems[index] = { ...newItems[index], serviceId: val || undefined };
+                                                            if (val === 'custom') {
+                                                                newItems[index].description = '';
+                                                                newItems[index].price = 0;
+                                                            }
                                                         }
+                                                        setSelectedQuote({ ...selectedQuote, items: newItems });
                                                     }}
                                                     className="input-field py-3 font-bold text-secondary"
                                                 >

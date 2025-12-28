@@ -199,22 +199,32 @@ export const quoteController = {
                 }
             }
 
+            let targetStatus = status;
+            if (status === 'APROVADO') {
+                targetStatus = 'AGENDAR';
+            }
+
             const updatedQuote = await prisma.quote.update({
                 where: { id },
                 data: {
-                    status,
+                    status: targetStatus,
                     statusHistory: {
                         create: {
                             oldStatus,
-                            newStatus: status,
+                            newStatus: targetStatus,
                             changedBy: user.id,
-                            reason: reason || `Alterado por ${user.role}`
+                            reason: reason || (user.role === 'CLIENTE' ? 'Cliente aprovou o orçamento - Movido para Agendamento' : `Alterado por ${user.role}`)
                         }
                     }
+                },
+                include: {
+                    items: true,
+                    customer: { select: { name: true, user: true } },
+                    pet: { select: { name: true } }
                 }
             });
 
-            // Auto-generate invoice if Approved
+            // Auto-generate invoice if Approved (targetStatus is now AGENDAR)
             if (status === 'APROVADO') {
                 const existingInvoice = await prisma.invoice.findUnique({ where: { quoteId: id } });
                 if (!existingInvoice) {
@@ -224,7 +234,7 @@ export const quoteController = {
                             quoteId: id,
                             amount: quote.totalAmount,
                             status: 'PENDENTE',
-                            dueDate: quote.desiredAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default +7 days
+                            dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // Default +5 days (matching validity)
                         }
                     });
                     console.log(`[AUTO] Fatura gerada para orçamento aprovado ${id}`);
@@ -233,8 +243,8 @@ export const quoteController = {
                         await prisma.notification.create({
                             data: {
                                 userId: quote.customer.user.id,
-                                title: 'Fatura Gerada',
-                                message: `Uma nova fatura no valor de R$ ${quote.totalAmount.toFixed(2)} foi gerada para o orçamento aprovado via sistema.`,
+                                title: 'Orçamento Aprovado!',
+                                message: `Seu orçamento no valor de R$ ${quote.totalAmount.toFixed(2)} foi aprovado e está pronto para agendamento.`,
                                 type: 'INVOICE'
                             }
                         });
@@ -302,7 +312,8 @@ export const quoteController = {
                     create: data.items.map(item => ({
                         description: item.description,
                         quantity: item.quantity,
-                        price: item.price
+                        price: item.price,
+                        serviceId: (item as any).serviceId || null
                     }))
                 };
             }
