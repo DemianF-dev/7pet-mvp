@@ -12,6 +12,7 @@ router.get('/trash', quoteController.listTrash);
 router.get('/:id', quoteController.get);
 router.post('/:id/duplicate', quoteController.duplicate);
 router.patch('/:id', quoteController.update);
+router.put('/:id', quoteController.update); // Alias for PATCH
 router.patch('/:id/status', quoteController.updateStatus);
 router.delete('/:id', quoteController.remove);
 router.post('/:id/restore', quoteController.restore);
