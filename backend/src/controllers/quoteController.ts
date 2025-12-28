@@ -111,6 +111,7 @@ export const quoteController = {
 
                 if (!clientId) {
                     console.error('[DEBUG_LIST] CRITICAL: Client User has NO Customer ID linked!');
+                    return res.status(403).json({ error: 'Perfil de cliente não encontrado. Por favor, entre em contato com o suporte.' });
                 }
 
                 where.customerId = clientId;
