@@ -1,0 +1,21 @@
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (Optional: If they want to deploy the DB, they might NOT ignore it, 
+# but usually it's better to ignore and upload via SSH or Volume. 
+# However, for laypeople, pushing it once to start is easier.)
+# dev.db

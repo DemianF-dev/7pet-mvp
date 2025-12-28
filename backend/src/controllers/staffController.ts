@@ -1,0 +1,91 @@
+import { Request, Response } from 'express';
+import prisma from '../lib/prisma';
+import { AppointmentStatus, QuoteStatus } from '@prisma/client';
+
+export const staffController = {
+    async getDashboardMetrics(req: Request, res: Response) {
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            // 1. Today's appointments
+            const todayAppointments = await prisma.appointment.count({
+                where: {
+                    startAt: {
+                        gte: today,
+                        lt: tomorrow
+                    },
+                    status: {
+                        notIn: ['CANCELADO', 'NO_SHOW']
+                    }
+                }
+            });
+
+            // 2. Pending Quotes
+            const pendingQuotes = await prisma.quote.count({
+                where: {
+                    status: 'SOLICITADO'
+                }
+            });
+
+            // 3. Active Transports (Solicitado or em trânsito)
+            const activeTransports = await prisma.transportDetails.count({
+                where: {
+                    status: 'SOLICITADO'
+                }
+            });
+
+            // 4. Appointments by status for Kanban (next 7 days)
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+
+            const statusCounts = await prisma.appointment.groupBy({
+                by: ['status'],
+                where: {
+                    startAt: {
+                        gte: today,
+                        lt: nextWeek
+                    }
+                },
+                _count: true
+            });
+
+            return res.json({
+                todayAppointments,
+                pendingQuotes,
+                activeTransports,
+                statusCounts
+            });
+        } catch (error) {
+            console.error('Error fetching staff metrics:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
+    async listTransports(req: Request, res: Response) {
+        try {
+            const transports = await prisma.transportDetails.findMany({
+                include: {
+                    appointment: {
+                        include: {
+                            pet: true,
+                            customer: true
+                        }
+                    }
+                },
+                orderBy: {
+                    appointment: {
+                        startAt: 'asc'
+                    }
+                }
+            });
+            return res.json(transports);
+        } catch (error) {
+            console.error('Error listing transports:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+};

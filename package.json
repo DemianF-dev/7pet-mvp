@@ -1,0 +1,17 @@
+{
+  "name": "7pet-mvp",
+  "version": "1.0.0",
+  "description": "7Pet MVP - Multi-service Pet Shop Management System",
+  "main": "index.js",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "db:up": "docker-compose up -d",
+    "db:seed": "cd backend && npx prisma db seed",
+    "setup": "npm install && cd backend && npm install && npx prisma generate && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

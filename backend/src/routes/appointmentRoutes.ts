@@ -1,0 +1,22 @@
+import { Router } from 'express';
+import * as appointmentController from '../controllers/appointmentController';
+import { authenticate } from '../middlewares/authMiddleware';
+
+const router = Router();
+
+router.use(authenticate);
+
+// Specific paths first
+router.get('/trash', appointmentController.listTrash);
+router.get('/', appointmentController.list);
+router.post('/', appointmentController.create);
+
+// ID paths
+router.get('/:id', appointmentController.get);
+router.patch('/:id/status', appointmentController.updateStatus);
+router.patch('/:id/restore', appointmentController.restore);
+router.delete('/:id/permanent', appointmentController.permanentRemove);
+router.delete('/:id', appointmentController.remove);
+router.patch('/:id', appointmentController.update);
+
+export default router;

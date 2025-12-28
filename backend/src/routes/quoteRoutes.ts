@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import { quoteController } from '../controllers/quoteController';
+import { authenticate } from '../middlewares/authMiddleware';
+
+const router = Router();
+
+router.use(authenticate);
+
+router.post('/', quoteController.create);
+router.get('/', quoteController.list);
+router.get('/trash', quoteController.listTrash);
+router.get('/:id', quoteController.get);
+router.post('/:id/duplicate', quoteController.duplicate);
+router.patch('/:id', quoteController.update);
+router.patch('/:id/status', quoteController.updateStatus);
+router.delete('/:id', quoteController.remove);
+router.post('/:id/restore', quoteController.restore);
+router.delete('/:id/permanent', quoteController.permanentRemove);
+
+export default router;

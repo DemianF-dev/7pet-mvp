@@ -1,0 +1,152 @@
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, UserPlus, ChevronLeft, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { useAuthStore } from '../../store/authStore';
+import api from '../../services/api';
+
+export default function ClientRegister() {
+    const navigate = useNavigate();
+    const setAuth = useAuthStore((state) => state.setAuth);
+    const [showPassword, setShowPassword] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
+
+        try {
+            const response = await api.post('/auth/register', {
+                name,
+                email,
+                password,
+                role: 'CLIENTE'
+            });
+            const { user, token } = response.data;
+
+            setAuth(user, token);
+            navigate('/client/dashboard');
+        } catch (err: any) {
+            setError(err.response?.data?.error || err.message || 'Erro ao realizar cadastro');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+            <div className="flex-1 p-6 md:p-12 flex flex-col justify-center max-w-2xl mx-auto w-full">
+                <button
+                    onClick={() => navigate('/client')}
+                    className="flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors mb-8 self-start"
+                >
+                    <ChevronLeft size={20} />
+                    Voltar
+                </button>
+
+                <div className="space-y-8">
+                    <div>
+                        <h1 className="text-4xl font-bold text-secondary mb-2">Criar conta</h1>
+                        <p className="text-gray-500">Junte-se ao 7Pet e dê ao seu pet o cuidado que ele merece.</p>
+                    </div>
+
+                    <form onSubmit={handleRegister} className="space-y-4">
+                        {error && (
+                            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 italic">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-secondary ml-1">Nome Completo</label>
+                                <div className="relative">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                    <input
+                                        type="text"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Seu nome"
+                                        className="input-field pl-12"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-secondary ml-1">E-mail</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                    <input
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="exemplo@email.com"
+                                        className="input-field pl-12"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-secondary ml-1">Senha</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Mínimo 6 caracteres"
+                                        className="input-field pl-12 pr-12"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-secondary transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="btn-primary w-full mt-4 disabled:opacity-50"
+                        >
+                            {isLoading ? 'Criando conta...' : 'Criar minha conta'} <UserPlus size={20} />
+                        </button>
+
+                        <p className="text-center text-gray-500 text-sm mt-6">
+                            Já tem uma conta? <span className="text-primary font-bold cursor-pointer underline underline-offset-4" onClick={() => navigate('/client/login')}>Entre aqui</span>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <div className="hidden lg:block flex-1 bg-secondary relative overflow-hidden">
+                <div className="absolute inset-0 bg-primary/10"></div>
+                <img
+                    src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=2071"
+                    alt="Register background"
+                    className="w-full h-full object-cover mix-blend-overlay opacity-40"
+                />
+                <div className="absolute bottom-24 left-12 right-12 text-white space-y-4">
+                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                        <ShieldCheck className="text-primary" size={32} />
+                    </div>
+                    <h2 className="text-4xl font-bold">Quase lá!</h2>
+                    <p className="text-white/80 text-lg max-w-md">
+                        Ao se cadastrar, você terá acesso total ao nosso SPA, histórico de serviços e agendamento inteligente para o seu pet.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
