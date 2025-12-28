@@ -591,6 +591,18 @@ export default function CustomerManager() {
                                                             <label className="label">Endereço</label>
                                                             <input className="input-field" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                                                         </div>
+                                                        <div className="col-span-2 space-y-2">
+                                                            <label className="label">E-mail para Acesso (Obrigatório)</label>
+                                                            <input
+                                                                type="email"
+                                                                className="input-field"
+                                                                value={formData.email || ''}
+                                                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                                placeholder="cliente@email.com"
+                                                                required
+                                                            />
+                                                            <p className="text-[10px] text-gray-400 font-medium">Este e-mail será usado para o login do cliente no app.</p>
+                                                        </div>
                                                         <div className="space-y-2">
                                                             <label className="label">Tipo de Cliente</label>
                                                             <select

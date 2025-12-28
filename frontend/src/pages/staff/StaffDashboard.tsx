@@ -121,7 +121,7 @@ export default function StaffDashboard() {
                                     Distribuição (Próximos 7 dias)
                                 </h2>
                                 <div className="space-y-4">
-                                    {metrics?.statusCounts.map((s, idx) => (
+                                    {metrics?.statusCounts?.map((s, idx) => (
                                         <div key={idx} className="flex items-center gap-4">
                                             <div className="flex-1">
                                                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-1">
@@ -138,7 +138,7 @@ export default function StaffDashboard() {
                                             </div>
                                         </div>
                                     ))}
-                                    {metrics?.statusCounts.length === 0 && (
+                                    {(!metrics?.statusCounts || metrics.statusCounts.length === 0) && (
                                         <p className="text-center text-gray-300 py-10">Nenhum dado para exibir.</p>
                                     )}
                                 </div>

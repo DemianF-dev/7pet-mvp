@@ -21,7 +21,28 @@ export default function ClientRegister() {
         setIsLoading(true);
         setError('');
 
+        // Validation
+        if (!name.trim()) {
+            setError('Por favor, preencha seu nome completo.');
+            setIsLoading(false);
+            return;
+        }
+        if (!email.trim()) {
+            setError('Por favor, preencha seu e-mail.');
+            setIsLoading(false);
+            return;
+        }
+        if (!password || password.length < 6) {
+            setError('A senha deve ter pelo menos 6 caracteres.');
+            setIsLoading(false);
+            return;
+        }
+
+        console.log('[ClientRegister] Iniciando cadastro...');
+        console.log('[ClientRegister] API URL:', import.meta.env.VITE_API_URL);
+
         try {
+            console.log('[ClientRegister] Enviando dados:', { name, email, phone, role: 'CLIENTE' });
             const response = await api.post('/auth/register', {
                 name,
                 email,
@@ -29,12 +50,29 @@ export default function ClientRegister() {
                 password,
                 role: 'CLIENTE'
             });
+
+            console.log('[ClientRegister] Resposta recebida:', response.status);
             const { user, token } = response.data;
 
+            console.log('[ClientRegister] Salvando autenticação...');
             setAuth(user, token);
+
+            console.log('[ClientRegister] Redirecionando para dashboard...');
             navigate('/client/dashboard');
         } catch (err: any) {
-            setError(err.response?.data?.error || err.message || 'Erro ao realizar cadastro');
+            console.error('[ClientRegister] Erro capturado:', err);
+            console.error('[ClientRegister] Erro response:', err.response);
+            console.error('[ClientRegister] Erro message:', err.message);
+
+            if (!err.response) {
+                setError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+            } else if (err.response.status === 400) {
+                setError(err.response.data?.error || 'Dados inválidos. Verifique as informações e tente novamente.');
+            } else if (err.response.status === 409 || err.response.data?.error?.includes('já existe')) {
+                setError('Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.');
+            } else {
+                setError(err.response?.data?.error || err.message || 'Erro ao realizar cadastro. Tente novamente.');
+            }
         } finally {
             setIsLoading(false);
         }

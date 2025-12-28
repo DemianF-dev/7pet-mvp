@@ -63,11 +63,18 @@ export const staffController = {
                 _count: true
             });
 
+            // Map Prisma groupBy result to ensure _count is a number for the frontend
+            const safeStatusCounts = statusCounts.map(item => ({
+                status: item.status,
+                // @ts-ignore - Prisma types can be tricky with groupBy
+                _count: typeof item._count === 'number' ? item._count : (item._count as any)?._all || 0
+            }));
+
             return res.json({
                 todayAppointments,
                 pendingQuotes,
                 activeTransports,
-                statusCounts
+                statusCounts: safeStatusCounts
             });
         } catch (error) {
             console.error('Error fetching staff metrics:', error);
