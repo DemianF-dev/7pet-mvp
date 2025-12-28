@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar';
 import BackButton from '../../components/BackButton';
 import api from '../../services/api';
 import ServiceAutocomplete from '../../components/ServiceAutocomplete';
+import LoadingButton from '../../components/LoadingButton';
 
 interface Service {
     id: string;
@@ -310,14 +311,15 @@ export default function QuoteRequest() {
                     )}
 
                     <div className="flex justify-end pt-4">
-                        <button
+                        <LoadingButton
                             type="submit"
-                            disabled={isSubmitting}
-                            className="btn-primary px-10 py-4 flex items-center gap-2 text-lg shadow-xl shadow-primary/20"
+                            isLoading={isSubmitting}
+                            loadingText="Enviando..."
+                            className="px-10 py-4 text-lg"
+                            rightIcon={<Send size={20} />}
                         >
-                            {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}
-                            <Send size={20} />
-                        </button>
+                            Enviar Solicitação
+                        </LoadingButton>
                     </div>
                 </form>
             </main>

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, Chrome, ChevronLeft, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import LoadingButton from '../../components/LoadingButton';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -146,13 +147,15 @@ export default function ClientLogin() {
                             </div>
                         </div>
 
-                        <button
+                        <LoadingButton
                             type="submit"
-                            disabled={isLoading}
-                            className="btn-primary w-full mt-4 disabled:opacity-50"
+                            isLoading={isLoading}
+                            loadingText="Acessando..."
+                            className="w-full mt-4"
+                            rightIcon={<LogIn size={20} />}
                         >
-                            {isLoading ? 'Solicitando...' : 'Entrar'} <LogIn size={20} />
-                        </button>
+                            Entrar
+                        </LoadingButton>
 
                         <p className="text-center text-gray-500 text-sm mt-6">
                             Ainda não tem conta? <span className="text-primary font-bold cursor-pointer underline underline-offset-4" onClick={() => navigate('/client')}>Crie uma agora</span>

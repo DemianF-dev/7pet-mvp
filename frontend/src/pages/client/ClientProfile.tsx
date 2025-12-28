@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Save, ShieldCheck, CreditCard, Calendar, Star, TrendingDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
+import LoadingButton from '../../components/LoadingButton';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -143,13 +144,15 @@ export default function ClientProfile() {
                                 </div>
 
                                 <div className="pt-6 border-t border-gray-50">
-                                    <button
+                                    <LoadingButton
                                         type="submit"
-                                        disabled={isSaving}
-                                        className="btn-primary w-full md:w-auto px-10 py-4 shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+                                        isLoading={isSaving}
+                                        loadingText="Salvando..."
+                                        className="w-full md:w-auto px-10 py-4"
+                                        rightIcon={<Save size={20} />}
                                     >
-                                        {isSaving ? 'Salvando...' : 'Salvar Alterações'} <Save size={20} />
-                                    </button>
+                                        Salvar Alterações
+                                    </LoadingButton>
                                 </div>
                             </form>
                         </motion.div>

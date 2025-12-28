@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import LoadingButton from '../../components/LoadingButton';
 
 interface Pet {
     id: string;
@@ -92,6 +93,7 @@ export default function CustomerManager() {
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [selectedQuote, setSelectedQuote] = useState<any>(null);
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'ENCERRADO'];
 
@@ -130,6 +132,7 @@ export default function CustomerManager() {
 
     const handleCreateWrapper = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             const payload = { ...formData, type: formData.type || 'AVULSO' } as any;
             if (payload.recurringFrequency === '') {
@@ -143,6 +146,8 @@ export default function CustomerManager() {
         } catch (error: any) {
             console.error('Erro ao criar cliente:', error);
             alert(error.response?.data?.error || 'Erro ao criar cliente');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -247,6 +252,7 @@ export default function CustomerManager() {
     const handleUpdateWrapper = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedCustomer) return;
+        setIsSaving(true);
         try {
             const payload = { ...formData } as any;
             if (payload.recurringFrequency === '') {
@@ -260,6 +266,8 @@ export default function CustomerManager() {
         } catch (error: any) {
             console.error('Erro ao atualizar:', error);
             alert('Erro ao atualizar dados.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -292,6 +300,7 @@ export default function CustomerManager() {
 
     const handlePetUpdateWrapper = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             if (selectedPet) {
                 // UPDATE
@@ -314,6 +323,8 @@ export default function CustomerManager() {
         } catch (error: any) {
             console.error('Erro ao salvar pet:', error);
             alert('Erro ao salvar pet.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -579,7 +590,14 @@ export default function CustomerManager() {
 
                                                     <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
                                                         <button type="button" onClick={() => setIsEditMode(false)} className="btn-secondary">Cancelar</button>
-                                                        <button type="submit" className="btn-primary flex items-center gap-2"><Save size={18} /> Salvar Alterações</button>
+                                                        <LoadingButton
+                                                            type="submit"
+                                                            isLoading={isSaving}
+                                                            loadingText="Salvando..."
+                                                            leftIcon={<Save size={18} />}
+                                                        >
+                                                            Salvar Alterações
+                                                        </LoadingButton>
                                                     </div>
                                                 </form>
                                             ) : (
@@ -975,7 +993,13 @@ export default function CustomerManager() {
                                     )}
                                     <div className="pt-4 flex justify-end gap-3">
                                         <button type="button" onClick={() => setIsCreateModalOpen(false)} className="btn-secondary">Cancelar</button>
-                                        <button type="submit" className="btn-primary">Criar Cadastro</button>
+                                        <LoadingButton
+                                            type="submit"
+                                            isLoading={isSaving}
+                                            loadingText="Criando..."
+                                        >
+                                            Criar Cadastro
+                                        </LoadingButton>
                                     </div>
                                 </form>
                             </motion.div>
@@ -1085,7 +1109,13 @@ export default function CustomerManager() {
                                     </div>
                                     <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
                                         <button type="button" onClick={() => setIsPetModalOpen(false)} className="btn-secondary">Cancelar</button>
-                                        <button type="submit" className="btn-primary">Salvar Alterações</button>
+                                        <LoadingButton
+                                            type="submit"
+                                            isLoading={isSaving}
+                                            loadingText="Salvando..."
+                                        >
+                                            Salvar Alterações
+                                        </LoadingButton>
                                     </div>
                                 </form>
                             </motion.div>

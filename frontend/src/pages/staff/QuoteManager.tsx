@@ -22,6 +22,7 @@ import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import LoadingButton from '../../components/LoadingButton';
 
 interface QuoteItem {
     id: string;
@@ -68,6 +69,7 @@ export default function QuoteManager() {
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [sortConfig, setSortConfig] = useState<{ key: keyof Quote | 'customer.name'; direction: 'asc' | 'desc' } | null>(null);
     const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -82,7 +84,7 @@ export default function QuoteManager() {
         items: [{ description: '', quantity: 1, price: 0 }]
     });
 
-    const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'ENCERRADO'];
+    const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'AGENDADO', 'ENCERRADO'];
 
     useEffect(() => {
         fetchQuotes();
@@ -162,6 +164,7 @@ export default function QuoteManager() {
 
     const handleCreateQuote = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             await api.post('/quotes', newQuoteData);
             setIsCreateModalOpen(false);
@@ -171,6 +174,8 @@ export default function QuoteManager() {
         } catch (error) {
             console.error('Erro ao criar orçamento:', error);
             alert('Erro ao criar orçamento.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -193,6 +198,16 @@ export default function QuoteManager() {
     };
 
     const handleConvertToAppointment = (quote: Quote) => {
+        let formattedDate = '';
+        if (quote.desiredAt) {
+            const date = new Date(quote.desiredAt);
+            if (!isNaN(date.getTime())) {
+                // Adjusting to local time for datetime-local input YYYY-MM-DDTHH:mm
+                const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                formattedDate = localDate.toISOString().slice(0, 16);
+            }
+        }
+
         // Navigate to kanban/booking with state
         navigate('/staff/kanban', {
             state: {
@@ -202,7 +217,7 @@ export default function QuoteManager() {
                     quoteId: quote.id,
                     petId: quote.petId,
                     serviceIds: quote.items.map(i => i.serviceId).filter(id => !!id),
-                    startAt: quote.desiredAt ? new Date(quote.desiredAt).toISOString().slice(0, 16) : ''
+                    startAt: formattedDate
                 }
             }
         });
@@ -306,6 +321,7 @@ export default function QuoteManager() {
     const handleUpdateQuote = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedQuote) return;
+        setIsSaving(true);
 
         try {
             await api.patch(`/quotes/${selectedQuote.id}`, {
@@ -319,6 +335,35 @@ export default function QuoteManager() {
         } catch (error) {
             console.error('Erro ao atualizar orçamento:', error);
             alert('Erro ao atualizar orçamento');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleValidateAndSend = async () => {
+        if (!selectedQuote) return;
+        setIsSaving(true);
+        try {
+            const itemsTotal = selectedQuote.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const payload = {
+                items: selectedQuote.items.map(item => ({
+                    description: item.description,
+                    quantity: item.quantity,
+                    price: item.price,
+                    serviceId: item.serviceId || undefined
+                })),
+                totalAmount: itemsTotal,
+                status: 'ENVIADO'
+            };
+            await api.put(`/quotes/${selectedQuote.id}`, payload);
+            setIsEditModalOpen(false);
+            fetchQuotes();
+            alert('Orçamento validado e enviado com sucesso!');
+        } catch (e: any) {
+            console.error('Erro ao validar e enviar:', e);
+            alert(`Erro ao salvar: ${e.response?.data?.error || e.message || 'Erro desconhecido'}`);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -399,6 +444,7 @@ export default function QuoteManager() {
             case 'APROVADO': return 'bg-green-100 text-green-700';
             case 'REJEITADO': return 'bg-red-100 text-red-700';
             case 'AGENDAR': return 'bg-indigo-100 text-indigo-700';
+            case 'AGENDADO': return 'bg-teal-100 text-teal-700';
             case 'ENCERRADO': return 'bg-gray-200 text-gray-500 line-through';
             default: return 'bg-gray-100 text-gray-700';
         }
@@ -635,7 +681,7 @@ export default function QuoteManager() {
                                                     >
                                                         <Copy size={18} />
                                                     </button>
-                                                    {quote.status === 'APROVADO' && (
+                                                    {['APROVADO', 'AGENDAR'].includes(quote.status) && (
                                                         <button
                                                             onClick={() => handleConvertToAppointment(quote)}
                                                             className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
@@ -839,38 +885,24 @@ export default function QuoteManager() {
                                     </div>
                                     <div className="flex gap-4">
                                         <button type="button" onClick={() => setIsEditModalOpen(false)} className="btn-secondary">Cancelar</button>
-                                        <button
+                                        <LoadingButton
                                             type="button"
-                                            onClick={async () => {
-                                                try {
-                                                    const itemsTotal = selectedQuote.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-                                                    const payload = {
-                                                        items: selectedQuote.items.map(item => ({
-                                                            description: item.description,
-                                                            quantity: item.quantity,
-                                                            price: item.price,
-                                                            serviceId: item.serviceId || undefined
-                                                        })),
-                                                        totalAmount: itemsTotal,
-                                                        status: 'ENVIADO'
-                                                    };
-                                                    console.log('Enviando payload:', JSON.stringify(payload, null, 2));
-                                                    await api.put(`/quotes/${selectedQuote.id}`, payload);
-                                                    setIsEditModalOpen(false);
-                                                    fetchQuotes();
-                                                    alert('Orçamento validado e enviado com sucesso!');
-                                                } catch (e: any) {
-                                                    console.error('Erro completo ao validar e enviar:', e);
-                                                    console.error('Response data:', e.response?.data);
-                                                    console.error('Response status:', e.response?.status);
-                                                    alert(`Erro ao salvar: ${e.response?.data?.error || e.message || 'Erro desconhecido'}`);
-                                                }
-                                            }}
-                                            className="px-8 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-secondary/90 transition-all flex items-center gap-2"
+                                            onClick={handleValidateAndSend}
+                                            isLoading={isSaving}
+                                            loadingText="Enviando..."
+                                            variant="secondary"
+                                            className="px-8"
+                                            rightIcon={<Send size={16} />}
                                         >
-                                            <Send size={16} /> Validar e Enviar
-                                        </button>
-                                        <button type="submit" className="btn-primary">Salvar Apenas</button>
+                                            Validar e Enviar
+                                        </LoadingButton>
+                                        <LoadingButton
+                                            type="submit"
+                                            isLoading={isSaving}
+                                            loadingText="Salvando..."
+                                        >
+                                            Salvar Apenas
+                                        </LoadingButton>
                                     </div>
                                 </div>
                             </form>
@@ -1013,7 +1045,13 @@ export default function QuoteManager() {
                                     </div>
                                     <div className="flex gap-4">
                                         <button type="button" onClick={() => setIsCreateModalOpen(false)} className="btn-secondary">Cancelar</button>
-                                        <button type="submit" className="btn-primary">Criar Orçamento</button>
+                                        <LoadingButton
+                                            type="submit"
+                                            isLoading={isSaving}
+                                            loadingText="Criando..."
+                                        >
+                                            Criar Orçamento
+                                        </LoadingButton>
                                     </div>
                                 </div>
                             </form>

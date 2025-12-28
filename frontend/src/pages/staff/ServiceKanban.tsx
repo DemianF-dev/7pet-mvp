@@ -51,7 +51,7 @@ export default function ServiceKanban() {
     const location = useLocation();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [view, setView] = useState<ViewType>('KANBAN');
+    const [view, setView] = useState<ViewType>('WEEK');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -176,10 +176,11 @@ export default function ServiceKanban() {
     const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
 
     const timeSlots: string[] = [];
-    for (let i = 7; i <= 22; i++) {
+    for (let i = 9; i <= 18; i++) {
         timeSlots.push(`${i.toString().padStart(2, '0')}:00`);
         timeSlots.push(`${i.toString().padStart(2, '0')}:30`);
     }
+    timeSlots.push('19:00');
 
     const nextDay = () => setSelectedDate(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
     const prevDay = () => setSelectedDate(new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000));
@@ -256,12 +257,18 @@ export default function ServiceKanban() {
     );
 
     const getWeekDays = (date: Date) => {
-        const start = new Date(date);
-        start.setDate(date.getDate() - date.getDay());
+        const d = new Date(date);
+        const day = d.getDay();
+        // Adjust to Monday (1). In JS, Sunday is 0.
+        // If it's Sunday (0), we go back 6 days to Monday.
+        // Otherwise, move back to (day - 1) days.
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+
         return Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(start);
-            d.setDate(start.getDate() + i);
-            return d;
+            const dayOfweek = new Date(monday);
+            dayOfweek.setDate(monday.getDate() + i);
+            return dayOfweek;
         });
     };
 
@@ -288,16 +295,16 @@ export default function ServiceKanban() {
                         <div className="flex border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
                             <div className="w-20 border-r border-gray-100"></div>
                             {weekDays.map(d => (
-                                <div key={d.toString()} className={`flex-1 p-4 text-center border-r border-gray-100 last:border-none ${isSameDay(d, new Date()) ? 'bg-primary/5' : ''}`}>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase">{d.toLocaleDateString('pt-BR', { weekday: 'short' })}</p>
+                                <div key={d.toString()} className={`flex-1 p-3 text-center border-r border-gray-100 last:border-none ${isSameDay(d, new Date()) ? 'bg-primary/10 ring-1 ring-inset ring-primary/20' : ''}`}>
+                                    <p className={`text-[10px] font-black uppercase ${isSameDay(d, new Date()) ? 'text-primary' : 'text-gray-400'}`}>{d.toLocaleDateString('pt-BR', { weekday: 'short' })}</p>
                                     <p className={`text-lg font-black ${isSameDay(d, new Date()) ? 'text-primary' : 'text-secondary'}`}>{d.getDate()}</p>
                                 </div>
                             ))}
                         </div>
 
-                        {timeSlots.filter((_, i) => i % 2 === 0).map(slot => (
-                            <div key={slot} className="flex border-b border-gray-50 group min-h-[100px]">
-                                <div className="w-20 p-4 text-[10px] font-black text-gray-400 border-r border-gray-100 bg-gray-50/20 flex items-start justify-center">
+                        {timeSlots.map(slot => (
+                            <div key={slot} className={`flex border-b border-gray-50 group ${slot.endsWith(':00') ? 'min-h-[70px]' : 'min-h-[60px]'}`}>
+                                <div className={`w-20 p-3 text-[10px] font-black border-r border-gray-100 flex items-start justify-center ${slot.endsWith(':00') ? 'text-gray-400 bg-gray-50/30' : 'text-gray-300 bg-gray-50/10'}`}>
                                     {slot}
                                 </div>
                                 {weekDays.map(day => (
@@ -305,21 +312,25 @@ export default function ServiceKanban() {
                                         {appointments
                                             .filter(a => {
                                                 const d = new Date(a.startAt);
-                                                return isSameDay(d, day) && d.getHours().toString().padStart(2, '0') + ':00' === slot;
+                                                const hour = d.getHours().toString().padStart(2, '0');
+                                                const min = d.getMinutes() < 30 ? '00' : '30';
+                                                return isSameDay(d, day) && `${hour}:${min}` === slot;
                                             })
                                             .map(appt => (
                                                 <div
                                                     key={appt.id}
                                                     onClick={() => handleOpenDetails(appt)}
-                                                    className="p-2 bg-primary/10 border-l-2 border-primary rounded-lg cursor-pointer hover:bg-primary/20 transition-all text-left mb-1"
+                                                    className="p-1 px-2 bg-primary/10 border-l-2 border-primary rounded-lg cursor-pointer hover:bg-primary/20 transition-all text-left mb-1 shadow-sm"
                                                 >
-                                                    <p className="text-[8px] font-black text-primary mb-1">
-                                                        {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                    <div className="flex justify-between items-center mb-0.5">
+                                                        <p className="text-[8px] font-black text-primary">
+                                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                        <span className="text-[7px] font-black text-gray-400 capitalize">{appt.status.toLowerCase()}</span>
+                                                    </div>
+                                                    <p className="text-[9px] font-bold text-secondary leading-tight line-clamp-1">
+                                                        {appt.pet.name} • {appt.services && appt.services.length > 0 ? appt.services[0].name : (appt.service?.name || 'Serviço')}
                                                     </p>
-                                                    <p className="text-[9px] font-bold text-secondary leading-tight line-clamp-2">
-                                                        {appt.services && appt.services.length > 0 ? appt.services.map(s => s.name).join(', ') : appt.service?.name}
-                                                    </p>
-                                                    <p className="text-[8px] text-gray-400 font-bold uppercase truncate">{appt.pet.name}</p>
                                                 </div>
                                             ))}
                                     </div>
@@ -429,12 +440,16 @@ export default function ServiceKanban() {
         <div className="min-h-screen bg-gray-50 flex">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-                    <div>
-                        <BackButton className="mb-4 ml-[-1rem]" />
-                        <h1 className="text-4xl font-extrabold text-secondary">Agenda de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Serviços</span></h1>
-                        <p className="text-gray-500 mt-3 font-medium">Controle total dos atendimentos e fluxo operacional.</p>
+            <main className="flex-1 md:ml-64 p-4 md:p-8">
+                <header className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <BackButton className="ml-[-0.5rem]" />
+                        <div>
+                            <h1 className="text-2xl font-extrabold text-secondary flex items-center gap-2">
+                                Agenda de <span className="text-primary">Serviços</span>
+                            </h1>
+                            <p className="text-gray-400 text-xs font-medium">Fluxo operacional e atendimentos.</p>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
@@ -483,9 +498,9 @@ export default function ServiceKanban() {
 
                         <button
                             onClick={handleCreateNew}
-                            className="bg-primary text-white px-6 py-3.5 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-sm flex items-center gap-2"
+                            className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center gap-2"
                         >
-                            <Plus size={20} /> Incluir Agendamento
+                            <Plus size={16} /> Novo Agendamento
                         </button>
                     </div>
                 </header>

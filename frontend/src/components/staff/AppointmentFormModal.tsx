@@ -112,11 +112,15 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
             setServices(servRes.data);
 
             // If we have preFill but customers weren't loaded yet
-            if (preFill && !selectedCustomer) {
+            if (preFill) {
                 const cust = custRes.data.find((c: any) => c.id === preFill.customerId);
                 if (cust) {
                     setSelectedCustomer(cust);
                     setPets(cust.pets || []);
+                    // Re-enforcing petId match in case it was lost during pets array update
+                    if (preFill.petId) {
+                        setFormData(prev => ({ ...prev, petId: preFill.petId! }));
+                    }
                 }
             }
         } catch (error) {
@@ -147,6 +151,13 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 await api.patch(`/appointments/${appointment.id}`, data);
             } else {
                 await api.post('/appointments', data);
+                // If this appointment came from a quote, update quote status to AGENDADO
+                if (preFill?.quoteId) {
+                    await api.patch(`/quotes/${preFill.quoteId}/status`, {
+                        status: 'AGENDADO',
+                        reason: 'Agendamento concluído pela agenda'
+                    });
+                }
             }
             onSuccess();
             onClose();
