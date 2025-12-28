@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Dog, MapPin, Tag, AlertCircle, History } from 'lucide-react';
+import { Calendar, Clock, Dog, MapPin, Tag, MessageCircle, History } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 import { motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
@@ -123,12 +123,27 @@ export default function AppointmentList() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center justify-between md:justify-end gap-4 min-w-[150px]">
+                                            <div className="flex items-center justify-between md:justify-end gap-4 min-w-[200px]">
                                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold border ${statusColors[appt.status]}`}>
                                                     {appt.status}
                                                 </span>
-                                                <button className="p-2 text-gray-300 hover:text-primary transition-colors">
-                                                    <AlertCircle size={20} />
+                                                <button
+                                                    onClick={() => {
+                                                        const phone = '5511999999999'; // Substitua pelo número do atendimento
+                                                        const message = `Olá! Gostaria de solicitar alteração/cancelamento do meu agendamento:\n\n` +
+                                                            `📋 ID: ${appt.id}\n` +
+                                                            `🐾 Pet: ${appt.pet.name}\n` +
+                                                            `📅 Data: ${new Date(appt.startAt).toLocaleDateString('pt-BR')}\n` +
+                                                            `🕐 Horário: ${new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n` +
+                                                            `💼 Serviço: ${appt.services.map(s => s.name).join(', ')}`;
+                                                        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                                                        window.open(whatsappUrl, '_blank');
+                                                    }}
+                                                    className="flex items-center gap-2 px-4 py-2 text-white bg-green-500 hover:bg-green-600 rounded-xl transition-colors text-xs font-bold shadow-sm hover:shadow-md"
+                                                    title="Solicitar alteração via WhatsApp"
+                                                >
+                                                    <MessageCircle size={16} />
+                                                    Alterar
                                                 </button>
                                             </div>
                                         </motion.div>
