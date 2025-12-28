@@ -96,6 +96,12 @@ model Customer {
   discountPercentage Float         @default(0.0)
   internalNotes      String?
   balance            Float         @default(0.0)
+  
+  // Secondary Guardian/Tutor
+  secondaryGuardianName    String?
+  secondaryGuardianPhone   String?
+  secondaryGuardianEmail   String?
+  secondaryGuardianAddress String?
 }
 
 model Pet {

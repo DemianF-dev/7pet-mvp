@@ -683,6 +683,53 @@ export default function CustomerManager() {
                                                         </div>
                                                     </div>
 
+                                                    {/* Secondary Guardian Section */}
+                                                    <div className="pt-6 border-t border-gray-100">
+                                                        <h4 className="text-sm font-bold text-secondary mb-4">Segundo Responsável (Opcional)</h4>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="label">Nome Completo</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={formData.secondaryGuardianName || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianName: e.target.value })}
+                                                                    className="input-field"
+                                                                    placeholder="Nome do segundo tutor"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="label">Telefone</label>
+                                                                <input
+                                                                    type="tel"
+                                                                    value={formData.secondaryGuardianPhone || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianPhone: e.target.value })}
+                                                                    className="input-field"
+                                                                    placeholder="(00) 00000-0000"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="label">E-mail</label>
+                                                                <input
+                                                                    type="email"
+                                                                    value={formData.secondaryGuardianEmail || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianEmail: e.target.value })}
+                                                                    className="input-field"
+                                                                    placeholder="email@exemplo.com"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="label">Endereço</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={formData.secondaryGuardianAddress || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianAddress: e.target.value })}
+                                                                    className="input-field"
+                                                                    placeholder="Endereço completo"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
                                                         <button type="button" onClick={() => setIsEditMode(false)} className="btn-secondary">Cancelar</button>
                                                         <LoadingButton

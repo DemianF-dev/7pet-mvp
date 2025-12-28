@@ -11,6 +11,10 @@ export default function ClientProfile() {
     const [name, setName] = useState(user?.customer?.name || '');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
+    const [secondaryGuardianName, setSecondaryGuardianName] = useState('');
+    const [secondaryGuardianPhone, setSecondaryGuardianPhone] = useState('');
+    const [secondaryGuardianEmail, setSecondaryGuardianEmail] = useState('');
+    const [secondaryGuardianAddress, setSecondaryGuardianAddress] = useState('');
     const [customerData, setCustomerData] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -23,6 +27,10 @@ export default function ClientProfile() {
                     setName(response.data.customer.name);
                     setPhone(response.data.customer.phone || '');
                     setAddress(response.data.customer.address || '');
+                    setSecondaryGuardianName(response.data.customer.secondaryGuardianName || '');
+                    setSecondaryGuardianPhone(response.data.customer.secondaryGuardianPhone || '');
+                    setSecondaryGuardianEmail(response.data.customer.secondaryGuardianEmail || '');
+                    setSecondaryGuardianAddress(response.data.customer.secondaryGuardianAddress || '');
                     setCustomerData(response.data.customer);
                 }
             } catch (error) {
@@ -38,7 +46,15 @@ export default function ClientProfile() {
         setMessage(null);
 
         try {
-            await api.patch('/auth/me', { name, phone, address });
+            await api.patch('/auth/me', {
+                name,
+                phone,
+                address,
+                secondaryGuardianName,
+                secondaryGuardianPhone,
+                secondaryGuardianEmail,
+                secondaryGuardianAddress
+            });
 
             if (user && token) {
                 const updatedUser = {
@@ -47,7 +63,11 @@ export default function ClientProfile() {
                         ...user.customer,
                         name,
                         phone,
-                        address
+                        address,
+                        secondaryGuardianName,
+                        secondaryGuardianPhone,
+                        secondaryGuardianEmail,
+                        secondaryGuardianAddress
                     }
                 };
                 setAuth(updatedUser as any, token);
@@ -139,6 +159,73 @@ export default function ClientProfile() {
                                                 placeholder="Rua, Número, Bairro"
                                                 className="input-field pl-12"
                                             />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Secondary Guardian Section */}
+                                <div className="pt-6 border-t border-gray-100">
+                                    <h3 className="text-lg font-bold text-secondary mb-4 flex items-center gap-2">
+                                        <User size={20} className="text-primary" />
+                                        Segundo Responsável (Opcional)
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mb-4">Informações de contato alternativo para emergências</p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                                <input
+                                                    type="text"
+                                                    value={secondaryGuardianName}
+                                                    onChange={(e) => setSecondaryGuardianName(e.target.value)}
+                                                    placeholder="Nome do segundo tutor"
+                                                    className="input-field pl-12"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Telefone</label>
+                                            <div className="relative">
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                                <input
+                                                    type="tel"
+                                                    value={secondaryGuardianPhone}
+                                                    onChange={(e) => setSecondaryGuardianPhone(e.target.value)}
+                                                    placeholder="(00) 00000-0000"
+                                                    className="input-field pl-12"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">E-mail</label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                                <input
+                                                    type="email"
+                                                    value={secondaryGuardianEmail}
+                                                    onChange={(e) => setSecondaryGuardianEmail(e.target.value)}
+                                                    placeholder="email@exemplo.com"
+                                                    className="input-field pl-12"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Endereço</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                                <input
+                                                    type="text"
+                                                    value={secondaryGuardianAddress}
+                                                    onChange={(e) => setSecondaryGuardianAddress(e.target.value)}
+                                                    placeholder="Endereço completo"
+                                                    className="input-field pl-12"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
