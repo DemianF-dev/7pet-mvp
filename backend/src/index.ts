@@ -47,3 +47,5 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`⏱️  Notification scheduler started`);
 });
+
+export default app;
