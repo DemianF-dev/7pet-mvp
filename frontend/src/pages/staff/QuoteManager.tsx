@@ -793,16 +793,16 @@ export default function QuoteManager() {
                                                     required
                                                 />
                                             </div>
-                                            <div className="w-36 space-y-2">
+                                            <div className="w-40 space-y-2">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preço Unit.</label>
                                                 <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">R$</span>
                                                     <input
                                                         type="number"
                                                         step="0.01"
                                                         value={item.price}
                                                         onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value))}
-                                                        className="input-field py-3 pl-10 font-black text-primary"
+                                                        className="input-field py-3 pl-12 pr-3 font-bold text-primary text-base"
                                                         required
                                                     />
                                                 </div>
@@ -838,15 +838,25 @@ export default function QuoteManager() {
                                         <button
                                             type="button"
                                             onClick={async () => {
-                                                // Save and also update status to ENVIADO
                                                 try {
                                                     const itemsTotal = selectedQuote.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-                                                    await api.put(`/quotes/${selectedQuote.id}`, { ...selectedQuote, totalAmount: itemsTotal, status: 'ENVIADO' });
+                                                    const payload = {
+                                                        items: selectedQuote.items.map(item => ({
+                                                            description: item.description,
+                                                            quantity: item.quantity,
+                                                            price: item.price,
+                                                            serviceId: item.serviceId || undefined
+                                                        })),
+                                                        totalAmount: itemsTotal,
+                                                        status: 'ENVIADO'
+                                                    };
+                                                    await api.put(`/quotes/${selectedQuote.id}`, payload);
                                                     setIsEditModalOpen(false);
                                                     fetchQuotes();
-                                                    alert('Orçamento Validado e Enviado!');
+                                                    alert('Orçamento validado e enviado com sucesso!');
                                                 } catch (e) {
-                                                    alert('Erro ao salvar e enviar.');
+                                                    console.error('Erro ao validar e enviar:', e);
+                                                    alert('Erro ao salvar e enviar. Verifique os dados.');
                                                 }
                                             }}
                                             className="px-8 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-secondary/90 transition-all flex items-center gap-2"
