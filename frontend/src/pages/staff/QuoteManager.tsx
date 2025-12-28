@@ -42,6 +42,13 @@ interface Quote {
     desiredAt?: string;
 }
 
+interface Service {
+    id: string;
+    name: string;
+    basePrice: number;
+    description?: string;
+}
+
 interface Customer {
     id: string;
     name: string;
@@ -60,13 +67,13 @@ export default function QuoteManager() {
     const [sortConfig, setSortConfig] = useState<{ key: keyof Quote | 'customer.name'; direction: 'asc' | 'desc' } | null>(null);
     const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
 
-    // Create Mode State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
     const [newQuoteData, setNewQuoteData] = useState<{
         customerId: string;
         petId: string;
-        items: { description: string; quantity: number; price: number }[];
+        items: { description: string; quantity: number; price: number; serviceId?: string }[];
     }>({
         customerId: '',
         petId: '',
@@ -78,7 +85,17 @@ export default function QuoteManager() {
     useEffect(() => {
         fetchQuotes();
         fetchCustomers();
+        fetchServices();
     }, [view]);
+
+    const fetchServices = async () => {
+        try {
+            const response = await api.get('/services');
+            setServices(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar serviços:', error);
+        }
+    };
 
     const fetchCustomers = async () => {
         try {
@@ -207,41 +224,74 @@ export default function QuoteManager() {
                 <head>
                     <title>Orçamento - 7Pet</title>
                     <style>
-                        body { font-family: sans-serif; padding: 40px; }
-                        .header { border-bottom: 2px solid #ed64a6; padding-bottom: 20px; margin-bottom: 20px; }
-                        h1 { color: #ed64a6; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-                        .total { text-align: right; font-size: 24px; font-weight: bold; margin-top: 20px; }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+                        .header { border-bottom: 3px solid #ed64a6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                        h1 { color: #ed64a6; margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; }
+                        .company-info { text-align: right; font-size: 12px; color: #666; }
+                        .client-box { background: #fdf2f8; padding: 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #fbcfe8; }
+                        .client-box p { margin: 5px 0; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th { background: #f9fafb; text-align: left; padding: 15px; border-bottom: 2px solid #eee; font-size: 14px; text-transform: uppercase; color: #666; }
+                        td { padding: 15px; border-bottom: 1px solid #eee; font-size: 15px; }
+                        .total-section { margin-top: 40px; border-top: 2px solid #eee; pt-20px; display: flex; justify-content: flex-end; }
+                        .total-box { background: #ed64a6; color: white; padding: 20px 40px; border-radius: 15px; text-align: right; }
+                        .total-label { font-size: 14px; text-transform: uppercase; opacity: 0.8; }
+                        .total-value { font-size: 32px; font-weight: 900; }
+                        .footer { margin-top: 60px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
                     </style>
                 </head>
                 <body>
                     <div class="header">
-                        <h1>7Pet - Orçamento</h1>
-                        <p>Cliente: ${quote.customer.name}</p>
-                        <p>Data: ${new Date(quote.createdAt).toLocaleDateString()}</p>
+                        <div>
+                            <h1>7Pet Luxury</h1>
+                            <p style="margin:0; font-weight: bold; color: #ed64a6;">ORÇAMENTO PROFISSIONAL #${quote.id.substring(0, 8).toUpperCase()}</p>
+                        </div>
+                        <div class="company-info">
+                            <p><strong>7Pet Centro de Estética Animal</strong></p>
+                            <p>São Paulo, SP</p>
+                            <p>www.7pet.com.br</p>
+                        </div>
                     </div>
+
+                    <div class="client-box">
+                        <p><strong>Cliente:</strong> ${quote.customer.name}</p>
+                        <p><strong>Pet:</strong> ${quote.pet?.name || 'Não identificado'}</p>
+                        <p><strong>Data de Emissão:</strong> ${new Date(quote.createdAt).toLocaleDateString()}</p>
+                        ${quote.desiredAt ? `<p><strong>Previsão de Atendimento:</strong> ${new Date(quote.desiredAt).toLocaleDateString()}</p>` : ''}
+                    </div>
+
                     <table>
                         <thead>
                             <tr>
-                                <th>Item</th>
-                                <th>Qtd</th>
-                                <th>Preço Unit.</th>
-                                <th>Subtotal</th>
+                                <th style="width: 50%">Descrição do Serviço</th>
+                                <th style="text-align: center">Qtd</th>
+                                <th style="text-align: right">Unitário</th>
+                                <th style="text-align: right">Subtotal</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${quote.items.map(item => `
                                 <tr>
-                                    <td>${item.description}</td>
-                                    <td>${item.quantity}</td>
-                                    <td>R$ ${item.price.toFixed(2)}</td>
-                                    <td>R$ ${(item.price * item.quantity).toFixed(2)}</td>
+                                    <td style="font-weight: 500">${item.description}</td>
+                                    <td style="text-align: center">${item.quantity}</td>
+                                    <td style="text-align: right">R$ ${item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                    <td style="text-align: right; font-weight: bold">R$ ${(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
-                    <div class="total">Total: R$ ${quote.totalAmount.toFixed(2)}</div>
+
+                    <div class="total-section">
+                        <div class="total-box">
+                            <div class="total-label">Valor Total do Investimento</div>
+                            <div class="total-value">R$ ${quote.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        <p>Este orçamento tem validade de 15 dias corridos. Os valores podem sofrer pequenas alterações após avaliação física presencial do pet (comprimento de pelo, presença de nós, etc).</p>
+                        <p><strong>Agende seu horário pelo nosso WhatsApp oficial.</strong></p>
+                    </div>
                 </body>
             </html>
         `;
@@ -672,36 +722,57 @@ export default function QuoteManager() {
 
                                 <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                                     {selectedQuote.items.map((item, index) => (
-                                        <div key={item.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-2xl relative group">
+                                        <div key={item.id} className="flex gap-4 items-end bg-gray-50/50 p-6 rounded-3xl relative border border-gray-100 group">
                                             <div className="flex-1 space-y-2">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Descrição</label>
-                                                <input
-                                                    value={item.description}
-                                                    onChange={(e) => updateItem(index, 'description', e.target.value)}
-                                                    className="input-field py-2"
-                                                    required
-                                                />
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Serviço / Produto</label>
+                                                <select
+                                                    value={item.serviceId || ''}
+                                                    onChange={(e) => {
+                                                        const s = services.find(sv => sv.id === e.target.value);
+                                                        if (s) {
+                                                            const newItems = [...selectedQuote.items];
+                                                            newItems[index] = { ...newItems[index], serviceId: s.id, description: s.name, price: s.basePrice };
+                                                            setSelectedQuote({ ...selectedQuote, items: newItems });
+                                                        }
+                                                    }}
+                                                    className="input-field py-3 font-bold text-secondary"
+                                                >
+                                                    <option value="">Selecione um serviço...</option>
+                                                    {services.map(s => (
+                                                        <option key={s.id} value={s.id}>{s.name} - R$ {s.basePrice.toFixed(2)}</option>
+                                                    ))}
+                                                    <option value="custom">Outro (preenchimento manual)</option>
+                                                </select>
+                                                {(!item.serviceId || item.serviceId === 'custom') && (
+                                                    <input
+                                                        value={item.description}
+                                                        onChange={(e) => updateItem(index, 'description', e.target.value)}
+                                                        placeholder="Digite a descrição personalizada..."
+                                                        className="input-field py-2 mt-2"
+                                                        required
+                                                    />
+                                                )}
                                             </div>
-                                            <div className="w-20 space-y-2">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Qtd</label>
+                                            <div className="w-24 space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Qtd</label>
                                                 <input
                                                     type="number"
                                                     value={item.quantity}
                                                     onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
-                                                    className="input-field py-2"
+                                                    className="input-field py-3 text-center font-bold"
                                                     required
                                                 />
                                             </div>
-                                            <div className="w-32 space-y-2">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Preço Unit.</label>
+                                            <div className="w-36 space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preço Unit.</label>
                                                 <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R$</span>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                                     <input
                                                         type="number"
                                                         step="0.01"
                                                         value={item.price}
                                                         onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value))}
-                                                        className="input-field py-2 pl-9"
+                                                        className="input-field py-3 pl-10 font-black text-primary"
                                                         required
                                                     />
                                                 </div>
@@ -709,9 +780,9 @@ export default function QuoteManager() {
                                             <button
                                                 type="button"
                                                 onClick={() => removeItem(index)}
-                                                className="mt-8 p-2 text-gray-300 hover:text-red-500 transition-colors"
+                                                className="mb-1 p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl transition-all"
                                             >
-                                                <XCircle size={20} />
+                                                <Trash2 size={20} />
                                             </button>
                                         </div>
                                     ))}
@@ -788,53 +859,74 @@ export default function QuoteManager() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 mb-4">
                                     {newQuoteData.items.map((item, index) => (
-                                        <div key={index} className="flex gap-4 items-start bg-gray-50 p-4 rounded-2xl relative group">
+                                        <div key={index} className="flex gap-4 items-end bg-gray-50/50 p-6 rounded-3xl relative border border-gray-100 group">
                                             <div className="flex-1 space-y-2">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Descrição</label>
-                                                <input
-                                                    value={item.description}
-                                                    onChange={(e) => updateCreateItem(index, 'description', e.target.value)}
-                                                    className="input-field py-2"
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Serviço / Produto</label>
+                                                <select
+                                                    value={item.serviceId || ''}
+                                                    onChange={(e) => {
+                                                        const s = services.find(sv => sv.id === e.target.value);
+                                                        if (s) {
+                                                            const newItems = [...newQuoteData.items];
+                                                            newItems[index] = { ...newItems[index], serviceId: s.id, description: s.name, price: s.basePrice };
+                                                            setNewQuoteData({ ...newQuoteData, items: newItems });
+                                                        } else {
+                                                            updateCreateItem(index, 'serviceId', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="input-field py-3 font-bold text-secondary"
                                                     required
-                                                    placeholder="Ex: Banho completo"
-                                                />
+                                                >
+                                                    <option value="">Selecione um serviço...</option>
+                                                    {services.map(s => (
+                                                        <option key={s.id} value={s.id}>{s.name} - R$ {s.basePrice.toFixed(2)}</option>
+                                                    ))}
+                                                    <option value="custom">Outro (personalizado)</option>
+                                                </select>
+                                                {(!item.serviceId || item.serviceId === 'custom') && (
+                                                    <input
+                                                        value={item.description}
+                                                        onChange={(e) => updateCreateItem(index, 'description', e.target.value)}
+                                                        placeholder="Descrição do item manual..."
+                                                        className="input-field py-2 mt-2"
+                                                        required
+                                                    />
+                                                )}
                                             </div>
-                                            <div className="w-20 space-y-2">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Qtd</label>
+                                            <div className="w-24 space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Qtd</label>
                                                 <input
                                                     type="number"
                                                     value={item.quantity}
                                                     onChange={(e) => updateCreateItem(index, 'quantity', parseInt(e.target.value))}
-                                                    className="input-field py-2"
+                                                    className="input-field py-3 text-center font-bold"
                                                     required
                                                     min="1"
                                                 />
                                             </div>
-                                            <div className="w-32 space-y-2">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Preço Unit.</label>
+                                            <div className="w-36 space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preço Unit.</label>
                                                 <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R$</span>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                                     <input
                                                         type="number"
                                                         step="0.01"
                                                         value={item.price}
                                                         onChange={(e) => updateCreateItem(index, 'price', parseFloat(e.target.value))}
-                                                        className="input-field py-2 pl-9"
+                                                        className="input-field py-3 pl-10 font-black text-primary"
                                                         required
                                                     />
                                                 </div>
                                             </div>
-                                            {newQuoteData.items.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeCreateItem(index)}
-                                                    className="mt-8 p-2 text-gray-300 hover:text-red-500 transition-colors"
-                                                >
-                                                    <XCircle size={20} />
-                                                </button>
-                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeCreateItem(index)}
+                                                className="mb-1 p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl transition-all"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -842,7 +934,7 @@ export default function QuoteManager() {
                                 <button
                                     type="button"
                                     onClick={addCreateItem}
-                                    className="text-primary font-bold text-sm flex items-center gap-2 hover:underline"
+                                    className="px-6 py-3 bg-primary/10 text-primary rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary hover:text-white transition-all mb-6"
                                 >
                                     + Adicionar Item
                                 </button>
