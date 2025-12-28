@@ -695,7 +695,7 @@ export default function CustomerManager() {
                                                                 <label className="label">Nome Completo</label>
                                                                 <input
                                                                     type="text"
-                                                                    value={formData.secondaryGuardianName || ''}
+                                                                    value={(formData as any).secondaryGuardianName || ''}
                                                                     onChange={(e) => setFormData({ ...formData, secondaryGuardianName: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="Nome do segundo tutor"
@@ -705,7 +705,7 @@ export default function CustomerManager() {
                                                                 <label className="label">Telefone</label>
                                                                 <input
                                                                     type="tel"
-                                                                    value={formData.secondaryGuardianPhone || ''}
+                                                                    value={(formData as any).secondaryGuardianPhone || ''}
                                                                     onChange={(e) => setFormData({ ...formData, secondaryGuardianPhone: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="(00) 00000-0000"
@@ -715,7 +715,7 @@ export default function CustomerManager() {
                                                                 <label className="label">E-mail</label>
                                                                 <input
                                                                     type="email"
-                                                                    value={formData.secondaryGuardianEmail || ''}
+                                                                    value={(formData as any).secondaryGuardianEmail || ''}
                                                                     onChange={(e) => setFormData({ ...formData, secondaryGuardianEmail: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="email@exemplo.com"
@@ -725,7 +725,7 @@ export default function CustomerManager() {
                                                                 <label className="label">Endereço</label>
                                                                 <input
                                                                     type="text"
-                                                                    value={formData.secondaryGuardianAddress || ''}
+                                                                    value={(formData as any).secondaryGuardianAddress || ''}
                                                                     onChange={(e) => setFormData({ ...formData, secondaryGuardianAddress: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="Endereço completo"
