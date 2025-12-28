@@ -26,46 +26,51 @@ import UserManager from './pages/staff/UserManager';
 import StaffNotificationList from './pages/staff/StaffNotificationList';
 import ProtectedRoute from './components/ProtectedRoute';
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
     return (
-        <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/client" element={<ClientEntry />} />
-            <Route path="/client/login" element={<ClientLogin />} />
-            <Route path="/client/register" element={<ClientRegister />} />
+        <>
+            <Toaster position="top-right" reverseOrder={false} />
+            <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/client" element={<ClientEntry />} />
+                <Route path="/client/login" element={<ClientLogin />} />
+                <Route path="/client/register" element={<ClientRegister />} />
 
-            {/* Cliente Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} redirectTo="/client/login" />}>
-                <Route path="/client/dashboard" element={<ClientDashboard />} />
-                <Route path="/client/pets" element={<PetList />} />
-                <Route path="/client/profile" element={<ClientProfile />} />
-                <Route path="/client/schedule" element={<AppointmentBooking />} />
-                <Route path="/client/appointments" element={<AppointmentList />} />
-                <Route path="/client/quote-request" element={<QuoteRequest />} />
-                <Route path="/client/quotes" element={<QuoteList />} />
-                <Route path="/client/notifications" element={<NotificationList />} />
-                <Route path="/client/payments" element={<PaymentList />} />
-            </Route>
+                {/* Cliente Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} redirectTo="/client/login" />}>
+                    <Route path="/client/dashboard" element={<ClientDashboard />} />
+                    <Route path="/client/pets" element={<PetList />} />
+                    <Route path="/client/profile" element={<ClientProfile />} />
+                    <Route path="/client/schedule" element={<AppointmentBooking />} />
+                    <Route path="/client/appointments" element={<AppointmentList />} />
+                    <Route path="/client/quote-request" element={<QuoteRequest />} />
+                    <Route path="/client/quotes" element={<QuoteList />} />
+                    <Route path="/client/notifications" element={<NotificationList />} />
+                    <Route path="/client/payments" element={<PaymentList />} />
+                </Route>
 
-            {/* Colaborador Routes */}
-            <Route path="/staff/login" element={<StaffLogin />} />
-            <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN']} redirectTo="/staff/login" />}>
-                <Route path="/staff/dashboard" element={<StaffDashboard />} />
-                <Route path="/staff/kanban" element={<ServiceKanban />} />
-                <Route path="/staff/transport" element={<TransportManager />} />
-                <Route path="/staff/quotes" element={<QuoteManager />} />
-                <Route path="/staff/customers" element={<CustomerManager />} />
-                <Route path="/staff/services" element={<ServiceManager />} />
-                <Route path="/staff/billing" element={<BillingManager />} />
-                <Route path="/staff/management" element={<ManagementDashboard />} />
-                <Route path="/staff/reports" element={<FinancialReports />} />
-                <Route path="/staff/users" element={<UserManager />} />
-                <Route path="/staff/notifications" element={<StaffNotificationList />} />
-            </Route>
+                {/* Colaborador Routes */}
+                <Route path="/staff/login" element={<StaffLogin />} />
+                <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN']} redirectTo="/staff/login" />}>
+                    <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                    <Route path="/staff/kanban" element={<ServiceKanban />} />
+                    <Route path="/staff/transport" element={<TransportManager />} />
+                    <Route path="/staff/quotes" element={<QuoteManager />} />
+                    <Route path="/staff/customers" element={<CustomerManager />} />
+                    <Route path="/staff/services" element={<ServiceManager />} />
+                    <Route path="/staff/billing" element={<BillingManager />} />
+                    <Route path="/staff/management" element={<ManagementDashboard />} />
+                    <Route path="/staff/reports" element={<FinancialReports />} />
+                    <Route path="/staff/users" element={<UserManager />} />
+                    <Route path="/staff/notifications" element={<StaffNotificationList />} />
+                </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </>
     );
 }
 

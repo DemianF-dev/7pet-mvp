@@ -24,6 +24,20 @@ export const create = async (data: {
         throw new Error('Sua conta está bloqueada para novos agendamentos. Entre em contato com o suporte.');
     }
 
+    // Check for concurrency/double booking
+    // Only Active appointments (not cancelled, not deleted) block the slot
+    const existingAppointment = await prisma.appointment.findFirst({
+        where: {
+            startAt: data.startAt,
+            deletedAt: null,
+            status: { notIn: [AppointmentStatus.CANCELADO] }
+        }
+    });
+
+    if (existingAppointment) {
+        throw new Error('⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário.');
+    }
+
     return prisma.appointment.create({
         data: {
             customerId: data.customerId,

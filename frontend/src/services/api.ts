@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001',
@@ -12,5 +13,27 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Response interceptor for global error handling
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Network Error or Server Down
+        if (!error.response) {
+            toast.error('Sem conexão com o servidor. Verifique sua internet.', {
+                id: 'network-error', // Prevent duplicate toasts
+                duration: 5000,
+                icon: '📡'
+            });
+        }
+        // 500 Internal Server Error
+        else if (error.response.status >= 500) {
+            toast.error('Erro interno no servidor. Tente novamente mais tarde.', {
+                duration: 4000
+            });
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default api;
