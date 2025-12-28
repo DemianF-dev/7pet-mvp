@@ -13,7 +13,8 @@ import {
     MapPin,
     Calendar,
     Briefcase,
-    CreditCard
+    CreditCard,
+    Plus
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -115,13 +116,41 @@ export default function UserManager() {
         setIsModalOpen(true);
     };
 
+    const handleAddNewUser = () => {
+        setSelectedUser(null);
+        setFormData({
+            name: '',
+            email: '',
+            password: '',
+            phone: '',
+            notes: '',
+            role: 'OPERACIONAL',
+            permissions: [],
+            birthday: '',
+            admissionDate: '',
+            document: '',
+            address: ''
+        });
+        setIsModalOpen(true);
+    };
+
     const handleSaveUser = async () => {
-        if (!selectedUser) return;
         try {
-            await api.put(`/management/users/${selectedUser.id}`, {
+            const payload = {
                 ...formData,
                 permissions: JSON.stringify(formData.permissions)
-            });
+            };
+
+            if (selectedUser) {
+                await api.put(`/management/users/${selectedUser.id}`, payload);
+            } else {
+                if (!formData.email || !formData.password) {
+                    alert('E-mail e senha são obrigatórios para novos usuários');
+                    return;
+                }
+                await api.post('/management/users', payload);
+            }
+
             setIsModalOpen(false);
             fetchUsers();
         } catch (err) {
@@ -177,13 +206,22 @@ export default function UserManager() {
                         <p className="text-gray-500 mt-3 font-medium">Gerencie usuários, permissões e níveis de acesso do sistema.</p>
                     </div>
 
-                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
-                        <div className="flex -space-x-2 overflow-hidden px-2">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200"></div>
-                            ))}
+                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
+                        <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
+                            <div className="flex -space-x-2 overflow-hidden px-2">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200"></div>
+                                ))}
+                            </div>
+                            <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
                         </div>
-                        <span className="text-xs font-bold text-secondary pr-4">{users.length} Colaboradores</span>
+                        <button
+                            onClick={handleAddNewUser}
+                            className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
+                        >
+                            <Plus size={16} />
+                            Novo Usuário
+                        </button>
                     </div>
                 </header>
 
@@ -295,8 +333,12 @@ export default function UserManager() {
                         >
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                                 <div>
-                                    <h3 className="text-xl font-black text-secondary">Detalhes do Usuário</h3>
-                                    <p className="text-sm text-gray-400 font-bold">{selectedUser?.email}</p>
+                                    <h3 className="text-xl font-black text-secondary">
+                                        {selectedUser ? 'Detalhes do Usuário' : 'Novo Colaborador'}
+                                    </h3>
+                                    <p className="text-sm text-gray-400 font-bold">
+                                        {selectedUser ? selectedUser.email : 'Preencha os dados de acesso'}
+                                    </p>
                                 </div>
                                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                                     <X size={20} className="text-gray-500" />
@@ -318,16 +360,19 @@ export default function UserManager() {
                                                         type="email"
                                                         value={formData.email}
                                                         onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                        placeholder="email@7pet.com"
                                                         className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-secondary font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-bold text-gray-500 mb-1">Nova Senha (Opcional)</label>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-1">
+                                                        {selectedUser ? 'Nova Senha (Opcional)' : 'Senha de Acesso'}
+                                                    </label>
                                                     <input
                                                         type="password"
                                                         value={formData.password}
                                                         onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                        placeholder="Deixe em branco para manter"
+                                                        placeholder={selectedUser ? "Deixe em branco para manter" : "Mínimo 6 caracteres"}
                                                         className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-secondary font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                                                     />
                                                 </div>
@@ -491,13 +536,15 @@ export default function UserManager() {
                             </div>
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-                                <button
-                                    onClick={handleDeleteUser}
-                                    className="flex items-center gap-2 text-red-500 font-bold hover:bg-red-50 px-4 py-3 rounded-xl transition-colors text-sm"
-                                >
-                                    <Trash2 size={18} />
-                                    Excluir Usuário
-                                </button>
+                                {selectedUser ? (
+                                    <button
+                                        onClick={handleDeleteUser}
+                                        className="flex items-center gap-2 text-red-500 font-bold hover:bg-red-50 px-4 py-3 rounded-xl transition-colors text-sm"
+                                    >
+                                        <Trash2 size={18} />
+                                        Excluir Usuário
+                                    </button>
+                                ) : <div />}
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => setIsModalOpen(false)}
@@ -510,7 +557,7 @@ export default function UserManager() {
                                         className="px-8 py-3 bg-secondary text-white rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-secondary/20 flex items-center gap-2"
                                     >
                                         <Save size={18} />
-                                        Salvar Alterações
+                                        {selectedUser ? 'Salvar Alterações' : 'Criar Colaborador'}
                                     </button>
                                 </div>
                             </div>

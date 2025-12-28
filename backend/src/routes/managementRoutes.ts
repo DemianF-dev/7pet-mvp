@@ -12,6 +12,7 @@ router.get('/kpis', managementController.getKPIs);
 router.get('/reports', managementController.getReports);
 // User Management
 router.get('/users', managementController.listUsers);
+router.post('/users', managementController.createUser);
 router.get('/users/:id', managementController.getUser);
 router.put('/users/:id', managementController.updateUser); // Details + Role + Permissions
 router.delete('/users/:id', managementController.deleteUser);

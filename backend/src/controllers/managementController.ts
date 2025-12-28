@@ -179,6 +179,45 @@ export const getUser = async (req: Request, res: Response) => {
 
 import bcrypt from 'bcryptjs';
 
+export const createUser = async (req: Request, res: Response) => {
+    try {
+        const {
+            email, password, role, name, phone, notes, permissions,
+            admissionDate, birthday, document, address
+        } = req.body;
+
+        if (!email || !password || !role) {
+            return res.status(400).json({ error: 'Email, senha e cargo são obrigatórios' });
+        }
+
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) return res.status(400).json({ error: 'E-mail já cadastrado' });
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const user = await prisma.user.create({
+            data: {
+                email,
+                passwordHash,
+                role,
+                name,
+                phone,
+                notes,
+                permissions: permissions || '[]',
+                admissionDate: admissionDate ? new Date(admissionDate) : null,
+                birthday: birthday ? new Date(birthday) : null,
+                document,
+                address
+            }
+        });
+
+        res.status(201).json(user);
+    } catch (error) {
+        console.error('Create user error:', error);
+        res.status(500).json({ error: 'Erro ao criar usuário' });
+    }
+};
+
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
