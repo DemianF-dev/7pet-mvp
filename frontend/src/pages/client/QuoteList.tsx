@@ -22,7 +22,7 @@ const statusConfig: any = {
     'RECALCULADO': { label: 'Recalculado', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
     'APROVADO': { label: 'Aprovado', color: 'bg-green-100 text-green-700 border-green-200' },
     'REJEITADO': { label: 'Reprovado', color: 'bg-red-100 text-red-700 border-red-200' },
-    'AGENDAR': { label: 'Agendar Atendimento', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+    'AGENDAR': { label: 'Agendado', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
 };
 
 export default function QuoteList() {
@@ -240,25 +240,25 @@ export default function QuoteList() {
                                         )}
                                         {(selectedQuote.status === 'APROVADO' || selectedQuote.status === 'AGENDAR') && (
                                             <div className={`p-6 rounded-3xl border text-center space-y-4 ${selectedQuote.status === 'AGENDAR'
-                                                    ? 'bg-emerald-50 border-emerald-100'
-                                                    : 'bg-green-50 border-green-100'
+                                                ? 'bg-emerald-50 border-emerald-100'
+                                                : 'bg-green-50 border-green-100'
                                                 }`}>
                                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${selectedQuote.status === 'AGENDAR'
-                                                        ? 'bg-emerald-100 text-emerald-600'
-                                                        : 'bg-green-100 text-green-600'
+                                                    ? 'bg-emerald-100 text-emerald-600'
+                                                    : 'bg-green-100 text-green-600'
                                                     }`}>
                                                     <CheckCircle2 size={24} />
                                                 </div>
                                                 <div>
                                                     <h4 className={`font-black ${selectedQuote.status === 'AGENDAR'
-                                                            ? 'text-emerald-800'
-                                                            : 'text-green-800'
+                                                        ? 'text-emerald-800'
+                                                        : 'text-green-800'
                                                         }`}>
                                                         {selectedQuote.status === 'AGENDAR' ? 'Pronto para Agendar!' : 'Orçamento Aprovado!'}
                                                     </h4>
                                                     <p className={`text-sm ${selectedQuote.status === 'AGENDAR'
-                                                            ? 'text-emerald-600'
-                                                            : 'text-green-600'
+                                                        ? 'text-emerald-600'
+                                                        : 'text-green-600'
                                                         }`}>
                                                         {selectedQuote.status === 'AGENDAR'
                                                             ? 'Seu orçamento está confirmado. Chame-nos no WhatsApp para escolher o melhor horário.'
@@ -268,8 +268,8 @@ export default function QuoteList() {
                                                 <button
                                                     onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero agendar o serviço do orçamento ${selectedQuote.id.substring(0, 8)}`, '_blank')}
                                                     className={`w-full py-3 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${selectedQuote.status === 'AGENDAR'
-                                                            ? 'bg-emerald-500 hover:bg-emerald-600'
-                                                            : 'bg-green-500 hover:bg-green-600'
+                                                        ? 'bg-emerald-500 hover:bg-emerald-600'
+                                                        : 'bg-green-500 hover:bg-green-600'
                                                         }`}
                                                 >
                                                     Agendar via WhatsApp

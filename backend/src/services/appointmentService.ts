@@ -196,3 +196,21 @@ export const processNoShows = async () => {
 
     return staleAppointments.length;
 };
+
+// Update Quote Status when appointment is created
+export const updateQuoteStatus = async (quoteId: string) => {
+    await prisma.quote.update({
+        where: { id: quoteId },
+        data: {
+            status: 'AGENDAR',
+            statusHistory: {
+                create: {
+                    oldStatus: 'APROVADO',
+                    newStatus: 'AGENDAR',
+                    changedBy: 'SYSTEM',
+                    reason: 'Agendamento criado automaticamente'
+                }
+            }
+        }
+    });
+};

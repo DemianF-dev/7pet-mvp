@@ -12,7 +12,8 @@ const appointmentSchema = z.object({
         destination: z.string(),
         requestedPeriod: z.nativeEnum(TransportPeriod)
     }).optional(),
-    customerId: z.string().uuid().optional()
+    customerId: z.string().uuid().optional(),
+    quoteId: z.string().uuid().optional()
 });
 
 export const create = async (req: any, res: Response) => {
@@ -29,6 +30,12 @@ export const create = async (req: any, res: Response) => {
         };
 
         const appointment = await appointmentService.create(data, isStaff);
+
+        // If appointment was created from a quote, update quote status to AGENDAR
+        if (validatedData.quoteId) {
+            await appointmentService.updateQuoteStatus(validatedData.quoteId);
+        }
+
         res.status(201).json(appointment);
     } catch (error: any) {
         if (error instanceof z.ZodError) {
