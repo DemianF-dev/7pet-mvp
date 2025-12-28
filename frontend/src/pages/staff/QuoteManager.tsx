@@ -15,7 +15,8 @@ import {
     ChevronDown,
     Trash,
     Plus,
-    Archive
+    Archive,
+    Send
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -289,7 +290,7 @@ export default function QuoteManager() {
                     </div>
 
                     <div class="footer">
-                        <p>Este orçamento tem validade de 15 dias corridos. Os valores podem sofrer pequenas alterações após avaliação física presencial do pet (comprimento de pelo, presença de nós, etc).</p>
+                        <p>Este orçamento tem validade de 5 dias corridos. Os valores podem sofrer pequenas alterações após avaliação física presencial do pet (comprimento de pelo, presença de nós, etc).</p>
                         <p><strong>Agende seu horário pelo nosso WhatsApp oficial.</strong></p>
                     </div>
                 </body>
@@ -595,8 +596,29 @@ export default function QuoteManager() {
                                         <div className="flex justify-end gap-2">
                                             {view === 'active' ? (
                                                 <>
+                                                    {quote.status === 'SOLICITADO' && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm('Deseja validar e enviar este orçamento agora?')) {
+                                                                    try {
+                                                                        await api.patch(`/quotes/${quote.id}/status`, { status: 'ENVIADO' });
+                                                                        fetchQuotes();
+                                                                    } catch (e) {
+                                                                        alert('Erro ao validar orçamento.');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="px-4 py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg shadow-primary/20"
+                                                            title="Validar e Enviar"
+                                                        >
+                                                            Validar
+                                                        </button>
+                                                    )}
                                                     <button
-                                                        onClick={() => { setSelectedQuote(quote); setIsEditModalOpen(true); }}
+                                                        onClick={() => {
+                                                            setSelectedQuote({ ...quote });
+                                                            setIsEditModalOpen(true);
+                                                        }}
                                                         className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"
                                                         title="Editar / Precificar"
                                                     >
@@ -805,7 +827,25 @@ export default function QuoteManager() {
                                     </div>
                                     <div className="flex gap-4">
                                         <button type="button" onClick={() => setIsEditModalOpen(false)} className="btn-secondary">Cancelar</button>
-                                        <button type="submit" className="btn-primary">Salvar Orçamento</button>
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                // Save and also update status to ENVIADO
+                                                try {
+                                                    const itemsTotal = selectedQuote.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                                                    await api.put(`/quotes/${selectedQuote.id}`, { ...selectedQuote, totalAmount: itemsTotal, status: 'ENVIADO' });
+                                                    setIsEditModalOpen(false);
+                                                    fetchQuotes();
+                                                    alert('Orçamento Validado e Enviado!');
+                                                } catch (e) {
+                                                    alert('Erro ao salvar e enviar.');
+                                                }
+                                            }}
+                                            className="px-8 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-secondary/90 transition-all flex items-center gap-2"
+                                        >
+                                            <Send size={16} /> Validar e Enviar
+                                        </button>
+                                        <button type="submit" className="btn-primary">Salvar Apenas</button>
                                     </div>
                                 </div>
                             </form>

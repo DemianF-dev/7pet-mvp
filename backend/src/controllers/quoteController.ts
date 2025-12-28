@@ -38,7 +38,28 @@ export const quoteController = {
             const data = quoteSchema.parse(req.body);
             console.log(`[DEBUG] Criando orçamento para CustomerID: ${customerId}`, data);
 
-            // TODO: Validate if pet belongs to customer if petId is provided (skipping for MVP speed)
+            // Fetch prices for services if not provided (or to ensure they are correct)
+            const processedItems = await Promise.all(data.items.map(async (item) => {
+                let price = item.price;
+                let description = item.description;
+
+                if (item.serviceId) {
+                    const service = await prisma.service.findUnique({ where: { id: item.serviceId } });
+                    if (service) {
+                        price = service.basePrice;
+                        description = service.name; // Ensure description matches service name
+                    }
+                }
+
+                return {
+                    description,
+                    quantity: item.quantity,
+                    price,
+                    serviceId: item.serviceId
+                };
+            }));
+
+            const totalAmount = processedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
             const quote = await prisma.quote.create({
                 data: {
@@ -46,6 +67,7 @@ export const quoteController = {
                     petId: data.petId,
                     desiredAt: data.desiredAt ? new Date(data.desiredAt) : null,
                     status: 'SOLICITADO',
+                    totalAmount,
                     statusHistory: {
                         create: {
                             oldStatus: 'NONE',
@@ -55,17 +77,15 @@ export const quoteController = {
                         }
                     },
                     items: {
-                        create: data.items.map(item => ({
-                            description: item.description,
-                            quantity: item.quantity,
-                            price: item.price,
-                            serviceId: item.serviceId
-                        }))
+                        create: processedItems
                     }
                 },
                 include: {
                     items: true,
                     pet: {
+                        select: { name: true }
+                    },
+                    customer: {
                         select: { name: true }
                     }
                 }
