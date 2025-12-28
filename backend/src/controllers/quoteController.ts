@@ -199,21 +199,16 @@ export const quoteController = {
                 }
             }
 
-            let targetStatus = status;
-            if (status === 'APROVADO') {
-                targetStatus = 'AGENDAR';
-            }
-
             const updatedQuote = await prisma.quote.update({
                 where: { id },
                 data: {
-                    status: targetStatus,
+                    status,
                     statusHistory: {
                         create: {
                             oldStatus,
-                            newStatus: targetStatus,
+                            newStatus: status,
                             changedBy: user.id,
-                            reason: reason || (user.role === 'CLIENTE' ? 'Cliente aprovou o orçamento - Movido para Agendamento' : `Alterado por ${user.role}`)
+                            reason: reason || (user.role === 'CLIENTE' ? 'Cliente aprovou o orçamento' : `Alterado por ${user.role}`)
                         }
                     }
                 },
@@ -224,7 +219,7 @@ export const quoteController = {
                 }
             });
 
-            // Auto-generate invoice if Approved (targetStatus is now AGENDAR)
+            // Auto-generate invoice if Approved
             if (status === 'APROVADO') {
                 const existingInvoice = await prisma.invoice.findUnique({ where: { quoteId: id } });
                 if (!existingInvoice) {
@@ -244,7 +239,7 @@ export const quoteController = {
                             data: {
                                 userId: quote.customer.user.id,
                                 title: 'Orçamento Aprovado!',
-                                message: `Seu orçamento no valor de R$ ${quote.totalAmount.toFixed(2)} foi aprovado e está pronto para agendamento.`,
+                                message: `Seu orçamento no valor de R$ ${quote.totalAmount.toFixed(2)} foi aprovado com sucesso. Em breve entraremos em contato para agendamento.`,
                                 type: 'INVOICE'
                             }
                         });

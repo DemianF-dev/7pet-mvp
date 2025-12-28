@@ -238,14 +238,25 @@ export default function QuoteList() {
                                                 </button>
                                             </div>
                                         )}
+                                        {selectedQuote.status === 'APROVADO' && (
+                                            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center space-y-4">
+                                                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                                                    <CheckCircle2 size={24} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-green-800">Orçamento Aprovado!</h4>
+                                                    <p className="text-sm text-green-600">Seu orçamento foi aprovado com sucesso. Nossa equipe entrará em contato em breve para agendamento.</p>
+                                                </div>
+                                            </div>
+                                        )}
                                         {selectedQuote.status === 'AGENDAR' && (
                                             <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 text-center space-y-4">
                                                 <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
                                                     <CheckCircle2 size={24} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-black text-emerald-800">Orçamento Aprovado!</h4>
-                                                    <p className="text-sm text-emerald-600">Agora você já pode agendar o horário do seu pet. Chame-nos no WhatsApp para finalizar.</p>
+                                                    <h4 className="font-black text-emerald-800">Pronto para Agendar!</h4>
+                                                    <p className="text-sm text-emerald-600">Seu orçamento está confirmado. Chame-nos no WhatsApp para escolher o melhor horário.</p>
                                                 </div>
                                                 <button
                                                     onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero agendar o serviço do orçamento ${selectedQuote.id.substring(0, 8)}`, '_blank')}
