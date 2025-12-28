@@ -12,6 +12,7 @@ import {
     FileText,
     LogOut,
     Menu as MenuIcon,
+    Bell,
     X
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -154,6 +155,13 @@ export default function StaffSidebar() {
                     onClick={() => { navigate('/staff/users'); setIsOpen(false); }}
                 />
             )}
+
+            <SidebarItem
+                icon={<Bell size={20} />}
+                label="Notificações"
+                active={location.pathname === '/staff/notifications'}
+                onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
+            />
         </nav>
     );
 

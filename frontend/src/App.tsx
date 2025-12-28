@@ -23,6 +23,7 @@ import BillingManager from './pages/staff/BillingManager';
 import ManagementDashboard from './pages/staff/ManagementDashboard';
 import FinancialReports from './pages/staff/FinancialReports';
 import UserManager from './pages/staff/UserManager';
+import StaffNotificationList from './pages/staff/StaffNotificationList';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/staff/management" element={<ManagementDashboard />} />
                 <Route path="/staff/reports" element={<FinancialReports />} />
                 <Route path="/staff/users" element={<UserManager />} />
+                <Route path="/staff/notifications" element={<StaffNotificationList />} />
             </Route>
 
             {/* Fallback */}

@@ -48,24 +48,37 @@ export const login = async (email: string, password: string) => {
 };
 
 export const forgotPassword = async (email: string) => {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new Error('Usuário não encontrado');
-
-    // Generate a temporary password (6 characters)
-    const tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
-
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash }
+    const user = await prisma.user.findUnique({
+        where: { email },
+        include: { customer: true }
     });
 
-    // NOTE: In a production environment, you would send this via email.
-    // For now, we simulate the email sending.
-    console.log(`[EMAIL SIMULADO] Enviando nova senha para ${email}: ${tempPassword}`);
+    if (!user) throw new Error('Usuário não encontrado');
+
+    // Find all Admin users to notify
+    const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN' }
+    });
+
+    // Create notifications for all admins
+    const userName = user.name || user.customer?.name || 'Cliente';
+
+    const notificationPromises = admins.map(admin =>
+        prisma.notification.create({
+            data: {
+                userId: admin.id,
+                title: 'Solicitação de Nova Senha',
+                message: `O usuário ${userName} (${email}) solicitou uma recuperação de senha. Por favor, entre em contato ou gere uma nova senha no painel.`,
+                type: 'SYSTEM'
+            }
+        })
+    );
+
+    await Promise.all(notificationPromises);
+
+    console.log(`[NOTIFICAÇÃO ADMIN] Solicitação de senha para ${email} enviada aos admins.`);
 
     return {
-        message: 'Uma nova senha provisória foi enviada para o seu email.',
-        debugTempPassword: tempPassword
+        message: 'Sua solicitação foi enviada ao administrador. Por favor, aguarde o contato para receber sua nova senha.'
     };
 };
