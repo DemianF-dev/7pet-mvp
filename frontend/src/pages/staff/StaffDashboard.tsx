@@ -5,7 +5,8 @@ import {
     FileText,
     TrendingUp,
     ArrowRight,
-    RefreshCcw
+    RefreshCcw,
+    AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -14,8 +15,9 @@ import api from '../../services/api';
 
 interface DashboardMetrics {
     todayAppointments: number;
-    pendingQuotes: number;
-    activeTransports: number;
+    newQuotes: number;
+    todayTransports: number;
+    overdueItems: number;
     statusCounts: { status: string; _count: number }[];
 }
 
@@ -42,25 +44,36 @@ export default function StaffDashboard() {
 
     const cards = [
         {
-            label: 'Hoje',
+            label: 'Novos Orçamentos',
+            value: metrics?.newQuotes || 0,
+            icon: <FileText className="text-blue-500" />,
+            color: 'bg-blue-50',
+            link: '/staff/quotes',
+            urgent: (metrics?.newQuotes || 0) > 5
+        },
+        {
+            label: 'Agendamentos Hoje',
             value: metrics?.todayAppointments || 0,
             icon: <Calendar className="text-primary" />,
             color: 'bg-primary-light',
-            link: '/staff/kanban'
+            link: '/staff/kanban',
+            urgent: false
         },
         {
-            label: 'Orçamentos',
-            value: metrics?.pendingQuotes || 0,
-            icon: <FileText className="text-blue-500" />,
-            color: 'bg-blue-50',
-            link: '/staff/quotes'
-        },
-        {
-            label: 'Logística',
-            value: metrics?.activeTransports || 0,
+            label: 'Transporte Hoje',
+            value: metrics?.todayTransports || 0,
             icon: <Truck className="text-orange-500" />,
             color: 'bg-orange-50',
-            link: '/staff/transport'
+            link: '/staff/transport',
+            urgent: false
+        },
+        {
+            label: 'Ações Atrasadas',
+            value: metrics?.overdueItems || 0,
+            icon: <AlertTriangle className="text-red-500" />,
+            color: 'bg-red-50',
+            link: '/staff/quotes',
+            urgent: (metrics?.overdueItems || 0) > 0
         }
     ];
 
@@ -91,7 +104,7 @@ export default function StaffDashboard() {
                 ) : (
                     <div className="space-y-10">
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {cards.map((card, idx) => (
                                 <motion.div
                                     key={idx}
@@ -99,13 +112,20 @@ export default function StaffDashboard() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.1 }}
                                     onClick={() => navigate(card.link)}
-                                    className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden"
+                                    className={`bg-white p-8 rounded-[40px] shadow-sm border ${card.urgent ? 'border-red-200 bg-red-50/30' : 'border-gray-50'
+                                        } group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden`}
                                 >
                                     <div className={`w-14 h-14 ${card.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                                         {card.icon}
                                     </div>
                                     <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-1">{card.label}</p>
-                                    <h3 className="text-4xl font-black text-secondary">{card.value}</h3>
+                                    <h3 className={`text-4xl font-black ${card.urgent ? 'text-red-600' : 'text-secondary'
+                                        }`}>{card.value}</h3>
+                                    {card.urgent && (
+                                        <div className="absolute top-4 right-4">
+                                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                                        </div>
+                                    )}
                                     <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-20 transition-opacity">
                                         {card.icon}
                                     </div>

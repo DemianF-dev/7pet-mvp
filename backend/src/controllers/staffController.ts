@@ -11,7 +11,7 @@ export const staffController = {
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
-            // 1. Today's appointments
+            // 1. Today's appointments (already good)
             const todayAppointments = await prisma.appointment.count({
                 where: {
                     startAt: {
@@ -25,32 +25,61 @@ export const staffController = {
                 }
             });
 
-            // 2. Pending Quotes (Not finalized)
-            const pendingQuotes = await prisma.quote.count({
+            // 2. NEW Quotes only (just SOLICITADO - fresh incoming)
+            const newQuotes = await prisma.quote.count({
                 where: {
-                    status: {
-                        in: ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'AGENDAR']
-                    },
+                    status: 'SOLICITADO',
                     deletedAt: null
                 }
             });
 
-            // 3. Active Transports (Not Delivered or Cancelled)
-            const activeTransports = await prisma.transportDetails.count({
+            // 3. Today's Transports only (not all active)
+            const todayTransports = await prisma.transportDetails.count({
                 where: {
+                    appointment: {
+                        startAt: {
+                            gte: today,
+                            lt: tomorrow
+                        },
+                        deletedAt: null
+                    },
                     status: {
                         notIn: ['ENTREGUE', 'CANCELADO', 'CONCLUIDO']
-                    },
-                    appointment: {
-                        deletedAt: null
                     }
                 }
             });
 
-            // 4. Appointments by status for Kanban (next 7 days)
+            // 4. Overdue items needing attention
+            const threeDaysAgo = new Date(today);
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+            // Quotes sent but no response in 3+ days
+            const overdueQuotes = await prisma.quote.count({
+                where: {
+                    status: 'ENVIADO',
+                    updatedAt: { lt: threeDaysAgo },
+                    deletedAt: null
+                }
+            });
+
+            // Appointments coming soon but not confirmed
             const nextWeek = new Date(today);
             nextWeek.setDate(nextWeek.getDate() + 7);
 
+            const unconfirmedSoon = await prisma.appointment.count({
+                where: {
+                    startAt: {
+                        gte: today,
+                        lt: nextWeek
+                    },
+                    status: 'PENDENTE',
+                    deletedAt: null
+                }
+            });
+
+            const overdueItems = overdueQuotes + unconfirmedSoon;
+
+            // 5. Appointments by status for Kanban (next 7 days)
             const statusCounts = await prisma.appointment.groupBy({
                 by: ['status'],
                 where: {
@@ -72,8 +101,9 @@ export const staffController = {
 
             return res.json({
                 todayAppointments,
-                pendingQuotes,
-                activeTransports,
+                newQuotes,
+                todayTransports,
+                overdueItems,
                 statusCounts: safeStatusCounts
             });
         } catch (error) {
