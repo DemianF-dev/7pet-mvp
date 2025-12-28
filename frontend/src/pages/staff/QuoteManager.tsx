@@ -850,13 +850,16 @@ export default function QuoteManager() {
                                                         totalAmount: itemsTotal,
                                                         status: 'ENVIADO'
                                                     };
+                                                    console.log('Enviando payload:', JSON.stringify(payload, null, 2));
                                                     await api.put(`/quotes/${selectedQuote.id}`, payload);
                                                     setIsEditModalOpen(false);
                                                     fetchQuotes();
                                                     alert('Orçamento validado e enviado com sucesso!');
-                                                } catch (e) {
-                                                    console.error('Erro ao validar e enviar:', e);
-                                                    alert('Erro ao salvar e enviar. Verifique os dados.');
+                                                } catch (e: any) {
+                                                    console.error('Erro completo ao validar e enviar:', e);
+                                                    console.error('Response data:', e.response?.data);
+                                                    console.error('Response status:', e.response?.status);
+                                                    alert(`Erro ao salvar: ${e.response?.data?.error || e.message || 'Erro desconhecido'}`);
                                                 }
                                             }}
                                             className="px-8 py-3 bg-secondary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-secondary/90 transition-all flex items-center gap-2"
