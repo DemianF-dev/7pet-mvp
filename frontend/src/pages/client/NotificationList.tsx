@@ -15,7 +15,7 @@ interface Notification {
 }
 
 export default function NotificationList() {
-    const { user } = useAuthStore();
+    const { } = useAuthStore();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 

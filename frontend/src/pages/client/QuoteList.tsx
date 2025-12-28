@@ -27,7 +27,7 @@ const statusConfig: any = {
 };
 
 export default function QuoteList() {
-    const { user } = useAuthStore();
+    const { } = useAuthStore();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

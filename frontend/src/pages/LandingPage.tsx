@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { User, ShieldCheck, Heart } from 'lucide-react';
+import { User, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function LandingPage() {

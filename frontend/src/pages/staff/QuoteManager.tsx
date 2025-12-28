@@ -14,9 +14,7 @@ import {
     ChevronUp,
     ChevronDown,
     Trash,
-    User,
     Plus,
-    CheckCircle2,
     Archive
 } from 'lucide-react';
 import { motion } from 'framer-motion';
