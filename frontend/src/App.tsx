@@ -15,6 +15,8 @@ import ClientProfile from './pages/client/ClientProfile';
 import StaffLogin from './pages/staff/StaffLogin';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import ServiceKanban from './pages/staff/ServiceKanban';
+import AgendaSPA from './pages/staff/AgendaSPA';
+import AgendaLOG from './pages/staff/AgendaLOG';
 import TransportManager from './pages/staff/TransportManager';
 import QuoteManager from './pages/staff/QuoteManager';
 import CustomerManager from './pages/staff/CustomerManager';
@@ -57,6 +59,8 @@ function App() {
                 <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER']} redirectTo="/staff/login" />}>
                     <Route path="/staff/dashboard" element={<StaffDashboard />} />
                     <Route path="/staff/kanban" element={<ServiceKanban />} />
+                    <Route path="/staff/agenda-spa" element={<AgendaSPA />} />
+                    <Route path="/staff/agenda-log" element={<AgendaLOG />} />
                     <Route path="/staff/transport" element={<TransportManager />} />
                     <Route path="/staff/quotes" element={<QuoteManager />} />
                     <Route path="/staff/customers" element={<CustomerManager />} />

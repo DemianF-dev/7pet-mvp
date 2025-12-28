@@ -2,7 +2,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
     LayoutDashboard,
-    Calendar,
     Truck,
     Quote,
     Users,
@@ -14,7 +13,8 @@ import {
     Menu as MenuIcon,
     Bell,
     User as UserIcon,
-    X
+    X,
+    Sparkles
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -55,14 +55,16 @@ export default function StaffSidebar() {
         // 3. Fallback to Role Defaults
         switch (module) {
             case 'dashboard': return user.role !== 'SPA';
-            case 'kanban': return true; // All staff
-            case 'transport': return user.role !== 'SPA';
             case 'quotes': return user.role !== 'SPA';
+            case 'agenda-spa': return true; // All staff can access
+            case 'agenda-log': return true; // All staff can access
+            case 'kanban': return true; // All staff - keeping for compatibility
+            case 'transport': return user.role !== 'SPA';
             case 'customers': return user.role !== 'SPA';
             case 'services': return true; // All staff including SPA
             case 'billing': return user.role !== 'SPA';
-            case 'management': return user.role === 'GESTAO' || user.role === 'ADMIN';
             case 'reports': return user.role === 'GESTAO' || user.role === 'ADMIN';
+            case 'management': return user.role === 'GESTAO' || user.role === 'ADMIN';
             case 'users': return user.role === 'ADMIN';
             default: return false;
         }
@@ -70,6 +72,7 @@ export default function StaffSidebar() {
 
     const menuItems = (
         <nav className="flex-1 space-y-2">
+            {/* 1. Dashboard */}
             {checkPermission('dashboard') && (
                 <SidebarItem
                     icon={<LayoutDashboard size={20} />}
@@ -79,24 +82,7 @@ export default function StaffSidebar() {
                 />
             )}
 
-            {checkPermission('kanban') && (
-                <SidebarItem
-                    icon={<Calendar size={20} />}
-                    label="Agendamentos"
-                    active={location.pathname === '/staff/kanban'}
-                    onClick={() => { navigate('/staff/kanban'); setIsOpen(false); }}
-                />
-            )}
-
-            {checkPermission('transport') && (
-                <SidebarItem
-                    icon={<Truck size={20} />}
-                    label="Logística"
-                    active={location.pathname === '/staff/transport'}
-                    onClick={() => { navigate('/staff/transport'); setIsOpen(false); }}
-                />
-            )}
-
+            {/* 2. Orçamentos */}
             {checkPermission('quotes') && (
                 <SidebarItem
                     icon={<Quote size={20} />}
@@ -106,6 +92,27 @@ export default function StaffSidebar() {
                 />
             )}
 
+            {/* 3. Agenda SPA */}
+            {checkPermission('agenda-spa') && (
+                <SidebarItem
+                    icon={<Sparkles size={20} />}
+                    label="Agenda SPA"
+                    active={location.pathname === '/staff/agenda-spa'}
+                    onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
+                />
+            )}
+
+            {/* 4. Agenda LOG */}
+            {checkPermission('agenda-log') && (
+                <SidebarItem
+                    icon={<Truck size={20} />}
+                    label="Agenda LOG"
+                    active={location.pathname === '/staff/agenda-log'}
+                    onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
+                />
+            )}
+
+            {/* 5. Clientes */}
             {checkPermission('customers') && (
                 <SidebarItem
                     icon={<Users size={20} />}
@@ -115,6 +122,7 @@ export default function StaffSidebar() {
                 />
             )}
 
+            {/* 6. Serviços */}
             {checkPermission('services') && (
                 <SidebarItem
                     icon={<ClipboardList size={20} />}
@@ -124,6 +132,7 @@ export default function StaffSidebar() {
                 />
             )}
 
+            {/* 7. Financeiro */}
             {checkPermission('billing') && (
                 <SidebarItem
                     icon={<CreditCard size={20} />}
@@ -133,15 +142,7 @@ export default function StaffSidebar() {
                 />
             )}
 
-            {checkPermission('management') && (
-                <SidebarItem
-                    icon={<TrendingUp size={20} />}
-                    label="Gestão"
-                    active={location.pathname === '/staff/management'}
-                    onClick={() => { navigate('/staff/management'); setIsOpen(false); }}
-                />
-            )}
-
+            {/* 8. Relatórios */}
             {checkPermission('reports') && (
                 <SidebarItem
                     icon={<FileText size={20} />}
@@ -151,6 +152,17 @@ export default function StaffSidebar() {
                 />
             )}
 
+            {/* 9. Gestão */}
+            {checkPermission('management') && (
+                <SidebarItem
+                    icon={<TrendingUp size={20} />}
+                    label="Gestão"
+                    active={location.pathname === '/staff/management'}
+                    onClick={() => { navigate('/staff/management'); setIsOpen(false); }}
+                />
+            )}
+
+            {/* 10. Usuários */}
             {checkPermission('users') && (
                 <SidebarItem
                     icon={<Users size={20} />}
@@ -160,6 +172,7 @@ export default function StaffSidebar() {
                 />
             )}
 
+            {/* 11. Notificações */}
             <SidebarItem
                 icon={<Bell size={20} />}
                 label="Notificações"
@@ -167,6 +180,7 @@ export default function StaffSidebar() {
                 onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
             />
 
+            {/* 12. Meu Perfil */}
             <SidebarItem
                 icon={<UserIcon size={20} />}
                 label="Meu Perfil"
