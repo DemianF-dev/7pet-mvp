@@ -68,7 +68,7 @@ export default function StaffLogin() {
                     Página Inicial
                 </button>
                 <div className="flex items-center gap-2 mb-12">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">7</div>
+                    <img src="/logo.png" className="w-10 h-10 rounded-xl object-contain" alt="Logo" />
                     <span className="font-bold text-xl text-secondary">Pet Shop Manager</span>
                 </div>
 

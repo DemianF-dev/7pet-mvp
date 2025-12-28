@@ -4,7 +4,8 @@ import {
     Truck,
     FileText,
     TrendingUp,
-    ArrowRight
+    ArrowRight,
+    RefreshCcw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -23,17 +24,19 @@ export default function StaffDashboard() {
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetchMetrics = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/staff/metrics');
+            setMetrics(response.data);
+        } catch (err) {
+            console.error('Erro ao buscar métricas:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchMetrics = async () => {
-            try {
-                const response = await api.get('/staff/metrics');
-                setMetrics(response.data);
-            } catch (err) {
-                console.error('Erro ao buscar métricas:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchMetrics();
     }, []);
 
@@ -66,9 +69,19 @@ export default function StaffDashboard() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10">
-                    <h1 className="text-4xl font-extrabold text-secondary">Dashboard <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Operacional</span></h1>
-                    <p className="text-gray-500 mt-3">Métricas globais e acesso rápido aos processos.</p>
+                <header className="mb-10 flex justify-between items-start">
+                    <div>
+                        <h1 className="text-4xl font-extrabold text-secondary">Dashboard <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Operacional</span></h1>
+                        <p className="text-gray-500 mt-3">Métricas globais e acesso rápido aos processos.</p>
+                    </div>
+                    <button
+                        onClick={fetchMetrics}
+                        disabled={isLoading}
+                        className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                        title="Atualizar Dados"
+                    >
+                        <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
                 </header>
 
                 {isLoading ? (

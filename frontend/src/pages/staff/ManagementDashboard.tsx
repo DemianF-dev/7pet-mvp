@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
-    TrendingUp,
     DollarSign,
     Users,
-    Calendar,
     AlertCircle,
     ChevronRight,
     ArrowUpRight,
     ArrowDownRight,
     BarChart2,
     Activity,
-    RefreshCw
+    RefreshCw,
+    Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -57,6 +56,10 @@ interface ManagementKPIs {
         blockedCustomers: number;
         highValueQuotes: number;
     };
+    ticketMedio: number;
+    noShowRate: number;
+    pendingBalance: number;
+    topCustomers: { name: string; totalSpent: number }[];
 }
 
 export default function ManagementDashboard() {
@@ -141,29 +144,28 @@ export default function ManagementDashboard() {
                         </motion.div>
                         <motion.div variants={itemVariants}>
                             <KPICard
-                                title="Novos Clientes"
-                                value={kpis?.growth.newCustomers || 0}
-                                growth={25} // Mock growth for UI
-                                icon={<Users className="text-blue-500" />}
+                                title="Ticket Médio (30d)"
+                                value={kpis?.ticketMedio || 0}
+                                isCurrency
+                                icon={<Activity className="text-blue-500" />}
                                 bg="bg-blue-50"
                             />
                         </motion.div>
                         <motion.div variants={itemVariants}>
                             <KPICard
-                                title="Agendamentos (30d)"
-                                value={kpis?.appointments.total || 0}
-                                growth={-5} // Mock growth for UI
-                                icon={<Calendar className="text-purple-500" />}
-                                bg="bg-purple-50"
+                                title="Taxa de No-Show"
+                                value={kpis?.noShowRate || 0}
+                                isPercent
+                                icon={<AlertCircle className="text-red-500" />}
+                                bg="bg-red-50"
                             />
                         </motion.div>
                         <motion.div variants={itemVariants}>
                             <KPICard
-                                title="Taxa de Conversão"
-                                value={85}
-                                isPercent
-                                growth={12}
-                                icon={<TrendingUp className="text-orange-500" />}
+                                title="Receita Pendente"
+                                value={kpis?.pendingBalance || 0}
+                                isCurrency
+                                icon={<Clock className="text-orange-500" />}
                                 bg="bg-orange-50"
                             />
                         </motion.div>
@@ -223,6 +225,24 @@ export default function ManagementDashboard() {
                                 <button className="mt-6 flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all text-sm uppercase tracking-widest">
                                     Ver Relatório <ChevronRight size={16} />
                                 </button>
+                            </div>
+
+                            <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h2 className="text-lg font-black text-secondary mb-6 flex items-center gap-2 uppercase tracking-tight">
+                                    <Users className="text-primary" size={20} />
+                                    Top 5 Clientes (Faturamento)
+                                </h2>
+                                <div className="space-y-4">
+                                    {kpis?.topCustomers.map((c, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-gray-100">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-secondary">{c.name}</span>
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Acumulado</span>
+                                            </div>
+                                            <span className="text-sm font-black text-primary">R$ {c.totalSpent.toLocaleString('pt-BR')}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Clock,
-    Dog,
     PlayCircle,
     CheckCircle,
     Plus,
@@ -61,6 +60,12 @@ export default function ServiceKanban() {
     const [isTrashView, setIsTrashView] = useState(false);
     const [trashAppointments, setTrashAppointments] = useState<Appointment[]>([]);
     const [preFillData, setPreFillData] = useState<any>(null);
+    const [columnFilters, setColumnFilters] = useState({
+        pet: '',
+        customer: '',
+        service: '',
+        time: ''
+    });
 
     useEffect(() => {
         if (location.state?.prefill) {
@@ -166,12 +171,23 @@ export default function ServiceKanban() {
         setIsFormOpen(true);
     };
 
-    const filteredAppointments = appointments.filter(a =>
-        a.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.services && a.services.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
-        (a.service && a.service.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredAppointments = appointments.filter(a => {
+        const matchesGlobal = a.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (a.services && a.services.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+            (a.service && a.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const matchesPet = !columnFilters.pet || a.pet.name.toLowerCase().includes(columnFilters.pet.toLowerCase());
+        const matchesCustomer = !columnFilters.customer || a.customer.name.toLowerCase().includes(columnFilters.customer.toLowerCase());
+        const matchesService = !columnFilters.service ||
+            (a.services && a.services.some(s => s.name.toLowerCase().includes(columnFilters.service.toLowerCase()))) ||
+            (a.service && a.service.name.toLowerCase().includes(columnFilters.service.toLowerCase()));
+
+        const apptTime = new Date(a.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const matchesTime = !columnFilters.time || apptTime.includes(columnFilters.time);
+
+        return matchesGlobal && matchesPet && matchesCustomer && matchesService && matchesTime;
+    });
 
     const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
 
@@ -329,7 +345,7 @@ export default function ServiceKanban() {
                                                         <span className="text-[7px] font-black text-gray-400 capitalize">{appt.status.toLowerCase()}</span>
                                                     </div>
                                                     <p className="text-[9px] font-bold text-secondary leading-tight line-clamp-1">
-                                                        {appt.pet.name} • {appt.services && appt.services.length > 0 ? appt.services[0].name : (appt.service?.name || 'Serviço')}
+                                                        {appt.pet.name} • {appt.customer.name}
                                                     </p>
                                                 </div>
                                             ))}
@@ -452,6 +468,51 @@ export default function ServiceKanban() {
                         </div>
                     </div>
 
+                    <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
+                        <div className="flex-1 min-w-[150px]">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por Pet..."
+                                value={columnFilters.pet}
+                                onChange={(e) => setColumnFilters({ ...columnFilters, pet: e.target.value })}
+                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <div className="flex-1 min-w-[150px]">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por Tutor..."
+                                value={columnFilters.customer}
+                                onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
+                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <div className="flex-1 min-w-[150px]">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por Serviço..."
+                                value={columnFilters.service}
+                                onChange={(e) => setColumnFilters({ ...columnFilters, service: e.target.value })}
+                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <div className="flex-1 min-w-[100px]">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por Hora (HH:MM)..."
+                                value={columnFilters.time}
+                                onChange={(e) => setColumnFilters({ ...columnFilters, time: e.target.value })}
+                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <button
+                            onClick={() => setColumnFilters({ pet: '', customer: '', service: '', time: '' })}
+                            className="text-[10px] font-black text-primary hover:text-secondary uppercase px-2"
+                        >
+                            Limpar
+                        </button>
+                    </div>
+
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Search in Agenda */}
                         <div className="relative">
@@ -497,6 +558,15 @@ export default function ServiceKanban() {
                         )}
 
                         <button
+                            onClick={fetchAppointments}
+                            disabled={isLoading}
+                            className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                            title="Atualizar Agenda"
+                        >
+                            <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+
+                        <button
                             onClick={handleCreateNew}
                             className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center gap-2"
                         >
@@ -506,7 +576,7 @@ export default function ServiceKanban() {
                 </header>
 
                 {view === 'KANBAN' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {statusColumns.map((col) => (
                             <div
                                 key={col.key}
@@ -530,7 +600,7 @@ export default function ServiceKanban() {
                                     </span>
                                 </div>
 
-                                <div className="flex-1 bg-gray-100/50 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar">
+                                <div className="flex-1 bg-gray-100/50 rounded-[32px] p-4 overflow-y-auto space-y-3 custom-scrollbar">
                                     <AnimatePresence mode="popLayout">
                                         {getColumnItems(col.key).map((appt) => (
                                             <motion.div
@@ -545,56 +615,48 @@ export default function ServiceKanban() {
                                                     // @ts-ignore
                                                     e.dataTransfer.setData('apptId', appt.id);
                                                 }}
-                                                className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 group hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden"
+                                                className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 group hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden"
                                             >
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex flex-col">
-                                                        <h4 className="font-extrabold text-secondary hover:text-primary transition-colors text-sm line-clamp-2">
-                                                            {appt.services && appt.services.length > 0
-                                                                ? appt.services.map(s => s.name).join(', ')
-                                                                : appt.service?.name || 'Sem Serviço'}
-                                                        </h4>
-                                                        <span className="text-[10px] text-gray-400 font-bold uppercase">{appt.customer.name}</span>
-                                                    </div>
-                                                    <div className="bg-gray-50 px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-black text-secondary border border-gray-100">
-                                                        <Clock size={12} className="text-primary" />
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <div className="bg-primary/5 px-2 py-1 rounded-lg flex items-center gap-1 text-[9px] font-black text-primary border border-primary/10">
+                                                        <Clock size={10} />
                                                         {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
+                                                    <span className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">#{appt.id.substring(0, 4)}</span>
                                                 </div>
 
-                                                <div className="flex items-center gap-3 mb-6 bg-gray-50/50 p-2 rounded-2xl">
-                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary border border-gray-100 shadow-sm">
-                                                        <Dog size={20} />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-black text-secondary leading-tight">{appt.pet.name}</span>
-                                                        <span className="text-[10px] text-gray-400 font-bold">{appt.pet.species} • {appt.pet.breed || 'SRD'}</span>
-                                                    </div>
+                                                <div className="space-y-0.5 mb-3">
+                                                    <h4 className="font-black text-secondary text-xs group-hover:text-primary transition-colors truncate">
+                                                        {appt.pet.name}
+                                                    </h4>
+                                                    <p className="text-[10px] text-gray-400 font-bold truncate">
+                                                        {appt.customer.name}
+                                                    </p>
                                                 </div>
 
                                                 <div className="flex gap-2">
                                                     {col.key === 'PENDENTE' && (
                                                         <button
                                                             onClick={(e) => updateStatus(appt.id, 'CONFIRMADO', e)}
-                                                            className="flex-1 py-3 bg-purple-500 text-white rounded-2xl text-[10px] font-bold flex items-center justify-center gap-2 hover:bg-purple-600 transition-all shadow-md shadow-purple-500/10"
+                                                            className="flex-1 py-2 bg-purple-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-purple-600 transition-all shadow-md shadow-purple-500/10"
                                                         >
-                                                            <CheckCircle size={14} /> CONFIRMAR
+                                                            <CheckCircle size={12} /> OK
                                                         </button>
                                                     )}
                                                     {col.key === 'CONFIRMADO' && (
                                                         <button
                                                             onClick={(e) => updateStatus(appt.id, 'EM_ATENDIMENTO', e)}
-                                                            className="flex-1 py-3 bg-secondary text-white rounded-2xl text-[10px] font-bold flex items-center justify-center gap-2 hover:bg-primary transition-all shadow-md shadow-secondary/10"
+                                                            className="flex-1 py-2 bg-secondary text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-primary transition-all shadow-md shadow-secondary/10"
                                                         >
-                                                            <PlayCircle size={14} /> INICIAR
+                                                            <PlayCircle size={12} /> INICIAR
                                                         </button>
                                                     )}
                                                     {col.key === 'EM_ATENDIMENTO' && (
                                                         <button
                                                             onClick={(e) => updateStatus(appt.id, 'FINALIZADO', e)}
-                                                            className="flex-1 py-3 bg-green-500 text-white rounded-2xl text-[10px] font-bold flex items-center justify-center gap-2 hover:bg-green-600 transition-all shadow-md shadow-green-500/10"
+                                                            className="flex-1 py-2 bg-green-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-green-600 transition-all shadow-md shadow-green-500/10"
                                                         >
-                                                            <CheckCircle size={14} /> FINALIZAR
+                                                            <CheckCircle size={12} /> FIM
                                                         </button>
                                                     )}
                                                 </div>

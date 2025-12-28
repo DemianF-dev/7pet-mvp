@@ -16,7 +16,7 @@ export default function LandingPage() {
             >
                 <div className="flex-1 space-y-6 text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-                        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl">7</div>
+                        <img src="/logo.png" className="w-10 h-10 rounded-xl object-contain" alt="Logo" />
                         <h1 className="text-3xl font-bold text-secondary">7Pet</h1>
                     </div>
 

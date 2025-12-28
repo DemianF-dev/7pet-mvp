@@ -70,6 +70,13 @@ export default function QuoteManager() {
     const [sortConfig, setSortConfig] = useState<{ key: keyof Quote | 'customer.name'; direction: 'asc' | 'desc' } | null>(null);
     const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [columnFilters, setColumnFilters] = useState({
+        customer: '',
+        pet: '',
+        date: '',
+        total: '',
+        status: ''
+    });
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -415,8 +422,14 @@ export default function QuoteManager() {
 
             const matchesSearch = q.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 q.id.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesStatus = statusFilter === 'ALL' || q.status === statusFilter;
-            return matchesSearch && matchesStatus;
+
+            const matchesCustomer = !columnFilters.customer || q.customer.name.toLowerCase().includes(columnFilters.customer.toLowerCase());
+            const matchesPet = !columnFilters.pet || q.pet?.name.toLowerCase().includes(columnFilters.pet.toLowerCase());
+            const matchesDate = !columnFilters.date || new Date(q.createdAt).toLocaleDateString('pt-BR').includes(columnFilters.date);
+            const matchesTotal = !columnFilters.total || q.totalAmount.toString().includes(columnFilters.total);
+            const matchesStatus = !columnFilters.status || q.status.toLowerCase().includes(columnFilters.status.toLowerCase());
+
+            return matchesSearch && matchesCustomer && matchesPet && matchesDate && matchesTotal && matchesStatus;
         })
         .sort((a, b) => {
             if (!sortConfig) return 0;
@@ -464,8 +477,17 @@ export default function QuoteManager() {
                         </div>
 
                         <button
+                            onClick={fetchQuotes}
+                            disabled={isLoading}
+                            className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50 mr-4"
+                            title="Atualizar Orçamentos"
+                        >
+                            <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+
+                        <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="btn-primary flex items-center gap-2 px-6 py-3 ml-auto mr-4 shadow-lg shadow-primary/20"
+                            className="btn-primary flex items-center gap-2 px-6 py-3 mr-4 shadow-lg shadow-primary/20"
                         >
                             <Plus size={20} />
                             Criar Orçamento
@@ -532,7 +554,7 @@ export default function QuoteManager() {
                                     onClick={() => handleSort('customer.name')}
                                 >
                                     <div className="flex items-center gap-2">
-                                        Cliente
+                                        Cliente / Pet
                                         {sortConfig?.key === 'customer.name' && (
                                             sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
                                         )}
@@ -572,6 +594,62 @@ export default function QuoteManager() {
                                     </div>
                                 </th>
                                 <th className="px-6 py-4 font-bold text-right">Ações</th>
+                            </tr>
+                            <tr className="bg-gray-100/30">
+                                <td className="px-4 py-2">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Cliente..."
+                                            value={columnFilters.customer}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Pet..."
+                                            value={columnFilters.pet}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, pet: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                </td>
+                                <td className="px-4 py-2">
+                                    <input
+                                        type="text"
+                                        placeholder="DD/MM..."
+                                        value={columnFilters.date}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, date: e.target.value })}
+                                        className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </td>
+                                <td className="px-4 py-2">
+                                    <select
+                                        value={columnFilters.status}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, status: e.target.value })}
+                                        className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20"
+                                    >
+                                        <option value="">TODOS</option>
+                                        {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </td>
+                                <td className="px-4 py-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Total..."
+                                        value={columnFilters.total}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, total: e.target.value })}
+                                        className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </td>
+                                <td className="px-4 py-2 text-center">
+                                    <button
+                                        onClick={() => setColumnFilters({ customer: '', pet: '', date: '', total: '', status: '' })}
+                                        className="text-[9px] font-black text-primary hover:text-secondary p-1 uppercase"
+                                    >
+                                        Limpar
+                                    </button>
+                                </td>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">

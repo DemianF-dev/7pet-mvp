@@ -268,7 +268,7 @@ export default function UserManager() {
                                                     {u.email[0].toUpperCase()}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-black text-secondary text-sm">{u.customer?.name || 'Sistema'}</span>
+                                                    <span className="font-black text-secondary text-sm">{u.name || u.customer?.name || 'Sistema'}</span>
                                                     <span className="text-xs text-gray-400 font-medium">{u.email}</span>
                                                 </div>
                                             </div>

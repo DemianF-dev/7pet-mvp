@@ -23,7 +23,9 @@ import {
     RefreshCcw,
     Printer,
     StickyNote,
-    Wallet
+    Wallet,
+    Filter,
+    ArrowUpDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -68,6 +70,7 @@ interface Customer {
         appointments: number;
         quotes: number;
     };
+    createdAt?: string;
 }
 
 export default function CustomerManager() {
@@ -75,6 +78,11 @@ export default function CustomerManager() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+    // Filters & Sorting
+    const [filterType, setFilterType] = useState<string>('ALL');
+    const [filterStatus, setFilterStatus] = useState<string>('ALL');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Customer; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
 
     // Modal & Form States
     // Modal & Form States
@@ -361,10 +369,37 @@ export default function CustomerManager() {
         setIsPetModalOpen(true);
     };
 
-    const filteredCustomers = customers.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.user?.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleSort = (key: keyof Customer) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
+
+    const filteredCustomers = customers
+        .filter(c => {
+            const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (c.user?.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = filterType === 'ALL' || c.type === filterType;
+            const matchesStatus = filterStatus === 'ALL'
+                ? true
+                : filterStatus === 'BLOCKED' ? c.isBlocked
+                    : !c.isBlocked;
+
+            return matchesSearch && matchesType && matchesStatus;
+        })
+        .sort((a, b) => {
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+
+            // Handle undefined/null values
+            if (aValue === undefined || aValue === null) return 1;
+            if (bValue === undefined || bValue === null) return -1;
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -397,8 +432,8 @@ export default function CustomerManager() {
                     </div>
                 </header>
 
-                <div className="flex gap-4 mb-8">
-                    <div className="flex-1 relative">
+                <div className="flex flex-col gap-4 mb-8">
+                    <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
@@ -407,6 +442,54 @@ export default function CustomerManager() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-white border-none rounded-2xl pl-12 pr-4 py-4 text-sm shadow-sm focus:ring-2 focus:ring-primary/20"
                         />
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 items-center">
+                        {/* Type Filter */}
+                        <div className="bg-white py-2 px-4 rounded-2xl border border-gray-100 flex items-center gap-2 shadow-sm">
+                            <Filter size={14} className="text-gray-400" />
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="bg-transparent border-none text-xs font-bold text-secondary focus:ring-0 cursor-pointer outline-none"
+                            >
+                                <option value="ALL">Todos os Tipos</option>
+                                <option value="AVULSO">Avulso</option>
+                                <option value="RECORRENTE">Recorrente</option>
+                            </select>
+                        </div>
+
+                        {/* Status Filter */}
+                        <div className="bg-white py-2 px-4 rounded-2xl border border-gray-100 flex items-center gap-2 shadow-sm">
+                            <ShieldAlert size={14} className="text-gray-400" />
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="bg-transparent border-none text-xs font-bold text-secondary focus:ring-0 cursor-pointer outline-none"
+                            >
+                                <option value="ALL">Todos os Status</option>
+                                <option value="ACTIVE">Ativos</option>
+                                <option value="BLOCKED">Bloqueados</option>
+                            </select>
+                        </div>
+
+                        <div className="w-px h-6 bg-gray-200 mx-2 hidden md:block"></div>
+
+                        {/* Sort Controls */}
+                        <button
+                            onClick={() => handleSort('createdAt')}
+                            className={`px-4 py-2 rounded-2xl font-bold text-xs border transition-all flex items-center gap-2 ${sortConfig.key === 'createdAt' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'}`}
+                        >
+                            {sortConfig.key === 'createdAt' && sortConfig.direction === 'desc' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                            Data de Cadastro
+                        </button>
+                        <button
+                            onClick={() => handleSort('name')}
+                            className={`px-4 py-2 rounded-2xl font-bold text-xs border transition-all flex items-center gap-2 ${sortConfig.key === 'name' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'}`}
+                        >
+                            <ArrowUpDown size={14} />
+                            Nome (A-Z)
+                        </button>
                     </div>
                 </div>
 

@@ -206,7 +206,7 @@ export default function StaffSidebar() {
                         >
                             <div className="flex items-center justify-between mb-10">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">7</div>
+                                    <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain" alt="Logo" />
                                     <span className="font-bold text-xl text-white">7Pet</span>
                                 </div>
                                 <button onClick={() => setIsOpen(false)} className="p-2 text-gray-400 hover:text-white">
@@ -243,7 +243,7 @@ export default function StaffSidebar() {
             {/* Desktop Sidebar */}
             <aside className="w-64 bg-secondary border-r border-secondary-dark hidden md:flex flex-col p-6 fixed h-full text-white">
                 <div className="flex items-center gap-2 mb-10 cursor-pointer" onClick={() => navigate('/staff/dashboard')}>
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold hover:rotate-12 transition-transform">7</div>
+                    <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform" alt="Logo" />
                     <span className="font-bold text-xl">7Pet Operational</span>
                 </div>
 

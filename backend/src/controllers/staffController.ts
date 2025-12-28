@@ -20,21 +20,30 @@ export const staffController = {
                     },
                     status: {
                         notIn: ['CANCELADO', 'NO_SHOW']
-                    }
+                    },
+                    deletedAt: null
                 }
             });
 
-            // 2. Pending Quotes
+            // 2. Pending Quotes (Not finalized)
             const pendingQuotes = await prisma.quote.count({
                 where: {
-                    status: 'SOLICITADO'
+                    status: {
+                        in: ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'AGENDAR']
+                    },
+                    deletedAt: null
                 }
             });
 
-            // 3. Active Transports (Solicitado or em trânsito)
+            // 3. Active Transports (Not Delivered or Cancelled)
             const activeTransports = await prisma.transportDetails.count({
                 where: {
-                    status: 'SOLICITADO'
+                    status: {
+                        notIn: ['ENTREGUE', 'CANCELADO', 'CONCLUIDO']
+                    },
+                    appointment: {
+                        deletedAt: null
+                    }
                 }
             });
 
@@ -48,7 +57,8 @@ export const staffController = {
                     startAt: {
                         gte: today,
                         lt: nextWeek
-                    }
+                    },
+                    deletedAt: null
                 },
                 _count: true
             });

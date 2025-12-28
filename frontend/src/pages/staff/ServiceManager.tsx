@@ -9,7 +9,8 @@ import {
     ArrowUpDown,
     Upload,
     Cat,
-    Dog
+    Dog,
+    Search
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -34,6 +35,13 @@ export default function ServiceManager() {
     const [importText, setImportText] = useState('');
     const [speciesFilter, setSpeciesFilter] = useState<'Canino' | 'Felino'>('Canino');
     const [editingService, setEditingService] = useState<Service | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [columnFilters, setColumnFilters] = useState({
+        name: '',
+        category: '',
+        price: '',
+        duration: ''
+    });
 
     const [sortConfig, setSortConfig] = useState<{ key: keyof Service; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
 
@@ -162,7 +170,18 @@ export default function ServiceManager() {
         }
     };
 
-    const filteredServices = services.filter(s => s.species === speciesFilter);
+    const filteredServices = services.filter(s => {
+        const matchesSpecies = s.species === speciesFilter;
+        const matchesGlobal = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const matchesName = !columnFilters.name || s.name.toLowerCase().includes(columnFilters.name.toLowerCase());
+        const matchesCategory = !columnFilters.category || s.category?.toLowerCase().includes(columnFilters.category.toLowerCase());
+        const matchesPrice = !columnFilters.price || s.basePrice.toString().includes(columnFilters.price);
+        const matchesDuration = !columnFilters.duration || s.duration.toString().includes(columnFilters.duration);
+
+        return matchesSpecies && matchesGlobal && matchesName && matchesCategory && matchesPrice && matchesDuration;
+    });
 
     const sortedServices = [...filteredServices].sort((a, b) => {
         if (sortConfig.key === 'basePrice' || sortConfig.key === 'duration') {
@@ -189,8 +208,8 @@ export default function ServiceManager() {
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
                     <BackButton className="mb-4 ml-[-1rem]" />
-                    <div className="flex justify-between items-center">
-                        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100 mb-4 md:mb-0">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
                             <button
                                 onClick={() => setSpeciesFilter('Canino')}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-secondary'}`}
@@ -205,34 +224,73 @@ export default function ServiceManager() {
                             </button>
                         </div>
 
-                        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-                            <button
-                                onClick={() => handleSort('name')}
-                                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'name' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                            >
-                                Nome {sortConfig.key === 'name' && <ArrowUpDown size={14} />}
-                            </button>
-                            <button
-                                onClick={() => handleSort('basePrice')}
-                                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'basePrice' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                            >
-                                Valor {sortConfig.key === 'basePrice' && <ArrowUpDown size={14} />}
-                            </button>
-                            <button
-                                onClick={() => handleSort('category')}
-                                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'category' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                            >
-                                Categoria {sortConfig.key === 'category' && <ArrowUpDown size={14} />}
-                            </button>
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar serviço..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-medium"
+                                />
+                            </div>
+
+                            <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+                                <button
+                                    onClick={() => handleSort('name')}
+                                    className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'name' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    Nome {sortConfig.key === 'name' && <ArrowUpDown size={14} />}
+                                </button>
+                                <button
+                                    onClick={() => handleSort('basePrice')}
+                                    className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'basePrice' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    Valor {sortConfig.key === 'basePrice' && <ArrowUpDown size={14} />}
+                                </button>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary flex items-center gap-2 py-3">
+                                    <Upload size={20} /> Importar
+                                </button>
+                                <button onClick={() => handleOpenModal()} className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 py-3">
+                                    <Plus size={20} /> Novo Serviço
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex gap-2 mt-4 md:mt-0">
-                            <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary flex items-center gap-2">
-                                <Upload size={20} /> Importar
-                            </button>
-                            <button onClick={() => handleOpenModal()} className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20">
-                                <Plus size={20} /> Novo Serviço
-                            </button>
-                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+                        <input
+                            type="text"
+                            placeholder="Filtrar por nome..."
+                            value={columnFilters.name}
+                            onChange={(e) => setColumnFilters({ ...columnFilters, name: e.target.value })}
+                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Filtrar por categoria..."
+                            value={columnFilters.category}
+                            onChange={(e) => setColumnFilters({ ...columnFilters, category: e.target.value })}
+                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Filtrar por preço..."
+                            value={columnFilters.price}
+                            onChange={(e) => setColumnFilters({ ...columnFilters, price: e.target.value })}
+                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Filtrar por duração..."
+                            value={columnFilters.duration}
+                            onChange={(e) => setColumnFilters({ ...columnFilters, duration: e.target.value })}
+                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                        />
                     </div>
                 </header>
 

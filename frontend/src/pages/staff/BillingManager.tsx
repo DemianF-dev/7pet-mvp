@@ -16,6 +16,7 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
+import PaymentReceiptModal from '../../components/PaymentReceiptModal';
 
 interface Invoice {
     id: string;
@@ -48,6 +49,10 @@ export default function BillingManager() {
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'dueDate', direction: 'asc' });
+
+    // Receipt State
+    const [showReceipt, setShowReceipt] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState<any>(null);
 
     useEffect(() => {
         fetchInvoices();
@@ -123,6 +128,16 @@ export default function BillingManager() {
                 useBalance: useBalance
             });
             alert('Pagamento registrado com sucesso!');
+
+            // Auto open receipt for the new payment
+            const refreshed = await api.get('/invoices');
+            const updatedInvoice = refreshed.data.find((i: any) => i.id === selectedInvoice.id);
+            if (updatedInvoice && updatedInvoice.payments.length > 0) {
+                const lastPayment = updatedInvoice.payments[updatedInvoice.payments.length - 1];
+                setSelectedPayment(lastPayment);
+                setShowReceipt(true);
+            }
+
             setPaymentAmount('');
             fetchInvoices();
             setSelectedInvoice(null);
@@ -430,8 +445,19 @@ export default function BillingManager() {
                                                                 <p className="font-bold text-secondary">R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                                 <p className="text-xs text-gray-400">{new Date(payment.paidAt).toLocaleDateString()} - {payment.method}</p>
                                                             </div>
-                                                            <div className="bg-green-100 text-green-700 p-2 rounded-full">
-                                                                <CheckCircle size={16} />
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedPayment(payment);
+                                                                        setShowReceipt(true);
+                                                                    }}
+                                                                    className="text-[10px] font-bold text-primary hover:underline uppercase"
+                                                                >
+                                                                    Ver Comprovante
+                                                                </button>
+                                                                <div className="bg-green-100 text-green-700 p-2 rounded-full">
+                                                                    <CheckCircle size={16} />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -572,6 +598,13 @@ export default function BillingManager() {
                         </div>
                     )}
                 </AnimatePresence>
+
+                <PaymentReceiptModal
+                    isOpen={showReceipt}
+                    onClose={() => setShowReceipt(false)}
+                    payment={selectedPayment}
+                    customerName={selectedInvoice?.customer.name || ''}
+                />
             </main>
         </div>
     );

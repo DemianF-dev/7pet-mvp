@@ -56,6 +56,13 @@ export default function FinancialReports() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [columnFilters, setColumnFilters] = useState({
+        id: '',
+        customer: '',
+        date: '',
+        amount: '',
+        status: ''
+    });
 
     const fetchReports = async () => {
         setIsLoading(true);
@@ -77,10 +84,20 @@ export default function FinancialReports() {
         fetchReports();
     }, []);
 
-    const filteredInvoices = invoices.filter(inv =>
-        inv.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredInvoices = invoices.filter(inv => {
+        const matchesGlobal = inv.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            inv.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesId = !columnFilters.id || inv.id.toLowerCase().includes(columnFilters.id.toLowerCase());
+        const matchesCustomer = !columnFilters.customer || inv.customer.name.toLowerCase().includes(columnFilters.customer.toLowerCase());
+        const matchesDate = !columnFilters.date || new Date(inv.createdAt).toLocaleDateString('pt-BR').includes(columnFilters.date);
+        const matchesAmount = !columnFilters.amount || inv.amount.toString().includes(columnFilters.amount);
+        const matchesStatus = !columnFilters.status || inv.status.toLowerCase().includes(columnFilters.status.toLowerCase());
+
+        return matchesGlobal && matchesId && matchesCustomer && matchesDate && matchesAmount && matchesStatus;
+    });
+
+    const currentTotal = filteredInvoices.reduce((acc, curr) => acc + curr.amount, 0);
 
     const totalRevenue = filteredInvoices
         .filter(inv => inv.status === 'PAGO')
@@ -186,7 +203,65 @@ export default function FinancialReports() {
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Data</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Valor</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                    <th className="px-8 py-5"></th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Opções</th>
+                                </tr>
+                                <tr className="bg-gray-100/30">
+                                    <td className="px-6 py-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Filtrar ID..."
+                                            value={columnFilters.id}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, id: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        />
+                                    </td>
+                                    <td className="px-6 py-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Filtrar Cliente..."
+                                            value={columnFilters.customer}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        />
+                                    </td>
+                                    <td className="px-6 py-2">
+                                        <input
+                                            type="text"
+                                            placeholder="DD/MM/AAAA..."
+                                            value={columnFilters.date}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, date: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        />
+                                    </td>
+                                    <td className="px-6 py-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Valor..."
+                                            value={columnFilters.amount}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, amount: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        />
+                                    </td>
+                                    <td className="px-6 py-2">
+                                        <select
+                                            value={columnFilters.status}
+                                            onChange={(e) => setColumnFilters({ ...columnFilters, status: e.target.value })}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        >
+                                            <option value="">TODOS</option>
+                                            <option value="PAGO">PAGO</option>
+                                            <option value="PENDENTE">PENDENTE</option>
+                                            <option value="ATRASADO">ATRASADO</option>
+                                        </select>
+                                    </td>
+                                    <td className="px-6 py-2 text-center">
+                                        <button
+                                            onClick={() => setColumnFilters({ id: '', customer: '', date: '', amount: '', status: '' })}
+                                            className="text-[9px] font-black text-primary hover:text-secondary p-1 uppercase"
+                                        >
+                                            Limpar
+                                        </button>
+                                    </td>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -223,6 +298,17 @@ export default function FinancialReports() {
                                         </td>
                                     </tr>
                                 ))}
+                                {filteredInvoices.length > 0 && (
+                                    <tr className="bg-secondary text-white font-black">
+                                        <td colSpan={3} className="px-8 py-6 text-right uppercase tracking-[0.2em] text-[10px]">
+                                            Total Selecionado em Tela:
+                                        </td>
+                                        <td className="px-8 py-6 text-sm">
+                                            R$ {currentTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td colSpan={2}></td>
+                                    </tr>
+                                )}
                                 {filteredInvoices.length === 0 && !isLoading && (
                                     <tr>
                                         <td colSpan={6} className="py-20 text-center text-gray-300 font-bold italic opacity-50">

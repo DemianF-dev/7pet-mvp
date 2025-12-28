@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, MapPin, Navigation, Clock, CheckCircle2, Phone, User } from 'lucide-react';
+import { Truck, MapPin, Navigation, Clock, CheckCircle2, Phone, User, RefreshCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
@@ -42,10 +42,20 @@ export default function TransportManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10">
-                    <BackButton className="mb-4 ml-[-1rem]" />
-                    <h1 className="text-4xl font-extrabold text-secondary">Logística & <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Transporte</span></h1>
-                    <p className="text-gray-500 mt-3">Organize as rotas de busca e entrega dos pets.</p>
+                <header className="mb-10 flex justify-between items-start">
+                    <div>
+                        <BackButton className="mb-4 ml-[-1rem]" />
+                        <h1 className="text-4xl font-extrabold text-secondary">Logística & <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Transporte</span></h1>
+                        <p className="text-gray-500 mt-3">Organize as rotas de busca e entrega dos pets.</p>
+                    </div>
+                    <button
+                        onClick={fetchTransports}
+                        disabled={isLoading}
+                        className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                        title="Atualizar Transportes"
+                    >
+                        <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
                 </header>
 
                 {isLoading ? (

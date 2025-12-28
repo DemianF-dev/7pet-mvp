@@ -16,6 +16,7 @@ import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
+import PaymentReceiptModal from '../../components/PaymentReceiptModal';
 
 interface Payment {
     id: string;
@@ -63,6 +64,10 @@ export default function PaymentList() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+    // Receipt State
+    const [showReceipt, setShowReceipt] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState<any>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -280,9 +285,16 @@ export default function PaymentList() {
                                                                 <p className="text-sm font-bold text-secondary">R$ {p.amount.toFixed(2)}</p>
                                                                 <p className="text-[10px] text-gray-400">{new Date(p.paidAt).toLocaleDateString('pt-BR')} via {p.method}</p>
                                                             </div>
-                                                            <div className="text-green-500 bg-green-50 p-1.5 rounded-full">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedPayment(p);
+                                                                    setShowReceipt(true);
+                                                                }}
+                                                                className="text-green-500 bg-green-50 p-1.5 rounded-full hover:bg-green-100 transition-colors"
+                                                                title="Ver Comprovante"
+                                                            >
                                                                 <CheckCircle2 size={16} />
-                                                            </div>
+                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -315,6 +327,13 @@ export default function PaymentList() {
                         </>
                     )}
                 </AnimatePresence>
+
+                <PaymentReceiptModal
+                    isOpen={showReceipt}
+                    onClose={() => setShowReceipt(false)}
+                    payment={selectedPayment}
+                    customerName={customer?.name || ''}
+                />
             </main>
         </div>
     );

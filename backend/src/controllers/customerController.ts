@@ -54,7 +54,7 @@ export const customerController = {
                         select: { appointments: true, quotes: true }
                     }
                 },
-                orderBy: { name: 'asc' }
+                orderBy: { createdAt: 'desc' }
             });
             return res.json(customers);
         } catch (error) {

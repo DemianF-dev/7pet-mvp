@@ -18,9 +18,7 @@ export const getKPIs = async (req: Request, res: Response) => {
 
         // 1. Revenue Metrics (Current Month vs Last Month)
         const currentMonthRevenue = await prisma.paymentRecord.aggregate({
-            where: {
-                paidAt: { gte: firstDayOfMonth }
-            },
+            where: { paidAt: { gte: firstDayOfMonth } },
             _sum: { amount: true }
         });
 
@@ -64,18 +62,70 @@ export const getKPIs = async (req: Request, res: Response) => {
         });
 
         // 5. Operational Alerts
-        // - Blocked customers with activity
         const blockedActiveCustomers = await prisma.customer.count({
             where: { isBlocked: true }
         });
 
-        // - Pending high-value quotes (> 500)
         const pendingHighValueQuotes = await prisma.quote.count({
             where: {
                 status: 'SOLICITADO',
                 totalAmount: { gt: 500 }
             }
         });
+
+        // 6. Ticket Médio (Last 30 days)
+        const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const completedAppointmentsCount = await prisma.appointment.count({
+            where: {
+                status: 'FINALIZADO',
+                startAt: { gte: last30Days }
+            }
+        });
+        const revenueLast30Days = await prisma.paymentRecord.aggregate({
+            where: { paidAt: { gte: last30Days } },
+            _sum: { amount: true }
+        });
+        const ticketMedio = completedAppointmentsCount > 0
+            ? (revenueLast30Days._sum.amount || 0) / completedAppointmentsCount
+            : 0;
+
+        // 7. No-Show Rate (Last 30 days)
+        const allRelevantAppointments = await prisma.appointment.count({
+            where: {
+                startAt: { gte: last30Days },
+                status: { notIn: ['CANCELADO'] }
+            }
+        });
+        const noShowsCount = await prisma.appointment.count({
+            where: {
+                startAt: { gte: last30Days },
+                status: 'NO_SHOW'
+            }
+        });
+        const noShowRate = allRelevantAppointments > 0 ? (noShowsCount / allRelevantAppointments) * 100 : 0;
+
+        // 8. Pending Balance (All pending invoices)
+        const pendingInvoices = await prisma.invoice.aggregate({
+            where: { status: 'PENDENTE' },
+            _sum: { amount: true }
+        });
+
+        // 9. Top Customers (By Total Invoice Amount)
+        const topCustomersRaw = await prisma.invoice.groupBy({
+            by: ['customerId'],
+            where: { status: 'PAGO' },
+            _sum: { amount: true },
+            orderBy: { _sum: { amount: 'desc' } },
+            take: 5
+        });
+
+        const topCustomersDetails = await Promise.all(topCustomersRaw.map(async (c) => {
+            const customer = await prisma.customer.findUnique({ where: { id: c.customerId } });
+            return {
+                name: customer?.name || 'Cliente Desconhecido',
+                totalSpent: c._sum.amount || 0
+            };
+        }));
 
         res.json({
             revenue: {
@@ -86,7 +136,7 @@ export const getKPIs = async (req: Request, res: Response) => {
             },
             appointments: {
                 distribution: appointmentsLast30Days,
-                total: appointmentsLast30Days.reduce((acc, curr) => acc + curr._count, 0)
+                total: appointmentsLast30Days.reduce((acc, curr) => acc + (curr._count as number), 0)
             },
             services: servicePopularity.map(s => ({
                 name: s.name,
@@ -98,7 +148,11 @@ export const getKPIs = async (req: Request, res: Response) => {
             alerts: {
                 blockedCustomers: blockedActiveCustomers,
                 highValueQuotes: pendingHighValueQuotes
-            }
+            },
+            ticketMedio,
+            noShowRate,
+            pendingBalance: pendingInvoices._sum.amount || 0,
+            topCustomers: topCustomersDetails
         });
     } catch (error) {
         console.error('Error fetching KPIs:', error);
@@ -138,6 +192,7 @@ export const getReports = async (req: Request, res: Response) => {
 export const listUsers = async (req: Request, res: Response) => {
     try {
         const users = await prisma.user.findMany({
+            where: { deletedAt: null },
             include: { customer: true },
             orderBy: { createdAt: 'desc' }
         });
