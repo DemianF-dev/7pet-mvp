@@ -238,29 +238,39 @@ export default function QuoteList() {
                                                 </button>
                                             </div>
                                         )}
-                                        {selectedQuote.status === 'APROVADO' && (
-                                            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center space-y-4">
-                                                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                                        {(selectedQuote.status === 'APROVADO' || selectedQuote.status === 'AGENDAR') && (
+                                            <div className={`p-6 rounded-3xl border text-center space-y-4 ${selectedQuote.status === 'AGENDAR'
+                                                    ? 'bg-emerald-50 border-emerald-100'
+                                                    : 'bg-green-50 border-green-100'
+                                                }`}>
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${selectedQuote.status === 'AGENDAR'
+                                                        ? 'bg-emerald-100 text-emerald-600'
+                                                        : 'bg-green-100 text-green-600'
+                                                    }`}>
                                                     <CheckCircle2 size={24} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-black text-green-800">Orçamento Aprovado!</h4>
-                                                    <p className="text-sm text-green-600">Seu orçamento foi aprovado com sucesso. Nossa equipe entrará em contato em breve para agendamento.</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {selectedQuote.status === 'AGENDAR' && (
-                                            <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 text-center space-y-4">
-                                                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                                                    <CheckCircle2 size={24} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-black text-emerald-800">Pronto para Agendar!</h4>
-                                                    <p className="text-sm text-emerald-600">Seu orçamento está confirmado. Chame-nos no WhatsApp para escolher o melhor horário.</p>
+                                                    <h4 className={`font-black ${selectedQuote.status === 'AGENDAR'
+                                                            ? 'text-emerald-800'
+                                                            : 'text-green-800'
+                                                        }`}>
+                                                        {selectedQuote.status === 'AGENDAR' ? 'Pronto para Agendar!' : 'Orçamento Aprovado!'}
+                                                    </h4>
+                                                    <p className={`text-sm ${selectedQuote.status === 'AGENDAR'
+                                                            ? 'text-emerald-600'
+                                                            : 'text-green-600'
+                                                        }`}>
+                                                        {selectedQuote.status === 'AGENDAR'
+                                                            ? 'Seu orçamento está confirmado. Chame-nos no WhatsApp para escolher o melhor horário.'
+                                                            : 'Seu orçamento foi aprovado! Chame-nos no WhatsApp para agendar o atendimento.'}
+                                                    </p>
                                                 </div>
                                                 <button
                                                     onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero agendar o serviço do orçamento ${selectedQuote.id.substring(0, 8)}`, '_blank')}
-                                                    className="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
+                                                    className={`w-full py-3 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${selectedQuote.status === 'AGENDAR'
+                                                            ? 'bg-emerald-500 hover:bg-emerald-600'
+                                                            : 'bg-green-500 hover:bg-green-600'
+                                                        }`}
                                                 >
                                                     Agendar via WhatsApp
                                                 </button>
