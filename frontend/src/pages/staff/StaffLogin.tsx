@@ -12,11 +12,13 @@ export default function StaffLogin() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        setSuccessMsg('');
 
         try {
             const response = await api.post('/auth/login', { email, password });
@@ -30,6 +32,26 @@ export default function StaffLogin() {
             navigate('/staff/dashboard');
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Erro ao realizar login');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setError('Por favor, informe seu e-mail corporativo no campo acima.');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+        setSuccessMsg('');
+
+        try {
+            const response = await api.post('/auth/forgot-password', { email });
+            setSuccessMsg(response.data.message);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao solicitar nova senha');
         } finally {
             setIsLoading(false);
         }
@@ -56,6 +78,12 @@ export default function StaffLogin() {
                             </div>
                         )}
 
+                        {successMsg && (
+                            <div className="bg-green-50 text-green-700 p-4 rounded-xl text-sm font-medium border border-green-100 italic">
+                                {successMsg}
+                            </div>
+                        )}
+
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-secondary ml-1">E-mail Corporativo</label>
                             <div className="relative">
@@ -74,13 +102,19 @@ export default function StaffLogin() {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center ml-1">
                                 <label className="text-sm font-semibold text-secondary">Senha</label>
-                                <button type="button" className="text-sm text-gray-400 hover:text-secondary transition-colors font-medium">Esqueceu a senha?</button>
+                                <button
+                                    type="button"
+                                    onClick={handleForgotPassword}
+                                    className="text-sm text-gray-400 hover:text-secondary transition-colors font-medium hover:underline"
+                                >
+                                    Esqueceu a senha?
+                                </button>
                             </div>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                                 <input
                                     type={showPassword ? "text" : "password"}
-                                    required
+                                    required={!successMsg}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
@@ -101,7 +135,7 @@ export default function StaffLogin() {
                             disabled={isLoading}
                             className="btn-primary w-full mt-4 h-14 text-lg disabled:opacity-50"
                         >
-                            {isLoading ? 'Acessando...' : 'Acessar Painel'}
+                            {isLoading ? 'Aguarde...' : 'Acessar Painel'}
                         </button>
                     </form>
                 </div>

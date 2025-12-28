@@ -88,3 +88,16 @@ export const updateMe = async (req: any, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = z.object({ email: z.string().email() }).parse(req.body);
+        const result = await authService.forgotPassword(email);
+        res.json(result);
+    } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Email inválido' });
+        }
+        res.status(400).json({ error: error.message });
+    }
+};

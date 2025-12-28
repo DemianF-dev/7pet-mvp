@@ -12,11 +12,13 @@ export default function ClientLogin() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        setSuccessMsg('');
 
         try {
             const response = await api.post('/auth/login', { email, password });
@@ -30,6 +32,26 @@ export default function ClientLogin() {
             navigate('/client/dashboard');
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Erro ao realizar login');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setError('Por favor, digite seu e-mail no campo acima primeiro.');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+        setSuccessMsg('');
+
+        try {
+            const response = await api.post('/auth/forgot-password', { email });
+            setSuccessMsg(response.data.message);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao solicitar nova senha');
         } finally {
             setIsLoading(false);
         }
@@ -56,6 +78,12 @@ export default function ClientLogin() {
                         {error && (
                             <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 italic">
                                 {error}
+                            </div>
+                        )}
+
+                        {successMsg && (
+                            <div className="bg-green-50 text-green-700 p-4 rounded-xl text-sm font-medium border border-green-100 italic">
+                                {successMsg}
                             </div>
                         )}
 
@@ -89,13 +117,19 @@ export default function ClientLogin() {
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
                                     <label className="text-sm font-semibold text-secondary">Senha</label>
-                                    <button type="button" className="text-sm text-primary font-medium">Esqueci minha senha</button>
+                                    <button
+                                        type="button"
+                                        onClick={handleForgotPassword}
+                                        className="text-sm text-primary font-medium hover:underline"
+                                    >
+                                        Esqueci minha senha
+                                    </button>
                                 </div>
                                 <div className="relative">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                                     <input
                                         type={showPassword ? "text" : "password"}
-                                        required
+                                        required={!successMsg} // Not required if just requested new password
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
@@ -117,7 +151,7 @@ export default function ClientLogin() {
                             disabled={isLoading}
                             className="btn-primary w-full mt-4 disabled:opacity-50"
                         >
-                            {isLoading ? 'Entrando...' : 'Entrar'} <LogIn size={20} />
+                            {isLoading ? 'Solicitando...' : 'Entrar'} <LogIn size={20} />
                         </button>
 
                         <p className="text-center text-gray-500 text-sm mt-6">

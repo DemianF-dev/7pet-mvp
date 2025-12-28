@@ -46,3 +46,26 @@ export const login = async (email: string, password: string) => {
 
     return { user, token };
 };
+
+export const forgotPassword = async (email: string) => {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) throw new Error('Usuário não encontrado');
+
+    // Generate a temporary password (6 characters)
+    const tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash }
+    });
+
+    // NOTE: In a production environment, you would send this via email.
+    // For now, we simulate the email sending.
+    console.log(`[EMAIL SIMULADO] Enviando nova senha para ${email}: ${tempPassword}`);
+
+    return {
+        message: 'Uma nova senha provisória foi enviada para o seu email.',
+        debugTempPassword: tempPassword
+    };
+};
