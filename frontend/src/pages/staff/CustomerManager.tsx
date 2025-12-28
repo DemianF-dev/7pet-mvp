@@ -66,6 +66,10 @@ interface Customer {
     balance?: number;
     recurringFrequency?: 'SEMANAL' | 'QUINZENAL' | 'MENSAL';
     discountPercentage?: number;
+    secondaryGuardianName?: string;
+    secondaryGuardianPhone?: string;
+    secondaryGuardianEmail?: string;
+    secondaryGuardianAddress?: string;
     _count?: {
         appointments: number;
         quotes: number;
