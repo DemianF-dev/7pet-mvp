@@ -171,6 +171,9 @@ export const customerController = {
 
             return res.json(customer);
         } catch (error) {
+            if (error instanceof z.ZodError) {
+                return res.status(400).json({ error: 'Dados inválidos', details: error.issues });
+            }
             console.error('Erro ao atualizar cliente:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }

@@ -20,7 +20,8 @@ import {
     TrendingUp,
     TrendingDown,
     AlertCircle,
-    CheckCircle
+    CheckCircle,
+    MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -123,10 +124,11 @@ export default function CustomerManager() {
     const handleCreateWrapper = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/customers', {
-                ...formData,
-                type: formData.type || 'AVULSO'
-            });
+            const payload = { ...formData, type: formData.type || 'AVULSO' } as any;
+            if (payload.recurringFrequency === '') {
+                delete payload.recurringFrequency;
+            }
+            await api.post('/customers', payload);
             setIsCreateModalOpen(false);
             setFormData({});
             fetchCustomers();
@@ -141,7 +143,12 @@ export default function CustomerManager() {
         e.preventDefault();
         if (!selectedCustomer) return;
         try {
-            const response = await api.patch(`/customers/${selectedCustomer.id}`, formData);
+            // Fix: ensure empty recurringFrequency is sent as undefined or null, not empty string
+            const payload = { ...formData } as any;
+            if (payload.recurringFrequency === '') {
+                delete payload.recurringFrequency;
+            }
+            const response = await api.patch(`/customers/${selectedCustomer.id}`, payload);
             setSelectedCustomer({ ...selectedCustomer, ...response.data });
             setIsEditMode(false);
             fetchCustomers(); // Refresh list to update scalar fields in list view if needed
@@ -461,11 +468,23 @@ export default function CustomerManager() {
                                             ) : (
                                                 <>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                        <div className="p-4 bg-gray-50 rounded-2xl">
-                                                            <p className="text-xs font-bold text-gray-400 uppercase mb-1">Telefone</p>
-                                                            <div className="flex items-center gap-2 text-secondary font-bold">
-                                                                <Phone size={16} className="text-primary" /> {selectedCustomer.phone || '-'}
+                                                        <div className="p-4 bg-gray-50 rounded-2xl flex justify-between items-center group">
+                                                            <div>
+                                                                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Telefone</p>
+                                                                <div className="flex items-center gap-2 text-secondary font-bold">
+                                                                    <Phone size={16} className="text-primary" /> {selectedCustomer.phone || '-'}
+                                                                </div>
                                                             </div>
+                                                            {selectedCustomer.phone && (
+                                                                <a
+                                                                    href={`https://wa.me/${selectedCustomer.phone.replace(/\D/g, '')}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-100 flex items-center gap-2 text-xs font-bold"
+                                                                >
+                                                                    <MessageCircle size={18} /> WhatsApp
+                                                                </a>
+                                                            )}
                                                         </div>
                                                         <div className="p-4 bg-gray-50 rounded-2xl">
                                                             <p className="text-xs font-bold text-gray-400 uppercase mb-1">Tipo</p>
@@ -764,7 +783,7 @@ export default function CustomerManager() {
                                     </div>
                                     <div>
                                         <label className="label">Telefone</label>
-                                        <input className="input-field" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                                        <input className="input-field" placeholder="Ex: 11999999999" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                                     </div>
                                     <div>
                                         <label className="label">Tipo</label>
