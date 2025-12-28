@@ -262,7 +262,8 @@ export const quoteController = {
                     id: z.string().optional(),
                     description: z.string(),
                     quantity: z.number(),
-                    price: z.number()
+                    price: z.number(),
+                    serviceId: z.string().optional()
                 })).optional(),
                 status: z.nativeEnum(QuoteStatus).optional(),
                 totalAmount: z.number().optional()
@@ -308,7 +309,7 @@ export const quoteController = {
                         description: item.description,
                         quantity: item.quantity,
                         price: item.price,
-                        serviceId: (item as any).serviceId || null
+                        serviceId: item.serviceId || null
                     }))
                 };
             }
