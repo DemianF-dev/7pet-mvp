@@ -377,7 +377,7 @@ export default function CustomerManager() {
                                                             <label className="label">Tipo de Cliente</label>
                                                             <select
                                                                 className="input-field"
-                                                                value={formData.type}
+                                                                value={formData.type || 'AVULSO'}
                                                                 onChange={e => {
                                                                     const newType = e.target.value as any;
                                                                     setFormData({
@@ -392,13 +392,13 @@ export default function CustomerManager() {
                                                                 <option value="RECORRENTE">Recorrente (Fiel)</option>
                                                             </select>
                                                         </div>
-                                                        {formData.type === 'RECORRENTE' && (
-                                                            <div className="col-span-2 grid grid-cols-2 gap-4 bg-purple-50 p-6 rounded-3xl border border-purple-100 animate-in zoom-in-95 duration-200">
+                                                        {String(formData.type).toUpperCase() === 'RECORRENTE' && (
+                                                            <div className="col-span-2 grid grid-cols-2 gap-4 bg-purple-50 p-6 rounded-3xl border border-purple-100 shadow-inner">
                                                                 <div className="space-y-2">
-                                                                    <label className="label text-purple-700">Frequência Desejada</label>
+                                                                    <label className="label text-purple-700 font-bold">Frequência Desejada</label>
                                                                     <select
                                                                         className="input-field bg-white border-purple-200"
-                                                                        value={formData.recurringFrequency}
+                                                                        value={formData.recurringFrequency || ''}
                                                                         onChange={e => {
                                                                             const freq = e.target.value as any;
                                                                             let discount = 0;
@@ -415,7 +415,7 @@ export default function CustomerManager() {
                                                                     </select>
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <label className="label text-purple-700">Desconto Aplicado (%)</label>
+                                                                    <label className="label text-purple-700 font-bold">Desconto Aplicado (%)</label>
                                                                     <div className="input-field bg-white border-purple-200 flex items-center justify-between font-black text-purple-600">
                                                                         <span>{formData.discountPercentage || 0}%</span>
                                                                         <span className="text-[10px] bg-purple-600 text-white px-2 py-1 rounded-lg uppercase tracking-wider">Automático</span>
@@ -480,19 +480,19 @@ export default function CustomerManager() {
                                                             </div>
                                                         </div>
                                                         {selectedCustomer.type === 'RECORRENTE' && (
-                                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-between">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
-                                                                        <TrendingDown size={20} />
+                                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 p-6 bg-purple-50 rounded-[30px] border border-purple-100 flex items-center justify-between shadow-sm">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
+                                                                        <TrendingDown size={24} />
                                                                     </div>
                                                                     <div>
-                                                                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none">Plano de Recorrência</p>
-                                                                        <p className="text-secondary font-black">{selectedCustomer.recurringFrequency || 'NÃO DEFINIDO'}</p>
+                                                                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none mb-1">Frequência do Plano</p>
+                                                                        <p className="text-secondary font-black text-lg">{selectedCustomer.recurringFrequency || 'Não informada'}</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none">Desconto Fixo</p>
-                                                                    <p className="text-2xl font-black text-purple-600">{selectedCustomer.discountPercentage || 0}%</p>
+                                                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none mb-1">Benefício Ativo</p>
+                                                                    <p className="text-3xl font-black text-purple-600">{selectedCustomer.discountPercentage || 0}% OFF</p>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -786,8 +786,8 @@ export default function CustomerManager() {
                                         </select>
                                     </div>
 
-                                    {formData.type === 'RECORRENTE' && (
-                                        <div className="space-y-4 bg-purple-50 p-4 rounded-2xl border border-purple-100 transition-all animate-in slide-in-from-top-2 duration-300">
+                                    {String(formData.type).toUpperCase() === 'RECORRENTE' && (
+                                        <div className="space-y-4 bg-purple-50 p-4 rounded-2xl border border-purple-100 transition-all shadow-inner">
                                             <div>
                                                 <label className="label text-purple-700">Frequência</label>
                                                 <select
@@ -809,9 +809,9 @@ export default function CustomerManager() {
                                                 </select>
                                             </div>
                                             <div className="text-[10px] text-purple-600 font-bold bg-white/50 p-2 rounded-lg italic">
-                                                {formData.recurringFrequency === 'SEMANAL' && "Min. 4 banhos/mês. Desconto aplicado em todo o pacote."}
-                                                {formData.recurringFrequency === 'QUINZENAL' && "Min. 2 banhos/mês. Desconto sobre o valor total."}
-                                                {formData.recurringFrequency === 'MENSAL' && "1 banho/mês. Requer pagamento de 2 meses adiantados."}
+                                                {String(formData.recurringFrequency).toUpperCase() === 'SEMANAL' && "Min. 4 banhos/mês. Desconto aplicado em todo o pacote."}
+                                                {String(formData.recurringFrequency).toUpperCase() === 'QUINZENAL' && "Min. 2 banhos/mês. Desconto sobre o valor total."}
+                                                {String(formData.recurringFrequency).toUpperCase() === 'MENSAL' && "1 banho/mês. Requer pagamento de 2 meses adiantados."}
                                             </div>
                                         </div>
                                     )}
