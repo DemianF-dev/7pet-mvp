@@ -21,6 +21,7 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
+import BackButton from '../../components/BackButton';
 
 interface Appointment {
     id: string;
@@ -431,6 +432,7 @@ export default function ServiceKanban() {
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                     <div>
+                        <BackButton className="mb-4 ml-[-1rem]" />
                         <h1 className="text-4xl font-extrabold text-secondary">Agenda de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Serviços</span></h1>
                         <p className="text-gray-500 mt-3 font-medium">Controle total dos atendimentos e fluxo operacional.</p>
                     </div>

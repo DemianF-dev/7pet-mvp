@@ -13,7 +13,7 @@ router.use(authenticate);
 router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA']));
 
 router.post('/', async (req: Request, res: Response) => {
-    const { name, description, basePrice, duration, category } = req.body;
+    const { name, description, basePrice, duration, category, species } = req.body;
 
     const existing = await prisma.service.findFirst({ where: { name } });
     if (existing) {
@@ -21,7 +21,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const service = await prisma.service.create({
-        data: { name, description, basePrice, duration, category }
+        data: { name, description, basePrice, duration, category, species: species || 'Canino' }
     });
     res.status(201).json(service);
 });
@@ -46,7 +46,8 @@ router.post('/bulk', async (req: Request, res: Response) => {
                         description: s.description || '',
                         basePrice: Number(s.basePrice),
                         duration: Number(s.duration) || 30,
-                        category: s.category || 'Geral'
+                        category: s.category || 'Geral',
+                        species: s.species || 'Canino'
                     }
                 });
                 createdCount++;
@@ -61,7 +62,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, description, basePrice, duration, category } = req.body;
+    const { name, description, basePrice, duration, category, species } = req.body;
 
     if (name) {
         const existing = await prisma.service.findFirst({
@@ -77,7 +78,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
     const service = await prisma.service.update({
         where: { id },
-        data: { name, description, basePrice, duration, category }
+        data: { name, description, basePrice, duration, category, species }
     });
     res.json(service);
 });

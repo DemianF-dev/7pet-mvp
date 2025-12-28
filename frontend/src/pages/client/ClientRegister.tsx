@@ -10,6 +10,7 @@ export default function ClientRegister() {
     const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -23,6 +24,7 @@ export default function ClientRegister() {
             const response = await api.post('/auth/register', {
                 name,
                 email,
+                phone,
                 password,
                 role: 'CLIENTE'
             });
@@ -87,6 +89,22 @@ export default function ClientRegister() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="exemplo@email.com"
+                                        className="input-field pl-12"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-secondary ml-1">Telefone / WhatsApp</label>
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">
+                                        BR
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="(00) 00000-0000"
                                         className="input-field pl-12"
                                     />
                                 </div>

@@ -21,6 +21,7 @@ import {
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 interface QuoteItem {
     id: string;
@@ -408,39 +409,42 @@ export default function QuoteManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="flex justify-between items-center mb-10">
-                    <div>
-                        <h1 className="text-3xl font-bold text-secondary">Gestão de <span className="text-primary">Orçamentos</span></h1>
-                        <p className="text-gray-500">Analise solicitações, defina preços e envie para aprovação.</p>
-                    </div>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold text-secondary">Gestão de <span className="text-primary">Orçamentos</span></h1>
+                            <p className="text-gray-500">Analise solicitações, defina preços e envie para aprovação.</p>
+                        </div>
 
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="btn-primary flex items-center gap-2 px-6 py-3 ml-auto mr-4 shadow-lg shadow-primary/20"
-                    >
-                        <Plus size={20} />
-                        Criar Orçamento
-                    </button>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="btn-primary flex items-center gap-2 px-6 py-3 ml-auto mr-4 shadow-lg shadow-primary/20"
+                        >
+                            <Plus size={20} />
+                            Criar Orçamento
+                        </button>
 
-                    <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
-                        <button
-                            onClick={() => setView('active')}
-                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            Ativos
-                        </button>
-                        <button
-                            onClick={() => setView('history')}
-                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'history' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            <Archive size={16} /> Histórico
-                        </button>
-                        <button
-                            onClick={() => setView('trash')}
-                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'trash' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            <Trash2 size={16} /> Lixeira
-                        </button>
+                        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+                            <button
+                                onClick={() => setView('active')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                Ativos
+                            </button>
+                            <button
+                                onClick={() => setView('history')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'history' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                <Archive size={16} /> Histórico
+                            </button>
+                            <button
+                                onClick={() => setView('trash')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'trash' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                <Trash2 size={16} /> Lixeira
+                            </button>
+                        </div>
                     </div>
                 </header>
 

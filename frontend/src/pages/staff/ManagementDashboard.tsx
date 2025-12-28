@@ -15,6 +15,7 @@ import {
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -94,25 +95,28 @@ export default function ManagementDashboard() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-4xl font-extrabold text-secondary">Painel de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Gestão</span></h1>
-                        <p className="text-gray-500 mt-3 font-medium">Análise de desempenho, financeiro e crescimento.</p>
-                    </div>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-secondary">Painel de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Gestão</span></h1>
+                            <p className="text-gray-500 mt-3 font-medium">Análise de desempenho, financeiro e crescimento.</p>
+                        </div>
 
-                    <div className="flex gap-4">
-                        <button
-                            onClick={fetchKPIs}
-                            className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 hover:bg-gray-50 transition-colors text-secondary font-bold text-sm"
-                            title="Atualizar Dados"
-                        >
-                            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-                            Atualizar
-                        </button>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={fetchKPIs}
+                                className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 hover:bg-gray-50 transition-colors text-secondary font-bold text-sm"
+                                title="Atualizar Dados"
+                            >
+                                <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+                                Atualizar
+                            </button>
 
-                        <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span className="text-sm font-bold text-secondary">Dados em tempo real</span>
+                            <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <span className="text-sm font-bold text-secondary">Dados em tempo real</span>
+                            </div>
                         </div>
                     </div>
                 </header>

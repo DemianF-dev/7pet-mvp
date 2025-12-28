@@ -14,6 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 interface Service {
     id: string;
@@ -186,49 +187,52 @@ export default function ServiceManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="flex justify-between items-center mb-10">
-                    <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100 mb-4 md:mb-0">
-                        <button
-                            onClick={() => setSpeciesFilter('Canino')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            <Dog size={16} /> Cães
-                        </button>
-                        <button
-                            onClick={() => setSpeciesFilter('Felino')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Felino' ? 'bg-purple-50 text-purple-600' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            <Cat size={16} /> Gatos
-                        </button>
-                    </div>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex justify-between items-center">
+                        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100 mb-4 md:mb-0">
+                            <button
+                                onClick={() => setSpeciesFilter('Canino')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                <Dog size={16} /> Cães
+                            </button>
+                            <button
+                                onClick={() => setSpeciesFilter('Felino')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Felino' ? 'bg-purple-50 text-purple-600' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                <Cat size={16} /> Gatos
+                            </button>
+                        </div>
 
-                    <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-                        <button
-                            onClick={() => handleSort('name')}
-                            className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'name' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            Nome {sortConfig.key === 'name' && <ArrowUpDown size={14} />}
-                        </button>
-                        <button
-                            onClick={() => handleSort('basePrice')}
-                            className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'basePrice' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            Valor {sortConfig.key === 'basePrice' && <ArrowUpDown size={14} />}
-                        </button>
-                        <button
-                            onClick={() => handleSort('category')}
-                            className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'category' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            Categoria {sortConfig.key === 'category' && <ArrowUpDown size={14} />}
-                        </button>
-                    </div>
-                    <div className="flex gap-2 mt-4 md:mt-0">
-                        <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary flex items-center gap-2">
-                            <Upload size={20} /> Importar
-                        </button>
-                        <button onClick={() => handleOpenModal()} className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20">
-                            <Plus size={20} /> Novo Serviço
-                        </button>
+                        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+                            <button
+                                onClick={() => handleSort('name')}
+                                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'name' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                Nome {sortConfig.key === 'name' && <ArrowUpDown size={14} />}
+                            </button>
+                            <button
+                                onClick={() => handleSort('basePrice')}
+                                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'basePrice' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                Valor {sortConfig.key === 'basePrice' && <ArrowUpDown size={14} />}
+                            </button>
+                            <button
+                                onClick={() => handleSort('category')}
+                                className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'category' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                Categoria {sortConfig.key === 'category' && <ArrowUpDown size={14} />}
+                            </button>
+                        </div>
+                        <div className="flex gap-2 mt-4 md:mt-0">
+                            <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary flex items-center gap-2">
+                                <Upload size={20} /> Importar
+                            </button>
+                            <button onClick={() => handleOpenModal()} className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20">
+                                <Plus size={20} /> Novo Serviço
+                            </button>
+                        </div>
                     </div>
                 </header>
 

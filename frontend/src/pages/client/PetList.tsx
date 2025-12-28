@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Dog, Edit2, Trash2, Heart } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import PetForm from '../../components/pets/PetForm';
@@ -99,6 +100,7 @@ export default function PetList() {
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
                     <div>
+                        <BackButton className="mb-4 ml-[-1rem]" />
                         <h1 className="text-4xl font-extrabold text-secondary">Meus <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Pets</span></h1>
                         <p className="text-gray-500 mt-3">Gerencie as informações dos seus melhores amigos para um atendimento personalizado.</p>
                     </div>

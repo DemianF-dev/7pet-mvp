@@ -28,6 +28,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 interface Pet {
     id: string;
@@ -359,26 +360,29 @@ export default function CustomerManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="flex justify-between items-center mb-10">
-                    <div>
-                        <h1 className="text-3xl font-bold text-secondary">Gestão de <span className="text-primary">Clientes</span></h1>
-                        <p className="text-gray-500">Visualize perfis, histórico e gerencie restrições de acesso.</p>
-                    </div>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={refreshAll}
-                            disabled={isLoading}
-                            className="p-3 bg-white text-gray-400 hover:text-primary rounded-2xl shadow-sm border border-gray-100 transition-all active:scale-95 disabled:opacity-50"
-                            title="Recarregar dados"
-                        >
-                            <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
-                        </button>
-                        <button
-                            onClick={() => { setFormData({}); setIsCreateModalOpen(true); }}
-                            className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20"
-                        >
-                            <Plus size={20} /> Novo Cliente
-                        </button>
+                <header className="mb-10 mt-[-1rem]">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold text-secondary">Gestão de <span className="text-primary">Clientes</span></h1>
+                            <p className="text-gray-500">Visualize perfis, histórico e gerencie restrições de acesso.</p>
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={refreshAll}
+                                disabled={isLoading}
+                                className="p-3 bg-white text-gray-400 hover:text-primary rounded-2xl shadow-sm border border-gray-100 transition-all active:scale-95 disabled:opacity-50"
+                                title="Recarregar dados"
+                            >
+                                <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                            </button>
+                            <button
+                                onClick={() => { setFormData({}); setIsCreateModalOpen(true); }}
+                                className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20"
+                            >
+                                <Plus size={20} /> Novo Cliente
+                            </button>
+                        </div>
                     </div>
                 </header>
 

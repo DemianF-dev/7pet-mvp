@@ -3,6 +3,7 @@ import { Truck, MapPin, Navigation, Clock, CheckCircle2, Phone, User } from 'luc
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 interface Transport {
     id: string;
@@ -42,6 +43,7 @@ export default function TransportManager() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
                     <h1 className="text-4xl font-extrabold text-secondary">Logística & <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Transporte</span></h1>
                     <p className="text-gray-500 mt-3">Organize as rotas de busca e entrega dos pets.</p>
                 </header>

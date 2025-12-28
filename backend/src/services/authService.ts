@@ -17,8 +17,13 @@ export const register = async (data: any) => {
             email,
             passwordHash,
             role,
+            name: role !== 'CLIENTE' ? name : undefined,
+            phone: role !== 'CLIENTE' ? data.phone : undefined,
             customer: role === 'CLIENTE' ? {
-                create: { name }
+                create: {
+                    name,
+                    phone: data.phone
+                }
             } : undefined
         },
         include: {

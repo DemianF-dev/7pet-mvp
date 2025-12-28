@@ -8,6 +8,9 @@ interface User {
     name?: string;
     phone?: string;
     address?: string;
+    document?: string;
+    birthday?: string;
+    notes?: string;
     customer?: {
         id: string; // Added ID here
         name: string;

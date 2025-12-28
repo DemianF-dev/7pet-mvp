@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Dog, MapPin, Tag, AlertCircle, History } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
@@ -49,6 +50,7 @@ export default function AppointmentList() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
                     <h1 className="text-4xl font-extrabold text-secondary">Meus <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Agendamentos</span></h1>
                     <p className="text-gray-500 mt-3">Acompanhe seus horários marcados e o histórico de atendimentos.</p>
                 </header>

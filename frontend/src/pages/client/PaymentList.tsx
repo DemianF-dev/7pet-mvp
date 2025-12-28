@@ -12,6 +12,7 @@ import {
     RefreshCw,
     Info
 } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
@@ -99,6 +100,7 @@ export default function PaymentList() {
             <main className="flex-1 md:ml-64 p-6 md:p-10 max-w-7xl">
                 <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
+                        <BackButton className="mb-4 ml-[-1rem]" />
                         <h1 className="text-4xl font-black text-secondary tracking-tight">
                             Gestão <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Financeira</span>
                         </h1>

@@ -15,6 +15,7 @@ import {
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import BackButton from '../../components/BackButton';
 
 interface Invoice {
     id: string;
@@ -190,19 +191,22 @@ export default function BillingManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold text-secondary">Gestão <span className="text-primary">Financeira</span></h1>
-                        <p className="text-gray-500">Controle detalhado de orçamentos e recebimentos.</p>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold text-secondary">Gestão <span className="text-primary">Financeira</span></h1>
+                            <p className="text-gray-500">Controle detalhado de orçamentos e recebimentos.</p>
+                        </div>
+                        <button
+                            onClick={handleRefresh}
+                            className="btn-secondary flex items-center gap-2 hover:bg-gray-100 transition-colors"
+                            disabled={isLoading}
+                        >
+                            <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
+                            <span>Atualizar Dados</span>
+                        </button>
                     </div>
-                    <button
-                        onClick={handleRefresh}
-                        className="btn-secondary flex items-center gap-2 hover:bg-gray-100 transition-colors"
-                        disabled={isLoading}
-                    >
-                        <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
-                        <span>Atualizar Dados</span>
-                    </button>
                 </header>
 
                 <div className="flex flex-col md:flex-row gap-4 mb-4">

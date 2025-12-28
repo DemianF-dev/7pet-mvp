@@ -7,6 +7,7 @@ const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     name: z.string().min(2),
+    phone: z.string().optional(),
     role: z.enum(['CLIENTE', 'OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER']).optional(),
 });
 
@@ -16,6 +17,9 @@ const updateMeSchema = z.object({
     password: z.string().min(6).optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
+    document: z.string().optional(),
+    birthday: z.string().optional(),
+    notes: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -71,7 +75,13 @@ export const updateMe = async (req: any, res: Response) => {
             email: data.email,
             phone: data.phone,
             address: data.address,
+            document: data.document,
+            notes: data.notes,
         };
+
+        if (data.birthday) {
+            updateData.birthday = new Date(data.birthday);
+        }
 
         if (data.password) {
             const bcrypt = await import('bcrypt');

@@ -13,6 +13,7 @@ import {
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { motion } from 'framer-motion';
+import BackButton from '../../components/BackButton';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -90,44 +91,47 @@ export default function FinancialReports() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-4xl font-extrabold text-secondary tracking-tight">Relatórios <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Financeiros</span></h1>
-                        <p className="text-gray-500 mt-3 font-medium">Controle de faturamento, cobranças e histórico de pagamentos.</p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <CalendarIcon size={16} className="text-gray-400" />
-                                <input
-                                    type="date"
-                                    value={dateRange.start}
-                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                    className="text-xs font-bold border-none focus:ring-0 bg-transparent p-0"
-                                />
-                            </div>
-                            <span className="text-gray-300">|</span>
-                            <div className="flex items-center gap-2">
-                                <CalendarIcon size={16} className="text-gray-400" />
-                                <input
-                                    type="date"
-                                    value={dateRange.end}
-                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                    className="text-xs font-bold border-none focus:ring-0 bg-transparent p-0"
-                                />
-                            </div>
-                            <button
-                                onClick={fetchReports}
-                                className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary/20 transition-all"
-                            >
-                                <Filter size={18} />
-                            </button>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-secondary tracking-tight">Relatórios <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Financeiros</span></h1>
+                            <p className="text-gray-500 mt-3 font-medium">Controle de faturamento, cobranças e histórico de pagamentos.</p>
                         </div>
 
-                        <button className="bg-secondary text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-secondary/20 flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all text-sm">
-                            <Download size={18} /> Exportar CSV
-                        </button>
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <CalendarIcon size={16} className="text-gray-400" />
+                                    <input
+                                        type="date"
+                                        value={dateRange.start}
+                                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                        className="text-xs font-bold border-none focus:ring-0 bg-transparent p-0"
+                                    />
+                                </div>
+                                <span className="text-gray-300">|</span>
+                                <div className="flex items-center gap-2">
+                                    <CalendarIcon size={16} className="text-gray-400" />
+                                    <input
+                                        type="date"
+                                        value={dateRange.end}
+                                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                        className="text-xs font-bold border-none focus:ring-0 bg-transparent p-0"
+                                    />
+                                </div>
+                                <button
+                                    onClick={fetchReports}
+                                    className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary/20 transition-all"
+                                >
+                                    <Filter size={18} />
+                                </button>
+                            </div>
+
+                            <button className="bg-secondary text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-secondary/20 flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all text-sm">
+                                <Download size={18} /> Exportar CSV
+                            </button>
+                        </div>
                     </div>
                 </header>
 

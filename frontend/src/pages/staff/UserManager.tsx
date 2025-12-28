@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 interface UserData {
     id: string;
@@ -200,28 +201,31 @@ export default function UserManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-4xl font-extrabold text-secondary tracking-tight">Gestão de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Acessos</span></h1>
-                        <p className="text-gray-500 mt-3 font-medium">Gerencie usuários, permissões e níveis de acesso do sistema.</p>
-                    </div>
-
-                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
-                        <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
-                            <div className="flex -space-x-2 overflow-hidden px-2">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200"></div>
-                                ))}
-                            </div>
-                            <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-secondary tracking-tight">Gestão de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Acessos</span></h1>
+                            <p className="text-gray-500 mt-3 font-medium">Gerencie usuários, permissões e níveis de acesso do sistema.</p>
                         </div>
-                        <button
-                            onClick={handleAddNewUser}
-                            className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
-                        >
-                            <Plus size={16} />
-                            Novo Usuário
-                        </button>
+
+                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
+                            <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
+                                <div className="flex -space-x-2 overflow-hidden px-2">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200"></div>
+                                    ))}
+                                </div>
+                                <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
+                            </div>
+                            <button
+                                onClick={handleAddNewUser}
+                                className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
+                            >
+                                <Plus size={16} />
+                                Novo Usuário
+                            </button>
+                        </div>
                     </div>
                 </header>
 

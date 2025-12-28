@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Bell, CheckCircle, Clock } from 'lucide-react';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 interface Notification {
     id: string;
@@ -55,18 +56,21 @@ export default function StaffNotificationList() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10 max-w-4xl">
-                <header className="mb-10 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-extrabold text-secondary">
-                            Notificações <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">do Sistema</span>
-                        </h1>
-                        <p className="text-gray-500 mt-3">Avisos, solicitações de senha e alertas operacionais.</p>
+                <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-secondary">
+                                Notificações <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">do Sistema</span>
+                            </h1>
+                            <p className="text-gray-500 mt-3">Avisos, solicitações de senha e alertas operacionais.</p>
+                        </div>
+                        {notifications.some(n => !n.read) && (
+                            <button onClick={markAllRead} className="text-sm font-bold text-primary hover:underline">
+                                Marcar todas como lidas
+                            </button>
+                        )}
                     </div>
-                    {notifications.some(n => !n.read) && (
-                        <button onClick={markAllRead} className="text-sm font-bold text-primary hover:underline">
-                            Marcar todas como lidas
-                        </button>
-                    )}
                 </header>
 
                 {isLoading ? (

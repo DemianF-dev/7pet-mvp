@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { FileText, ArrowRight, CheckCircle2, XCircle, Eye } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
@@ -70,6 +71,7 @@ export default function QuoteList() {
             <main className="flex-1 md:ml-64 p-6 md:p-10 max-w-6xl">
                 <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
+                        <BackButton className="mb-4 ml-[-1rem]" />
                         <h1 className="text-4xl font-extrabold text-secondary">Meus <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Orçamentos</span></h1>
                         <p className="text-gray-500 mt-3">Acompanhe suas solicitações e aprove orçamentos enviados.</p>
                     </div>
