@@ -15,13 +15,15 @@ import {
     Save,
     X,
     Clock,
-    StickyNote,
-    Wallet,
     TrendingUp,
     TrendingDown,
     AlertCircle,
     CheckCircle,
-    MessageCircle
+    MessageCircle,
+    RefreshCcw,
+    Printer,
+    StickyNote,
+    Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -87,6 +89,10 @@ export default function CustomerManager() {
     // History Data
     const [historyData, setHistoryData] = useState<any>(null);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [selectedQuote, setSelectedQuote] = useState<any>(null);
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+
+    const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'ENCERRADO'];
 
     useEffect(() => {
         fetchCustomers();
@@ -139,11 +145,108 @@ export default function CustomerManager() {
         }
     };
 
+    const refreshAll = async () => {
+        setIsLoading(true);
+        await fetchCustomers();
+        if (selectedCustomer) {
+            await fetchCustomerHistory(selectedCustomer.id);
+        }
+        setIsLoading(false);
+    };
+
+    const updateQuoteStatus = async (id: string, newStatus: string) => {
+        try {
+            await api.patch(`/quotes/${id}/status`, { status: newStatus });
+            if (selectedCustomer) fetchCustomerHistory(selectedCustomer.id);
+            if (selectedQuote?.id === id) setSelectedQuote({ ...selectedQuote, status: newStatus });
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+        }
+    };
+
+    const handleQuoteWhatsApp = (quote: any) => {
+        const url = `https://wa.me/${selectedCustomer?.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(
+            `Olá, ${selectedCustomer?.name}! Aqui está o seu orçamento da 7Pet (Orçamento #${quote.id.substring(0, 8).toUpperCase()}):\n\n` +
+            quote.items.map((i: any) => `- ${i.description}: ${i.quantity}x R$ ${i.price.toFixed(2)}`).join('\n') +
+            `\n\nTotal: R$ ${quote.totalAmount.toFixed(2)}\n\nPor favor, retorne para aprovação.`
+        )}`;
+        window.open(url, '_blank');
+    };
+
+    const handlePrintQuote = (quote: any) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const content = `
+            <html>
+                <head>
+                    <title>Orçamento - 7Pet</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 40px; color: #333; }
+                        .header { border-bottom: 2px solid #ed64a6; padding-bottom: 20px; margin-bottom: 20px; }
+                        h1 { color: #ed64a6; margin: 0; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+                        th { background: #f9f9f9; font-weight: bold; }
+                        .total { text-align: right; font-size: 24px; font-weight: bold; margin-top: 30px; color: #ed64a6; }
+                        .footer { margin-top: 50px; font-size: 12px; color: #999; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>7Pet - Orçamento #${quote.id.substring(0, 8).toUpperCase()}</h1>
+                        <p><strong>Cliente:</strong> ${selectedCustomer?.name}</p>
+                        <p><strong>Data:</strong> ${new Date(quote.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Qtd</th>
+                                <th>Preço Unit.</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${quote.items.map((item: any) => `
+                                <tr>
+                                    <td>${item.description}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>R$ ${item.price.toFixed(2)}</td>
+                                    <td>R$ ${(item.price * item.quantity).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="total">Total: R$ ${quote.totalAmount.toFixed(2)}</div>
+                    <div class="footer">Este orçamento é válido por 15 dias. Sujeito a alteração após avaliação presencial.</div>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.print();
+    };
+
+    const getQuoteStatusColor = (status: string) => {
+        switch (status) {
+            case 'SOLICITADO': return 'bg-blue-100 text-blue-700';
+            case 'EM_PRODUCAO': return 'bg-yellow-100 text-yellow-700';
+            case 'CALCULADO': return 'bg-emerald-100 text-emerald-700';
+            case 'ENVIADO': return 'bg-purple-100 text-purple-700';
+            case 'APROVADO': return 'bg-green-100 text-green-700';
+            case 'REJEITADO': return 'bg-red-100 text-red-700';
+            case 'AGENDAR': return 'bg-indigo-100 text-indigo-700';
+            case 'ENCERRADO': return 'bg-gray-200 text-gray-500 line-through';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
     const handleUpdateWrapper = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedCustomer) return;
         try {
-            // Fix: ensure empty recurringFrequency is sent as undefined or null, not empty string
             const payload = { ...formData } as any;
             if (payload.recurringFrequency === '') {
                 delete payload.recurringFrequency;
@@ -151,7 +254,7 @@ export default function CustomerManager() {
             const response = await api.patch(`/customers/${selectedCustomer.id}`, payload);
             setSelectedCustomer({ ...selectedCustomer, ...response.data });
             setIsEditMode(false);
-            fetchCustomers(); // Refresh list to update scalar fields in list view if needed
+            fetchCustomers();
             alert('Dados atualizados!');
         } catch (error: any) {
             console.error('Erro ao atualizar:', error);
@@ -261,12 +364,22 @@ export default function CustomerManager() {
                         <h1 className="text-3xl font-bold text-secondary">Gestão de <span className="text-primary">Clientes</span></h1>
                         <p className="text-gray-500">Visualize perfis, histórico e gerencie restrições de acesso.</p>
                     </div>
-                    <button
-                        onClick={() => { setFormData({}); setIsCreateModalOpen(true); }}
-                        className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20"
-                    >
-                        <Plus size={20} /> Novo Cliente
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={refreshAll}
+                            disabled={isLoading}
+                            className="p-3 bg-white text-gray-400 hover:text-primary rounded-2xl shadow-sm border border-gray-100 transition-all active:scale-95 disabled:opacity-50"
+                            title="Recarregar dados"
+                        >
+                            <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+                        <button
+                            onClick={() => { setFormData({}); setIsCreateModalOpen(true); }}
+                            className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20"
+                        >
+                            <Plus size={20} /> Novo Cliente
+                        </button>
+                    </div>
                 </header>
 
                 <div className="flex gap-4 mb-8">
@@ -595,24 +708,46 @@ export default function CustomerManager() {
                                     {/* QUOTES TAB */}
                                     {activeTab === 'quotes' && (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                            <h3 className="font-bold text-secondary text-lg mb-4 flex items-center gap-2">
-                                                <FileText className="text-primary" /> Histórico de Orçamentos
-                                            </h3>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-bold text-secondary text-lg flex items-center gap-2">
+                                                    <FileText className="text-primary" /> Histórico de Orçamentos
+                                                </h3>
+                                                <button
+                                                    onClick={() => selectedCustomer && fetchCustomerHistory(selectedCustomer.id)}
+                                                    className="p-2 text-gray-400 hover:text-primary transition-all rounded-lg hover:bg-gray-100 flex items-center gap-1 text-xs font-bold"
+                                                >
+                                                    <RefreshCcw size={14} className={isLoadingHistory ? 'animate-spin' : ''} /> Atualizar
+                                                </button>
+                                            </div>
                                             {isLoadingHistory ? (
                                                 <div className="p-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div></div>
                                             ) : historyData?.quotes?.length > 0 ? (
-                                                historyData.quotes.map((quote: any) => (
-                                                    <div key={quote.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50 flex justify-between items-center">
-                                                        <div>
-                                                            <p className="font-bold text-secondary">#{quote.id.substring(0, 8).toUpperCase()}</p>
-                                                            <p className="text-xs text-gray-400">{new Date(quote.createdAt).toLocaleDateString()}</p>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {historyData.quotes.map((quote: any) => (
+                                                        <div
+                                                            key={quote.id}
+                                                            onClick={() => { setSelectedQuote(quote); setIsQuoteModalOpen(true); }}
+                                                            className="p-5 rounded-3xl border border-gray-100 bg-white hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                                                        >
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <p className="font-black text-secondary">#{quote.id.substring(0, 8).toUpperCase()}</p>
+                                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${getQuoteStatusColor(quote.status)}`}>{quote.status}</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-gray-400 font-bold flex items-center gap-1"><Calendar size={12} /> {new Date(quote.createdAt).toLocaleDateString()} às {new Date(quote.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-lg font-black text-primary">R$ {quote.totalAmount.toFixed(2)}</p>
+                                                                    <p className="text-[10px] text-gray-300 font-black uppercase tracking-tighter">Clique para ver detalhes</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <ChevronRight size={16} className="text-primary" />
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="font-bold text-primary">R$ {quote.totalAmount.toFixed(2)}</p>
-                                                            <span className="text-[10px] uppercase font-bold text-gray-400">{quote.status}</span>
-                                                        </div>
-                                                    </div>
-                                                ))
+                                                    ))}
+                                                </div>
                                             ) : (
                                                 <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
                                                     <FileText size={40} className="mx-auto mb-2 opacity-50" />
@@ -953,6 +1088,110 @@ export default function CustomerManager() {
                         </div>
                     )
                 }
+
+                {/* QUOTE DETAILS MODAL */}
+                <AnimatePresence>
+                    {isQuoteModalOpen && selectedQuote && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-secondary/60 backdrop-blur-md"
+                                onClick={() => setIsQuoteModalOpen(false)}
+                            ></motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="bg-white rounded-[40px] p-8 md:p-12 w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden"
+                            >
+                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-purple-500 to-primary"></div>
+
+                                <div className="flex justify-between items-start mb-8">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                                                <FileText size={24} />
+                                            </div>
+                                            <h2 className="text-3xl font-black text-secondary">Detalhes do Orçamento</h2>
+                                        </div>
+                                        <p className="text-gray-400 font-bold tracking-widest uppercase text-[10px]">Identificador: #{selectedQuote.id.toUpperCase()}</p>
+                                    </div>
+                                    <button onClick={() => setIsQuoteModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                        <X size={24} className="text-gray-300" />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                                    <div className="space-y-6">
+                                        <div className="bg-gray-50 p-6 rounded-[30px] border border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Status e Ações</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {statuses.map(s => (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => updateQuoteStatus(selectedQuote.id, s)}
+                                                        className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all border-2 ${selectedQuote.status === s ? getQuoteStatusColor(s) + ' border-current' : 'bg-white text-gray-300 border-gray-100 hover:border-gray-200 hover:text-gray-400'}`}
+                                                    >
+                                                        {s}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => handleQuoteWhatsApp(selectedQuote)}
+                                                className="flex-1 py-4 bg-green-500 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-green-600 transition-all shadow-lg shadow-green-200"
+                                            >
+                                                <MessageCircle size={18} /> WhatsApp
+                                            </button>
+                                            <button
+                                                onClick={() => handlePrintQuote(selectedQuote)}
+                                                className="flex-1 py-4 bg-gray-100 text-secondary rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-gray-200 transition-all"
+                                            >
+                                                <Printer size={18} /> Imprimir
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-secondary text-white p-8 rounded-[40px] shadow-xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <FileText size={120} />
+                                        </div>
+                                        <div className="relative z-10 flex flex-col h-full justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Itens do Orçamento</p>
+                                                <div className="space-y-4 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                                                    {(selectedQuote.items || []).map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex justify-between items-center border-b border-white/10 pb-2">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-bold">{item.description}</span>
+                                                                <span className="text-[10px] text-gray-400">{item.quantity}x R$ {item.price.toFixed(2)}</span>
+                                                            </div>
+                                                            <span className="font-black">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="pt-6 border-t border-white/20 mt-6">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-lg font-bold">Total</span>
+                                                    <span className="text-3xl font-black text-primary">R$ {selectedQuote.totalAmount.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-center text-gray-300 text-[10px] font-bold uppercase tracking-widest">
+                                    7Pet MVP • Sistema de Gestão Inteligente
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </main >
         </div >
     );
