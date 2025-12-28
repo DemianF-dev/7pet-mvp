@@ -144,7 +144,7 @@ export default function QuoteList() {
 
                                 <div className="flex items-center gap-3">
                                     <button
-                                        onClick={() => setSelectedQuote(quote)}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedQuote(quote); }}
                                         className="p-3 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary-light rounded-2xl transition-all"
                                     >
                                         <Eye size={20} />
@@ -176,10 +176,11 @@ export default function QuoteList() {
                                 className="fixed inset-0 bg-secondary/40 backdrop-blur-sm z-40"
                             />
                             <motion.div
+                                key="client-quote-modal"
                                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                className="fixed inset-x-6 top-1/2 -translate-y-1/2 md:inset-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-white rounded-[48px] shadow-2xl z-50 overflow-hidden"
+                                className="fixed inset-x-6 top-1/2 -translate-y-1/2 md:inset-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-white rounded-[48px] shadow-2xl z-50 overflow-y-auto max-h-[90vh] custom-scrollbar"
                             >
                                 <div className="p-10">
                                     <div className="flex justify-between items-start mb-8">
