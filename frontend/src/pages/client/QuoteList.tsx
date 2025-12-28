@@ -18,7 +18,7 @@ interface Quote {
 const statusConfig: any = {
     'SOLICITADO': { label: 'Solicitado', color: 'bg-blue-100 text-blue-700 border-blue-200' },
     'EM_PRODUCAO': { label: 'Em Análise', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-    'ENVIADO': { label: 'Aguardando Aprovação', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    'ENVIADO': { label: 'Validado, Aguardando Aprovação', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
     'RECALCULADO': { label: 'Recalculado', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
     'APROVADO': { label: 'Aprovado', color: 'bg-green-100 text-green-700 border-green-200' },
     'REJEITADO': { label: 'Reprovado', color: 'bg-red-100 text-red-700 border-red-200' },
@@ -29,18 +29,23 @@ export default function QuoteList() {
     const { } = useAuthStore();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
-    const fetchQuotes = async () => {
+    const fetchQuotes = async (refresh = false) => {
+        if (refresh) setIsRefreshing(true);
+        else setIsLoading(true);
         try {
             const response = await api.get('/quotes');
             setQuotes(response.data);
+            setError(null);
         } catch (err: any) {
             console.error('Erro ao buscar orçamentos:', err);
             setError(err.message || 'Erro desconhecido');
         } finally {
             setIsLoading(false);
+            setIsRefreshing(false);
         }
     };
 
@@ -69,8 +74,13 @@ export default function QuoteList() {
                         <p className="text-gray-500 mt-3">Acompanhe suas solicitações e aprove orçamentos enviados.</p>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={fetchQuotes} className="flex items-center gap-2 px-4 py-2 bg-white text-secondary font-bold rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition-all">
-                            Atualizar Lista
+                        <button
+                            onClick={() => fetchQuotes(true)}
+                            disabled={isRefreshing}
+                            className="flex items-center gap-2 px-4 py-2 bg-white text-secondary font-bold rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition-all disabled:opacity-50"
+                        >
+                            <ArrowRight size={18} className={`transition-transform ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? 'rotate(90deg)' : 'none' }} />
+                            {isRefreshing ? 'Atualizando...' : 'Atualizar Lista'}
                         </button>
                         <button onClick={() => window.location.href = '/client/quote-request'} className="btn-primary flex items-center gap-2">
                             Nova Solicitação <ArrowRight size={18} />
@@ -99,7 +109,8 @@ export default function QuoteList() {
                             <motion.div
                                 key={quote.id}
                                 layoutId={quote.id}
-                                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 flex flex-col md:flex-row md:items-center gap-6 group hover:border-primary/20 transition-all mb-4"
+                                onClick={() => setSelectedQuote(quote)}
+                                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 flex flex-col md:flex-row md:items-center gap-6 group hover:border-primary/40 hover:shadow-md transition-all mb-4 cursor-pointer"
                             >
                                 <div className="flex items-center gap-4 flex-1">
                                     <div className="w-14 h-14 bg-primary-light rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
