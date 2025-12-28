@@ -373,6 +373,7 @@ export default function QuoteManager() {
 
                     <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
                         <button
+                            onClick={() => setView('active')}
                             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-secondary'}`}
                         >
                             Ativos
@@ -626,7 +627,7 @@ export default function QuoteManager() {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white rounded-3xl p-8 w-full max-w-2xl relative z-10 shadow-2xl"
+                            className="bg-white rounded-3xl p-8 w-full max-w-2xl relative z-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
                         >
                             <h2 className="text-2xl font-bold text-secondary mb-6 flex items-center gap-2">
                                 <Edit className="text-primary" />
@@ -748,7 +749,7 @@ export default function QuoteManager() {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white rounded-3xl p-8 w-full max-w-2xl relative z-10 shadow-2xl"
+                            className="bg-white rounded-3xl p-8 w-full max-w-2xl relative z-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
                         >
                             <h2 className="text-2xl font-bold text-secondary mb-6 flex items-center gap-2">
                                 <Plus className="text-primary" />
