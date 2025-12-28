@@ -162,7 +162,7 @@ export const customerController = {
                     address: updateFields.address,
                     type: updateFields.type,
                     recurringFrequency: updateFields.recurringFrequency,
-                    discountPercentage: updateFields.discountPercentage,
+                    discountPercentage: updateFields.discountPercentage !== undefined ? updateFields.discountPercentage : undefined,
                     internalNotes: updateFields.internalNotes,
                     requiresPrepayment: updateFields.requiresPrepayment ?? undefined,
                     isBlocked: updateFields.isBlocked ?? undefined
