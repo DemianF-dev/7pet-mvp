@@ -164,7 +164,17 @@ export default function QuoteRequest() {
                 <header className="mb-10">
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <h1 className="text-4xl font-extrabold text-secondary">Solicitar <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Orçamento</span></h1>
-                    <p className="text-gray-500 mt-3">Personalize seu pedido para o melhor cuidado com seu amigo.</p>
+                    <p className="text-gray-500 mt-3">Escolha os serviços e agende o cuidado para o seu pet</p>
+
+                    {/* Welcome Message */}
+                    <div className="bg-gradient-to-r from-primary/10 to-blue-50 p-6 rounded-3xl border-2 border-primary/20 mt-6">
+                        <h3 className="text-lg font-bold text-secondary mb-2 flex items-center gap-2">
+                            Será um prazer receber seu Pet em nosso espaço! 🐾
+                        </h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            Para que possamos lhe enviar seu orçamento, por gentileza preencha as informações abaixo com os serviços desejados.
+                        </p>
+                    </div>
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-6">

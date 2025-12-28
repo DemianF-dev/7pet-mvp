@@ -26,6 +26,8 @@ export default function PetForm({ isOpen, onClose, onSubmit, initialData, isLoad
         firstTime: false,
         age: '',
         healthIssues: '',
+        hasKnots: false,
+        usedToGrooming: true,
     });
 
     useEffect(() => {
@@ -45,6 +47,8 @@ export default function PetForm({ isOpen, onClose, onSubmit, initialData, isLoad
                 firstTime: initialData.firstTime || false,
                 age: initialData.age || '',
                 healthIssues: initialData.healthIssues || '',
+                hasKnots: initialData.hasKnots || false,
+                usedToGrooming: initialData.usedToGrooming !== undefined ? initialData.usedToGrooming : true,
             });
         } else {
             setFormData({
@@ -62,6 +66,8 @@ export default function PetForm({ isOpen, onClose, onSubmit, initialData, isLoad
                 firstTime: false,
                 age: '',
                 healthIssues: '',
+                hasKnots: false,
+                usedToGrooming: true,
             });
         }
     }, [initialData, isOpen]);
@@ -243,6 +249,24 @@ export default function PetForm({ isOpen, onClose, onSubmit, initialData, isLoad
                             </div>
 
                             <div className="grid grid-cols-2 gap-y-3 p-4 bg-gray-50 rounded-2xl">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.hasKnots}
+                                        onChange={(e) => setFormData({ ...formData, hasKnots: e.target.checked })}
+                                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <span className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">Tem Nós/Embaraços?</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.usedToGrooming}
+                                        onChange={(e) => setFormData({ ...formData, usedToGrooming: e.target.checked })}
+                                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <span className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">Acostumado com Banho?</span>
+                                </label>
                                 <label className="flex items-center gap-3 cursor-pointer group">
                                     <input
                                         type="checkbox"

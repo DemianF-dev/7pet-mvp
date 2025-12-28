@@ -113,6 +113,7 @@ model Pet {
   usesOrnaments    Boolean       @default(false)
   marketingConsent Boolean       @default(false)
   temperament      String?
+  usedToGrooming   Boolean       @default(true)
   firstTime        Boolean       @default(false)
   age              String?
   healthIssues     String?
