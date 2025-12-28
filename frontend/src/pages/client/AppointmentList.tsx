@@ -129,7 +129,7 @@ export default function AppointmentList() {
                                                 </span>
                                                 <button
                                                     onClick={() => {
-                                                        const phone = '5511999999999'; // Substitua pelo número do atendimento
+                                                        const phone = '5511983966451'; // Número do atendimento 7Pet
                                                         const message = `Olá! Gostaria de solicitar alteração/cancelamento do meu agendamento:\n\n` +
                                                             `📋 ID: ${appt.id}\n` +
                                                             `🐾 Pet: ${appt.pet.name}\n` +
