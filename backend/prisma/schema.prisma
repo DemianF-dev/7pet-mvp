@@ -89,6 +89,8 @@ model Customer {
   appointments       Appointment[]
   invoices           Invoice[]
   type               String        @default("AVULSO") // AVULSO, RECORRENTE
+  recurringFrequency String?       // SEMANAL, QUINZENAL, MENSAL
+  discountPercentage Float         @default(0.0)
   internalNotes      String?
   balance            Float         @default(0.0)
 }

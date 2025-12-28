@@ -57,6 +57,8 @@ interface Customer {
     pets: Pet[];
     user: { email: string };
     balance?: number;
+    recurringFrequency?: 'SEMANAL' | 'QUINZENAL' | 'MENSAL';
+    discountPercentage?: number;
     _count?: {
         appointments: number;
         quotes: number;
@@ -168,6 +170,8 @@ export default function CustomerManager() {
             phone: selectedCustomer?.phone,
             address: selectedCustomer?.address,
             type: selectedCustomer?.type,
+            recurringFrequency: selectedCustomer?.recurringFrequency,
+            discountPercentage: selectedCustomer?.discountPercentage,
             internalNotes: selectedCustomer?.internalNotes,
             isBlocked: selectedCustomer?.isBlocked,
             requiresPrepayment: selectedCustomer?.requiresPrepayment
@@ -371,11 +375,59 @@ export default function CustomerManager() {
                                                         </div>
                                                         <div className="space-y-2">
                                                             <label className="label">Tipo de Cliente</label>
-                                                            <select className="input-field" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
+                                                            <select
+                                                                className="input-field"
+                                                                value={formData.type}
+                                                                onChange={e => {
+                                                                    const newType = e.target.value as any;
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        type: newType,
+                                                                        recurringFrequency: newType === 'AVULSO' ? undefined : formData.recurringFrequency,
+                                                                        discountPercentage: newType === 'AVULSO' ? 0 : formData.discountPercentage
+                                                                    });
+                                                                }}
+                                                            >
                                                                 <option value="AVULSO">Avulso (Eventual)</option>
                                                                 <option value="RECORRENTE">Recorrente (Fiel)</option>
                                                             </select>
                                                         </div>
+                                                        {formData.type === 'RECORRENTE' && (
+                                                            <div className="col-span-2 grid grid-cols-2 gap-4 bg-purple-50 p-6 rounded-3xl border border-purple-100 animate-in zoom-in-95 duration-200">
+                                                                <div className="space-y-2">
+                                                                    <label className="label text-purple-700">Frequência Desejada</label>
+                                                                    <select
+                                                                        className="input-field bg-white border-purple-200"
+                                                                        value={formData.recurringFrequency}
+                                                                        onChange={e => {
+                                                                            const freq = e.target.value as any;
+                                                                            let discount = 0;
+                                                                            if (freq === 'SEMANAL') discount = 10;
+                                                                            if (freq === 'QUINZENAL') discount = 7;
+                                                                            if (freq === 'MENSAL') discount = 5;
+                                                                            setFormData({ ...formData, recurringFrequency: freq, discountPercentage: discount });
+                                                                        }}
+                                                                    >
+                                                                        <option value="">Selecione a frequência...</option>
+                                                                        <option value="SEMANAL">Semanal (Mín. 4 banhos/mês)</option>
+                                                                        <option value="QUINZENAL">Quinzenal (Mín. 2 banhos/mês)</option>
+                                                                        <option value="MENSAL">Mensal (1 banho/mês)</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="label text-purple-700">Desconto Aplicado (%)</label>
+                                                                    <div className="input-field bg-white border-purple-200 flex items-center justify-between font-black text-purple-600">
+                                                                        <span>{formData.discountPercentage || 0}%</span>
+                                                                        <span className="text-[10px] bg-purple-600 text-white px-2 py-1 rounded-lg uppercase tracking-wider">Automático</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-span-2 text-xs text-purple-600 italic font-medium">
+                                                                    {formData.recurringFrequency === 'SEMANAL' && "* Desconto de 10% sobre o pacote do mês todo e todos os serviços adicionais."}
+                                                                    {formData.recurringFrequency === 'QUINZENAL' && "* Desconto de 7% aplicado sobre o valor total mensal."}
+                                                                    {formData.recurringFrequency === 'MENSAL' && "* Desconto de 5%. Observação: Este plano exige pagamento de dois meses adiantados."}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                         <div className="col-span-2 space-y-2">
                                                             <label className="label">Observações Internas (Visível apenas para Staff)</label>
                                                             <textarea
@@ -427,6 +479,23 @@ export default function CustomerManager() {
                                                                 <MapPin size={16} className="text-primary" /> {selectedCustomer.address || '-'}
                                                             </div>
                                                         </div>
+                                                        {selectedCustomer.type === 'RECORRENTE' && (
+                                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
+                                                                        <TrendingDown size={20} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none">Plano de Recorrência</p>
+                                                                        <p className="text-secondary font-black">{selectedCustomer.recurringFrequency || 'NÃO DEFINIDO'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none">Desconto Fixo</p>
+                                                                    <p className="text-2xl font-black text-purple-600">{selectedCustomer.discountPercentage || 0}%</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {selectedCustomer.internalNotes && (
@@ -699,11 +768,53 @@ export default function CustomerManager() {
                                     </div>
                                     <div>
                                         <label className="label">Tipo</label>
-                                        <select className="input-field" value={formData.type || 'AVULSO'} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
+                                        <select
+                                            className="input-field"
+                                            value={formData.type || 'AVULSO'}
+                                            onChange={e => {
+                                                const newType = e.target.value as any;
+                                                setFormData({
+                                                    ...formData,
+                                                    type: newType,
+                                                    recurringFrequency: newType === 'AVULSO' ? undefined : formData.recurringFrequency,
+                                                    discountPercentage: newType === 'AVULSO' ? 0 : formData.discountPercentage
+                                                });
+                                            }}
+                                        >
                                             <option value="AVULSO">Avulso</option>
                                             <option value="RECORRENTE">Recorrente</option>
                                         </select>
                                     </div>
+
+                                    {formData.type === 'RECORRENTE' && (
+                                        <div className="space-y-4 bg-purple-50 p-4 rounded-2xl border border-purple-100 transition-all animate-in slide-in-from-top-2 duration-300">
+                                            <div>
+                                                <label className="label text-purple-700">Frequência</label>
+                                                <select
+                                                    className="input-field bg-white border-purple-200"
+                                                    value={formData.recurringFrequency || ''}
+                                                    onChange={e => {
+                                                        const freq = e.target.value as any;
+                                                        let discount = 0;
+                                                        if (freq === 'SEMANAL') discount = 10;
+                                                        if (freq === 'QUINZENAL') discount = 7;
+                                                        if (freq === 'MENSAL') discount = 5;
+                                                        setFormData({ ...formData, recurringFrequency: freq, discountPercentage: discount });
+                                                    }}
+                                                >
+                                                    <option value="">Selecione...</option>
+                                                    <option value="SEMANAL">Semanal (10% desc)</option>
+                                                    <option value="QUINZENAL">Quinzenal (7% desc)</option>
+                                                    <option value="MENSAL">Mensal (5% desc)</option>
+                                                </select>
+                                            </div>
+                                            <div className="text-[10px] text-purple-600 font-bold bg-white/50 p-2 rounded-lg italic">
+                                                {formData.recurringFrequency === 'SEMANAL' && "Min. 4 banhos/mês. Desconto aplicado em todo o pacote."}
+                                                {formData.recurringFrequency === 'QUINZENAL' && "Min. 2 banhos/mês. Desconto sobre o valor total."}
+                                                {formData.recurringFrequency === 'MENSAL' && "1 banho/mês. Requer pagamento de 2 meses adiantados."}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="pt-4 flex justify-end gap-3">
                                         <button type="button" onClick={() => setIsCreateModalOpen(false)} className="btn-secondary">Cancelar</button>
                                         <button type="submit" className="btn-primary">Criar Cadastro</button>

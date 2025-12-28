@@ -7,11 +7,13 @@ const prisma = new PrismaClient();
 
 const customerSchema = z.object({
     name: z.string().min(1, 'Nome é obrigatório'),
-    phone: z.string().nullish(), // nullish allows null or undefined
+    phone: z.string().nullish(),
     address: z.string().nullish(),
     type: z.enum(['AVULSO', 'RECORRENTE']).default('AVULSO'),
+    recurringFrequency: z.enum(['SEMANAL', 'QUINZENAL', 'MENSAL']).nullish(),
+    discountPercentage: z.number().nullish(),
     internalNotes: z.string().nullish(),
-    email: z.string().email('Email inválido').nullish(), // Optional if updating existing user
+    email: z.string().email('Email inválido').nullish(),
     requiresPrepayment: z.boolean().nullish(),
     isBlocked: z.boolean().nullish()
 });
@@ -121,6 +123,8 @@ export const customerController = {
                         phone: data.phone,
                         address: data.address,
                         type: data.type,
+                        recurringFrequency: data.recurringFrequency,
+                        discountPercentage: data.discountPercentage || 0,
                         internalNotes: data.internalNotes,
                         requiresPrepayment: data.requiresPrepayment ?? false,
                         isBlocked: data.isBlocked ?? false
@@ -157,6 +161,8 @@ export const customerController = {
                     phone: updateFields.phone,
                     address: updateFields.address,
                     type: updateFields.type,
+                    recurringFrequency: updateFields.recurringFrequency,
+                    discountPercentage: updateFields.discountPercentage,
                     internalNotes: updateFields.internalNotes,
                     requiresPrepayment: updateFields.requiresPrepayment ?? undefined,
                     isBlocked: updateFields.isBlocked ?? undefined
