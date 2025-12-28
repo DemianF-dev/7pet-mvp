@@ -696,7 +696,7 @@ export default function CustomerManager() {
                                                                 <input
                                                                     type="text"
                                                                     value={formData.secondaryGuardianName || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianName: e.target.value })}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianName: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="Nome do segundo tutor"
                                                                 />
@@ -706,7 +706,7 @@ export default function CustomerManager() {
                                                                 <input
                                                                     type="tel"
                                                                     value={formData.secondaryGuardianPhone || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianPhone: e.target.value })}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianPhone: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="(00) 00000-0000"
                                                                 />
@@ -716,7 +716,7 @@ export default function CustomerManager() {
                                                                 <input
                                                                     type="email"
                                                                     value={formData.secondaryGuardianEmail || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianEmail: e.target.value })}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianEmail: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="email@exemplo.com"
                                                                 />
@@ -726,7 +726,7 @@ export default function CustomerManager() {
                                                                 <input
                                                                     type="text"
                                                                     value={formData.secondaryGuardianAddress || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianAddress: e.target.value })}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianAddress: e.target.value } as any)}
                                                                     className="input-field"
                                                                     placeholder="Endereço completo"
                                                                 />
