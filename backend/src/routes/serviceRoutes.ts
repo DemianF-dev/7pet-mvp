@@ -13,7 +13,7 @@ router.use(authenticate);
 router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA']));
 
 router.post('/', async (req: Request, res: Response) => {
-    const { name, description, basePrice, duration, category, species } = req.body;
+    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel } = req.body;
 
     const existing = await prisma.service.findFirst({ where: { name } });
     if (existing) {
@@ -21,7 +21,17 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const service = await prisma.service.create({
-        data: { name, description, basePrice, duration, category, species: species || 'Canino' }
+        data: {
+            name,
+            description,
+            basePrice,
+            duration,
+            category,
+            species: species || 'Canino',
+            minWeight: minWeight ? Number(minWeight) : null,
+            maxWeight: maxWeight ? Number(maxWeight) : null,
+            sizeLabel
+        }
     });
     res.status(201).json(service);
 });
@@ -47,7 +57,10 @@ router.post('/bulk', async (req: Request, res: Response) => {
                         basePrice: Number(s.basePrice),
                         duration: Number(s.duration) || 30,
                         category: s.category || 'Geral',
-                        species: s.species || 'Canino'
+                        species: s.species || 'Canino',
+                        minWeight: s.minWeight ? Number(s.minWeight) : null,
+                        maxWeight: s.maxWeight ? Number(s.maxWeight) : null,
+                        sizeLabel: s.sizeLabel
                     }
                 });
                 createdCount++;
@@ -62,7 +75,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, description, basePrice, duration, category, species } = req.body;
+    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel } = req.body;
 
     if (name) {
         const existing = await prisma.service.findFirst({
@@ -78,7 +91,17 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
     const service = await prisma.service.update({
         where: { id },
-        data: { name, description, basePrice, duration, category, species }
+        data: {
+            name,
+            description,
+            basePrice,
+            duration,
+            category,
+            species,
+            minWeight: minWeight !== undefined ? (minWeight ? Number(minWeight) : null) : undefined,
+            maxWeight: maxWeight !== undefined ? (maxWeight ? Number(maxWeight) : null) : undefined,
+            sizeLabel
+        }
     });
     res.json(service);
 });

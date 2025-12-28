@@ -1,20 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Plus, Trash2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, Plus, Trash2, Send, CheckCircle2, AlertCircle, Info, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
+import BackButton from '../../components/BackButton';
 import api from '../../services/api';
+import ServiceAutocomplete from '../../components/ServiceAutocomplete';
 
 interface Service {
     id: string;
     name: string;
     basePrice: number;
+    category?: string;
+    species: string;
+    minWeight?: number;
+    maxWeight?: number;
+    sizeLabel?: string;
 }
 
 interface Pet {
     id: string;
     name: string;
     species: string;
+    weight?: number;
+    breed?: string;
 }
 
 export default function QuoteRequest() {
@@ -40,12 +49,33 @@ export default function QuoteRequest() {
                 setPets(petsRes.data);
             } catch (err) {
                 console.error('Erro ao buscar dados:', err);
-            } finally {
-                // Loading handling removed to fix compilation error
             }
         };
         fetchData();
     }, []);
+
+    const selectedPet = pets.find(p => p.id === selectedPetId);
+
+    // Filter services based on selected pet
+    const availableServices = services.filter(s => {
+        if (!selectedPet) return true; // Show all if no pet selected
+
+        // Species match
+        const speciesMatch = s.species.toLowerCase().includes(selectedPet.species.toLowerCase()) ||
+            (selectedPet.species.toLowerCase() === 'cachorro' && s.species === 'Canino') ||
+            (selectedPet.species.toLowerCase() === 'gato' && s.species === 'Felino');
+
+        if (!speciesMatch) return false;
+
+        // Weight match (if service has weight constraints)
+        if (selectedPet.weight && (s.minWeight !== null || s.maxWeight !== null)) {
+            const min = s.minWeight ?? 0;
+            const max = s.maxWeight ?? 999;
+            if (selectedPet.weight < min || selectedPet.weight > max) return false;
+        }
+
+        return true;
+    });
 
     const totalEstimate = items.reduce((acc, item) => {
         const service = services.find(s => s.id === item.serviceId);
@@ -54,9 +84,21 @@ export default function QuoteRequest() {
 
     const addItem = () => setItems([...items, { serviceId: '', description: '', quantity: 1 }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
+
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
         (newItems[index] as any)[field] = value;
+        setItems(newItems);
+    };
+
+    const handleServiceSelect = (index: number, serviceId: string) => {
+        const selected = services.find(s => s.id === serviceId);
+        const newItems = [...items];
+        newItems[index] = {
+            ...newItems[index],
+            serviceId: serviceId,
+            description: selected?.name || ''
+        };
         setItems(newItems);
     };
 
@@ -119,6 +161,7 @@ export default function QuoteRequest() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10 max-w-4xl">
                 <header className="mb-10">
+                    <BackButton className="mb-4 ml-[-1rem]" />
                     <h1 className="text-4xl font-extrabold text-secondary">Solicitar <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Orçamento</span></h1>
                     <p className="text-gray-500 mt-3">Personalize seu pedido para o melhor cuidado com seu amigo.</p>
                 </header>
@@ -168,6 +211,29 @@ export default function QuoteRequest() {
                             </div>
                         </div>
 
+                        {selectedPet && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-8 p-4 bg-primary/5 rounded-2xl flex items-center gap-4 border border-primary/10"
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
+                                    <Calculator size={24} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-secondary">Preços Inteligentes Ativados</h4>
+                                    <p className="text-xs text-gray-500">
+                                        Exibindo apenas serviços para <strong>{selectedPet.species}</strong>
+                                        {selectedPet.weight ? (
+                                            <> de até <strong>{selectedPet.weight}kg</strong>.</>
+                                        ) : (
+                                            <>.</>
+                                        )}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
+
                         <div className="mb-4">
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Serviços Selecionados</label>
                         </div>
@@ -184,25 +250,12 @@ export default function QuoteRequest() {
                                     >
                                         <div className="flex-1 w-full space-y-2">
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Serviço</label>
-                                            <select
+                                            <ServiceAutocomplete
+                                                services={availableServices}
                                                 value={item.serviceId}
-                                                onChange={(e) => {
-                                                    const selected = services.find(s => s.id === e.target.value);
-                                                    const newItems = [...items];
-                                                    newItems[index] = {
-                                                        ...newItems[index],
-                                                        serviceId: e.target.value,
-                                                        description: selected?.name || ''
-                                                    };
-                                                    setItems(newItems);
-                                                }}
-                                                className="w-full bg-white border-2 border-transparent focus:border-primary/20 rounded-xl px-4 py-3 shadow-sm text-sm appearance-none"
-                                            >
-                                                <option value="">Selecione um serviço...</option>
-                                                {services.map(s => (
-                                                    <option key={s.id} value={s.id}>{s.name} - R$ {s.basePrice.toFixed(2)}</option>
-                                                ))}
-                                            </select>
+                                                onSelect={(id) => handleServiceSelect(index, id)}
+                                                placeholder={selectedPetId ? "Selecione o serviço..." : "Selecione o pet primeiro..."}
+                                            />
                                         </div>
                                         <div className="w-full md:w-32 space-y-2">
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Qtd</label>
@@ -227,6 +280,13 @@ export default function QuoteRequest() {
                                 ))}
                             </AnimatePresence>
                         </div>
+
+                        {!selectedPetId && (
+                            <div className="mt-4 p-4 bg-amber-50 rounded-xl flex items-center gap-3 border border-amber-100 italic">
+                                <Info size={18} className="text-amber-500" />
+                                <p className="text-xs text-amber-700">Selecione um pet primeiro para ver os serviços e valores disponíveis.</p>
+                            </div>
+                        )}
 
                         <button
                             type="button"
