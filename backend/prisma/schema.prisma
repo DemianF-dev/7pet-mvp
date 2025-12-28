@@ -15,6 +15,7 @@ enum Role {
   GESTAO
   ADMIN
   SPA
+  MASTER
 }
 
 enum AppointmentStatus {

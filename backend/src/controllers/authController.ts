@@ -7,11 +7,13 @@ const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     name: z.string().min(2),
-    role: z.enum(['CLIENTE', 'OPERACIONAL', 'GESTAO', 'ADMIN']).optional(),
+    role: z.enum(['CLIENTE', 'OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER']).optional(),
 });
 
 const updateMeSchema = z.object({
     name: z.string().min(2).optional(),
+    email: z.string().email().optional(),
+    password: z.string().min(6).optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
 });
@@ -64,6 +66,27 @@ export const updateMe = async (req: any, res: Response) => {
         const userId = req.user.id;
         const customerId = req.user.customer?.id;
 
+        const updateData: any = {
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            address: data.address,
+        };
+
+        if (data.password) {
+            const bcrypt = await import('bcrypt');
+            updateData.passwordHash = await bcrypt.hash(data.password, 10);
+        }
+
+        // Clean up undefined values
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            include: { customer: true }
+        });
+
         if (customerId) {
             await prisma.customer.update({
                 where: { id: customerId },
@@ -74,11 +97,6 @@ export const updateMe = async (req: any, res: Response) => {
                 }
             });
         }
-
-        const updatedUser = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { customer: true }
-        });
 
         res.json(updatedUser);
     } catch (error: any) {

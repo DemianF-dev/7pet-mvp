@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { User, ShieldCheck } from 'lucide-react';
+import { User, ShieldCheck, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function LandingPage() {
@@ -43,6 +43,15 @@ export default function LandingPage() {
                             <ShieldCheck size={20} />
                             Acesso Colaborador
                         </button>
+                        <a
+                            href="https://wa.me/5511983966451"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] text-white font-bold rounded-2xl shadow-lg shadow-green-200 hover:shadow-green-300 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                            <MessageCircle size={20} />
+                            Falar no WhatsApp
+                        </a>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-gray-500 pt-4">

@@ -24,6 +24,7 @@ import ManagementDashboard from './pages/staff/ManagementDashboard';
 import FinancialReports from './pages/staff/FinancialReports';
 import UserManager from './pages/staff/UserManager';
 import StaffNotificationList from './pages/staff/StaffNotificationList';
+import StaffProfile from './pages/staff/StaffProfile';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { Toaster } from 'react-hot-toast';
@@ -39,7 +40,7 @@ function App() {
                 <Route path="/client/register" element={<ClientRegister />} />
 
                 {/* Cliente Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} redirectTo="/client/login" />}>
+                <Route element={<ProtectedRoute allowedRoles={['CLIENTE', 'MASTER']} redirectTo="/client/login" />}>
                     <Route path="/client/dashboard" element={<ClientDashboard />} />
                     <Route path="/client/pets" element={<PetList />} />
                     <Route path="/client/profile" element={<ClientProfile />} />
@@ -53,7 +54,7 @@ function App() {
 
                 {/* Colaborador Routes */}
                 <Route path="/staff/login" element={<StaffLogin />} />
-                <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN']} redirectTo="/staff/login" />}>
+                <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER']} redirectTo="/staff/login" />}>
                     <Route path="/staff/dashboard" element={<StaffDashboard />} />
                     <Route path="/staff/kanban" element={<ServiceKanban />} />
                     <Route path="/staff/transport" element={<TransportManager />} />
@@ -65,6 +66,7 @@ function App() {
                     <Route path="/staff/reports" element={<FinancialReports />} />
                     <Route path="/staff/users" element={<UserManager />} />
                     <Route path="/staff/notifications" element={<StaffNotificationList />} />
+                    <Route path="/staff/profile" element={<StaffProfile />} />
                 </Route>
 
                 {/* Fallback */}

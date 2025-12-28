@@ -4,7 +4,10 @@ import { persist } from 'zustand/middleware';
 interface User {
     id: string;
     email: string;
-    role: 'CLIENTE' | 'OPERACIONAL' | 'GESTAO' | 'ADMIN' | 'SPA';
+    role: 'CLIENTE' | 'OPERACIONAL' | 'GESTAO' | 'ADMIN' | 'SPA' | 'MASTER';
+    name?: string;
+    phone?: string;
+    address?: string;
     customer?: {
         id: string; // Added ID here
         name: string;
@@ -16,6 +19,7 @@ interface AuthState {
     user: User | null;
     token: string | null;
     setAuth: (user: User, token: string) => void;
+    updateUser: (user: User) => void;
     logout: () => void;
 }
 
@@ -37,6 +41,16 @@ export const useAuthStore = create<AuthState>()(
                 }
                 localStorage.setItem('7pet-token', token);
                 set({ user, token });
+            },
+            updateUser: (user) => {
+                if (typeof user.permissions === 'string') {
+                    try {
+                        user.permissions = JSON.parse(user.permissions);
+                    } catch (e) {
+                        user.permissions = [];
+                    }
+                }
+                set({ user });
             },
             logout: () => {
                 localStorage.removeItem('7pet-token');

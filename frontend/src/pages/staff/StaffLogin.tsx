@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -60,6 +60,13 @@ export default function StaffLogin() {
     return (
         <div className="min-h-screen bg-white flex flex-col md:flex-row">
             <div className="flex-1 p-6 md:p-12 lg:p-24 flex flex-col justify-center max-w-2xl mx-auto w-full">
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-2 text-gray-400 hover:text-secondary transition-colors mb-8 self-start group"
+                >
+                    <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                    Página Inicial
+                </button>
                 <div className="flex items-center gap-2 mb-12">
                     <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">7</div>
                     <span className="font-bold text-xl text-secondary">Pet Shop Manager</span>

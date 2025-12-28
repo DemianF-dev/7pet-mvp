@@ -20,9 +20,13 @@ api.interceptors.response.use(
     (error) => {
         // Network Error or Server Down
         if (!error.response) {
-            toast.error('Sem conexão com o servidor. Verifique sua internet.', {
+            const attemptedUrl = error.config?.url || 'URL desconhecida';
+            const baseURL = error.config?.baseURL || '';
+            const fullUrl = attemptedUrl.startsWith('http') ? attemptedUrl : `${baseURL}${attemptedUrl}`;
+
+            toast.error(`Sem conexão com a API: ${fullUrl}. Verifique se a variável VITE_API_URL está correta no servidor.`, {
                 id: 'network-error', // Prevent duplicate toasts
-                duration: 5000,
+                duration: 8000,
                 icon: '📡'
             });
         }

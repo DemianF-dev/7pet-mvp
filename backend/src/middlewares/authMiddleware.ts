@@ -32,7 +32,16 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
 
 export const authorize = (roles: string[]) => {
     return (req: any, res: Response, next: NextFunction) => {
-        if (!req.user || !roles.includes(req.user.role)) {
+        if (!req.user) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        // Master has access to everything
+        if (req.user.role === 'MASTER') {
+            return next();
+        }
+
+        if (!roles.includes(req.user.role)) {
             return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
         }
         next();

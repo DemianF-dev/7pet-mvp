@@ -13,6 +13,7 @@ import {
     LogOut,
     Menu as MenuIcon,
     Bell,
+    User as UserIcon,
     X
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -31,6 +32,9 @@ export default function StaffSidebar() {
 
     const checkPermission = (module: string) => {
         if (!user) return false;
+
+        // Master user has access to everything
+        if (user.role === 'MASTER') return true;
 
         // 1. If user has specific permission override, use it
         if (user.permissions) {
@@ -162,6 +166,13 @@ export default function StaffSidebar() {
                 active={location.pathname === '/staff/notifications'}
                 onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
             />
+
+            <SidebarItem
+                icon={<UserIcon size={20} />}
+                label="Meu Perfil"
+                active={location.pathname === '/staff/profile'}
+                onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
+            />
         </nav>
     );
 
@@ -208,12 +219,13 @@ export default function StaffSidebar() {
                             <div className="pt-6 border-t border-white/10 mt-auto">
                                 <div className="flex items-center gap-3 mb-2 p-2">
                                     <img
-                                        src={`https://ui-avatars.com/api/?name=${user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
-                                        className="w-10 h-10 rounded-full"
+                                        src={`https://ui-avatars.com/api/?name=${user?.name || user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
+                                        className="w-10 h-10 rounded-full cursor-pointer"
                                         alt="Avatar"
+                                        onClick={() => navigate('/staff/profile')}
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-white truncate">{user?.customer?.name || user?.email || 'Staff'}</p>
+                                        <p className="text-sm font-bold text-white truncate cursor-pointer" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
                                         <button
                                             onClick={handleLogout}
                                             className="text-xs text-gray-400 hover:text-primary flex items-center gap-1 transition-colors"
@@ -240,12 +252,13 @@ export default function StaffSidebar() {
                 <div className="pt-6 border-t border-white/10">
                     <div className="flex items-center gap-3 mb-6 p-2 bg-white/5 rounded-2xl">
                         <img
-                            src={`https://ui-avatars.com/api/?name=${user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
-                            className="w-10 h-10 rounded-full border-2 border-primary/20"
+                            src={`https://ui-avatars.com/api/?name=${user?.name || user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
+                            className="w-10 h-10 rounded-full border-2 border-primary/20 cursor-pointer hover:scale-105 transition-transform"
                             alt="Avatar"
+                            onClick={() => navigate('/staff/profile')}
                         />
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white truncate">{user?.customer?.name || user?.email || 'Staff'}</p>
+                            <p className="text-sm font-bold text-white truncate cursor-pointer hover:text-primary transition-colors" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
                             <button
                                 onClick={handleLogout}
                                 className="text-xs text-gray-400 hover:text-primary flex items-center gap-1 transition-colors"
