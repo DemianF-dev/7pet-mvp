@@ -6,14 +6,12 @@ import {
     Send,
     CheckCircle2,
     AlertCircle,
-    Calculator,
     Truck,
     Scissors,
     Sparkles,
     ChevronRight,
     ChevronLeft,
     MapPin,
-    Clock,
     Minus,
     RefreshCcw
 } from 'lucide-react';
@@ -118,10 +116,6 @@ export default function QuoteRequest() {
         return true;
     });
 
-    const totalEstimate = items.reduce((acc, item) => {
-        const service = services.find(s => s.id === item.serviceId);
-        return acc + (service?.basePrice || 0) * item.quantity;
-    }, 0);
 
     const addItem = () => setItems([...items, { serviceId: '', description: '', quantity: 1 }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));

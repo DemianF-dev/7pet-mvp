@@ -8,14 +8,10 @@ import {
     RefreshCcw,
     Clock,
     Search,
-    Trash2,
     ChevronLeft,
     ChevronRight,
-    PlayCircle,
-    CheckCircle,
-    XCircle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
@@ -56,8 +52,6 @@ export default function AgendaSPA() {
     const [isCopying, setIsCopying] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [searchTerm, setSearchTerm] = useState('');
-    const [isTrashView, setIsTrashView] = useState(false);
-    const [trashAppointments, setTrashAppointments] = useState<Appointment[]>([]);
     const [preFillData, setPreFillData] = useState<any>(null);
 
     useEffect(() => {
@@ -69,10 +63,10 @@ export default function AgendaSPA() {
     }, [location]);
 
     const fetchAppointments = async () => {
+        setIsLoading(true);
         try {
             const response = await api.get('/appointments?category=SPA');
             setAppointments(response.data);
-            if (isTrashView) fetchTrash();
         } catch (err) {
             console.error('Erro ao buscar agendamentos:', err);
         } finally {
@@ -80,60 +74,9 @@ export default function AgendaSPA() {
         }
     };
 
-    const fetchTrash = async () => {
-        try {
-            const response = await api.get('/appointments/trash');
-            setTrashAppointments(response.data);
-        } catch (err) {
-            console.error('Erro ao buscar lixeira:', err);
-        }
-    };
-
     useEffect(() => {
         fetchAppointments();
-        if (isTrashView) fetchTrash();
-    }, [isTrashView]);
-
-    const handleRestore = async (id: string) => {
-        if (!window.confirm('Deseja restaurar este agendamento?')) return;
-        try {
-            await api.patch(`/appointments/${id}/restore`);
-            fetchTrash();
-            fetchAppointments();
-        } catch (err) {
-            alert('Erro ao restaurar agendamento');
-        }
-    };
-
-    const handlePermanentDelete = async (id: string) => {
-        if (!window.confirm('ATENÇÃO: Esta ação é irreversível. Deseja excluir permanentemente?')) return;
-        try {
-            await api.delete(`/appointments/${id}/permanent`);
-            fetchTrash();
-        } catch (err) {
-            alert('Erro ao excluir permanentemente');
-        }
-    };
-
-    const updateStatus = async (id: string, status: string, e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
-
-        const statusLabels: any = {
-            'CONFIRMADO': 'confirmar',
-            'EM_ATENDIMENTO': 'iniciar atendimento para',
-            'FINALIZADO': 'finalizar',
-            'CANCELADO': 'cancelar'
-        };
-
-        if (!window.confirm(`Deseja realmente ${statusLabels[status] || 'mudar o status de'} este agendamento?`)) return;
-
-        try {
-            await api.patch(`/appointments/${id}/status`, { status });
-            fetchAppointments();
-        } catch (err) {
-            console.error('Erro ao atualizar status:', err);
-        }
-    };
+    }, []);
 
     const handleOpenDetails = (appt: Appointment) => {
         setSelectedAppointment(appt);
