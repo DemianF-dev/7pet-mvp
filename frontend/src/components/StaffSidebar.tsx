@@ -14,7 +14,8 @@ import {
     Bell,
     User as UserIcon,
     X,
-    Sparkles
+    Sparkles,
+    Package
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -129,6 +130,16 @@ export default function StaffSidebar() {
                     label="Serviços"
                     active={location.pathname === '/staff/services'}
                     onClick={() => { navigate('/staff/services'); setIsOpen(false); }}
+                />
+            )}
+
+            {/* 6.1 Produtos */}
+            {checkPermission('management') && (
+                <SidebarItem
+                    icon={<Package size={20} />}
+                    label="Produtos"
+                    active={location.pathname === '/staff/products'}
+                    onClick={() => { navigate('/staff/products'); setIsOpen(false); }}
                 />
             )}
 

@@ -9,7 +9,9 @@ import {
     Plus,
     Bell,
     Search,
-    Dog
+    Dog,
+    Star,
+    MessageCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
@@ -53,6 +55,15 @@ export default function ClientDashboard() {
     ];
 
     const nextAppt = data?.nextAppointment;
+
+    const handleReferral = () => {
+        const message = encodeURIComponent("Olá! Estou indicando a 7Pet para você conhecer. O atendimento lá é sensacional! Agende um serviço e ganhe 10% de desconto na sua primeira visita. Confira em: https://7pet.com.br");
+        window.open(`https://wa.me/?text=${message}`, '_blank');
+    };
+
+    const handleGoogleReview = () => {
+        window.open('https://g.page/r/CcoLpnRsAxgLEBM/review', '_blank');
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -124,20 +135,47 @@ export default function ClientDashboard() {
                     </div>
                 )}
 
-                <section className="mt-10">
-                    <div className="bg-secondary rounded-3xl p-8 relative overflow-hidden group shadow-2xl shadow-secondary/20">
+                <section className="mt-10 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* Banner Indicação */}
+                    <div className="bg-secondary rounded-[40px] p-8 relative overflow-hidden group shadow-2xl shadow-secondary/20 border border-white/10">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-1000"></div>
-                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="space-y-2">
-                                <span className="text-primary font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                                    Clube de Vantagens
+                        <div className="relative z-10 flex flex-col justify-between h-full gap-8">
+                            <div className="space-y-4">
+                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/20 rounded-full border border-primary/30">
+                                    <MessageCircle size={14} className="text-primary" />
+                                    <span className="text-primary font-black text-[10px] uppercase tracking-widest">Indicação</span>
                                 </span>
-                                <h2 className="text-3xl font-bold text-white leading-tight">Ganhe 10% OFF no próximo banho!</h2>
-                                <p className="text-gray-400 max-w-md">Indique um amigão para o nosso Pet Shop e ganhe descontos exclusivos na sua próxima visita.</p>
+                                <h2 className="text-3xl font-black text-white leading-tight">Ganhe 10% OFF a cada amigo indicado!</h2>
+                                <p className="text-gray-400 max-w-sm font-medium">Envie um convite agora pelo WhatsApp. Quanto mais indicar, mais descontos acumulados você ganha.</p>
                             </div>
-                            <button className="bg-primary hover:bg-primary-dark text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-primary/20 active:scale-95 whitespace-nowrap">
-                                Indicar Amigo
+                            <button
+                                onClick={handleReferral}
+                                className="w-full bg-primary hover:bg-primary-dark text-white font-black py-5 px-8 rounded-2xl transition-all shadow-xl shadow-primary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-xs"
+                            >
+                                <MessageCircle size={20} />
+                                Indicar pelo WhatsApp
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Banner Google Review */}
+                    <div className="bg-white rounded-[40px] p-8 relative overflow-hidden group shadow-xl border-2 border-dashed border-gray-100 hover:border-primary/20 transition-all">
+                        <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-1000"></div>
+                        <div className="relative z-10 flex flex-col justify-between h-full gap-8">
+                            <div className="space-y-4">
+                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-100 rounded-full border border-yellow-200">
+                                    <Star size={14} className="text-yellow-600 fill-yellow-600" />
+                                    <span className="text-yellow-700 font-black text-[10px] uppercase tracking-widest">Avaliação Google</span>
+                                </span>
+                                <h2 className="text-3xl font-black text-secondary leading-tight">Ganhe 10% OFF ao nos avaliar!</h2>
+                                <p className="text-gray-500 max-w-sm font-medium">Sua opinião é fundamental. Avalie nossos serviços uma única vez e ganhe um desconto especial imediato.</p>
+                            </div>
+                            <button
+                                onClick={handleGoogleReview}
+                                className="w-full bg-secondary hover:bg-secondary/90 text-white font-black py-5 px-8 rounded-2xl transition-all shadow-xl shadow-secondary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-xs"
+                            >
+                                <Star size={20} className="text-yellow-400 fill-yellow-400" />
+                                Avaliar no Google
                             </button>
                         </div>
                     </div>

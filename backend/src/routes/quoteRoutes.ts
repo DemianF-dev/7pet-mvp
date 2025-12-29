@@ -9,6 +9,7 @@ router.use(authenticate);
 router.post('/', quoteController.create);
 router.get('/', quoteController.list);
 router.get('/trash', quoteController.listTrash);
+router.post('/bulk-delete', quoteController.bulkDelete);
 router.get('/:id', quoteController.get);
 router.post('/:id/duplicate', quoteController.duplicate);
 router.patch('/:id', quoteController.update);

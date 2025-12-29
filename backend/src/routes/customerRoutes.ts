@@ -16,6 +16,7 @@ router.get('/:id', staffOnly, customerController.get);
 router.post('/', staffOnly, customerController.create);
 router.patch('/:id', staffOnly, customerController.update);
 router.delete('/:id', staffOnly, customerController.delete);
+router.post('/bulk-delete', staffOnly, customerController.bulkDelete);
 router.post('/:id/pets', staffOnly, customerController.createPet);
 
 export default router;

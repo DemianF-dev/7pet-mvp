@@ -173,3 +173,14 @@ export const permanentRemove = async (req: any, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const bulkDelete = async (req: any, res: Response) => {
+    try {
+        if (req.user.role === 'CLIENTE') return res.status(403).json({ error: 'Acesso negado' });
+        const { ids } = req.body;
+        await appointmentService.bulkDelete(ids);
+        res.status(204).send();
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};

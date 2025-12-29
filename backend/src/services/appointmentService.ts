@@ -243,3 +243,9 @@ export const updateQuoteStatus = async (quoteId: string) => {
         }
     });
 };
+
+export const bulkDelete = async (ids: string[]) => {
+    return prisma.appointment.deleteMany({
+        where: { id: { in: ids } }
+    });
+};

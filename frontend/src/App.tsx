@@ -27,6 +27,7 @@ import FinancialReports from './pages/staff/FinancialReports';
 import UserManager from './pages/staff/UserManager';
 import StaffNotificationList from './pages/staff/StaffNotificationList';
 import StaffProfile from './pages/staff/StaffProfile';
+import ProductManager from './pages/staff/ProductManager';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { Toaster } from 'react-hot-toast';
@@ -65,6 +66,7 @@ function App() {
                     <Route path="/staff/quotes" element={<QuoteManager />} />
                     <Route path="/staff/customers" element={<CustomerManager />} />
                     <Route path="/staff/services" element={<ServiceManager />} />
+                    <Route path="/staff/products" element={<ProductManager />} />
                     <Route path="/staff/billing" element={<BillingManager />} />
                     <Route path="/staff/management" element={<ManagementDashboard />} />
                     <Route path="/staff/reports" element={<FinancialReports />} />

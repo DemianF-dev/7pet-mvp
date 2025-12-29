@@ -170,7 +170,7 @@ export const customerController = {
                     address: updateFields.address,
                     type: updateFields.type,
                     recurringFrequency: updateFields.recurringFrequency,
-                    discountPercentage: updateFields.discountPercentage !== undefined ? updateFields.discountPercentage : undefined,
+                    discountPercentage: (updateFields.discountPercentage !== undefined && updateFields.discountPercentage !== null) ? updateFields.discountPercentage : undefined,
                     internalNotes: updateFields.internalNotes,
                     requiresPrepayment: updateFields.requiresPrepayment ?? undefined,
                     isBlocked: updateFields.isBlocked ?? undefined,
@@ -261,6 +261,25 @@ export const customerController = {
         } catch (error) {
             console.error('Erro ao adicionar pet:', error);
             return res.status(500).json({ error: 'Erro interno ao criar pet' });
+        }
+    },
+
+    async bulkDelete(req: Request, res: Response) {
+        try {
+            const { ids } = req.body;
+            // For safety in bulk delete, we'll only delete those without critical history in this transaction
+            // or we force delete everything. Given "Bulk Delete" usually implies intent:
+
+            await prisma.$transaction(async (tx) => {
+                // We might need to delete pets first
+                await tx.pet.deleteMany({ where: { customerId: { in: ids } } });
+                await tx.customer.deleteMany({ where: { id: { in: ids } } });
+            });
+
+            return res.status(204).send();
+        } catch (error) {
+            console.error('Erro ao excluir clientes em massa:', error);
+            return res.status(500).json({ error: 'Erro interno do servidor' });
         }
     }
 };

@@ -11,6 +11,7 @@ import invoiceRoutes from './routes/invoiceRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import staffRoutes from './routes/staffRoutes';
 import managementRoutes from './routes/managementRoutes';
+import productRoutes from './routes/productRoutes';
 
 import notificationRoutes from './routes/notificationRoutes';
 import { runNotificationScheduler } from './schedulers/notificationScheduler';
@@ -39,6 +40,7 @@ app.use('/staff', staffRoutes);
 app.use('/management', managementRoutes);
 app.use('/invoices', invoiceRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/products', productRoutes);
 
 // Start Scheduler
 runNotificationScheduler();

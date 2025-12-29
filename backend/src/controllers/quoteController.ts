@@ -498,5 +498,26 @@ export const quoteController = {
             console.error('Erro ao excluir permanentemente:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
+    },
+
+    async bulkDelete(req: Request, res: Response) {
+        try {
+            const { ids } = req.body;
+            const user = (req as any).user;
+            if (user.role === 'CLIENTE') return res.status(403).json({ error: 'Acesso negado' });
+
+            // Use transaction to ensure items are deleted too if needed, or just let cascade handle if configured
+            // Since manual delete of items was used in permanentRemove, let's do it here too just in case
+            await prisma.$transaction([
+                prisma.quoteItem.deleteMany({ where: { quoteId: { in: ids } } }),
+                prisma.statusHistory.deleteMany({ where: { quoteId: { in: ids } } }),
+                prisma.quote.deleteMany({ where: { id: { in: ids } } })
+            ]);
+
+            return res.status(204).send();
+        } catch (error) {
+            console.error('Erro ao excluir em massa:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
     }
 };

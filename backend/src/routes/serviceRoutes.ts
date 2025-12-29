@@ -112,4 +112,12 @@ router.delete('/:id', async (req: Request, res: Response) => {
     res.status(204).send();
 });
 
+router.post('/bulk-delete', async (req: Request, res: Response) => {
+    const { ids } = req.body;
+    await prisma.service.deleteMany({
+        where: { id: { in: ids } }
+    });
+    res.status(204).send();
+});
+
 export default router;

@@ -3,16 +3,18 @@ import {
     Plus,
     Edit2,
     Trash2,
-    Clock,
     Tag,
     Copy,
-    ArrowUpDown,
     Upload,
     Cat,
     Dog,
-    Search
+    Search,
+    CheckSquare,
+    Square,
+    RefreshCcw,
+    Clock,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
@@ -36,14 +38,8 @@ export default function ServiceManager() {
     const [speciesFilter, setSpeciesFilter] = useState<'Canino' | 'Felino'>('Canino');
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [columnFilters, setColumnFilters] = useState({
-        name: '',
-        category: '',
-        price: '',
-        duration: ''
-    });
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    const [sortConfig, setSortConfig] = useState<{ key: keyof Service; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
 
     const [formData, setFormData] = useState({
         name: '',
@@ -59,6 +55,7 @@ export default function ServiceManager() {
     }, []);
 
     const fetchServices = async () => {
+        setIsLoading(true);
         try {
             const response = await api.get('/services');
             setServices(response.data);
@@ -105,13 +102,12 @@ export default function ServiceManager() {
             fetchServices();
             setIsModalOpen(false);
         } catch (error: any) {
-            console.error('Erro ao salvar serviço:', error);
             alert(error.response?.data?.error || 'Erro ao salvar serviço');
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Excluir este serviço?')) return;
+        if (!window.confirm('ATENÇÃO: Deseja realmente excluir este serviço?')) return;
         try {
             await api.delete(`/services/${id}`);
             fetchServices();
@@ -120,7 +116,24 @@ export default function ServiceManager() {
         }
     };
 
+    const toggleSelect = (id: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} serviços selecionados?`)) return;
+        try {
+            await api.post('/services/bulk-delete', { ids: selectedIds });
+            fetchServices();
+            setSelectedIds([]);
+        } catch (error) {
+            alert('Erro ao excluir serviços');
+        }
+    };
+
     const handleDuplicate = (service: Service) => {
+        if (!window.confirm(`Deseja duplicar o serviço "${service.name}"?`)) return;
         setEditingService(null);
         setFormData({
             name: `${service.name} (Cópia)`,
@@ -156,16 +169,10 @@ export default function ServiceManager() {
 
             const response = await api.post('/services/bulk', servicesToImport);
             alert(response.data.message);
-            if (response.data.errors.length > 0) {
-                console.warn('Erros na importação:', response.data.errors);
-                alert(`Alguns itens falharam: \n${response.data.errors.join('\n')}`);
-            }
-
             setIsImportModalOpen(false);
             setImportText('');
             fetchServices();
         } catch (error: any) {
-            console.error('Erro na importação:', error);
             alert('Erro ao processar importação. Verifique o formato.');
         }
     };
@@ -175,31 +182,11 @@ export default function ServiceManager() {
         const matchesGlobal = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (s.description?.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const matchesName = !columnFilters.name || s.name.toLowerCase().includes(columnFilters.name.toLowerCase());
-        const matchesCategory = !columnFilters.category || s.category?.toLowerCase().includes(columnFilters.category.toLowerCase());
-        const matchesPrice = !columnFilters.price || s.basePrice.toString().includes(columnFilters.price);
-        const matchesDuration = !columnFilters.duration || s.duration.toString().includes(columnFilters.duration);
-
-        return matchesSpecies && matchesGlobal && matchesName && matchesCategory && matchesPrice && matchesDuration;
+        return matchesSpecies && matchesGlobal;
     });
 
-    const sortedServices = [...filteredServices].sort((a, b) => {
-        if (sortConfig.key === 'basePrice' || sortConfig.key === 'duration') {
-            return sortConfig.direction === 'asc'
-                ? a[sortConfig.key] - b[sortConfig.key]
-                : b[sortConfig.key] - a[sortConfig.key];
-        }
-        return sortConfig.direction === 'asc'
-            ? String(a[sortConfig.key]).localeCompare(String(b[sortConfig.key]))
-            : String(b[sortConfig.key]).localeCompare(String(a[sortConfig.key]));
-    });
+    const sortedServices = [...filteredServices];
 
-    const handleSort = (key: keyof Service) => {
-        setSortConfig(current => ({
-            key,
-            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -209,19 +196,25 @@ export default function ServiceManager() {
                 <header className="mb-10">
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-                        <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-                            <button
-                                onClick={() => setSpeciesFilter('Canino')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-secondary'}`}
-                            >
-                                <Dog size={16} /> Cães
-                            </button>
-                            <button
-                                onClick={() => setSpeciesFilter('Felino')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Felino' ? 'bg-purple-50 text-purple-600' : 'text-gray-400 hover:text-secondary'}`}
-                            >
-                                <Cat size={16} /> Gatos
-                            </button>
+                        <div>
+                            <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
+                                <div className="h-[2px] w-6 bg-primary"></div>
+                                CONFIGURAÇÕES DE SERVIÇOS
+                            </div>
+                            <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 w-fit">
+                                <button
+                                    onClick={() => { setSpeciesFilter('Canino'); setSelectedIds([]); }}
+                                    className={`px-6 py-3 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    <Dog size={16} /> Cães
+                                </button>
+                                <button
+                                    onClick={() => { setSpeciesFilter('Felino'); setSelectedIds([]); }}
+                                    className={`px-6 py-3 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${speciesFilter === 'Felino' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    <Cat size={16} /> Gatos
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4">
@@ -232,72 +225,62 @@ export default function ServiceManager() {
                                     placeholder="Buscar serviço..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-medium"
+                                    className="pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-bold"
                                 />
                             </div>
 
-                            <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-                                <button
-                                    onClick={() => handleSort('name')}
-                                    className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'name' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                                >
-                                    Nome {sortConfig.key === 'name' && <ArrowUpDown size={14} />}
-                                </button>
-                                <button
-                                    onClick={() => handleSort('basePrice')}
-                                    className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${sortConfig.key === 'basePrice' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-secondary'}`}
-                                >
-                                    Valor {sortConfig.key === 'basePrice' && <ArrowUpDown size={14} />}
-                                </button>
-                            </div>
-
                             <div className="flex gap-2">
-                                <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary flex items-center gap-2 py-3">
-                                    <Upload size={20} /> Importar
+                                <button onClick={() => setIsImportModalOpen(true)} className="bg-white hover:bg-gray-50 text-secondary px-6 py-3 rounded-2xl font-black border border-gray-100 flex items-center gap-2 text-xs tracking-widest transition-all">
+                                    <Upload size={18} /> Importar
                                 </button>
-                                <button onClick={() => handleOpenModal()} className="btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 py-3">
+                                <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all">
                                     <Plus size={20} /> Novo Serviço
                                 </button>
                             </div>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
-                        <input
-                            type="text"
-                            placeholder="Filtrar por nome..."
-                            value={columnFilters.name}
-                            onChange={(e) => setColumnFilters({ ...columnFilters, name: e.target.value })}
-                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filtrar por categoria..."
-                            value={columnFilters.category}
-                            onChange={(e) => setColumnFilters({ ...columnFilters, category: e.target.value })}
-                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filtrar por preço..."
-                            value={columnFilters.price}
-                            onChange={(e) => setColumnFilters({ ...columnFilters, price: e.target.value })}
-                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filtrar por duração..."
-                            value={columnFilters.duration}
-                            onChange={(e) => setColumnFilters({ ...columnFilters, duration: e.target.value })}
-                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                        />
-                    </div>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <AnimatePresence>
+                    {selectedIds.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 50 }}
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-4 rounded-[32px] shadow-2xl flex items-center gap-8 min-w-[400px]"
+                        >
+                            <p className="text-sm font-bold flex items-center gap-2">
+                                <span className="bg-primary px-3 py-1 rounded-full text-xs font-black">{selectedIds.length}</span>
+                                Selecionados
+                            </p>
+                            <div className="h-8 w-px bg-white/10"></div>
+                            <div className="flex items-center gap-4 ml-auto">
+                                <button
+                                    onClick={() => setSelectedIds([])}
+                                    className="text-xs font-bold hover:text-gray-300 transition-colors uppercase tracking-widest"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-2xl transition-all shadow-lg"
+                                >
+                                    <Trash2 size={20} />
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {isLoading ? (
                         <div className="col-span-full py-20 text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                            <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
+                        </div>
+                    ) : sortedServices.length === 0 ? (
+                        <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 rounded-[40px] bg-white">
+                            <Tag className="mx-auto text-gray-200 mb-4" size={64} />
+                            <p className="text-gray-400 font-bold">Nenhum serviço encontrado.</p>
                         </div>
                     ) : sortedServices.map(service => (
                         <motion.div
@@ -305,164 +288,171 @@ export default function ServiceManager() {
                             key={service.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-primary/20 transition-all group"
+                            className={`group bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                                     <Tag size={24} />
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                    <button
+                                        onClick={(e) => toggleSelect(service.id, e)}
+                                        className={`p-2 rounded-xl transition-all ${selectedIds.includes(service.id) ? 'bg-primary text-white' : 'bg-gray-50 text-gray-300 hover:text-primary'}`}
+                                    >
+                                        {selectedIds.includes(service.id) ? <CheckSquare size={16} /> : <Square size={16} />}
+                                    </button>
+                                    <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
                                         <Edit2 size={16} className="text-gray-400" />
                                     </button>
-                                    <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Duplicar">
+                                    <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
                                         <Copy size={16} className="text-blue-400" />
                                     </button>
-                                    <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                                    <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
                                         <Trash2 size={16} className="text-red-400" />
                                     </button>
                                 </div>
                             </div>
 
-                            <h3 className="text-xl font-bold text-secondary mb-1">{service.name}</h3>
-                            <p className="text-gray-400 text-sm mb-4 line-clamp-2">{service.description || 'Sem descrição'}</p>
+                            <h3 className="text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
+                            <p className="text-gray-400 text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
 
                             <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                <div className="flex items-center gap-1 text-gray-500 text-sm">
-                                    <Clock size={14} />
+                                <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                                    <Clock size={12} />
                                     <span>{service.duration} min</span>
                                 </div>
-                                <div className="flex items-center gap-1 text-primary font-bold">
-                                    <span>R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <div className="text-right">
+                                    <span className="text-lg font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
                         </motion.div>
                     ))}
                 </div>
 
-                {
-                    isModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-white rounded-3xl p-8 w-full max-w-lg relative z-10 shadow-2xl"
-                            >
-                                <h2 className="text-2xl font-bold text-secondary mb-6">{editingService ? 'Editar Serviço' : 'Novo Serviço'}</h2>
-                                <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Service Modal */}
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-secondary/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
+                        >
+                            <h2 className="text-3xl font-black text-secondary mb-8">{editingService ? 'Editar Serviço' : 'Novo Serviço'}</h2>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nome do Serviço</label>
+                                    <input
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="Ex: Banho & Tosa M"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px]"
+                                        placeholder="Detalhes do que inclui o serviço..."
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-400 uppercase">Nome do Serviço</label>
-                                        <input
-                                            required
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="input-field"
-                                            placeholder="Ex: Banho & Tosa M"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-400 uppercase">Descrição</label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            className="input-field min-h-[100px]"
-                                            placeholder="Detalhes do que inclui o serviço..."
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-400 uppercase">Preço Base</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    required
-                                                    value={formData.basePrice}
-                                                    onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) })}
-                                                    className="input-field pl-10"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-400 uppercase">Duração (min)</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Preço Base</label>
+                                        <div className="relative">
+                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                             <input
                                                 type="number"
+                                                step="0.01"
                                                 required
-                                                value={formData.duration}
-                                                onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                                                className="input-field"
+                                                value={formData.basePrice}
+                                                onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) })}
+                                                className="w-full bg-gray-50 border-none rounded-2xl pl-14 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-400 uppercase">Espécie</label>
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="species"
-                                                    value="Canino"
-                                                    checked={formData.species === 'Canino'}
-                                                    onChange={() => setFormData({ ...formData, species: 'Canino' })}
-                                                    className="text-primary focus:ring-primary"
-                                                />
-                                                <span className="text-secondary font-medium">Canino</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="species"
-                                                    value="Felino"
-                                                    checked={formData.species === 'Felino'}
-                                                    onChange={() => setFormData({ ...formData, species: 'Felino' })}
-                                                    className="text-primary focus:ring-primary"
-                                                />
-                                                <span className="text-secondary font-medium">Felino</span>
-                                            </label>
-                                        </div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Duração (min)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            value={formData.duration}
+                                            onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                                            className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        />
                                     </div>
-                                    <div className="flex gap-4 pt-4">
-                                        <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary flex-1">Cancelar</button>
-                                        <button type="submit" className="btn-primary flex-1">Salvar</button>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Espécie</label>
+                                    <div className="flex gap-4 p-2 bg-gray-50 rounded-2xl">
+                                        <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-white has-[:checked]:shadow-sm">
+                                            <input
+                                                type="radio"
+                                                name="species"
+                                                value="Canino"
+                                                checked={formData.species === 'Canino'}
+                                                onChange={() => setFormData({ ...formData, species: 'Canino' })}
+                                                className="hidden"
+                                            />
+                                            <Dog size={16} className={formData.species === 'Canino' ? 'text-blue-500' : 'text-gray-300'} />
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${formData.species === 'Canino' ? 'text-secondary' : 'text-gray-300'}`}>Canino</span>
+                                        </label>
+                                        <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-white has-[:checked]:shadow-sm">
+                                            <input
+                                                type="radio"
+                                                name="species"
+                                                value="Felino"
+                                                checked={formData.species === 'Felino'}
+                                                onChange={() => setFormData({ ...formData, species: 'Felino' })}
+                                                className="hidden"
+                                            />
+                                            <Cat size={16} className={formData.species === 'Felino' ? 'text-purple-500' : 'text-gray-300'} />
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${formData.species === 'Felino' ? 'text-secondary' : 'text-gray-300'}`}>Felino</span>
+                                        </label>
                                     </div>
-                                </form>
-                            </motion.div>
-                        </div>
-                    )
-                }
-                {
-                    isImportModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" onClick={() => setIsImportModalOpen(false)}></div>
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-white rounded-3xl p-8 w-full max-w-2xl relative z-10 shadow-2xl"
-                            >
-                                <h2 className="text-2xl font-bold text-secondary mb-2">Importação em Massa</h2>
-                                <p className="text-gray-500 mb-6 text-sm">Cole os serviços abaixo, um por linha. Formato: <br />
-                                    <code className="bg-gray-100 px-2 py-1 rounded text-primary font-bold mt-2 block">Nome; Descrição; Preço; Duração(min); Categoria</code>
-                                </p>
+                                </div>
+                                <div className="flex gap-4 pt-6">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                    <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Serviço</button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
 
-                                <form onSubmit={handleBulkImport} className="space-y-4">
-                                    <textarea
-                                        value={importText}
-                                        onChange={(e) => setImportText(e.target.value)}
-                                        className="input-field h-64 font-mono text-xs"
-                                        placeholder={`Banho Simples; Banho tradicional; 50.00; 45; Banho\nTosa Higiênica; Corte íntimo e patinhas; 30.00; 20; Tosa\nVacina V10; Aplicação anual; 120,50; 15; Veterinário`}
-                                    />
-                                    <div className="flex gap-4 pt-4 border-t border-gray-100">
-                                        <button type="button" onClick={() => setIsImportModalOpen(false)} className="btn-secondary flex-1">Cancelar</button>
-                                        <button type="submit" className="btn-primary flex-1">Processar Importação</button>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        </div>
-                    )
-                }
-            </main >
+                {/* Import Modal */}
+                {isImportModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-secondary/60 backdrop-blur-md" onClick={() => setIsImportModalOpen(false)}></div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            className="bg-white rounded-[40px] p-8 w-full max-w-2xl relative z-10 shadow-2xl"
+                        >
+                            <h2 className="text-3xl font-black text-secondary mb-2">Importação em Massa</h2>
+                            <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">Cole os serviços abaixo, um por linha. Formato: <br />
+                                <code className="bg-gray-100 px-3 py-1 rounded-lg text-primary mt-2 block lowercase font-mono">Nome; Descrição; Preço; Duração(min); Categoria</code>
+                            </p>
+
+                            <form onSubmit={handleBulkImport} className="space-y-6">
+                                <textarea
+                                    value={importText}
+                                    onChange={(e) => setImportText(e.target.value)}
+                                    className="w-full bg-gray-50 border-none rounded-3xl px-8 py-6 text-xs font-mono min-h-[250px] focus:ring-2 focus:ring-primary/20 transition-all"
+                                    placeholder={`Banho Simples; Banho tradicional; 50.00; 45; Banho\nTosa Higiênica; Corte íntimo e patinhas; 30.00; 20; Tosa`}
+                                />
+                                <div className="flex gap-4 pt-6 border-t border-gray-100">
+                                    <button type="button" onClick={() => setIsImportModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                    <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Processar Importação</button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </main>
         </div >
     );
 }
