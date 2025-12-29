@@ -15,7 +15,11 @@ const customerSchema = z.object({
     internalNotes: z.string().nullish(),
     email: z.string().email('Email inválido').nullish(),
     requiresPrepayment: z.boolean().nullish(),
-    isBlocked: z.boolean().nullish()
+    isBlocked: z.boolean().nullish(),
+    secondaryGuardianName: z.string().nullish(),
+    secondaryGuardianPhone: z.string().nullish(),
+    secondaryGuardianEmail: z.string().nullish(),
+    secondaryGuardianAddress: z.string().nullish()
 });
 
 export const customerController = {
@@ -127,7 +131,11 @@ export const customerController = {
                         discountPercentage: data.discountPercentage || 0,
                         internalNotes: data.internalNotes,
                         requiresPrepayment: data.requiresPrepayment ?? false,
-                        isBlocked: data.isBlocked ?? false
+                        isBlocked: data.isBlocked ?? false,
+                        secondaryGuardianName: data.secondaryGuardianName,
+                        secondaryGuardianPhone: data.secondaryGuardianPhone,
+                        secondaryGuardianEmail: data.secondaryGuardianEmail,
+                        secondaryGuardianAddress: data.secondaryGuardianAddress
                     }
                 });
 
@@ -165,7 +173,11 @@ export const customerController = {
                     discountPercentage: updateFields.discountPercentage !== undefined ? updateFields.discountPercentage : undefined,
                     internalNotes: updateFields.internalNotes,
                     requiresPrepayment: updateFields.requiresPrepayment ?? undefined,
-                    isBlocked: updateFields.isBlocked ?? undefined
+                    isBlocked: updateFields.isBlocked ?? undefined,
+                    secondaryGuardianName: updateFields.secondaryGuardianName,
+                    secondaryGuardianPhone: updateFields.secondaryGuardianPhone,
+                    secondaryGuardianEmail: updateFields.secondaryGuardianEmail,
+                    secondaryGuardianAddress: updateFields.secondaryGuardianAddress
                 }
             });
 

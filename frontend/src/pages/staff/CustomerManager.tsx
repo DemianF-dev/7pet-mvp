@@ -77,6 +77,10 @@ interface Customer {
     createdAt?: string;
 }
 
+interface CustomerFormData extends Partial<Omit<Customer, 'user'>> {
+    email?: string;
+}
+
 export default function CustomerManager() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +96,7 @@ export default function CustomerManager() {
     // Modal & Form States
     const [isEditMode, setIsEditMode] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [formData, setFormData] = useState<Partial<Customer & { email?: string }>>({});
+    const [formData, setFormData] = useState<CustomerFormData>({});
     const [activeTab, setActiveTab] = useState<'details' | 'history' | 'quotes' | 'pets' | 'financial'>('details');
 
     // Pet Edit State
@@ -305,7 +309,12 @@ export default function CustomerManager() {
             discountPercentage: selectedCustomer?.discountPercentage,
             internalNotes: selectedCustomer?.internalNotes,
             isBlocked: selectedCustomer?.isBlocked,
-            requiresPrepayment: selectedCustomer?.requiresPrepayment
+            requiresPrepayment: selectedCustomer?.requiresPrepayment,
+            secondaryGuardianName: selectedCustomer?.secondaryGuardianName,
+            secondaryGuardianPhone: selectedCustomer?.secondaryGuardianPhone,
+            secondaryGuardianEmail: selectedCustomer?.secondaryGuardianEmail,
+            secondaryGuardianAddress: selectedCustomer?.secondaryGuardianAddress,
+            email: selectedCustomer?.user?.email
         });
         setIsEditMode(true);
     };
@@ -695,8 +704,8 @@ export default function CustomerManager() {
                                                                 <label className="label">Nome Completo</label>
                                                                 <input
                                                                     type="text"
-                                                                    value={(formData as any).secondaryGuardianName || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianName: e.target.value } as any)}
+                                                                    value={formData.secondaryGuardianName || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianName: e.target.value })}
                                                                     className="input-field"
                                                                     placeholder="Nome do segundo tutor"
                                                                 />
@@ -705,8 +714,8 @@ export default function CustomerManager() {
                                                                 <label className="label">Telefone</label>
                                                                 <input
                                                                     type="tel"
-                                                                    value={(formData as any).secondaryGuardianPhone || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianPhone: e.target.value } as any)}
+                                                                    value={formData.secondaryGuardianPhone || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianPhone: e.target.value })}
                                                                     className="input-field"
                                                                     placeholder="(00) 00000-0000"
                                                                 />
@@ -715,8 +724,8 @@ export default function CustomerManager() {
                                                                 <label className="label">E-mail</label>
                                                                 <input
                                                                     type="email"
-                                                                    value={(formData as any).secondaryGuardianEmail || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianEmail: e.target.value } as any)}
+                                                                    value={formData.secondaryGuardianEmail || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianEmail: e.target.value })}
                                                                     className="input-field"
                                                                     placeholder="email@exemplo.com"
                                                                 />
@@ -725,8 +734,8 @@ export default function CustomerManager() {
                                                                 <label className="label">Endereço</label>
                                                                 <input
                                                                     type="text"
-                                                                    value={(formData as any).secondaryGuardianAddress || ''}
-                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianAddress: e.target.value } as any)}
+                                                                    value={formData.secondaryGuardianAddress || ''}
+                                                                    onChange={(e) => setFormData({ ...formData, secondaryGuardianAddress: e.target.value })}
                                                                     className="input-field"
                                                                     placeholder="Endereço completo"
                                                                 />
