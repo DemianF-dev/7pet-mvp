@@ -50,6 +50,15 @@ export default function QuoteManager() {
     const [view, setView] = useState<'active' | 'trash' | 'history'>('active');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isBulkMode, setIsBulkMode] = useState(false);
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredQuotes.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredQuotes.map(q => q.id));
+        }
+    };
 
     const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'AGENDADO', 'ENCERRADO'];
 
@@ -160,6 +169,14 @@ export default function QuoteManager() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
+                        <button
+                            onClick={() => setIsBulkMode(!isBulkMode)}
+                            className={`flex items-center gap-2 px-6 py-6 rounded-[32px] text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
+                        >
+                            <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
+                            <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
+                        </button>
+
                         <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
                             <button
                                 onClick={() => { setView('active'); setSelectedIds([]); }}
@@ -184,30 +201,39 @@ export default function QuoteManager() {
                 </header>
 
                 <AnimatePresence>
-                    {selectedIds.length > 0 && (
+                    {(selectedIds.length > 0 || isBulkMode) && (
                         <motion.div
                             initial={{ opacity: 0, y: 50 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-4 rounded-[32px] shadow-2xl flex items-center gap-8 min-w-[400px]"
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
                         >
-                            <p className="text-sm font-bold flex items-center gap-2">
-                                <span className="bg-primary px-3 py-1 rounded-full text-xs font-black">{selectedIds.length}</span>
-                                Selecionados
-                            </p>
-                            <div className="h-8 w-px bg-white/10"></div>
-                            <div className="flex items-center gap-4 ml-auto">
+                            <div className="flex items-center gap-4">
                                 <button
-                                    onClick={() => setSelectedIds([])}
-                                    className="text-xs font-bold hover:text-gray-300 transition-colors uppercase tracking-widest"
+                                    onClick={handleSelectAll}
+                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                                >
+                                    {selectedIds.length === filteredQuotes.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
+                                </button>
+                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
+                                    <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
+                                    itens no total
+                                </p>
+                            </div>
+                            <div className="h-10 w-px bg-white/10 ml-auto"></div>
+                            <div className="flex items-center gap-6">
+                                <button
+                                    onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
+                                    className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={handleBulkDelete}
-                                    className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-2xl transition-all shadow-lg"
+                                    disabled={selectedIds.length === 0}
+                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                                 >
-                                    <Trash2 size={20} />
+                                    <Trash2 size={18} /> Apagar Agora
                                 </button>
                             </div>
                         </motion.div>
@@ -248,12 +274,14 @@ export default function QuoteManager() {
                         <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                             <tr>
                                 <th className="px-8 py-6 w-12">
-                                    <button
-                                        onClick={() => setSelectedIds(selectedIds.length === filteredQuotes.length ? [] : filteredQuotes.map(q => q.id))}
-                                        className="text-gray-300 hover:text-primary transition-colors"
-                                    >
-                                        {selectedIds.length > 0 && selectedIds.length === filteredQuotes.length ? <CheckSquare size={18} /> : <Square size={18} />}
-                                    </button>
+                                    {(isBulkMode || selectedIds.length > 0) && (
+                                        <button
+                                            onClick={handleSelectAll}
+                                            className="text-gray-300 hover:text-primary transition-colors"
+                                        >
+                                            {selectedIds.length > 0 && selectedIds.length === filteredQuotes.length ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                        </button>
+                                    )}
                                 </th>
                                 <th className="px-8 py-6">Cliente / Pet</th>
                                 <th className="px-8 py-6 text-center">Data / Tipo</th>
@@ -281,12 +309,14 @@ export default function QuoteManager() {
                             ) : filteredQuotes.map(quote => (
                                 <tr key={quote.id} className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(quote.id) ? 'bg-primary/5' : ''}`}>
                                     <td className="px-8 py-6">
-                                        <button
-                                            onClick={(e) => toggleSelect(quote.id, e)}
-                                            className={`transition-all ${selectedIds.includes(quote.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
-                                        >
-                                            {selectedIds.includes(quote.id) ? <CheckSquare size={18} /> : <Square size={18} />}
-                                        </button>
+                                        {(isBulkMode || selectedIds.includes(quote.id)) && (
+                                            <button
+                                                onClick={(e) => toggleSelect(quote.id, e)}
+                                                className={`transition-all ${selectedIds.includes(quote.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
+                                            >
+                                                {selectedIds.includes(quote.id) ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                            </button>
+                                        )}
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col">

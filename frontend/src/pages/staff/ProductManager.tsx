@@ -30,6 +30,15 @@ export default function ProductManager() {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isBulkMode, setIsBulkMode] = useState(false);
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredProducts.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredProducts.map(p => p.id));
+        }
+    };
 
 
     const [formData, setFormData] = useState({
@@ -146,6 +155,14 @@ export default function ProductManager() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4">
+                            <button
+                                onClick={() => setIsBulkMode(!isBulkMode)}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
+                            >
+                                <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
+                                <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
+                            </button>
+
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                 <input
@@ -165,30 +182,39 @@ export default function ProductManager() {
                 </header>
 
                 <AnimatePresence>
-                    {selectedIds.length > 0 && (
+                    {(selectedIds.length > 0 || isBulkMode) && (
                         <motion.div
                             initial={{ opacity: 0, y: 50 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-4 rounded-[32px] shadow-2xl flex items-center gap-8 min-w-[400px]"
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
                         >
-                            <p className="text-sm font-bold flex items-center gap-2">
-                                <span className="bg-primary px-3 py-1 rounded-full text-xs font-black">{selectedIds.length}</span>
-                                Selecionados
-                            </p>
-                            <div className="h-8 w-px bg-white/10"></div>
-                            <div className="flex items-center gap-4 ml-auto">
+                            <div className="flex items-center gap-4">
                                 <button
-                                    onClick={() => setSelectedIds([])}
-                                    className="text-xs font-bold hover:text-gray-300 transition-colors uppercase tracking-widest"
+                                    onClick={handleSelectAll}
+                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                                >
+                                    {selectedIds.length === filteredProducts.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
+                                </button>
+                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
+                                    <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
+                                    itens no total
+                                </p>
+                            </div>
+                            <div className="h-10 w-px bg-white/10 ml-auto"></div>
+                            <div className="flex items-center gap-6">
+                                <button
+                                    onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
+                                    className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={handleBulkDelete}
-                                    className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-2xl transition-all shadow-lg"
+                                    disabled={selectedIds.length === 0}
+                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                                 >
-                                    <Trash2 size={20} />
+                                    <Trash2 size={18} /> Apagar Agora
                                 </button>
                             </div>
                         </motion.div>
@@ -218,12 +244,14 @@ export default function ProductManager() {
                                     <Package size={24} />
                                 </div>
                                 <div className="flex gap-2">
-                                    <button
-                                        onClick={(e) => toggleSelect(product.id, e)}
-                                        className={`p-2 rounded-xl transition-all ${selectedIds.includes(product.id) ? 'bg-primary text-white' : 'bg-gray-50 text-gray-300 hover:text-primary'}`}
-                                    >
-                                        {selectedIds.includes(product.id) ? <CheckSquare size={16} /> : <Square size={16} />}
-                                    </button>
+                                    {(isBulkMode || selectedIds.includes(product.id)) && (
+                                        <button
+                                            onClick={(e) => toggleSelect(product.id, e)}
+                                            className={`p-2 rounded-xl transition-all shadow-md border ${selectedIds.includes(product.id) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-300 border-gray-100 hover:text-primary'}`}
+                                        >
+                                            {selectedIds.includes(product.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
+                                        </button>
+                                    )}
                                     <button onClick={() => handleOpenModal(product)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                                         <Edit2 size={16} className="text-gray-400" />
                                     </button>

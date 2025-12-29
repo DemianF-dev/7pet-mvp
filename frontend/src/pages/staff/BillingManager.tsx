@@ -474,14 +474,14 @@ export default function BillingManager() {
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Valor Recebido</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
+                                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                                         <input
                                                             type="number"
                                                             step="0.01"
                                                             required
                                                             value={paymentAmount}
                                                             onChange={(e) => setPaymentAmount(e.target.value)}
-                                                            className="input-field pl-10"
+                                                            className="input-field pl-14 font-mono"
                                                             placeholder="0,00"
                                                         />
                                                     </div>
