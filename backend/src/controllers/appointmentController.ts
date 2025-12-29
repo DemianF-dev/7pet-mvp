@@ -1,16 +1,17 @@
 import { Response } from 'express';
 import * as appointmentService from '../services/appointmentService';
 import { z } from 'zod';
-import { AppointmentStatus, TransportPeriod } from '@prisma/client';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 
 const appointmentSchema = z.object({
     petId: z.string().uuid(),
-    serviceIds: z.array(z.string().uuid()).min(1, 'Selecione pelo menos um serviço'),
+    serviceIds: z.array(z.string().uuid()).optional(),
     startAt: z.string(),
+    category: z.nativeEnum(AppointmentCategory).optional(), // Default to SPA
     transport: z.object({
-        origin: z.string(),
-        destination: z.string(),
-        requestedPeriod: z.nativeEnum(TransportPeriod)
+        origin: z.string().optional(),
+        destination: z.string().optional(),
+        requestedPeriod: z.nativeEnum(TransportPeriod).optional()
     }).optional(),
     customerId: z.string().uuid().optional(),
     quoteId: z.string().uuid().optional()
@@ -51,6 +52,10 @@ export const list = async (req: any, res: Response) => {
 
         if (req.user.role === 'CLIENTE') {
             filters.customerId = req.user.customer.id;
+        }
+
+        if (req.query.category) {
+            filters.category = req.query.category as AppointmentCategory;
         }
 
         if (req.query.status) {

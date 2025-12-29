@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle } from 'lucide-react';
+import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle, Layout } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 
@@ -17,6 +17,10 @@ interface ModalProps {
         petId?: string;
         serviceIds?: string[];
         startAt?: string;
+        category?: 'SPA' | 'LOGISTICA';
+        transportOrigin?: string;
+        transportDestination?: string;
+        transportPeriod?: 'MANHA' | 'TARDE' | 'NOITE';
     };
 }
 
@@ -31,6 +35,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
         petId: '',
         serviceIds: [] as string[],
         startAt: '',
+        category: 'SPA' as 'SPA' | 'LOGISTICA',
         hasTransport: false,
         transport: {
             origin: '',
@@ -62,6 +67,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     petId: appointment.petId || '',
                     serviceIds: appointment.services ? appointment.services.map((s: any) => s.id) : [],
                     startAt: formattedDate,
+                    category: appointment.category || 'SPA',
                     hasTransport: !!appointment.transport,
                     transport: appointment.transport ? {
                         origin: appointment.transport.origin || '',
@@ -77,8 +83,13 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     petId: preFill.petId || '',
                     serviceIds: preFill.serviceIds || [],
                     startAt: preFill.startAt || '',
-                    hasTransport: false,
-                    transport: { origin: '', destination: '7Pet', requestedPeriod: 'MORNING' }
+                    category: preFill.category || 'SPA',
+                    hasTransport: !!preFill.transportOrigin,
+                    transport: {
+                        origin: preFill.transportOrigin || '',
+                        destination: preFill.transportDestination || '7Pet',
+                        requestedPeriod: preFill.transportPeriod === 'MANHA' ? 'MORNING' : preFill.transportPeriod === 'TARDE' ? 'AFTERNOON' : preFill.transportPeriod === 'NOITE' ? 'NIGHT' : 'MORNING'
+                    }
                 });
                 // We need to wait for customers to load to find the full object
                 if (customers.length > 0) {
@@ -94,6 +105,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     petId: '',
                     serviceIds: [],
                     startAt: '',
+                    category: 'SPA',
                     hasTransport: false,
                     transport: { origin: '', destination: '7Pet', requestedPeriod: 'MORNING' }
                 });
@@ -330,6 +342,28 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                             onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
                             className="input-field"
                         />
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                            <Layout size={16} /> Agenda de Destino
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, category: 'SPA' })}
+                                className={`py-4 rounded-2xl font-bold border transition-all ${formData.category === 'SPA' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
+                            >
+                                Agenda SPA
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, category: 'LOGISTICA' })}
+                                className={`py-4 rounded-2xl font-bold border transition-all ${formData.category === 'LOGISTICA' ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
+                            >
+                                Agenda Logística
+                            </button>
+                        </div>
                     </div>
 
                     {/* Transport Toggle */}

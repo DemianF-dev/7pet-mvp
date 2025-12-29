@@ -1,15 +1,16 @@
 import prisma from '../lib/prisma';
-import { AppointmentStatus, TransportPeriod } from '@prisma/client';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 
 export const create = async (data: {
     customerId: string;
     petId: string;
-    serviceIds: string[];
+    serviceIds?: string[];
     startAt: Date;
+    category?: AppointmentCategory;
     transport?: {
-        origin: string;
-        destination: string;
-        requestedPeriod: TransportPeriod;
+        origin?: string;
+        destination?: string;
+        requestedPeriod?: TransportPeriod;
     };
 }, isStaff: boolean = false) => {
     // Business Rule: Appointments must be at least 12h in advance
@@ -44,11 +45,16 @@ export const create = async (data: {
             petId: data.petId,
             startAt: data.startAt,
             status: isStaff ? AppointmentStatus.CONFIRMADO : AppointmentStatus.PENDENTE,
-            services: {
+            category: data.category || AppointmentCategory.SPA,
+            services: data.serviceIds ? {
                 connect: data.serviceIds.map(id => ({ id }))
-            },
+            } : undefined,
             transport: data.transport ? {
-                create: data.transport
+                create: {
+                    origin: data.transport.origin || 'Endereço não informado',
+                    destination: data.transport.destination || '7Pet',
+                    requestedPeriod: data.transport.requestedPeriod || TransportPeriod.MANHA
+                }
             } : undefined
         },
         include: {
@@ -100,14 +106,23 @@ export const update = async (id: string, data: any) => {
         data: {
             petId: data.petId,
             startAt: data.startAt,
+            category: data.category,
             services: data.serviceIds ? {
                 set: [], // Clear existing relations
                 connect: data.serviceIds.map((sid: string) => ({ id: sid }))
             } : undefined,
             transport: data.transport ? {
                 upsert: {
-                    create: data.transport,
-                    update: data.transport
+                    create: {
+                        origin: data.transport.origin || 'Endereço não informado',
+                        destination: data.transport.destination || '7Pet',
+                        requestedPeriod: data.transport.requestedPeriod || TransportPeriod.MANHA
+                    },
+                    update: {
+                        origin: data.transport.origin,
+                        destination: data.transport.destination,
+                        requestedPeriod: data.transport.requestedPeriod
+                    }
                 }
             } : undefined
         },

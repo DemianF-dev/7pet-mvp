@@ -54,6 +54,17 @@ enum TransportPeriod {
   NOITE
 }
 
+enum QuoteType {
+  SPA
+  TRANSPORTE
+  SPA_TRANSPORTE
+}
+
+enum AppointmentCategory {
+  SPA
+  LOGISTICA
+}
+
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
@@ -166,6 +177,7 @@ model Appointment {
   transport          TransportDetails?
   invoice            Invoice?
   statusHistory      StatusHistory[]
+  category           AppointmentCategory @default(SPA)
   notified24h        Boolean           @default(false)
   notified1h         Boolean           @default(false)
 }
@@ -190,6 +202,16 @@ model Quote {
   status        QuoteStatus     @default(SOLICITADO)
   totalAmount   Float           @default(0)
   desiredAt     DateTime?
+  type          QuoteType       @default(SPA)
+  transportOrigin      String?
+  transportDestination String?        @default("7Pet")
+  transportReturnAddress String?
+  transportPeriod      TransportPeriod?
+  hasKnots             Boolean         @default(false)
+  knotRegions          String?         // Comma-separated list of regions
+  hairLength           String?         // curto, medio, longo
+  hasParasites         Boolean         @default(false)
+  petQuantity          Int             @default(1)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   items         QuoteItem[]

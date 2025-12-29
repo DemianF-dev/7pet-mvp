@@ -70,7 +70,7 @@ export default function AgendaLOG() {
 
     const fetchAppointments = async () => {
         try {
-            const response = await api.get('/appointments');
+            const response = await api.get('/appointments?category=LOGISTICA');
             setAppointments(response.data);
             if (isTrashView) fetchTrash();
         } catch (err) {
@@ -179,9 +179,6 @@ export default function AgendaLOG() {
         timeSlots.push(`${i.toString().padStart(2, '0')}:45`);
     }
 
-    const nextDay = () => setSelectedDate(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
-    const prevDay = () => setSelectedDate(new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000));
-    const setToday = () => setSelectedDate(new Date());
 
     const isSameDay = (date1: Date, date2: Date) => {
         return date1.getDate() === date2.getDate() &&

@@ -12,9 +12,19 @@ const quoteItemSchema = z.object({
 });
 
 const quoteSchema = z.object({
+    type: z.enum(['SPA', 'TRANSPORTE', 'SPA_TRANSPORTE']).default('SPA'),
     petId: z.string().optional(),
     desiredAt: z.string().optional(),
-    items: z.array(quoteItemSchema).min(1, 'Pelo menos um item é obrigatório')
+    items: z.array(quoteItemSchema).optional(),
+    transportOrigin: z.string().optional(),
+    transportDestination: z.string().optional(),
+    transportReturnAddress: z.string().optional(),
+    transportPeriod: z.enum(['MANHA', 'TARDE', 'NOITE']).optional(),
+    hasKnots: z.boolean().optional(),
+    knotRegions: z.string().optional(),
+    hairLength: z.string().optional(),
+    hasParasites: z.boolean().optional(),
+    petQuantity: z.number().int().optional()
 });
 
 export const quoteController = {
@@ -39,7 +49,7 @@ export const quoteController = {
             console.log(`[DEBUG] Criando orçamento para CustomerID: ${customerId}`, data);
 
             // Fetch prices for services if not provided (or to ensure they are correct)
-            const processedItems = await Promise.all(data.items.map(async (item) => {
+            const processedItems = data.items ? await Promise.all(data.items.map(async (item) => {
                 let price = item.price;
                 let description = item.description;
 
@@ -57,7 +67,7 @@ export const quoteController = {
                     price,
                     serviceId: item.serviceId
                 };
-            }));
+            })) : [];
 
             const totalAmount = processedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
@@ -65,7 +75,17 @@ export const quoteController = {
                 data: {
                     customerId,
                     petId: data.petId,
+                    type: data.type,
                     desiredAt: data.desiredAt ? new Date(data.desiredAt) : null,
+                    transportOrigin: data.transportOrigin,
+                    transportDestination: data.transportDestination,
+                    transportReturnAddress: data.transportReturnAddress,
+                    transportPeriod: data.transportPeriod,
+                    hasKnots: data.hasKnots,
+                    knotRegions: data.knotRegions,
+                    hairLength: data.hairLength,
+                    hasParasites: data.hasParasites,
+                    petQuantity: data.petQuantity || 1,
                     status: 'SOLICITADO',
                     totalAmount,
                     statusHistory: {
@@ -267,7 +287,16 @@ export const quoteController = {
                     serviceId: z.string().optional()
                 })).optional(),
                 status: z.nativeEnum(QuoteStatus).optional(),
-                totalAmount: z.number().optional()
+                totalAmount: z.number().optional(),
+                transportOrigin: z.string().optional(),
+                transportDestination: z.string().optional(),
+                transportReturnAddress: z.string().optional(),
+                transportPeriod: z.enum(['MANHA', 'TARDE', 'NOITE']).optional(),
+                hasKnots: z.boolean().optional(),
+                knotRegions: z.string().optional(),
+                hairLength: z.string().optional(),
+                hasParasites: z.boolean().optional(),
+                petQuantity: z.number().int().optional()
             }).parse(req.body);
 
             const user = (req as any).user;
@@ -295,6 +324,17 @@ export const quoteController = {
                     };
                 }
             }
+
+            // Map all new fields
+            if (data.transportOrigin !== undefined) updateData.transportOrigin = data.transportOrigin;
+            if (data.transportDestination !== undefined) updateData.transportDestination = data.transportDestination;
+            if (data.transportReturnAddress !== undefined) updateData.transportReturnAddress = data.transportReturnAddress;
+            if (data.transportPeriod !== undefined) updateData.transportPeriod = data.transportPeriod;
+            if (data.hasKnots !== undefined) updateData.hasKnots = data.hasKnots;
+            if (data.knotRegions !== undefined) updateData.knotRegions = data.knotRegions;
+            if (data.hairLength !== undefined) updateData.hairLength = data.hairLength;
+            if (data.hasParasites !== undefined) updateData.hasParasites = data.hasParasites;
+            if (data.petQuantity !== undefined) updateData.petQuantity = data.petQuantity;
 
             if (data.items) {
                 // Determine status logic: if items are priced > 0 and status is SOLICITADO, maybe move to CALCULADO?

@@ -16,7 +16,9 @@ import {
     Trash,
     Plus,
     Archive,
-    Send
+    Send,
+    Truck,
+    Scissors
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -43,6 +45,16 @@ interface Quote {
     petId?: string;
     pet?: { name: string };
     desiredAt?: string;
+    type: 'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE';
+    transportOrigin?: string;
+    transportDestination?: string;
+    transportReturnAddress?: string;
+    transportPeriod?: 'MANHA' | 'TARDE' | 'NOITE';
+    hasKnots?: boolean;
+    knotRegions?: string;
+    hairLength?: string;
+    hasParasites?: boolean;
+    petQuantity?: number;
 }
 
 interface Service {
@@ -215,19 +227,45 @@ export default function QuoteManager() {
             }
         }
 
-        // Navigate to kanban/booking with state
-        navigate('/staff/kanban', {
-            state: {
-                prefill: {
-                    customerId: quote.customerId,
-                    customerName: quote.customer.name,
-                    quoteId: quote.id,
-                    petId: quote.petId,
-                    serviceIds: quote.items.map(i => i.serviceId).filter(id => !!id),
-                    startAt: formattedDate
+        const prefillBase = {
+            customerId: quote.customerId,
+            customerName: quote.customer.name,
+            quoteId: quote.id,
+            petId: quote.petId,
+            startAt: formattedDate,
+            transportOrigin: quote.transportOrigin,
+            transportDestination: quote.transportDestination,
+            transportPeriod: quote.transportPeriod
+        };
+
+        if (quote.type === 'TRANSPORTE') {
+            navigate('/staff/logistica', {
+                state: {
+                    prefill: { ...prefillBase, category: 'LOGISTICA' }
                 }
+            });
+        } else if (quote.type === 'SPA_TRANSPORTE') {
+            if (confirm('Este é um Combo Premium (SPA + Transport). Deseja agendar primeiro o SPA? (Depois você poderá agendar a Logística separadamente)')) {
+                navigate('/staff/kanban', {
+                    state: {
+                        prefill: { ...prefillBase, serviceIds: quote.items.map(i => i.serviceId).filter(id => !!id), category: 'SPA' }
+                    }
+                });
+            } else {
+                navigate('/staff/logistica', {
+                    state: {
+                        prefill: { ...prefillBase, category: 'LOGISTICA' }
+                    }
+                });
             }
-        });
+        } else {
+            // Default SPA
+            navigate('/staff/kanban', {
+                state: {
+                    prefill: { ...prefillBase, serviceIds: quote.items.map(i => i.serviceId).filter(id => !!id), category: 'SPA' }
+                }
+            });
+        }
     };
 
     const handleWhatsApp = (quote: Quote) => {
@@ -334,7 +372,16 @@ export default function QuoteManager() {
             await api.patch(`/quotes/${selectedQuote.id}`, {
                 items: selectedQuote.items,
                 status: selectedQuote.status,
-                totalAmount: selectedQuote.items.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+                totalAmount: selectedQuote.items.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+                transportOrigin: selectedQuote.transportOrigin,
+                transportDestination: selectedQuote.transportDestination,
+                transportReturnAddress: selectedQuote.transportReturnAddress,
+                transportPeriod: selectedQuote.transportPeriod,
+                hasKnots: selectedQuote.hasKnots,
+                knotRegions: selectedQuote.knotRegions,
+                hairLength: selectedQuote.hairLength,
+                hasParasites: selectedQuote.hasParasites,
+                petQuantity: selectedQuote.petQuantity
             });
             fetchQuotes();
             setIsEditModalOpen(false);
@@ -360,7 +407,16 @@ export default function QuoteManager() {
                     serviceId: item.serviceId || undefined
                 })),
                 totalAmount: itemsTotal,
-                status: 'ENVIADO'
+                status: 'ENVIADO',
+                transportOrigin: selectedQuote.transportOrigin,
+                transportDestination: selectedQuote.transportDestination,
+                transportReturnAddress: selectedQuote.transportReturnAddress,
+                transportPeriod: selectedQuote.transportPeriod,
+                hasKnots: selectedQuote.hasKnots,
+                knotRegions: selectedQuote.knotRegions,
+                hairLength: selectedQuote.hairLength,
+                hasParasites: selectedQuote.hasParasites,
+                petQuantity: selectedQuote.petQuantity
             };
             await api.put(`/quotes/${selectedQuote.id}`, payload);
             setIsEditModalOpen(false);
@@ -680,6 +736,11 @@ export default function QuoteManager() {
                                                     Para: {new Date(quote.desiredAt).toLocaleDateString('pt-BR')}
                                                 </span>
                                             )}
+                                            {quote.type && (
+                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md mt-1 w-fit uppercase ${quote.type === 'SPA' ? 'bg-blue-100 text-blue-600' : quote.type === 'TRANSPORTE' ? 'bg-orange-100 text-orange-600' : 'bg-purple-100 text-purple-600'}`}>
+                                                    {quote.type === 'SPA' ? 'SPA' : quote.type === 'TRANSPORTE' ? 'LOGÍSTICA' : 'COMBO PREMIUM'}
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -759,7 +820,7 @@ export default function QuoteManager() {
                                                     >
                                                         <Copy size={18} />
                                                     </button>
-                                                    {['APROVADO', 'AGENDAR'].includes(quote.status) && (
+                                                    {(['APROVADO', 'AGENDAR', 'AGENDADO'].includes(quote.status)) && (
                                                         <button
                                                             onClick={() => handleConvertToAppointment(quote)}
                                                             className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
@@ -869,6 +930,100 @@ export default function QuoteManager() {
                                         />
                                     </div>
                                 </div>
+
+                                {/* NEW SPA DETAILS DISPLAY */}
+                                {selectedQuote.type !== 'TRANSPORTE' && (
+                                    <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10 space-y-4">
+                                        <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <Scissors size={16} /> Avaliação Prévia (SPA)
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase">Pelos</p>
+                                                <p className="text-xs font-bold text-secondary">{selectedQuote.hairLength || 'Não informado'}</p>
+                                            </div>
+                                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase">Parasitas</p>
+                                                <p className={`text-xs font-bold ${selectedQuote.hasParasites ? 'text-red-500' : 'text-green-500'}`}>
+                                                    {selectedQuote.hasParasites ? 'SIM (Pulgas/Carr.)' : 'Não'}
+                                                </p>
+                                            </div>
+                                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase">Nós/Embolos</p>
+                                                <p className={`text-xs font-bold ${selectedQuote.hasKnots ? 'text-orange-500' : 'text-green-500'}`}>
+                                                    {selectedQuote.hasKnots ? 'SIM' : 'Não'}
+                                                </p>
+                                            </div>
+                                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase">Pets</p>
+                                                <p className="text-xs font-bold text-secondary">{selectedQuote.petQuantity || 1}</p>
+                                            </div>
+                                        </div>
+                                        {selectedQuote.hasKnots && selectedQuote.knotRegions && (
+                                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-orange-200">
+                                                <p className="text-[10px] font-black text-orange-400 uppercase mb-2">Regiões com nós:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedQuote.knotRegions.split(',').map(r => (
+                                                        <span key={r} className="bg-orange-50 text-orange-600 text-[10px] font-bold px-3 py-1 rounded-full border border-orange-100">
+                                                            {r.trim()}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {selectedQuote.type !== 'SPA' && (
+                                    <div className="bg-orange-50/50 p-6 rounded-3xl border border-orange-100 space-y-4">
+                                        <h3 className="text-sm font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
+                                            <Truck size={16} /> Informações de Logística
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase">Endereço de Origem</label>
+                                                <textarea
+                                                    value={selectedQuote.transportOrigin || ''}
+                                                    onChange={(e) => setSelectedQuote({ ...selectedQuote, transportOrigin: e.target.value })}
+                                                    className="input-field py-3 min-h-[80px] text-sm"
+                                                    placeholder="Endereço de busca..."
+                                                />
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase">Endereço de Destino (Leva)</label>
+                                                    <input
+                                                        value={selectedQuote.transportDestination || ''}
+                                                        onChange={(e) => setSelectedQuote({ ...selectedQuote, transportDestination: e.target.value })}
+                                                        className="input-field py-3 text-sm"
+                                                        placeholder="Destino (ex: 7Pet)"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase">Endereço de Retorno (Traz)</label>
+                                                    <textarea
+                                                        value={selectedQuote.transportReturnAddress || ''}
+                                                        onChange={(e) => setSelectedQuote({ ...selectedQuote, transportReturnAddress: e.target.value })}
+                                                        className="input-field py-3 min-h-[60px] text-sm"
+                                                        placeholder="Endereço onde o pet deve ser deixado..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase">Período</label>
+                                                    <select
+                                                        value={selectedQuote.transportPeriod || 'MANHA'}
+                                                        onChange={(e) => setSelectedQuote({ ...selectedQuote, transportPeriod: e.target.value as any })}
+                                                        className="input-field py-2 text-sm"
+                                                    >
+                                                        <option value="MANHA">Manhã</option>
+                                                        <option value="TARDE">Tarde</option>
+                                                        <option value="NOITE">Noite</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                                     {selectedQuote.items.map((item, index) => (
