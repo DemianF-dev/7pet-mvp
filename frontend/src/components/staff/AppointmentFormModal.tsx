@@ -325,6 +325,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                         <input
                             type="datetime-local"
                             required
+                            step="900"
                             value={formData.startAt}
                             onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
                             className="input-field"

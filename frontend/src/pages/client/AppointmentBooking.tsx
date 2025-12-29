@@ -290,6 +290,7 @@ export default function AppointmentBooking() {
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Horário (HH:MM)</label>
                                         <input
                                             type="time"
+                                            step="900"
                                             value={selectedTime}
                                             onChange={(e) => setSelectedTime(e.target.value)}
                                             className="w-full bg-white border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-4 shadow-sm text-secondary font-bold appearance-none transition-all"
