@@ -58,6 +58,32 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 
+app.get('/diagnose-db', async (req, res) => {
+    try {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+
+        // This is a raw query to check if the column exists in the Customer table
+        const columns = await prisma.$queryRaw`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'Customer'
+        `;
+
+        const hasSecondaryGuardian = columns.some((c: any) => c.column_name === 'secondaryGuardianName');
+
+        res.json({
+            database: 'postgresql',
+            table: 'Customer',
+            columns: columns.map((c: any) => c.column_name),
+            hasSecondaryGuardian,
+            timestamp: new Date()
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`⏱️  Notification scheduler started`);

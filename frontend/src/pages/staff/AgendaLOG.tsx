@@ -359,88 +359,154 @@ export default function AgendaLOG() {
         );
     };
 
+    const getWeekNumber = (date: Date) => {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    };
+
     const renderMonthView = () => {
         const firstDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
         const lastDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+
+        // Adjust start to previous Monday
         const startDate = new Date(firstDayOfMonth);
-        startDate.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay());
+        const day = startDate.getDay(); // 0 is Sunday, 1 is Monday...
+        const diff = (day === 0 ? -6 : 1) - day;
+        startDate.setDate(firstDayOfMonth.getDate() + diff);
 
         const days = [];
         const current = new Date(startDate);
-        while (current <= lastDayOfMonth || days.length % 7 !== 0) {
+        // Ensure we show at least 6 weeks for a consistent grid
+        while (days.length < 42) {
             days.push(new Date(current));
             current.setDate(current.getDate() + 1);
         }
 
-        const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const weekHeaders = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
         return (
-            <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-280px)]">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
-                            <ChevronLeft size={20} className="text-gray-400" />
-                        </button>
-                        <h2 className="text-xl font-black text-secondary uppercase tracking-tight">
+            <div className="bg-white rounded-[32px] shadow-xl border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-180px)]">
+                {/* Calendar Header */}
+                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-white">
+                    <div className="flex items-center gap-6">
+                        <h2 className="text-2xl font-black text-secondary tracking-tight">
                             {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                         </h2>
-                        <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
-                            <ChevronRight size={20} className="text-gray-400" />
-                        </button>
-                        <button onClick={setToday} className="text-xs font-bold text-primary hover:underline ml-2">Hoje</button>
+                        <div className="flex bg-gray-100 p-1 rounded-xl">
+                            <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))} className="p-1.5 hover:bg-white rounded-lg transition-all text-gray-500">
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button onClick={setToday} className="px-3 py-1 text-[10px] font-extrabold text-secondary hover:bg-white rounded-lg transition-all uppercase tracking-wider">Hoje</button>
+                            <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))} className="p-1.5 hover:bg-white rounded-lg transition-all text-gray-500">
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className="relative group">
+                            <select
+                                className="appearance-none bg-gray-50 border border-transparent hover:border-gray-200 rounded-xl px-4 pr-10 py-2 text-xs font-black text-secondary outline-none transition-all cursor-pointer"
+                                value={view}
+                                onChange={(e) => setView(e.target.value as ViewType)}
+                            >
+                                <option value="MONTH">Mês (Agenda LOG)</option>
+                                <option value="WEEK">Semana</option>
+                                <option value="DAY">Dia</option>
+                                <option value="KANBAN">Kanban</option>
+                            </select>
+                            <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto custom-scrollbar">
-                    <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
-                        {weekDays.map(wd => (
-                            <div key={wd} className="p-4 text-center text-[10px] font-black text-gray-400 uppercase border-r border-gray-100 last:border-none">
-                                {wd}
-                            </div>
-                        ))}
-                    </div>
+                {/* Grid Header */}
+                <div className="grid grid-cols-[40px_repeat(7,1fr)] border-b border-gray-50 bg-gray-50/30">
+                    <div className="p-2 border-r border-gray-50"></div>
+                    {weekHeaders.map(wh => (
+                        <div key={wh} className="p-2 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-r border-gray-50 last:border-none">
+                            {wh}
+                        </div>
+                    ))}
+                </div>
 
-                    <div className="grid grid-cols-7 flex-1 min-h-[600px]">
+                {/* Calendar Grid */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/10">
+                    <div className="grid grid-cols-[40px_repeat(7,1fr)] h-full min-h-[700px]">
                         {days.map((day, idx) => {
                             const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
+                            const isToday = isSameDay(day, new Date());
                             const dayAppts = appointments.filter(a => isSameDay(new Date(a.startAt), day));
+                            const weekNum = idx % 7 === 0 ? getWeekNumber(day) : null;
 
                             return (
-                                <div
-                                    key={idx}
-                                    className={`min-h-[120px] p-2 border-r border-b border-gray-50 group hover:bg-gray-50/50 transition-colors ${!isCurrentMonth ? 'bg-gray-50/20 opacity-40' : ''} ${isSameDay(day, new Date()) ? 'bg-primary/[0.02]' : ''}`}
-                                >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className={`text-[11px] font-black rounded-full w-6 h-6 flex items-center justify-center ${isSameDay(day, new Date()) ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-secondary opacity-60'}`}>
-                                            {day.getDate()}
-                                        </span>
-                                        {dayAppts.length > 0 && (
-                                            <span className="bg-gray-100 text-[8px] font-black text-gray-400 px-1.5 py-0.5 rounded-full">
-                                                {dayAppts.length}
+                                <div key={idx} className="contents">
+                                    {weekNum !== null && (
+                                        <div className="border-r border-b border-gray-100/60 flex items-center justify-center bg-gray-50/40 text-[10px] font-black text-primary/40">
+                                            {weekNum}
+                                        </div>
+                                    )}
+                                    <div
+                                        className={`min-h-[140px] p-1.5 border-r border-b border-gray-100/60 group transition-all relative
+                                            ${!isCurrentMonth ? 'bg-gray-50/20' : 'bg-white hover:bg-white'}
+                                            ${isToday ? 'bg-orange-50/30 ring-1 ring-inset ring-orange-100/50' : ''}
+                                        `}
+                                    >
+                                        <div className="flex justify-end p-1 mb-1">
+                                            <span className={`text-[11px] font-black flex items-center justify-center
+                                                ${!isCurrentMonth ? 'text-gray-300' : 'text-secondary/80'}
+                                                ${isToday ? 'bg-orange-600 text-white w-5 h-5 rounded-md shadow-sm' : ''}
+                                            `}>
+                                                {day.getDate()}
                                             </span>
-                                        )}
-                                    </div>
-                                    <div className="space-y-1">
-                                        {dayAppts.slice(0, 3).map(appt => (
-                                            <div
-                                                key={appt.id}
-                                                onClick={() => handleOpenDetails(appt)}
-                                                className="p-1 px-2 bg-primary/10 border-l-2 border-primary rounded text-[9px] font-bold text-secondary truncate cursor-pointer hover:bg-primary/20 transition-all"
-                                            >
-                                                {new Date(appt.startAt).getHours()}:{new Date(appt.startAt).getMinutes().toString().padStart(2, '0')} {appt.pet.name}
-                                            </div>
-                                        ))}
-                                        {dayAppts.length > 3 && (
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedDate(day);
-                                                    setView('DAY');
-                                                }}
-                                                className="w-full text-[8px] font-black text-primary uppercase hover:underline text-left pl-2"
-                                            >
-                                                + {dayAppts.length - 3} mais
-                                            </button>
-                                        )}
+                                        </div>
+
+                                        <div className="space-y-[2px]">
+                                            {dayAppts.slice(0, 8).map(appt => {
+                                                const time = new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                                                // Determin prefix (A) for Agendamento, (R) for Relizado or specific logic
+                                                const prefix = appt.status === 'FINALIZADO' ? '(R)' : '(A)';
+                                                const dotColor = appt.status === 'PENDENTE' ? 'bg-orange-400' :
+                                                    appt.status === 'CONFIRMADO' ? 'bg-blue-500' :
+                                                        appt.status === 'EM_ATENDIMENTO' ? 'bg-orange-600' : 'bg-green-500';
+
+                                                return (
+                                                    <div
+                                                        key={appt.id}
+                                                        onClick={() => handleOpenDetails(appt)}
+                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-gray-100 cursor-pointer transition-colors group/item"
+                                                    >
+                                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor} shadow-[0_0_4px_rgba(0,0,0,0.1)]`} />
+                                                        <div className="flex-1 flex items-center gap-1 overflow-hidden">
+                                                            <span className="text-[9px] font-black text-secondary/60 shrink-0">{prefix}</span>
+                                                            <span className="text-[9px] font-black text-secondary truncate leading-none">
+                                                                Pet: <span className="text-secondary/80 font-bold">{appt.pet.name}</span>
+                                                                <span className="mx-1 text-gray-300 font-normal">|</span>
+                                                                Tutor(a): <span className="text-secondary/60 font-bold">{appt.customer.name}</span>
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[8px] font-black text-gray-400 shrink-0 tabular-nums">
+                                                            {time}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {dayAppts.length > 8 && (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedDate(day);
+                                                        setView('DAY');
+                                                    }}
+                                                    className="w-full mt-1 py-1 text-[8px] font-black text-orange-600/60 hover:text-orange-600 uppercase flex items-center justify-center gap-1 hover:bg-orange-600/5 rounded-md transition-all"
+                                                >
+                                                    Mostrar tudo {dayAppts.length}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
