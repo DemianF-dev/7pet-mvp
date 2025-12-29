@@ -12,8 +12,17 @@ interface User {
     birthday?: string;
     notes?: string;
     customer?: {
-        id: string; // Added ID here
+        id: string;
         name: string;
+        phone?: string;
+        address?: string;
+        type?: string;
+        secondaryGuardianName?: string;
+        secondaryGuardianPhone?: string;
+        secondaryGuardianEmail?: string;
+        secondaryGuardianAddress?: string;
+        discountPercentage?: number;
+        recurringFrequency?: string;
     };
     permissions?: string[];
 }
