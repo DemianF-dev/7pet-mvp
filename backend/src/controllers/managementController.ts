@@ -2,6 +2,47 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { AppointmentStatus, InvoiceStatus } from '@prisma/client';
 import * as appointmentService from '../services/appointmentService';
+import bcrypt from 'bcryptjs';
+
+const getNextStaffId = async (role: string) => {
+    if (role === 'CLIENTE') {
+        const lastClient = await prisma.user.findFirst({
+            where: { role: 'CLIENTE', staffId: { gte: 1000 } },
+            orderBy: { staffId: 'desc' },
+            select: { staffId: true }
+        });
+        return Math.max(lastClient?.staffId || 1000, 1000) + 1;
+    } else {
+        const lastStaff = await prisma.user.findFirst({
+            where: { role: { not: 'CLIENTE' }, staffId: { lt: 1000 } },
+            orderBy: { staffId: 'desc' },
+            select: { staffId: true }
+        });
+        // Special case: if no staff yet, it returns 0 as per user request (OP-0000)
+        if (!lastStaff) return 0;
+        return (lastStaff.staffId || 0) + 1;
+    }
+};
+
+const RESTRICTED_EMAILS = ['oidemianf@gmail.com', 'demian@master'];
+const MASTER_EMAIL = 'oidemianf@gmail.com';
+
+const isRestricted = (email?: string | null) => {
+    if (!email) return false;
+    return RESTRICTED_EMAILS.some(e => email.toLowerCase().includes(e.toLowerCase()));
+};
+
+const getDefaultPermissions = async (role: string) => {
+    try {
+        const rolePerm = await prisma.rolePermission.findUnique({
+            where: { role }
+        });
+        return rolePerm?.permissions || '[]';
+    } catch (e) {
+        console.error('Error getting default permissions:', e);
+        return '[]';
+    }
+};
 
 export const getKPIs = async (req: Request, res: Response) => {
     try {
@@ -9,14 +50,9 @@ export const getKPIs = async (req: Request, res: Response) => {
         await appointmentService.processNoShows();
 
         const now = new Date();
-        // Force start of day to avoid time issues? (optional, but good for debug)
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        console.log(`[KPI] Fetching for month starting: ${firstDayOfMonth.toISOString()}`);
-
-
-        // 1. Revenue Metrics (Current Month vs Last Month)
         const currentMonthRevenue = await prisma.paymentRecord.aggregate({
             where: { paidAt: { gte: firstDayOfMonth } },
             _sum: { amount: true }
@@ -32,7 +68,6 @@ export const getKPIs = async (req: Request, res: Response) => {
             _sum: { amount: true }
         });
 
-        // 2. Appointment Stats (Efficiency/Cancellation)
         const appointmentsLast30Days = await prisma.appointment.groupBy({
             by: ['status'],
             where: {
@@ -41,7 +76,6 @@ export const getKPIs = async (req: Request, res: Response) => {
             _count: true
         });
 
-        // 3. Service Popularity
         const servicePopularity = await prisma.service.findMany({
             include: {
                 _count: {
@@ -54,14 +88,12 @@ export const getKPIs = async (req: Request, res: Response) => {
             take: 5
         });
 
-        // 4. Customer Growth
         const newCustomersThisMonth = await prisma.customer.count({
             where: {
                 createdAt: { gte: firstDayOfMonth }
             }
         });
 
-        // 5. Operational Alerts
         const blockedActiveCustomers = await prisma.customer.count({
             where: { isBlocked: true }
         });
@@ -73,7 +105,6 @@ export const getKPIs = async (req: Request, res: Response) => {
             }
         });
 
-        // 6. Ticket Médio (Last 30 days)
         const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const completedAppointmentsCount = await prisma.appointment.count({
             where: {
@@ -89,7 +120,6 @@ export const getKPIs = async (req: Request, res: Response) => {
             ? (revenueLast30Days._sum.amount || 0) / completedAppointmentsCount
             : 0;
 
-        // 7. No-Show Rate (Last 30 days)
         const allRelevantAppointments = await prisma.appointment.count({
             where: {
                 startAt: { gte: last30Days },
@@ -104,13 +134,11 @@ export const getKPIs = async (req: Request, res: Response) => {
         });
         const noShowRate = allRelevantAppointments > 0 ? (noShowsCount / allRelevantAppointments) * 100 : 0;
 
-        // 8. Pending Balance (All pending invoices)
         const pendingInvoices = await prisma.invoice.aggregate({
             where: { status: 'PENDENTE' },
             _sum: { amount: true }
         });
 
-        // 9. Top Customers (By Total Invoice Amount)
         const topCustomersRaw = await prisma.invoice.groupBy({
             by: ['customerId'],
             where: { status: 'PAGO' },
@@ -191,14 +219,24 @@ export const getReports = async (req: Request, res: Response) => {
 
 export const listUsers = async (req: Request, res: Response) => {
     try {
+        const currentUser = (req as any).user;
+        const requesterIsSuper = isRestricted(currentUser?.email);
+
         const users = await prisma.user.findMany({
             where: { deletedAt: null },
             include: { customer: true },
             orderBy: { createdAt: 'desc' }
         });
-        res.json(users);
+
+        // If requester is not super, hide restricted users from the list
+        const filteredUsers = requesterIsSuper
+            ? users
+            : users.filter(u => !isRestricted(u.email));
+
+        res.json(filteredUsers);
     } catch (error) {
-        res.status(500).json({ error: 'Erro ao listar usuários.' });
+        console.error('Error in listUsers:', error);
+        res.status(500).json({ error: 'Erro ao listar usuários.', details: error instanceof Error ? error.message : String(error) });
     }
 };
 
@@ -206,14 +244,40 @@ export const updateUserRole = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
+        const currentUserProfile = (req as any).user;
+
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+        // STRICT MASTER PROTECTION
+        if (targetUser.email === MASTER_EMAIL && currentUserProfile?.email !== MASTER_EMAIL) {
+            return res.status(403).json({ error: 'Apenas o próprio Master pode alterar seu cargo.' });
+        }
+
+        // STRICT ADMIN CREATION PROTECTION
+        if ((role === 'ADMIN' || role === 'MASTER') && currentUserProfile?.email !== MASTER_EMAIL) {
+            return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Administrador.' });
+        }
+
+        // Access Control (Legacy for other restricted users)
+        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
+            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        }
+
+        const updateData: any = { role };
+
+        if (role !== 'CLIENTE' && (!targetUser || !targetUser.staffId)) {
+            updateData.staffId = await getNextStaffId(role); // Fixed: Pass role to getNextStaffId
+        }
 
         const user = await prisma.user.update({
             where: { id },
-            data: { role }
+            data: updateData
         });
 
         res.json(user);
     } catch (error) {
+        console.error('Update role error:', error);
         res.status(500).json({ error: 'Erro ao atualizar cargo.' });
     }
 };
@@ -221,25 +285,38 @@ export const updateUserRole = async (req: Request, res: Response) => {
 export const getUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const currentUser = (req as any).user;
+
         const user = await prisma.user.findUnique({
             where: { id },
             include: { customer: true }
         });
         if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+        // Access Control: Restricted users can only be accessed by each other
+        if (isRestricted(user.email) && !isRestricted(currentUser?.email)) {
+            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        }
+
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar usuário' });
     }
 };
 
-import bcrypt from 'bcryptjs';
-
 export const createUser = async (req: Request, res: Response) => {
     try {
+        const currentUser = (req as any).user;
         const {
             email, password, role, name, phone, notes, permissions,
-            admissionDate, birthday, document, address
+            admissionDate, birthday, document, address, color,
+            firstName, lastName
         } = req.body;
+
+        // STRICT ADMIN CREATION PROTECTION
+        if ((role === 'ADMIN' || role === 'MASTER') && currentUser?.email !== MASTER_EMAIL) {
+            return res.status(403).json({ error: 'Apenas o usuário Master pode criar novos Administradores.' });
+        }
 
         if (!email || !password || !role) {
             return res.status(400).json({ error: 'Email, senha e cargo são obrigatórios' });
@@ -255,14 +332,18 @@ export const createUser = async (req: Request, res: Response) => {
                 email,
                 passwordHash,
                 role,
-                name,
+                name: name || `${firstName || ''} ${lastName || ''}`.trim() || 'Novo Usuário',
+                firstName,
+                lastName,
                 phone,
                 notes,
-                permissions: permissions || '[]',
+                permissions: permissions || await getDefaultPermissions(role),
                 admissionDate: admissionDate ? new Date(admissionDate) : null,
                 birthday: birthday ? new Date(birthday) : null,
                 document,
-                address
+                address,
+                color,
+                staffId: await getNextStaffId(role)
             }
         });
 
@@ -276,27 +357,66 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const currentUserProfile = (req as any).user;
+
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+        // STRICT MASTER PROTECTION: Only Master can edit Master
+        if (targetUser.email === MASTER_EMAIL && currentUserProfile?.email !== MASTER_EMAIL) {
+            return res.status(403).json({ error: 'Apenas o próprio Master pode alterar seus dados.' });
+        }
+
+        // Access Control (Legacy)
+        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
+            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        }
+
         const {
             name, phone, notes, permissions, role,
-            email, password, // Admin only fields
-            admissionDate, birthday, document, address
+            email, password,
+            admissionDate, birthday, document, address, color,
+            firstName, lastName
         } = req.body;
 
         const updateData: any = {};
-        if (name !== undefined) updateData.name = name;
+        if (firstName !== undefined) updateData.firstName = firstName;
+        if (lastName !== undefined) updateData.lastName = lastName;
+
+        if (firstName !== undefined || lastName !== undefined) {
+            const finalFirst = firstName !== undefined ? firstName : (targetUser?.firstName || '');
+            const finalLast = lastName !== undefined ? lastName : (targetUser?.lastName || '');
+            updateData.name = `${finalFirst} ${finalLast}`.trim();
+        } else if (name !== undefined) {
+            updateData.name = name;
+        }
+
         if (phone !== undefined) updateData.phone = phone;
         if (notes !== undefined) updateData.notes = notes;
         if (permissions !== undefined) updateData.permissions = permissions;
-        if (role !== undefined) updateData.role = role;
+        if (color !== undefined) updateData.color = color;
 
-        // New Fields
+        if (role !== undefined) {
+            // STRICT ADMIN PROMOTION PROTECTION
+            if ((role === 'ADMIN' || role === 'MASTER') && currentUserProfile?.email !== MASTER_EMAIL) {
+                return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Administrador.' });
+            }
+
+            updateData.role = role;
+            if (role !== 'CLIENTE' && (!targetUser || !targetUser.staffId)) {
+                updateData.staffId = await getNextStaffId(role); // Fixed: Pass role
+            }
+            if (permissions === undefined) {
+                updateData.permissions = await getDefaultPermissions(role);
+            }
+        }
+
         if (email !== undefined) updateData.email = email;
         if (document !== undefined) updateData.document = document;
         if (address !== undefined) updateData.address = address;
         if (admissionDate !== undefined) updateData.admissionDate = admissionDate ? new Date(admissionDate) : null;
         if (birthday !== undefined) updateData.birthday = birthday ? new Date(birthday) : null;
 
-        // Password Hashing
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
         }
@@ -316,8 +436,20 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        // Soft delete if possible, or simple delete. Prompt implies 'delete'.
-        // Schema added 'deletedAt', so let's use it.
+        const currentUserProfile = (req as any).user;
+
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+        // STRICT MASTER PROTECTION
+        if (targetUser.email === MASTER_EMAIL && currentUserProfile?.email !== MASTER_EMAIL) {
+            return res.status(403).json({ error: 'O usuário Master não pode ser excluído por terceiros.' });
+        }
+
+        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
+            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        }
+
         await prisma.user.update({
             where: { id },
             data: { deletedAt: new Date() }
@@ -326,5 +458,46 @@ export const deleteUser = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Delete user error:', error);
         res.status(500).json({ error: 'Erro ao excluir usuário' });
+    }
+};
+
+export const listRolePermissions = async (req: Request, res: Response) => {
+    try {
+        const perms = await prisma.rolePermission.findMany();
+        res.json(perms);
+    } catch (error) {
+        console.error('Error in listRolePermissions:', error);
+        res.status(500).json({ error: 'Erro ao listar permissões por cargo', details: error instanceof Error ? error.message : String(error) });
+    }
+};
+
+export const updateRolePermissions = async (req: Request, res: Response) => {
+    try {
+        const { role } = req.params;
+        const { permissions, label } = req.body;
+
+        const perms = await prisma.rolePermission.upsert({
+            where: { role },
+            update: { permissions, label },
+            create: { role, permissions, label: label || role }
+        });
+        res.json(perms);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao salvar permissões por cargo' });
+    }
+};
+
+export const deleteRole = async (req: Request, res: Response) => {
+    try {
+        const { role } = req.params;
+        if (['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER'].includes(role.toUpperCase())) {
+            return res.status(400).json({ error: 'Não é possível excluir cargos do sistema.' });
+        }
+        await prisma.rolePermission.delete({
+            where: { role }
+        });
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao excluir cargo' });
     }
 };

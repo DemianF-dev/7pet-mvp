@@ -14,14 +14,16 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
+import ConfirmModal from './ConfirmModal';
 
 export default function Sidebar() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout } = useAuthStore();
     const [isOpen, setIsOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-    const handleLogout = () => {
+    const handleLogoutConfirm = () => {
         logout();
         navigate('/');
     };
@@ -123,7 +125,7 @@ export default function Sidebar() {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-secondary truncate">{user?.customer?.name || 'Cliente'}</p>
                                         <button
-                                            onClick={handleLogout}
+                                            onClick={() => setShowLogoutConfirm(true)}
                                             className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
                                         >
                                             Sair da conta <LogOut size={12} />
@@ -155,7 +157,7 @@ export default function Sidebar() {
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-secondary truncate">{user?.customer?.name || 'Cliente'}</p>
                             <button
-                                onClick={handleLogout}
+                                onClick={() => setShowLogoutConfirm(true)}
                                 className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
                             >
                                 Sair da conta <LogOut size={12} />
@@ -164,13 +166,25 @@ export default function Sidebar() {
                     </div>
                 </div>
             </aside>
+
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Sair do Sistema?"
+                description="Tem certeza que deseja encerrar sua sessão? Você precisará fazer login novamente para acessar seus dados."
+                confirmText="Sair Agora"
+                confirmColor="bg-red-500"
+            />
         </>
     );
 }
 
 function SidebarItem({ icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick: () => void }) {
+    const id = `sidemenu-${label.toLowerCase().replace(/ /g, '-')}`;
     return (
         <div
+            id={id}
             onClick={onClick}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'}`}
         >

@@ -13,6 +13,8 @@ import {
     Square,
     RefreshCcw,
     Clock,
+    LayoutGrid,
+    List,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -21,13 +23,23 @@ import BackButton from '../../components/BackButton';
 
 interface Service {
     id: string;
+    seqId?: number;
     name: string;
     description: string;
     basePrice: number;
     duration: number;
     category: string;
     species: string;
+    responsibleId?: string;
 }
+
+interface User {
+    id: string;
+    name: string;
+    role: string;
+}
+
+type TabType = 'active' | 'trash';
 
 export default function ServiceManager() {
     const [services, setServices] = useState<Service[]>([]);
@@ -40,6 +52,9 @@ export default function ServiceManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkMode, setIsBulkMode] = useState(false);
+    const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+    const [users, setUsers] = useState<User[]>([]);
+    const [tab, setTab] = useState<TabType>('active');
 
     const handleSelectAll = () => {
         if (selectedIds.length === filteredServices.length) {
@@ -56,17 +71,29 @@ export default function ServiceManager() {
         basePrice: 0,
         duration: 30,
         category: 'Banho',
-        species: 'Canino'
+        species: 'Canino',
+        responsibleId: ''
     });
 
     useEffect(() => {
         fetchServices();
-    }, []);
+        fetchUsers();
+    }, [tab]);
+
+    const fetchUsers = async () => {
+        try {
+            const response = await api.get('/management/users');
+            setUsers(response.data.filter((u: any) => ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role)));
+        } catch (error) {
+            console.error('Erro ao buscar usuários:', error);
+        }
+    };
 
     const fetchServices = async () => {
         setIsLoading(true);
         try {
-            const response = await api.get('/services');
+            const endpoint = tab === 'trash' ? '/services/trash' : '/services';
+            const response = await api.get(endpoint);
             setServices(response.data);
         } catch (error) {
             console.error('Erro ao buscar serviços:', error);
@@ -84,7 +111,8 @@ export default function ServiceManager() {
                 basePrice: service.basePrice,
                 duration: service.duration,
                 category: service.category || 'Banho',
-                species: service.species || 'Canino'
+                species: service.species || 'Canino',
+                responsibleId: service.responsibleId || ''
             });
         } else {
             setEditingService(null);
@@ -94,7 +122,8 @@ export default function ServiceManager() {
                 basePrice: 0,
                 duration: 30,
                 category: 'Banho',
-                species: speciesFilter // Default to current tab
+                species: speciesFilter, // Default to current tab
+                responsibleId: ''
             });
         }
         setIsModalOpen(true);
@@ -102,6 +131,8 @@ export default function ServiceManager() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const msg = editingService ? 'Deseja salvar as alterações neste serviço?' : 'Deseja cadastrar este novo serviço?';
+        if (!window.confirm(msg)) return;
         try {
             if (editingService) {
                 await api.patch(`/services/${editingService.id}`, formData);
@@ -131,13 +162,33 @@ export default function ServiceManager() {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} serviços selecionados?`)) return;
+        const action = tab === 'trash' ? 'excluir PERMANENTEMENTE' : 'mover para a lixeira';
+        if (!window.confirm(`ATENÇÃO: Deseja realmente ${action} os ${selectedIds.length} serviços selecionados?`)) return;
         try {
-            await api.post('/services/bulk-delete', { ids: selectedIds });
+            if (tab === 'trash') {
+                for (const id of selectedIds) {
+                    await api.delete(`/services/${id}/permanent`);
+                }
+            } else {
+                await api.post('/services/bulk-delete', { ids: selectedIds });
+            }
             fetchServices();
             setSelectedIds([]);
+            setIsBulkMode(false);
         } catch (error) {
-            alert('Erro ao excluir serviços');
+            alert('Erro ao processar serviços');
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        if (!window.confirm(`Deseja restaurar ${selectedIds.length} serviços da lixeira?`)) return;
+        try {
+            await api.post('/services/bulk-restore', { ids: selectedIds });
+            fetchServices();
+            setSelectedIds([]);
+            setIsBulkMode(false);
+        } catch (error) {
+            alert('Erro ao restaurar serviços');
         }
     };
 
@@ -150,13 +201,15 @@ export default function ServiceManager() {
             basePrice: service.basePrice,
             duration: service.duration,
             category: service.category,
-            species: service.species
+            species: service.species,
+            responsibleId: service.responsibleId || ''
         });
         setIsModalOpen(true);
     };
 
     const handleBulkImport = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!window.confirm('Deseja realmente processar esta importação em massa?')) return;
         try {
             const lines = importText.split('\n').filter(l => l.trim().length > 0);
             const servicesToImport = lines.map(line => {
@@ -246,7 +299,25 @@ export default function ServiceManager() {
                                 />
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
+                                {/* View Toggle */}
+                                <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+                                    <button
+                                        onClick={() => setViewMode('table')}
+                                        className={`p-2 rounded-xl transition-all ${viewMode === 'table' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                        title="Visualização em Lista"
+                                    >
+                                        <List size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('cards')}
+                                        className={`p-2 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                        title="Visualização em Cards"
+                                    >
+                                        <LayoutGrid size={18} />
+                                    </button>
+                                </div>
+
                                 <button onClick={() => setIsImportModalOpen(true)} className="bg-white hover:bg-gray-50 text-secondary px-6 py-3 rounded-2xl font-black border border-gray-100 flex items-center gap-2 text-xs tracking-widest transition-all">
                                     <Upload size={18} /> Importar
                                 </button>
@@ -298,64 +369,203 @@ export default function ServiceManager() {
                     )}
                 </AnimatePresence>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {isLoading ? (
-                        <div className="col-span-full py-20 text-center">
-                            <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
-                        </div>
-                    ) : sortedServices.length === 0 ? (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 rounded-[40px] bg-white">
-                            <Tag className="mx-auto text-gray-200 mb-4" size={64} />
-                            <p className="text-gray-400 font-bold">Nenhum serviço encontrado.</p>
-                        </div>
-                    ) : sortedServices.map(service => (
-                        <motion.div
-                            layout
-                            key={service.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`group bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                    <Tag size={24} />
-                                </div>
-                                <div className="flex gap-2">
-                                    {(isBulkMode || selectedIds.includes(service.id)) && (
-                                        <button
-                                            onClick={(e) => toggleSelect(service.id, e)}
-                                            className={`p-2 rounded-xl transition-all shadow-md border ${selectedIds.includes(service.id) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-300 border-gray-100 hover:text-primary'}`}
-                                        >
-                                            {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
+                {/* Content - Table or Cards View */}
+                {viewMode === 'table' ? (
+                    <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                <tr>
+                                    <th className="px-8 py-6 w-12">
+                                        {(isBulkMode || selectedIds.length > 0) && (
+                                            <button
+                                                onClick={handleSelectAll}
+                                                className="text-gray-300 hover:text-primary transition-colors"
+                                            >
+                                                {selectedIds.length > 0 && selectedIds.length === sortedServices.length ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                            </button>
+                                        )}
+                                    </th>
+                                    <th className="px-8 py-6">Serviço</th>
+                                    <th className="px-8 py-6">Categoria</th>
+                                    <th className="px-8 py-6 text-center">Espécie</th>
+                                    <th className="px-8 py-6 text-center">Duração</th>
+                                    <th className="px-8 py-6 text-right">Preço</th>
+                                    <th className="px-8 py-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-8 py-32 text-center">
+                                            <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
+                                        </td>
+                                    </tr>
+                                ) : sortedServices.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-8 py-32 text-center">
+                                            <div className="bg-gray-50 rounded-[40px] p-20 border-2 border-dashed border-gray-100">
+                                                <Tag className="mx-auto text-gray-200 mb-4" size={64} />
+                                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhum serviço encontrado.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : sortedServices.map(service => (
+                                    <tr
+                                        key={service.id}
+                                        className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(service.id) ? 'bg-primary/5' : ''}`}
+                                    >
+                                        <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
+                                            {(isBulkMode || selectedIds.includes(service.id)) && (
+                                                <button
+                                                    onClick={(e) => toggleSelect(service.id, e)}
+                                                    className={`transition-all ${selectedIds.includes(service.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
+                                                >
+                                                    {selectedIds.includes(service.id) ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                                </button>
+                                            )}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
+                                                    <Tag size={18} />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-black text-secondary uppercase text-sm">{service.name}</h3>
+                                                        <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                            SR-{String((service.seqId || 0) + 999).padStart(4, '0')}
+                                                        </span>
+                                                    </div>
+                                                    {service.description && (
+                                                        <p className="text-xs text-gray-400 line-clamp-1">{service.description}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                                {service.category}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className="flex justify-center">
+                                                {service.species === 'Canino' ? (
+                                                    <span className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black">
+                                                        <Dog size={12} /> Canino
+                                                    </span>
+                                                ) : service.species === 'Felino' ? (
+                                                    <span className="flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-xl text-[10px] font-black">
+                                                        <Cat size={12} /> Felino
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-xl text-[10px] font-black">
+                                                        Ambos
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className="flex items-center justify-center gap-1 text-gray-600">
+                                                <Clock size={14} />
+                                                <span className="font-bold text-sm">{service.duration} min</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <span className="text-lg font-black text-primary">
+                                                R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <button
+                                                    onClick={() => handleOpenModal(service)}
+                                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 size={16} className="text-gray-400" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDuplicate(service)}
+                                                    className="p-2 hover:bg-blue-50 rounded-xl transition-colors"
+                                                    title="Duplicar"
+                                                >
+                                                    <Copy size={16} className="text-blue-400" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(service.id)}
+                                                    className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 size={16} className="text-red-400" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {isLoading ? (
+                            <div className="col-span-full py-20 text-center">
+                                <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
+                            </div>
+                        ) : sortedServices.length === 0 ? (
+                            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 rounded-[40px] bg-white">
+                                <Tag className="mx-auto text-gray-200 mb-4" size={64} />
+                                <p className="text-gray-400 font-bold">Nenhum serviço encontrado.</p>
+                            </div>
+                        ) : sortedServices.map(service => (
+                            <motion.div
+                                layout
+                                key={service.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`group bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                        <Tag size={24} />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {(isBulkMode || selectedIds.includes(service.id)) && (
+                                            <button
+                                                onClick={(e) => toggleSelect(service.id, e)}
+                                                className={`p-2 rounded-xl transition-all shadow-md border ${selectedIds.includes(service.id) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-300 border-gray-100 hover:text-primary'}`}
+                                            >
+                                                {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
+                                            </button>
+                                        )}
+                                        <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
+                                            <Edit2 size={16} className="text-gray-400" />
                                         </button>
-                                    )}
-                                    <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
-                                        <Edit2 size={16} className="text-gray-400" />
-                                    </button>
-                                    <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
-                                        <Copy size={16} className="text-blue-400" />
-                                    </button>
-                                    <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
-                                        <Trash2 size={16} className="text-red-400" />
-                                    </button>
+                                        <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
+                                            <Copy size={16} className="text-blue-400" />
+                                        </button>
+                                        <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
+                                            <Trash2 size={16} className="text-red-400" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <h3 className="text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
-                            <p className="text-gray-400 text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
+                                <h3 className="text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
+                                <p className="text-[10px] font-black text-primary mb-2">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
+                                <p className="text-gray-400 text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                                    <Clock size={12} />
-                                    <span>{service.duration} min</span>
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                                        <Clock size={12} />
+                                        <span>{service.duration} min</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-lg font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-lg font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Service Modal */}
                 {isModalOpen && (
@@ -391,14 +601,14 @@ export default function ServiceManager() {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Preço Base</label>
                                         <div className="relative">
-                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                             <input
                                                 type="number"
                                                 step="0.01"
                                                 required
                                                 value={formData.basePrice}
                                                 onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) })}
-                                                className="w-full bg-gray-50 border-none rounded-2xl pl-14 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                                className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                                             />
                                         </div>
                                     </div>
@@ -442,6 +652,22 @@ export default function ServiceManager() {
                                         </label>
                                     </div>
                                 </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Profissional Responsável (Padrão)</label>
+                                    <select
+                                        value={formData.responsibleId}
+                                        onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                    >
+                                        <option value="">Nenhum (Rotativo)</option>
+                                        {users.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[9px] text-gray-400 italic px-1">Este profissional será o responsável padrão ao selecionar este serviço nos orçamentos.</p>
+                                </div>
+
                                 <div className="flex gap-4 pt-6">
                                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
                                     <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Serviço</button>
@@ -452,35 +678,37 @@ export default function ServiceManager() {
                 )}
 
                 {/* Import Modal */}
-                {isImportModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-secondary/60 backdrop-blur-md" onClick={() => setIsImportModalOpen(false)}></div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="bg-white rounded-[40px] p-8 w-full max-w-2xl relative z-10 shadow-2xl"
-                        >
-                            <h2 className="text-3xl font-black text-secondary mb-2">Importação em Massa</h2>
-                            <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">Cole os serviços abaixo, um por linha. Formato: <br />
-                                <code className="bg-gray-100 px-3 py-1 rounded-lg text-primary mt-2 block lowercase font-mono">Nome; Descrição; Preço; Duração(min); Categoria</code>
-                            </p>
+                {
+                    isImportModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-secondary/60 backdrop-blur-md" onClick={() => setIsImportModalOpen(false)}></div>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                className="bg-white rounded-[40px] p-8 w-full max-w-2xl relative z-10 shadow-2xl"
+                            >
+                                <h2 className="text-3xl font-black text-secondary mb-2">Importação em Massa</h2>
+                                <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">Cole os serviços abaixo, um por linha. Formato: <br />
+                                    <code className="bg-gray-100 px-3 py-1 rounded-lg text-primary mt-2 block lowercase font-mono">Nome; Descrição; Preço; Duração(min); Categoria</code>
+                                </p>
 
-                            <form onSubmit={handleBulkImport} className="space-y-6">
-                                <textarea
-                                    value={importText}
-                                    onChange={(e) => setImportText(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-3xl px-8 py-6 text-xs font-mono min-h-[250px] focus:ring-2 focus:ring-primary/20 transition-all"
-                                    placeholder={`Banho Simples; Banho tradicional; 50.00; 45; Banho\nTosa Higiênica; Corte íntimo e patinhas; 30.00; 20; Tosa`}
-                                />
-                                <div className="flex gap-4 pt-6 border-t border-gray-100">
-                                    <button type="button" onClick={() => setIsImportModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
-                                    <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Processar Importação</button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </main>
+                                <form onSubmit={handleBulkImport} className="space-y-6">
+                                    <textarea
+                                        value={importText}
+                                        onChange={(e) => setImportText(e.target.value)}
+                                        className="w-full bg-gray-50 border-none rounded-3xl px-8 py-6 text-xs font-mono min-h-[250px] focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder={`Banho Simples; Banho tradicional; 50.00; 45; Banho\nTosa Higiênica; Corte íntimo e patinhas; 30.00; 20; Tosa`}
+                                    />
+                                    <div className="flex gap-4 pt-6 border-t border-gray-100">
+                                        <button type="button" onClick={() => setIsImportModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                        <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Processar Importação</button>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </div>
+                    )
+                }
+            </main >
         </div >
     );
 }

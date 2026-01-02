@@ -6,8 +6,11 @@ import {
     TrendingUp,
     ArrowRight,
     RefreshCcw,
-    AlertTriangle
+    AlertTriangle,
+    MessageSquare,
+    CheckSquare
 } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -19,9 +22,12 @@ interface DashboardMetrics {
     todayTransports: number;
     overdueItems: number;
     statusCounts: { status: string; _count: number }[];
+    newTickets?: number;
+    pendingTickets?: number;
 }
 
 export default function StaffDashboard() {
+    const { user } = useAuthStore();
     const navigate = useNavigate();
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +48,27 @@ export default function StaffDashboard() {
         fetchMetrics();
     }, []);
 
+    const isMaster = user?.role === 'MASTER';
+
     const cards = [
+        ...(isMaster ? [
+            {
+                label: 'Novos Chamados',
+                value: metrics?.newTickets || 0,
+                icon: <MessageSquare className="text-red-500" />,
+                color: 'bg-red-50',
+                link: '/staff/support',
+                urgent: (metrics?.newTickets || 0) > 0
+            },
+            {
+                label: 'Em Atendimento',
+                value: metrics?.pendingTickets || 0,
+                icon: <CheckSquare className="text-blue-500" />,
+                color: 'bg-blue-50',
+                link: '/staff/support',
+                urgent: false
+            }
+        ] : []),
         {
             label: 'Novos Orçamentos',
             value: metrics?.newQuotes || 0,

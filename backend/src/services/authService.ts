@@ -10,19 +10,44 @@ export const register = async (data: any) => {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) throw new Error('O usuário já existe');
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Initial password hashing if provided, otherwise we'll update with seqId after creation
+    let passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
-    const user = await prisma.user.create({
+    let staffId = null;
+    if (role !== 'CLIENTE') {
+        const lastStaff = await prisma.user.findFirst({
+            where: { staffId: { not: null } },
+            orderBy: { staffId: 'desc' },
+            select: { staffId: true }
+        });
+        staffId = (lastStaff?.staffId || 0) + 1;
+    }
+
+    let user = await prisma.user.create({
         data: {
             email,
-            passwordHash,
+            passwordHash: passwordHash || "TEMPORARY", // Fallback
             role,
-            name: name,
+            name: name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            firstName: data.firstName,
+            lastName: data.lastName,
             phone: data.phone,
+            extraEmails: data.extraEmails || [],
+            extraPhones: data.extraPhones || [],
+            extraAddresses: data.extraAddresses || [],
+            address: data.address,
+            birthday: data.birthday ? new Date(data.birthday) : undefined,
+            staffId,
             customer: role === 'CLIENTE' ? {
                 create: {
-                    name,
-                    phone: data.phone
+                    name: name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+                    phone: data.phone,
+                    address: data.address,
+                    discoverySource: data.discoverySource,
+                    communicationPrefs: data.communicationPrefs || [],
+                    communicationOther: data.communicationOther,
+                    additionalGuardians: data.additionalGuardians || [],
+                    internalNotes: data.internalNotes
                 }
             } : undefined
         },
@@ -31,14 +56,30 @@ export const register = async (data: any) => {
         }
     });
 
+    // If no password was provided, set it to the seqId as requested
+    if (!password) {
+        const tempPassword = String((user as any).seqId);
+        const newHash = await bcrypt.hash(tempPassword, 10);
+        user = await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash },
+            include: { customer: true }
+        });
+    }
+
     const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
     return { user, token };
 };
 
 export const login = async (email: string, password: string) => {
-    const user = await prisma.user.findUnique({
-        where: { email },
+    const user = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { email },
+                { extraEmails: { array_contains: email } }
+            ]
+        },
         include: { customer: true }
     });
 

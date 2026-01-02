@@ -10,4 +10,10 @@ router.patch('/:id', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), pro
 router.delete('/:id', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), productController.delete);
 router.post('/bulk-delete', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), productController.bulkDelete);
 
+// Trash system routes
+router.get('/trash', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), productController.listTrash);
+router.post('/bulk-restore', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), productController.bulkRestore);
+router.patch('/:id/restore', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), productController.restore);
+router.delete('/:id/permanent', authenticate, authorize(['GESTAO', 'ADMIN', 'MASTER']), productController.permanentRemove);
+
 export default router;

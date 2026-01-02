@@ -14,27 +14,33 @@ const appointmentSchema = z.object({
         requestedPeriod: z.nativeEnum(TransportPeriod).optional()
     }).optional(),
     customerId: z.string().uuid().optional(),
-    quoteId: z.string().uuid().optional()
+    quoteId: z.string().uuid().optional(),
+    performerId: z.string().uuid().optional()
 });
 
 export const create = async (req: any, res: Response) => {
     try {
         const validatedData = appointmentSchema.parse(req.body);
-        const isStaff = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA'].includes(req.user.role);
+        const isStaff = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(req.user.role);
+        console.log('[AppointmentController] Role check:', { role: req.user.role, isStaff });
+        const customerId = validatedData.customerId || req.user.customer?.id;
 
-        const customerId = (isStaff && validatedData.customerId) ? validatedData.customerId : req.user.customer.id;
+        if (!customerId) {
+            return res.status(400).json({ error: 'ID do Cliente não fornecido ou usuário logado não possui perfil de cliente.' });
+        }
 
         const data = {
             ...validatedData,
             customerId,
-            startAt: new Date(validatedData.startAt)
+            startAt: new Date(validatedData.startAt),
+            performerId: validatedData.performerId
         };
 
         const appointment = await appointmentService.create(data, isStaff);
 
         // If appointment was created from a quote, update quote status to AGENDAR
         if (validatedData.quoteId) {
-            await appointmentService.updateQuoteStatus(validatedData.quoteId);
+            await appointmentService.updateQuoteStatus(validatedData.quoteId, appointment.id);
         }
 
         res.status(201).json(appointment);
@@ -91,10 +97,11 @@ export const update = async (req: any, res: Response) => {
 
         const data = {
             ...validatedData,
-            startAt: new Date(validatedData.startAt)
+            startAt: new Date(validatedData.startAt),
+            performerId: validatedData.performerId
         };
 
-        const updated = await appointmentService.update(id, data);
+        const updated = await appointmentService.update(id, data, req.user.id);
         res.json(updated);
     } catch (error: any) {
         res.status(400).json({ error: error.message });
@@ -134,7 +141,8 @@ export const updateStatus = async (req: any, res: Response) => {
             }
         }
 
-        const updated = await appointmentService.updateStatus(id, status as AppointmentStatus);
+        const { reason } = req.body;
+        const updated = await appointmentService.updateStatus(id, status as AppointmentStatus, req.user.id, reason);
         res.json(updated);
     } catch (error: any) {
         res.status(400).json({ error: error.message });
@@ -184,3 +192,15 @@ export const bulkDelete = async (req: any, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const bulkRestore = async (req: any, res: Response) => {
+    try {
+        if (req.user.role === 'CLIENTE') return res.status(403).json({ error: 'Acesso negado' });
+        const { ids } = req.body;
+        await appointmentService.bulkRestore(ids);
+        res.status(200).json({ message: 'Agendamentos restaurados com sucesso' });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+

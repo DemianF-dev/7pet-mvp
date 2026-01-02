@@ -5,6 +5,7 @@ import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
+import ConfirmModal from '../../components/ConfirmModal';
 
 interface Quote {
     id: string;
@@ -14,6 +15,8 @@ interface Quote {
     items: { description: string; quantity: number; price: number }[];
     pet?: { name: string };
     desiredAt?: string;
+    scheduledAt?: string;
+    transportAt?: string;
 }
 
 const statusConfig: any = {
@@ -23,7 +26,8 @@ const statusConfig: any = {
     'RECALCULADO': { label: 'Recalculado', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
     'APROVADO': { label: 'Aprovado', color: 'bg-green-100 text-green-700 border-green-200' },
     'REJEITADO': { label: 'Reprovado', color: 'bg-red-100 text-red-700 border-red-200' },
-    'AGENDAR': { label: 'Agendado', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+    'AGENDAR': { label: 'Pronto p/ Agendar', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    'AGENDADO': { label: 'Agendado', color: 'bg-teal-100 text-teal-700 border-teal-200' }
 };
 
 export default function QuoteList() {
@@ -33,6 +37,7 @@ export default function QuoteList() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+    const [confirmAction, setConfirmAction] = useState<{ id: string, status: 'APROVADO' | 'REJEITADO' } | null>(null);
 
     const fetchQuotes = async (refresh = false) => {
         if (refresh) setIsRefreshing(true);
@@ -54,11 +59,13 @@ export default function QuoteList() {
         fetchQuotes();
     }, []);
 
-    const handleAction = async (id: string, status: 'APROVADO' | 'REJEITADO') => {
+    const handleAction = async () => {
+        if (!confirmAction) return;
         try {
-            await api.patch(`/quotes/${id}/status`, { status });
+            await api.patch(`/quotes/${confirmAction.id}/status`, { status: confirmAction.status });
             fetchQuotes();
             setSelectedQuote(null);
+            setConfirmAction(null);
         } catch (err) {
             console.error('Erro ao atualizar orçamento:', err);
         }
@@ -224,16 +231,52 @@ export default function QuoteList() {
                                             </span>
                                         </div>
 
+                                        {/* Datas e Agendamento */}
+                                        <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-4">
+                                            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Previsão e Agendamento</h4>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="bg-gray-50 p-3 rounded-2xl">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Sua Preferência</p>
+                                                    <p className="font-bold text-secondary text-sm">
+                                                        {selectedQuote.desiredAt ? new Date(selectedQuote.desiredAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'Não informada'}
+                                                    </p>
+                                                </div>
+
+                                                {(selectedQuote.scheduledAt || selectedQuote.transportAt) && (
+                                                    <div className="bg-primary/5 p-3 rounded-2xl border border-primary/10">
+                                                        <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Sugestão da Equipe</p>
+                                                        {selectedQuote.scheduledAt && (
+                                                            <div className="mb-2">
+                                                                <span className="text-xs font-bold text-gray-500 block">Atendimento SPA:</span>
+                                                                <span className="text-sm font-black text-secondary">
+                                                                    {new Date(selectedQuote.scheduledAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {selectedQuote.transportAt && (
+                                                            <div>
+                                                                <span className="text-xs font-bold text-gray-500 block">Transporte (Leva e Traz):</span>
+                                                                <span className="text-sm font-black text-purple-600">
+                                                                    {new Date(selectedQuote.transportAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
                                         {selectedQuote.status === 'ENVIADO' && (
                                             <div className="flex gap-4 pt-4">
                                                 <button
-                                                    onClick={() => handleAction(selectedQuote.id, 'REJEITADO')}
+                                                    onClick={() => setConfirmAction({ id: selectedQuote.id, status: 'REJEITADO' })}
                                                     className="flex-1 py-4 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition-all uppercase tracking-widest text-xs"
                                                 >
                                                     Recusar
                                                 </button>
                                                 <button
-                                                    onClick={() => handleAction(selectedQuote.id, 'APROVADO')}
+                                                    onClick={() => setConfirmAction({ id: selectedQuote.id, status: 'APROVADO' })}
                                                     className="flex-2 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
                                                 >
                                                     <CheckCircle2 size={18} /> Aprovar Agora
@@ -284,6 +327,18 @@ export default function QuoteList() {
                         </div>
                     )}
                 </AnimatePresence>
+
+                <ConfirmModal
+                    isOpen={!!confirmAction}
+                    onClose={() => setConfirmAction(null)}
+                    onConfirm={handleAction}
+                    title={confirmAction?.status === 'APROVADO' ? "Aprovar Orçamento?" : "Recusar Orçamento?"}
+                    description={confirmAction?.status === 'APROVADO'
+                        ? "Ao aprovar, nossa equipe será notificada e entraremos em contato para finalizar o agendamento."
+                        : "Tem certeza que deseja recusar este orçamento? Você poderá solicitar um novo a qualquer momento."}
+                    confirmText={confirmAction?.status === 'APROVADO' ? "Confirmar Aprovação" : "Confirmar Recusa"}
+                    confirmColor={confirmAction?.status === 'APROVADO' ? "bg-primary" : "bg-red-500"}
+                />
             </main>
         </div>
     );

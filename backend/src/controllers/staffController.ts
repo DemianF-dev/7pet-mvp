@@ -33,6 +33,15 @@ export const staffController = {
                 }
             });
 
+            // 2b. Support Tickets (New & Pending)
+            const newTicketsCount = await prisma.bugReport.count({
+                where: { status: 'SOLICITADO' }
+            });
+
+            const pendingTicketsCount = await prisma.bugReport.count({
+                where: { status: 'EM_ANDAMENTO' }
+            });
+
             // 3. Today's Transports only (not all active)
             const todayTransports = await prisma.transportDetails.count({
                 where: {
@@ -104,7 +113,9 @@ export const staffController = {
                 newQuotes,
                 todayTransports,
                 overdueItems,
-                statusCounts: safeStatusCounts
+                statusCounts: safeStatusCounts,
+                newTickets: newTicketsCount,
+                pendingTickets: pendingTicketsCount
             });
         } catch (error) {
             console.error('Error fetching staff metrics:', error);

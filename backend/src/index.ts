@@ -12,9 +12,11 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import staffRoutes from './routes/staffRoutes';
 import managementRoutes from './routes/managementRoutes';
 import productRoutes from './routes/productRoutes';
+import supportRoutes from './routes/supportRoutes';
 
 import notificationRoutes from './routes/notificationRoutes';
 import { runNotificationScheduler } from './schedulers/notificationScheduler';
+import prisma from './lib/prisma';
 
 dotenv.config();
 
@@ -26,7 +28,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Routes
 app.use('/auth', authRoutes);
@@ -41,6 +43,7 @@ app.use('/management', managementRoutes);
 app.use('/invoices', invoiceRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/products', productRoutes);
+app.use('/support', supportRoutes);
 
 // Start Scheduler
 runNotificationScheduler();
@@ -62,25 +65,30 @@ app.get('/health', (req, res) => {
 
 app.get('/diagnose-db', async (req, res) => {
     try {
-        const { PrismaClient } = require('@prisma/client');
-        const prisma = new PrismaClient();
 
-        // This is a raw query to check if the column exists in the Customer table
-        const columns = await prisma.$queryRaw`
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'Customer'
-        `;
+        // Check for all expected tables
+        const tables = [
+            'User', 'Customer', 'Pet', 'Service', 'Appointment',
+            'Quote', 'QuoteItem', 'Invoice', 'PaymentRecord',
+            'Notification', 'AuditLog', 'RolePermission', 'BugReport'
+        ];
 
-        const hasSecondaryGuardian = columns.some((c: any) => c.column_name === 'secondaryGuardianName');
-
-        res.json({
+        const diagResults: any = {
             database: 'postgresql',
-            table: 'Customer',
-            columns: columns.map((c: any) => c.column_name),
-            hasSecondaryGuardian,
+            tables: {},
             timestamp: new Date()
-        });
+        };
+
+        for (const tableName of tables) {
+            try {
+                const count = await (prisma as any)[tableName.charAt(0).toLowerCase() + tableName.slice(1)].count();
+                diagResults.tables[tableName] = { status: 'OK', count };
+            } catch (err: any) {
+                diagResults.tables[tableName] = { status: 'ERROR', message: err.message };
+            }
+        }
+
+        res.json(diagResults);
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }

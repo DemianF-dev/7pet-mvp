@@ -15,7 +15,8 @@ import {
     User as UserIcon,
     X,
     Sparkles,
-    Package
+    Package,
+    AlertTriangle
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -27,6 +28,7 @@ export default function StaffSidebar() {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleLogout = () => {
+        if (!window.confirm('Deseja realmente sair do sistema?')) return;
         logout();
         navigate('/');
     };
@@ -182,6 +184,14 @@ export default function StaffSidebar() {
                     onClick={() => { navigate('/staff/users'); setIsOpen(false); }}
                 />
             )}
+
+            {/* 11. Chamados Técnicos */}
+            <SidebarItem
+                icon={<AlertTriangle size={20} />}
+                label="Chamados Técnicos"
+                active={location.pathname === '/staff/support'}
+                onClick={() => { navigate('/staff/support'); setIsOpen(false); }}
+            />
 
             {/* 11. Notificações */}
             <SidebarItem

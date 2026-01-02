@@ -19,4 +19,8 @@ router.delete('/:id', quoteController.remove);
 router.post('/:id/restore', quoteController.restore);
 router.delete('/:id/permanent', quoteController.permanentRemove);
 
+// Cascading delete routes
+router.get('/:id/dependencies', quoteController.checkDependencies);
+router.post('/:id/cascade-delete', quoteController.cascadeDelete);
+
 export default router;

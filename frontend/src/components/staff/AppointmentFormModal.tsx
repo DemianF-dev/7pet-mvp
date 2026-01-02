@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle, Layout } from 'lucide-react';
+import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle, Layout, CalendarDays, PlusCircle, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
 interface ModalProps {
@@ -17,7 +18,10 @@ interface ModalProps {
         petId?: string;
         serviceIds?: string[];
         startAt?: string;
-        category?: 'SPA' | 'LOGISTICA';
+        scheduledAt?: string;
+        transportAt?: string;
+        desiredAt?: string;
+        category?: 'SPA' | 'LOGISTICA' | 'SPA_TRANSPORTE';
         transportOrigin?: string;
         transportDestination?: string;
         transportPeriod?: 'MANHA' | 'TARDE' | 'NOITE';
@@ -25,154 +29,362 @@ interface ModalProps {
 }
 
 export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appointment, isCopy, preFill }: ModalProps) {
+    const navigate = useNavigate();
     const [customers, setCustomers] = useState<any[]>([]);
+    const [showSuccessState, setShowSuccessState] = useState(false);
     const [pets, setPets] = useState<any[]>([]);
     const [services, setServices] = useState<any[]>([]);
 
+    // DEBUG: Log props on render
+    console.log('AppointmentFormModal RENDER', { isOpen, hasPreFill: !!preFill, preFillData: preFill });
+
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+    const [staffUsers, setStaffUsers] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         customerId: '',
         petId: '',
         serviceIds: [] as string[],
+        performerId: '',
+        logisticPerformerId: '', // New field
         startAt: '',
-        category: 'SPA' as 'SPA' | 'LOGISTICA',
-        hasTransport: false,
+        logisticStartAt: '', // Separate time for logistics
+        agendaSPA: false,
+        agendaLogistica: false,
         transport: {
             origin: '',
             destination: '7Pet',
-            requestedPeriod: 'MORNING'
+            requestedPeriod: 'MANHA'
         }
     });
 
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // 1. Fetch Basic Data on Mount/Open
     useEffect(() => {
         if (isOpen) {
-            fetchInitialData();
-            if (appointment) {
-                // Formatting date for datetime-local input
-                let formattedDate = '';
-                try {
-                    const date = new Date(appointment.startAt);
-                    if (!isNaN(date.getTime())) {
-                        formattedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                    }
-                } catch (e) {
-                    console.error('Invalid date', e);
-                }
+            // ALWAYS fetch when modal opens to ensure fresh data (especially services)
+            fetchBasicData();
+        }
+    }, [isOpen]);
 
-                setFormData({
-                    customerId: appointment.customerId || '',
-                    petId: appointment.petId || '',
-                    serviceIds: appointment.services ? appointment.services.map((s: any) => s.id) : [],
-                    startAt: formattedDate,
-                    category: appointment.category || 'SPA',
-                    hasTransport: !!appointment.transport,
-                    transport: appointment.transport ? {
-                        origin: appointment.transport.origin || '',
-                        destination: appointment.transport.destination || '7Pet',
-                        requestedPeriod: appointment.transport.requestedPeriod || 'MORNING'
-                    } : { origin: '', destination: '7Pet', requestedPeriod: 'MORNING' }
-                });
-                setPets(appointment.customer?.pets || []);
-            } else if (preFill) {
-                // Pre-fill from quote
-                setFormData({
-                    customerId: preFill.customerId,
-                    petId: preFill.petId || '',
-                    serviceIds: preFill.serviceIds || [],
-                    startAt: preFill.startAt || '',
-                    category: preFill.category || 'SPA',
-                    hasTransport: !!preFill.transportOrigin,
-                    transport: {
-                        origin: preFill.transportOrigin || '',
-                        destination: preFill.transportDestination || '7Pet',
-                        requestedPeriod: preFill.transportPeriod === 'MANHA' ? 'MORNING' : preFill.transportPeriod === 'TARDE' ? 'AFTERNOON' : preFill.transportPeriod === 'NOITE' ? 'NIGHT' : 'MORNING'
-                    }
-                });
-                // We need to wait for customers to load to find the full object
-                if (customers.length > 0) {
-                    const cust = customers.find(c => c.id === preFill.customerId);
-                    if (cust) {
-                        setSelectedCustomer(cust);
-                        setPets(cust.pets || []);
-                    }
-                }
-            } else {
-                setFormData({
-                    customerId: '',
-                    petId: '',
-                    serviceIds: [],
-                    startAt: '',
-                    category: 'SPA',
-                    hasTransport: false,
-                    transport: { origin: '', destination: '7Pet', requestedPeriod: 'MORNING' }
-                });
-                setSelectedCustomer(null);
+    // 2. Fetch Specific Customer for Pre-fill if needed
+    useEffect(() => {
+        if (isOpen && preFill?.customerId && customers.length > 0) {
+            const loaded = (customers || []).find(c => c?.id === preFill.customerId);
+            if (!loaded) {
+                // Fetch individually
+                api.get(`/customers/${preFill.customerId}`)
+                    .then(res => {
+                        if (res.data) {
+                            setCustomers(prev => [...prev, res.data]);
+                        }
+                    })
+                    .catch(err => console.error('Error fetching specific pre-fill customer:', err));
             }
         }
-    }, [isOpen, appointment, isCopy]);
+    }, [isOpen, preFill?.customerId, customers.length]);
 
-    const fetchInitialData = async () => {
+    // 3. Initialize Form State from Props (Appointment or PreFill)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        if (appointment) {
+            console.log('Initializing from APPOINTMENT', appointment);
+            // const startAt = formatDateForInput(appointment.startAt); // Removed this line
+
+            setFormData({
+                customerId: appointment.customerId || '',
+                petId: appointment.petId || '',
+                serviceIds: (appointment.services || []).map((s: any) => s?.id).filter((id: string) => id),
+                startAt: appointment.category === 'SPA' ? formatDateForInput(appointment.startAt) : '',
+                logisticStartAt: appointment.category === 'LOGISTICA' ? formatDateForInput(appointment.startAt) : '',
+                agendaSPA: appointment.category === 'SPA' || appointment.category === 'SPA_TRANSPORTE',
+                agendaLogistica: appointment.category === 'LOGISTICA' || appointment.category === 'SPA_TRANSPORTE',
+                performerId: appointment.category === 'SPA' ? (appointment.performerId || '') : '',
+                logisticPerformerId: appointment.category === 'LOGISTICA' ? (appointment.performerId || '') : '',
+                transport: appointment.transport ? {
+                    origin: appointment.transport.origin || '',
+                    destination: appointment.transport.destination || '7Pet',
+                    requestedPeriod: appointment.transport.requestedPeriod || 'MANHA'
+                } : { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
+            });
+            // We set selectedCustomer in effect #4 based on customerId
+        } else if (preFill) {
+            console.log('Initializing from PREFILL', preFill);
+            console.log('🔍 DEBUG preFill.serviceIds:', preFill.serviceIds);
+            console.log('🔍 DEBUG preFill.items:', preFill.items);
+            const spaStartAt = formatDateForInput(preFill.scheduledAt || preFill.startAt);
+            const logisticStartAt = formatDateForInput(preFill.transportAt || preFill.startAt);
+
+            // Tentar encontrar profissionais específicos nos itens do orçamento
+            // O performerId padrão costuma ser o do SPA (primeiro item de serviço)
+            const performerId = preFill.items?.find(i => i.performerId && i.serviceId)?.performerId || '';
+
+            // Para o transporte, procuramos itens que podem ser de logística (descrição contém transporte ou performer diferente)
+            // Ou simplesmente pegamos o último se houver mais de um e o primeiro for SPA
+            const performers = preFill.items?.filter(i => i.performerId).map(i => i.performerId) || [];
+            const logisticPerformerId = performers.length > 1 ? performers[performers.length - 1] : (preFill.category === 'LOGISTICA' ? performers[0] : '');
+
+            // Detectar corretamente o tipo de agenda baseado na categoria
+            const isSpaTransporte = preFill.category === 'SPA_TRANSPORTE';
+            const isTransporte = preFill.category === 'LOGISTICA';
+            const isSpa = preFill.category === 'SPA' || isSpaTransporte;
+            const hasLogistica = isTransporte || isSpaTransporte;
+
+            setFormData({
+                customerId: preFill.customerId || '',
+                petId: preFill.petId || '',
+                serviceIds: preFill.serviceIds || [],
+                startAt: spaStartAt,
+                logisticStartAt: logisticStartAt,
+                agendaSPA: isSpa,
+                agendaLogistica: hasLogistica,
+                performerId,
+                logisticPerformerId: logisticPerformerId || '',
+                transport: {
+                    origin: preFill.transportOrigin || '',
+                    destination: preFill.transportDestination || '7Pet',
+                    requestedPeriod: preFill.transportPeriod || 'MANHA'
+                }
+            });
+
+            // FIX: Fetch and set selectedCustomer immediately to avoid empty UI
+            // First check if customer is already in the loaded list
+            const existingCustomer = (customers || []).find(c => c?.id === preFill.customerId);
+            if (existingCustomer) {
+                console.log('Setting selectedCustomer from existing list:', existingCustomer.name);
+                setSelectedCustomer(existingCustomer);
+                setPets(existingCustomer.pets || []);
+            } else if (preFill.customerId) {
+                // Fetch customer data if not in list
+                console.log('Fetching customer for preFill:', preFill.customerId);
+                api.get(`/customers/${preFill.customerId}`)
+                    .then(res => {
+                        if (res.data) {
+                            console.log('Loaded customer for preFill:', res.data.name);
+                            setSelectedCustomer(res.data);
+                            setPets(res.data.pets || []);
+                            // Also add to customers list to prevent refetching
+                            setCustomers(prev => {
+                                const exists = prev.find(c => c?.id === res.data.id);
+                                return exists ? prev : [...prev, res.data];
+                            });
+                        }
+                    })
+                    .catch(err => console.error('Error fetching pre-fill customer:', err));
+            }
+        } else {
+            // Reset
+            setFormData({
+                customerId: '',
+                petId: '',
+                serviceIds: [],
+                startAt: '',
+                logisticStartAt: '',
+                agendaSPA: false,
+                agendaLogistica: false,
+                performerId: '',
+                logisticPerformerId: '',
+                transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
+            });
+            setSelectedCustomer(null);
+            setPets([]);
+        }
+    }, [isOpen, appointment, preFill]);
+
+    // 4. Sync Customer Object and Pets when customerId changes or customers list updates
+    useEffect(() => {
+        if (!isOpen || !formData.customerId) {
+            if (!formData.customerId) {
+                setSelectedCustomer(null);
+                setPets([]);
+            }
+            return;
+        }
+
+        const found = (customers || []).find(c => c?.id === formData.customerId);
+        if (found) {
+            // Only update if actually different to prevent loops
+            if (found.id !== selectedCustomer?.id) {
+                console.log('Syncing Customer & Pets for:', found.name);
+                setSelectedCustomer(found);
+                setPets(found.pets || []);
+
+                // If petId is set but not in list (rare), it might be valid but we just loaded pets. 
+                // We trust the form state's petId usually.
+            }
+        }
+    }, [isOpen, formData.customerId, customers, selectedCustomer?.id]);
+
+
+    // Helpers
+    const formatDateForInput = (dateStr?: string) => {
+        if (!dateStr) {
+            console.log('🔍 formatDateForInput: received empty/null dateStr');
+            return '';
+        }
         try {
-            const [custRes, servRes] = await Promise.all([
-                api.get('/customers'),
-                api.get('/services')
+            console.log('🔍 formatDateForInput: raw input =', dateStr);
+            const date = new Date(dateStr);
+
+            if (isNaN(date.getTime())) {
+                console.error('🔍 formatDateForInput: Invalid Date object created from', dateStr);
+                return '';
+            }
+
+            // Format to YYYY-MM-DDTHH:mm
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+
+            const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+            console.log('🔍 formatDateForInput: result =', formatted);
+            return formatted;
+        } catch (e) {
+            console.error('🔍 formatDateForInput error:', e);
+        }
+        return '';
+    };
+
+    const fetchBasicData = async () => {
+        try {
+            setIsLoading(true);
+
+            // Using individual try-catches or separate awaits to prevent one failure from blocking others
+            // Especially important because /management/users might be restricted for some roles
+            const customersPromise = api.get('/customers').catch(e => { console.error('Error fetching customers:', e); return { data: [] }; });
+            const servicesPromise = api.get('/services').catch(e => { console.error('Error fetching services:', e); return { data: [] }; });
+            const usersPromise = api.get('/management/users').catch(e => { console.error('Error fetching users:', e); return { data: [] }; });
+
+            const [custRes, servRes, usersRes] = await Promise.all([
+                customersPromise,
+                servicesPromise,
+                usersPromise
             ]);
+
             setCustomers(custRes.data);
             setServices(servRes.data);
-
-            // If we have preFill but customers weren't loaded yet
-            if (preFill) {
-                const cust = custRes.data.find((c: any) => c.id === preFill.customerId);
-                if (cust) {
-                    setSelectedCustomer(cust);
-                    setPets(cust.pets || []);
-                    // Re-enforcing petId match in case it was lost during pets array update
-                    if (preFill.petId) {
-                        setFormData(prev => ({ ...prev, petId: preFill.petId! }));
-                    }
-                }
-            }
+            setStaffUsers(usersRes.data.filter((u: any) => ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role)));
         } catch (error) {
             console.error('Erro ao buscar dados iniciais:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleSelectCustomer = (customer: any) => {
+        if (!customer) return;
         setSelectedCustomer(customer);
-        setFormData({ ...formData, customerId: customer.id, petId: '' });
+        setFormData(prev => ({ ...prev, customerId: customer.id || '', petId: '' }));
+        // Effect #4 will handle pets, but setting immediately is also fine for responsiveness
         setPets(customer.pets || []);
         setSearchQuery('');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validação: Cliente e Pet são obrigatórios
+        if (!formData.customerId) {
+            alert('Por favor, selecione um cliente.');
+            return;
+        }
+        if (!formData.petId) {
+            alert('Por favor, selecione um pet.');
+            return;
+        }
+
+        // Validação: pelo menos uma agenda deve estar selecionada
+        if (!formData.agendaSPA && !formData.agendaLogistica) {
+            alert('Selecione pelo menos uma agenda de destino (SPA ou Logística)');
+            return;
+        }
+
         const msg = isCopy ? 'Deseja criar este novo agendamento por cópia?' : appointment ? 'Deseja salvar as alterações neste agendamento?' : 'Confirmar novo agendamento?';
         if (!window.confirm(msg)) return;
         setIsLoading(true);
         try {
-            const data = {
-                ...formData,
-                transport: formData.hasTransport ? formData.transport : undefined
-            };
-            delete (data as any).hasTransport;
-
+            // Se editando um appointment existente, apenas atualiza
             if (appointment && !isCopy) {
+                // Para edição, usar a primeira agenda selecionada
+                const category = formData.agendaSPA ? 'SPA' : 'LOGISTICA';
+                const data = {
+                    ...formData,
+                    startAt: appointment.category === 'LOGISTICA' ? formData.logisticStartAt : formData.startAt,
+                    performerId: (appointment.category === 'LOGISTICA' && formData.logisticPerformerId)
+                        ? (formData.logisticPerformerId || undefined)
+                        : (formData.performerId || undefined),
+                    category,
+                    transport: formData.agendaLogistica ? formData.transport : undefined
+                };
                 await api.patch(`/appointments/${appointment.id}`, data);
             } else {
-                await api.post('/appointments', data);
-                // If this appointment came from a quote, update quote status to AGENDADO
-                if (preFill?.quoteId) {
-                    await api.patch(`/quotes/${preFill.quoteId}/status`, {
-                        status: 'AGENDADO',
-                        reason: 'Agendamento concluído pela agenda'
+                // Criação de novos appointments
+                const appointmentsToCreate = [];
+
+                if (formData.agendaSPA) {
+                    // Fitrar apenas serviços que NÃO são de logística para a agenda SPA
+                    const spaServiceIds = formData.serviceIds.filter(id => {
+                        const s = services.find(serv => serv.id === id);
+                        return !s?.category || s.category.toUpperCase() !== 'LOGISTICA';
                     });
+
+                    appointmentsToCreate.push({
+                        customerId: formData.customerId,
+                        petId: formData.petId,
+                        serviceIds: spaServiceIds,
+                        performerId: formData.performerId, // Profissional do SPA
+                        startAt: formData.startAt, // Horário do SPA
+                        category: 'SPA',
+                        quoteId: preFill?.quoteId
+                    });
+                }
+
+                if (formData.agendaLogistica) {
+                    // Filtrar apenas serviços de logística para a agenda Logística
+                    const logServiceIds = formData.serviceIds.filter(id => {
+                        const s = services.find(serv => serv.id === id);
+                        return s?.category && s.category.toUpperCase() === 'LOGISTICA';
+                    });
+
+                    appointmentsToCreate.push({
+                        customerId: formData.customerId,
+                        petId: formData.petId,
+                        serviceIds: logServiceIds,
+                        performerId: formData.logisticPerformerId || formData.performerId, // Profissional Logístico
+                        startAt: formData.logisticStartAt || formData.startAt, // Horário da Logística
+                        category: 'LOGISTICA',
+                        transport: formData.transport,
+                        // Only link quote to logistics if we didn't already link it to SPA (primary)
+                        quoteId: formData.agendaSPA ? undefined : preFill?.quoteId
+                    });
+                }
+
+                // Criar todos os appointments individualmente para maior controle
+                for (const appointmentData of appointmentsToCreate) {
+                    try {
+                        const cleanedData = {
+                            ...appointmentData,
+                            performerId: appointmentData.performerId || undefined,
+                            serviceIds: appointmentData.serviceIds?.filter((id: string) => id) || []
+                        };
+                        await api.post('/appointments', cleanedData);
+                    } catch (err: any) {
+                        console.error(`Erro ao criar agendamento ${appointmentData.category}:`, err);
+                        // Se for um erro de conflito mas o primeiro já foi criado, podemos avisar
+                        if (err.response?.status === 400 && err.response?.data?.error?.includes('conflito')) {
+                            console.warn('Conflito detectado, mas continuando para o próximo...');
+                        } else {
+                            throw err; // Re-throw se for um erro crítico
+                        }
+                    }
                 }
             }
             onSuccess();
-            onClose();
+            setShowSuccessState(true);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Erro ao processar agendamento');
         } finally {
@@ -214,182 +426,354 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    {/* Customer Selection */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                            <User size={16} /> Cliente
-                        </label>
-                        {!selectedCustomer ? (
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar cliente por nome ou email..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="input-field pl-12"
-                                />
-                                <AnimatePresence>
-                                    {filteredCustomers.length > 0 && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-2xl mt-2 shadow-xl z-20 overflow-hidden"
-                                        >
-                                            {filteredCustomers.map(c => (
-                                                <button
-                                                    key={c.id}
-                                                    type="button"
-                                                    onClick={() => handleSelectCustomer(c)}
-                                                    className="w-full p-4 text-left hover:bg-primary/5 flex items-center justify-between transition-colors border-b border-gray-50 last:border-none"
-                                                >
-                                                    <div>
-                                                        <p className="font-bold text-secondary text-sm">{c.name}</p>
-                                                        <p className="text-xs text-gray-400">{c.user.email}</p>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold">
-                                        {selectedCustomer.name ? selectedCustomer.name[0] : 'C'}
+                {showSuccessState ? (
+                    <div className="p-10 flex flex-col items-center text-center space-y-8 animate-in fade-in zoom-in duration-300">
+                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-600 shadow-inner">
+                            <CheckCircle size={56} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-black text-secondary">Agendamento Realizado!</h3>
+                            <p className="text-gray-400 font-medium mt-2">O compromisso foi registrado com sucesso na agenda.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full pt-4">
+                            <button
+                                onClick={() => {
+                                    onClose();
+                                    setShowSuccessState(false);
+                                    const path = formData.agendaLogistica ? '/staff/transport' : '/staff/kanban';
+                                    navigate(path);
+                                }}
+                                className="flex items-center justify-center gap-3 p-5 bg-secondary text-white rounded-[24px] font-black uppercase tracking-widest text-[11px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-secondary/20"
+                            >
+                                <CalendarDays size={20} /> Ver Agenda
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowSuccessState(false);
+                                    setFormData({
+                                        customerId: '',
+                                        petId: '',
+                                        serviceIds: [],
+                                        startAt: '',
+                                        logisticStartAt: '',
+                                        agendaSPA: false,
+                                        agendaLogistica: false,
+                                        performerId: '',
+                                        logisticPerformerId: '',
+                                        transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
+                                    });
+                                    setSelectedCustomer(null);
+                                }}
+                                className="flex items-center justify-center gap-3 p-5 bg-primary text-white rounded-[24px] font-black uppercase tracking-widest text-[11px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
+                            >
+                                <PlusCircle size={20} /> Novo Agendamento
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                onClose();
+                                setShowSuccessState(false);
+                            }}
+                            className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] hover:text-secondary transition-colors pt-4"
+                        >
+                            Fechar Janela
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        {/* Customer Selection */}
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                                <User size={16} /> Cliente
+                            </label>
+                            {!selectedCustomer ? (
+                                <div className="relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar cliente por nome ou email..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="input-field pl-12"
+                                    />
+                                    <AnimatePresence>
+                                        {filteredCustomers.length > 0 && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-2xl mt-2 shadow-xl z-20 overflow-hidden"
+                                            >
+                                                {(filteredCustomers || []).map(c => c && (
+                                                    <button
+                                                        key={c.id}
+                                                        type="button"
+                                                        onClick={() => handleSelectCustomer(c)}
+                                                        className="w-full p-4 text-left hover:bg-primary/5 flex items-center justify-between transition-colors border-b border-gray-50 last:border-none"
+                                                    >
+                                                        <div>
+                                                            <p className="font-bold text-secondary text-sm">{c.name}</p>
+                                                            <p className="text-xs text-gray-400">{c.user.email}</p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold">
+                                            {selectedCustomer?.name ? selectedCustomer.name[0] : 'C'}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-secondary text-sm">{selectedCustomer.name || 'Cliente sem nome'}</p>
+                                            <p className="text-xs text-gray-400">{selectedCustomer.user?.email}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-secondary text-sm">{selectedCustomer.name || 'Cliente sem nome'}</p>
-                                        <p className="text-xs text-gray-400">{selectedCustomer.user?.email}</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSelectedCustomer(null); setFormData({ ...formData, customerId: '', petId: '' }) }}
+                                        className="text-xs font-bold text-primary hover:underline"
+                                    >
+                                        Alterar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Pet Selection */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                                    <Dog size={16} /> Pet
+                                </label>
+                                <select
+                                    required
+                                    disabled={!selectedCustomer}
+                                    value={formData.petId}
+                                    onChange={(e) => setFormData({ ...formData, petId: e.target.value })}
+                                    className="input-field"
+                                >
+                                    <option value="">Selecione um pet</option>
+                                    {(pets || []).map(p => p && (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                                    <Calendar size={16} /> Serviços
+                                </label>
+                                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-100 rounded-2xl bg-gray-50/50">
+                                    {isLoading && services.length === 0 ? (
+                                        <div className="p-8 flex flex-col items-center justify-center space-y-2">
+                                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Carregando...</span>
+                                        </div>
+                                    ) : (services || []).length === 0 ? (
+                                        <div className="p-8 text-center">
+                                            <span className="text-xs font-medium text-gray-400">Nenhum serviço disponível no momento.</span>
+                                        </div>
+                                    ) : (services || []).map(s => s && (
+                                        <label key={s.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${formData.serviceIds.includes(s.id) ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent hover:bg-white/80'}`}>
+                                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${formData.serviceIds.includes(s.id) ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
+                                                {formData.serviceIds.includes(s.id) && <CheckCircle size={14} className="text-white" />}
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                value={s.id}
+                                                checked={formData.serviceIds.includes(s.id)}
+                                                onChange={(e) => {
+                                                    const current = formData.serviceIds;
+                                                    if (e.target.checked) {
+                                                        const newServiceIds = [...current, s.id];
+                                                        const updates: any = { serviceIds: newServiceIds };
+                                                        // Auto-assign professional if not already selected and service has one
+                                                        if (!formData.performerId && s.responsibleId) {
+                                                            updates.performerId = s.responsibleId;
+                                                        }
+                                                        setFormData({ ...formData, ...updates });
+                                                    } else {
+                                                        setFormData({ ...formData, serviceIds: current.filter((id: string) => id !== s.id) });
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex-1 flex justify-between items-center text-sm">
+                                                <span className={`font-medium ${formData.serviceIds.includes(s.id) ? 'text-primary' : 'text-gray-600'}`}>{s.name}</span>
+                                                <span className="font-bold text-gray-400 text-xs">R$ {s.basePrice}</span>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Professional Selection - SPA */}
+                            {formData.agendaSPA && (
+                                <div className="space-y-3 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
+                                    <label className="text-sm font-bold text-primary uppercase flex items-center gap-2">
+                                        <User size={16} /> Responsável SPA
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, performerId: '' })}
+                                            className={`p-3 rounded-2xl border text-left transition-all ${!formData.performerId ? 'bg-primary/5 border-primary/30 shadow-md ring-2 ring-primary/10' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                        >
+                                            <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
+                                            <div className={`font-bold text-sm ${!formData.performerId ? 'text-primary' : 'text-gray-400'}`}>Ninguém fixo</div>
+                                        </button>
+                                        {(staffUsers || []).map(u => u && (
+                                            <button
+                                                key={u.id}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, performerId: u.id })}
+                                                className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.performerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-primary/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                                style={formData.performerId === u.id ? { borderLeft: `6px solid ${u.color || '#3B82F6'}` } : {}}
+                                            >
+                                                <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
+                                                <div className={`font-bold text-sm truncate ${formData.performerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
+                                                {formData.performerId === u.id && (
+                                                    <div className="absolute top-2 right-2 text-primary">
+                                                        <CheckCircle size={14} />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => { setSelectedCustomer(null); setFormData({ ...formData, customerId: '', petId: '' }) }}
-                                    className="text-xs font-bold text-primary hover:underline"
-                                >
-                                    Alterar
-                                </button>
+                            )}
+
+                            {/* Professional Selection - Logística */}
+                            {formData.agendaLogistica && (
+                                <div className="space-y-3 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
+                                    <label className="text-sm font-bold text-orange-500 uppercase flex items-center gap-2">
+                                        <Truck size={16} /> Responsável Logística
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, logisticPerformerId: '' })}
+                                            className={`p-3 rounded-2xl border text-left transition-all ${!formData.logisticPerformerId ? 'bg-orange-50 border-orange-200 shadow-md ring-2 ring-orange-500/10' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                        >
+                                            <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
+                                            <div className={`font-bold text-sm ${!formData.logisticPerformerId ? 'text-orange-600' : 'text-gray-400'}`}>Ninguém fixo</div>
+                                        </button>
+                                        {(staffUsers || []).map(u => u && (
+                                            <button
+                                                key={u.id}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, logisticPerformerId: u.id })}
+                                                className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.logisticPerformerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-orange-500/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                                style={formData.logisticPerformerId === u.id ? { borderLeft: `6px solid ${u.color || '#F97316'}` } : {}}
+                                            >
+                                                <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
+                                                <div className={`font-bold text-sm truncate ${formData.logisticPerformerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
+                                                {formData.logisticPerformerId === u.id && (
+                                                    <div className="absolute top-2 right-2 text-orange-500">
+                                                        <CheckCircle size={14} />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Removed the single "Data e Horário" input */}
+
+                        {/* Data e Hora SPA */}
+                        {formData.agendaSPA && (
+                            <div>
+                                <label className="block text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2 px-1">
+                                    Data/Hora SPA (Início do Serviço)
+                                </label>
+                                <div className="relative">
+                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        step="900"
+                                        value={formData.startAt}
+                                        onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                    />
+                                </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Pet Selection */}
+                        {/* Data e Hora Logística */}
+                        {formData.agendaLogistica && (
+                            <div>
+                                <label className="block text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2 px-1">
+                                    Data/Hora Logística (Coleta na Casa)
+                                </label>
+                                <div className="relative">
+                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        step="900"
+                                        value={formData.logisticStartAt || formData.startAt}
+                                        onChange={(e) => setFormData({ ...formData, logisticStartAt: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-3">
                             <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                                <Dog size={16} /> Pet
+                                <Layout size={16} /> Agendas de Destino
                             </label>
-                            <select
-                                required
-                                disabled={!selectedCustomer}
-                                value={formData.petId}
-                                onChange={(e) => setFormData({ ...formData, petId: e.target.value })}
-                                className="input-field"
-                            >
-                                <option value="">Selecione um pet</option>
-                                {pets.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-gray-50 bg-white">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.agendaSPA}
+                                        onChange={(e) => setFormData({ ...formData, agendaSPA: e.target.checked })}
+                                        className="w-5 h-5 text-primary rounded focus:ring-primary accent-primary"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-bold text-secondary">Agenda SPA</div>
+                                        <div className="text-xs text-gray-400">Serviços de banho, tosa e estética</div>
+                                    </div>
+                                </label>
 
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                                <Calendar size={16} /> Serviços
-                            </label>
-                            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-100 rounded-2xl bg-gray-50/50">
-                                {services.map(s => (
-                                    <label key={s.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${formData.serviceIds.includes(s.id) ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent hover:bg-white/80'}`}>
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${formData.serviceIds.includes(s.id) ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
-                                            {formData.serviceIds.includes(s.id) && <CheckCircle size={14} className="text-white" />}
-                                        </div>
-                                        <input
-                                            type="checkbox"
-                                            className="hidden"
-                                            value={s.id}
-                                            checked={formData.serviceIds.includes(s.id)}
-                                            onChange={(e) => {
-                                                const current = formData.serviceIds;
-                                                if (e.target.checked) {
-                                                    setFormData({ ...formData, serviceIds: [...current, s.id] });
-                                                } else {
-                                                    setFormData({ ...formData, serviceIds: current.filter((id: string) => id !== s.id) });
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex-1 flex justify-between items-center text-sm">
-                                            <span className={`font-medium ${formData.serviceIds.includes(s.id) ? 'text-primary' : 'text-gray-600'}`}>{s.name}</span>
-                                            <span className="font-bold text-gray-400 text-xs">R$ {s.basePrice}</span>
-                                        </div>
-                                    </label>
-                                ))}
+                                <label className="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-gray-50 bg-white">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.agendaLogistica}
+                                        onChange={(e) => setFormData({ ...formData, agendaLogistica: e.target.checked })}
+                                        className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500 accent-orange-500"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-bold text-secondary">Agenda Logística</div>
+                                        <div className="text-xs text-gray-400">Transporte (Leva e Traz)</div>
+                                    </div>
+                                </label>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                            <Clock size={16} /> Data e Horário
-                        </label>
-                        <input
-                            type="datetime-local"
-                            required
-                            step="900"
-                            value={formData.startAt}
-                            onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
-                            className="input-field"
-                        />
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                            <Layout size={16} /> Agenda de Destino
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, category: 'SPA' })}
-                                className={`py-4 rounded-2xl font-bold border transition-all ${formData.category === 'SPA' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
-                            >
-                                Agenda SPA
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, category: 'LOGISTICA' })}
-                                className={`py-4 rounded-2xl font-bold border transition-all ${formData.category === 'LOGISTICA' ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
-                            >
-                                Agenda Logística
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Transport Toggle */}
-                    <div className="pt-4">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                            <input
-                                type="checkbox"
-                                className="hidden"
-                                checked={formData.hasTransport}
-                                onChange={(e) => setFormData({ ...formData, hasTransport: e.target.checked })}
-                            />
-                            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${formData.hasTransport ? 'bg-primary' : 'bg-gray-200'}`}>
-                                <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${formData.hasTransport ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </div>
-                            <span className="text-sm font-bold text-secondary">Solicitar Transporte (Leva e Traz)</span>
-                        </label>
-
+                        {/* Transport Fields - shown when Logística is selected */}
                         <AnimatePresence>
-                            {formData.hasTransport && (
+                            {formData.agendaLogistica && (
                                 <motion.div
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
                                     className="overflow-hidden"
                                 >
-                                    <div className="bg-gray-50 p-6 rounded-3xl mt-4 space-y-4 border border-gray-100">
+                                    <div className="bg-gray-50 p-6 rounded-3xl space-y-4 border border-gray-100">
+                                        <h4 className="text-sm font-bold text-secondary flex items-center gap-2">
+                                            <MapPin size={16} className="text-orange-500" />
+                                            Detalhes do Transporte
+                                        </h4>
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">
                                                 <MapPin size={12} /> Endereço de Busca
@@ -405,14 +789,14 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-gray-400 uppercase">Período Preferencial</label>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {['MORNING', 'AFTERNOON', 'NIGHT'].map(period => (
+                                                {['MANHA', 'TARDE', 'NOITE'].map(period => (
                                                     <button
                                                         key={period}
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, transport: { ...formData.transport, requestedPeriod: period as any } })}
-                                                        className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${formData.transport.requestedPeriod === period ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                                                        className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${formData.transport.requestedPeriod === period ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
                                                     >
-                                                        {period === 'MORNING' ? 'Manhã' : period === 'AFTERNOON' ? 'Tarde' : 'Noite'}
+                                                        {period === 'MANHA' ? 'Manhã' : period === 'TARDE' ? 'Tarde' : 'Noite'}
                                                     </button>
                                                 ))}
                                             </div>
@@ -421,25 +805,25 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
 
-                    <div className="flex gap-4 pt-6">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-[20px] font-bold hover:bg-gray-200 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className={`flex-1 py-4 bg-primary text-white rounded-[20px] font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            {isLoading ? 'Processando...' : isCopy ? <><Copy size={18} /> Duplicar</> : appointment ? <><Save size={18} /> Salvar Alterações</> : 'Confirmar Agendamento'}
-                        </button>
-                    </div>
-                </form>
+                        <div className="flex gap-4 pt-6">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-[20px] font-bold hover:bg-gray-200 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className={`flex-1 py-4 bg-primary text-white rounded-[20px] font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isLoading ? 'Processando...' : isCopy ? <><Copy size={18} /> Duplicar</> : appointment ? <><Save size={18} /> Salvar Alterações</> : 'Confirmar Agendamento'}
+                            </button>
+                        </div>
+                    </form>
+                )}
             </motion.div>
         </div>
     );

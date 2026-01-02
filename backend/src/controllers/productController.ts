@@ -54,8 +54,9 @@ export const productController = {
     async delete(req: Request, res: Response) {
         const { id } = req.params;
         try {
-            await prisma.product.delete({ where: { id } });
-            res.json({ message: 'Produto excluído' });
+            const productService = await import('../services/productService');
+            await productService.remove(id);
+            res.status(204).send();
         } catch (error) {
             res.status(500).json({ error: 'Erro ao excluir produto' });
         }
@@ -64,12 +65,54 @@ export const productController = {
     async bulkDelete(req: Request, res: Response) {
         const { ids } = req.body;
         try {
-            await prisma.product.deleteMany({
-                where: { id: { in: ids } }
-            });
-            res.json({ message: 'Produtos excluídos' });
+            const productService = await import('../services/productService');
+            await productService.bulkDelete(ids);
+            res.status(204).send();
         } catch (error) {
             res.status(500).json({ error: 'Erro ao excluir produtos em massa' });
+        }
+    },
+
+    async listTrash(req: Request, res: Response) {
+        try {
+            const productService = await import('../services/productService');
+            const trash = await productService.listTrash();
+            res.json(trash);
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao listar lixeira' });
+        }
+    },
+
+    async restore(req: Request, res: Response) {
+        const { id } = req.params;
+        try {
+            const productService = await import('../services/productService');
+            await productService.restore(id);
+            res.status(200).json({ message: 'Produto restaurado com sucesso' });
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao restaurar produto' });
+        }
+    },
+
+    async bulkRestore(req: Request, res: Response) {
+        const { ids } = req.body;
+        try {
+            const productService = await import('../services/productService');
+            await productService.bulkRestore(ids);
+            res.status(200).json({ message: 'Produtos restaurados com sucesso' });
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao restaurar produtos' });
+        }
+    },
+
+    async permanentRemove(req: Request, res: Response) {
+        const { id } = req.params;
+        try {
+            const productService = await import('../services/productService');
+            await productService.permanentRemove(id);
+            res.status(204).send();
+        } catch (error: any) {
+            res.status(400).json({ error: error.message || 'Erro ao excluir permanentemente' });
         }
     }
 };

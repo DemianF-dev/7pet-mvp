@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-    Search,
-    Filter,
-    Edit,
-    Trash2,
-    Copy,
-    CheckSquare,
-    Square,
-    RefreshCcw,
-    Archive,
-} from 'lucide-react';
+import BackButton from '../../components/BackButton';
+import QuoteEditor from './QuoteEditor';
+import { X, Search, Filter, Edit, Trash2, Copy, CheckSquare, Square, RefreshCcw, Archive, Share2, Calendar } from 'lucide-react';
+import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
+import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
+import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
-import BackButton from '../../components/BackButton';
+import { getQuoteStatusColor } from '../../utils/statusColors';
+import CascadeDeleteModal from '../../components/modals/CascadeDeleteModal';
 
 interface QuoteItem {
     id: string;
@@ -31,19 +26,22 @@ interface Quote {
     status: string;
     totalAmount: number;
     createdAt: string;
+    seqId?: number;
     items: QuoteItem[];
     petId?: string;
     pet?: { name: string };
     desiredAt?: string;
+    scheduledAt?: string;
+    transportAt?: string;
     type: 'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE';
     transportOrigin?: string;
     transportDestination?: string;
     transportReturnAddress?: string;
     transportPeriod?: 'MANHA' | 'TARDE' | 'NOITE';
+    appointments?: { id: string; category: string; status: string; startAt?: string }[];
 }
 
 export default function QuoteManager() {
-    const navigate = useNavigate();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -51,6 +49,15 @@ export default function QuoteManager() {
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkMode, setIsBulkMode] = useState(false);
+    const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+    const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+    const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+    const [viewAppointmentData, setViewAppointmentData] = useState<any>(null);
+    const [viewCustomerData, setViewCustomerData] = useState<string | null>(null);
+    const [preFillData, setPreFillData] = useState<any>(null);
+    const [appointmentSelectionQuote, setAppointmentSelectionQuote] = useState<Quote | null>(null);
+    const [cascadeModalOpen, setCascadeModalOpen] = useState(false);
+    const [selectedQuoteForDelete, setSelectedQuoteForDelete] = useState<string | null>(null);
 
     const handleSelectAll = () => {
         if (selectedIds.length === filteredQuotes.length) {
@@ -85,7 +92,7 @@ export default function QuoteManager() {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} orçamentos selecionados?`)) return;
+        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} orçamentos selecionados ? `)) return;
         try {
             await api.post('/quotes/bulk-delete', { ids: selectedIds });
             fetchQuotes();
@@ -96,7 +103,7 @@ export default function QuoteManager() {
     };
 
     const handleDuplicate = async (id: string) => {
-        if (!confirm('Deseja duplicar este orçamento?')) return;
+        if (!window.confirm('Deseja duplicar este orçamento?')) return;
         try {
             await api.post(`/quotes/${id}/duplicate`);
             fetchQuotes();
@@ -105,8 +112,21 @@ export default function QuoteManager() {
         }
     };
 
+    const handleShare = (quote: Quote) => {
+        const text = `*ORÇAMENTO 7PET*\n\n` +
+            `📄 *Ref:* OR-${String(quote.seqId || 0).padStart(4, '0')}\n` +
+            `👤 *Cliente:* ${quote.customer.name}\n` +
+            `🐶 *Pet:* ${quote.pet?.name || '-'}\n` +
+            `💰 *Total:* R$ ${quote.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
+            `📊 *Status:* ${quote.status}\n\n` +
+            `_Enviado via Sistema 7Pet_`;
+
+        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    };
+
     const handleDelete = async (id: string) => {
-        if (!confirm('Mover orçamento para a lixeira?')) return;
+        if (!window.confirm('Mover orçamento para a lixeira?')) return;
         try {
             await api.delete(`/quotes/${id}`);
             fetchQuotes();
@@ -116,13 +136,60 @@ export default function QuoteManager() {
     };
 
     const handlePermanentDelete = async (id: string) => {
-        if (!confirm('EXCLUIR PERMANENTEMENTE? Esta ação não pode ser desfeita.')) return;
+        if (!window.confirm('EXCLUIR PERMANENTEMENTE? Esta ação não pode ser desfeita.')) return;
         try {
             await api.delete(`/quotes/${id}/permanent`);
             fetchQuotes();
-        } catch (error) {
-            console.error('Erro ao excluir permanentemente:', error);
+        } catch (error: any) {
+            if (error.response?.data?.error) {
+                alert(error.response.data.error);
+            } else {
+                console.error('Erro ao excluir permanentemente:', error);
+                alert('Erro ao tentar excluir permanentemente o orçamento');
+            }
         }
+    };
+
+    const handleSchedule = (quote: Quote) => {
+        console.log('🔍 handleSchedule: quote data received:', {
+            id: quote.id,
+            type: quote.type,
+            desiredAt: quote.desiredAt,
+            scheduledAt: quote.scheduledAt,
+            transportAt: quote.transportAt
+        });
+
+        // Determinar categoria baseada no tipo do quote
+        let category: 'SPA' | 'LOGISTICA' | 'SPA_TRANSPORTE' = 'SPA';
+        if (quote.type === 'TRANSPORTE') {
+            category = 'LOGISTICA';
+        } else if (quote.type === 'SPA_TRANSPORTE') {
+            category = 'SPA_TRANSPORTE'; // Tipo combinado
+        } else if (quote.type === 'SPA') {
+            category = 'SPA';
+        }
+
+        const preFill = {
+            customerId: quote.customerId,
+            customerName: quote.customer.name,
+            quoteId: quote.id,
+            items: quote.items,
+            petId: quote.petId,
+            serviceIds: quote.items.filter(i => i.serviceId).map(i => i.serviceId as string),
+            startAt: (quote.type === 'TRANSPORTE' ? quote.transportAt : quote.scheduledAt) || quote.desiredAt || '',
+            scheduledAt: quote.scheduledAt,
+            transportAt: quote.transportAt,
+            desiredAt: quote.desiredAt,
+            category,  // Usar a categoria determinada
+            transportOrigin: quote.transportOrigin,
+            transportDestination: quote.transportDestination,
+            transportPeriod: quote.transportPeriod
+        };
+
+        console.log('🔍 handleSchedule: PREFILL object created:', preFill);
+
+        setPreFillData(preFill);
+        setIsAppointmentModalOpen(true);
     };
 
     const filteredQuotes = quotes
@@ -138,20 +205,7 @@ export default function QuoteManager() {
             return matchesSearch && matchesStatus;
         });
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'SOLICITADO': return 'bg-blue-100 text-blue-700';
-            case 'EM_PRODUCAO': return 'bg-yellow-100 text-yellow-700';
-            case 'CALCULADO': return 'bg-emerald-100 text-emerald-700';
-            case 'ENVIADO': return 'bg-purple-100 text-purple-700';
-            case 'APROVADO': return 'bg-green-100 text-green-700';
-            case 'REJEITADO': return 'bg-red-100 text-red-700';
-            case 'AGENDAR': return 'bg-indigo-100 text-indigo-700';
-            case 'AGENDADO': return 'bg-teal-100 text-teal-700';
-            case 'ENCERRADO': return 'bg-gray-200 text-gray-500 line-through';
-            default: return 'bg-gray-100 text-gray-700';
-        }
-    };
+    const getStatusColor = (status: string) => getQuoteStatusColor(status);
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -169,6 +223,15 @@ export default function QuoteManager() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
+                        <button
+                            onClick={fetchQuotes}
+                            disabled={isLoading}
+                            className="bg-white p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                            title="Atualizar Lista"
+                        >
+                            <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+
                         <button
                             onClick={() => setIsBulkMode(!isBulkMode)}
                             className={`flex items-center gap-2 px-6 py-6 rounded-[32px] text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
@@ -306,7 +369,7 @@ export default function QuoteManager() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : filteredQuotes.map(quote => (
+                            ) : (filteredQuotes || []).map(quote => quote && (
                                 <tr key={quote.id} className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(quote.id) ? 'bg-primary/5' : ''}`}>
                                     <td className="px-8 py-6">
                                         {(isBulkMode || selectedIds.includes(quote.id)) && (
@@ -320,7 +383,20 @@ export default function QuoteManager() {
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col">
-                                            <span className="font-black text-secondary uppercase tracking-tighter text-lg">{quote.customer.name}</span>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setViewCustomerData(quote.customerId); }}
+                                                    className="font-black text-secondary uppercase tracking-tighter text-lg hover:text-primary transition-colors text-left"
+                                                >
+                                                    {quote.customer.name}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedQuoteId(quote.id); }}
+                                                    className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest hover:bg-secondary hover:text-white transition-colors"
+                                                >
+                                                    OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
+                                                </button>
+                                            </div>
                                             {quote.pet && (
                                                 <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
                                                     Pet: {quote.pet.name}
@@ -330,7 +406,12 @@ export default function QuoteManager() {
                                     </td>
                                     <td className="px-8 py-6 text-center">
                                         <div className="flex flex-col gap-1 items-center">
-                                            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{new Date(quote.createdAt).toLocaleDateString('pt-BR')}</span>
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[11px] font-black text-secondary uppercase tracking-widest">
+                                                    {quote.desiredAt ? new Date(quote.desiredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Sem data'}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-gray-400">Criado em {new Date(quote.createdAt).toLocaleDateString('pt-BR')}</span>
+                                            </div>
                                             {quote.type && (
                                                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-[0.1em] ${quote.type === 'SPA' ? 'bg-blue-100 text-blue-600' : quote.type === 'TRANSPORTE' ? 'bg-orange-100 text-orange-600' : 'bg-purple-100 text-purple-600'}`}>
                                                     {quote.type.replace('_', ' ')}
@@ -339,9 +420,32 @@ export default function QuoteManager() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-center">
-                                        <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(quote.status)}`}>
-                                            {quote.status}
-                                        </span>
+                                        {quote.status === 'AGENDADO' && quote.appointments && quote.appointments.length > 0 ? (
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (quote.appointments!.length === 1) {
+                                                        try {
+                                                            const res = await api.get(`/appointments/${quote.appointments![0].id}`);
+                                                            setViewAppointmentData(res.data);
+                                                            setSelectedAppointmentId(quote.appointments![0].id);
+                                                        } catch (err) {
+                                                            console.error('Erro ao buscar agendamento', err);
+                                                            alert('Erro ao carregar detalhes do agendamento');
+                                                        }
+                                                    } else {
+                                                        setAppointmentSelectionQuote(quote);
+                                                    }
+                                                }}
+                                                className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(quote.status)} hover:ring-2 hover:ring-offset-2 hover:ring-green-500 transition-all cursor-pointer`}
+                                            >
+                                                {quote.status}
+                                            </button>
+                                        ) : (
+                                            <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(quote.status)}`}>
+                                                {quote.status}
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-8 py-6 text-right font-black text-secondary text-lg">
                                         R$ {quote.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -350,14 +454,55 @@ export default function QuoteManager() {
                                         <div className="flex justify-end gap-2">
                                             {view === 'trash' ? (
                                                 <>
-                                                    <button onClick={() => api.post(`/quotes/${quote.id}/restore`).then(() => fetchQuotes())} className="p-2 hover:bg-green-50 text-green-500 rounded-xl transition-all" title="Restaurar"><RefreshCcw size={18} /></button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (window.confirm('Deseja restaurar este orçamento para a lista de ativos?')) {
+                                                                api.post(`/quotes/${quote.id}/restore`).then(() => fetchQuotes());
+                                                            }
+                                                        }}
+                                                        className="p-2 hover:bg-green-50 text-green-500 rounded-xl transition-all"
+                                                        title="Restaurar"
+                                                    >
+                                                        <RefreshCcw size={18} />
+                                                    </button>
                                                     <button onClick={() => handlePermanentDelete(quote.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-all" title="Excluir Permanente"><Trash2 size={18} /></button>
+                                                </>
+                                            ) : view === 'history' ? (
+                                                <>
+                                                    <button onClick={() => handleDuplicate(quote.id)} className="p-2 hover:bg-blue-50 text-blue-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Duplicar Orçamento"><Copy size={18} /></button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm('Deseja REATIVAR este orçamento? Ele voltará para a lista de ativos com status SOLICITADO.')) {
+                                                                try {
+                                                                    await api.patch(`/quotes/${quote.id}`, { status: 'SOLICITADO' });
+                                                                    fetchQuotes();
+                                                                } catch (err) {
+                                                                    alert('Erro ao reativar orçamento');
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-2"
+                                                        title="Reativar Orçamento"
+                                                    >
+                                                        <RefreshCcw size={14} /> Reativar
+                                                    </button>
+                                                    <button onClick={() => setSelectedQuoteId(quote.id)} className="p-2 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
                                                 </>
                                             ) : (
                                                 <>
                                                     <button onClick={() => handleDuplicate(quote.id)} className="p-2 hover:bg-blue-50 text-blue-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Duplicar"><Copy size={18} /></button>
+                                                    <button onClick={() => handleShare(quote)} className="p-2 hover:bg-green-50 text-green-600 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Compartilhar no WhatsApp"><Share2 size={18} /></button>
                                                     <button onClick={() => handleDelete(quote.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Mover para Lixeira"><Trash2 size={18} /></button>
-                                                    <button onClick={() => navigate(`/staff/quotes/${quote.id}`)} className="p-2 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
+                                                    <button onClick={() => setSelectedQuoteId(quote.id)} className="p-2 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
+                                                    {quote.status === 'APROVADO' && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleSchedule(quote); }}
+                                                            className="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-2"
+                                                            title="Agendar Agora"
+                                                        >
+                                                            <Calendar size={14} /> Agendar
+                                                        </button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -367,7 +512,154 @@ export default function QuoteManager() {
                         </tbody>
                     </table>
                 </div>
-            </main>
-        </div>
+
+                {/* Edit Modal */}
+                <AnimatePresence>
+                    {selectedQuoteId && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setSelectedQuoteId(null)}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="bg-white w-full max-w-6xl max-h-[90vh] rounded-[40px] shadow-2xl relative z-10 overflow-hidden flex flex-col"
+                            >
+                                <button
+                                    onClick={() => setSelectedQuoteId(null)}
+                                    className="absolute top-6 right-6 z-50 p-2 bg-white/50 hover:bg-white rounded-full text-gray-400 hover:text-red-500 transition-all shadow-sm"
+                                >
+                                    <X size={24} />
+                                </button>
+                                <QuoteEditor
+                                    quoteId={selectedQuoteId}
+                                    onClose={() => setSelectedQuoteId(null)}
+                                    onUpdate={fetchQuotes}
+                                    onSchedule={(qData) => {
+                                        setSelectedQuoteId(null);
+                                        handleSchedule(qData);
+                                    }}
+                                />
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+                <AppointmentFormModal
+                    isOpen={isAppointmentModalOpen}
+                    onClose={() => setIsAppointmentModalOpen(false)}
+                    onSuccess={fetchQuotes}
+                    preFill={preFillData}
+                />
+
+                <AppointmentDetailsModal
+                    isOpen={!!selectedAppointmentId}
+                    onClose={() => setSelectedAppointmentId(null)}
+                    onSuccess={fetchQuotes}
+                    appointment={viewAppointmentData}
+                    onModify={() => { }}
+                    onCopy={() => { }}
+                    onOpenCustomer={(customerId) => setViewCustomerData(customerId)}
+                />
+
+                <AnimatePresence>
+                    {viewCustomerData && (
+                        <CustomerDetailsModal
+                            isOpen={!!viewCustomerData}
+                            onClose={() => setViewCustomerData(null)}
+                            customerId={viewCustomerData}
+                            onUpdate={fetchQuotes}
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Appointment Selection Modal (For Multi-Apppointment Quotes) */}
+                <AnimatePresence>
+                    {appointmentSelectionQuote && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-white rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
+                            >
+                                <button
+                                    onClick={() => setAppointmentSelectionQuote(null)}
+                                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 text-gray-400"
+                                >
+                                    <X size={24} />
+                                </button>
+
+                                <h2 className="text-2xl font-black text-secondary mb-2">Selecionar Agendamento</h2>
+                                <p className="text-gray-400 font-medium mb-8">Esta solicitação gerou múltiplos agendamentos. Qual você deseja visualizar?</p>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    {Object.values(
+                                        (appointmentSelectionQuote.appointments || []).reduce((acc: any, curr) => {
+                                            const existing = acc[curr.category || 'UNK'];
+                                            if (!existing) {
+                                                acc[curr.category || 'UNK'] = curr;
+                                            } else {
+                                                const score = (s: string) => s === 'CONFIRMADO' ? 3 : (s === 'PENDENTE' || s === 'AGENDADO') ? 2 : 1;
+                                                const currScore = score(curr.status);
+                                                const existingScore = score(existing.status);
+
+                                                if (currScore > existingScore) {
+                                                    acc[curr.category || 'UNK'] = curr;
+                                                } else if (currScore === existingScore) {
+                                                    if (new Date(curr.startAt || 0) > new Date(existing.startAt || 0)) {
+                                                        acc[curr.category || 'UNK'] = curr;
+                                                    }
+                                                }
+                                            }
+                                            return acc;
+                                        }, {})
+                                    ).map((appt: any) => (
+                                        <button
+                                            key={appt.id}
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await api.get(`/appointments/${appt.id}`);
+                                                    setViewAppointmentData(res.data);
+                                                    setSelectedAppointmentId(appt.id);
+                                                    setAppointmentSelectionQuote(null);
+                                                } catch (err) {
+                                                    console.error('Erro ao buscar agendamento', err);
+                                                    alert('Erro ao carregar detalhes do agendamento');
+                                                }
+                                            }}
+                                            className="flex items-center gap-4 p-5 rounded-3xl border-2 border-dashed border-gray-100 hover:border-primary hover:bg-primary/5 transition-all group text-left"
+                                        >
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${appt.category === 'LOGISTICA' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                <Calendar size={24} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-exrabold text-secondary text-lg group-hover:text-primary transition-colors font-black">
+                                                    {appt.category === 'LOGISTICA' ? 'Transporte / Logística' : 'Banho & Tosa (SPA)'}
+                                                </h4>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${getStatusColor(appt.status)}`}>
+                                                        {appt.status}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-gray-400">
+                                                        {new Date(appt.startAt!).toLocaleDateString('pt-BR')}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+            </main >
+        </div >
     );
 }

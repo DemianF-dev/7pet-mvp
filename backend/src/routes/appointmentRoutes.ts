@@ -11,6 +11,8 @@ router.get('/trash', appointmentController.listTrash);
 router.get('/', appointmentController.list);
 router.post('/', appointmentController.create);
 router.post('/bulk-delete', appointmentController.bulkDelete);
+router.post('/bulk-restore', appointmentController.bulkRestore);
+
 
 // ID paths
 router.get('/:id', appointmentController.get);

@@ -1,8 +1,11 @@
 import { Request, Response } from 'express';
 import { PrismaClient, QuoteStatus } from '@prisma/client';
+import prisma from '../lib/prisma';
+import { auditService } from '../services/auditService';
+import { createAuditLog, detectChanges } from '../utils/auditLogger';
 import { z } from 'zod';
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient(); // Removed in favor of imported instance
 
 const quoteItemSchema = z.object({
     description: z.string().min(1, 'Descrição é obrigatória'),
@@ -111,6 +114,15 @@ export const quoteController = {
                 }
             });
 
+            // Create audit log
+            await createAuditLog({
+                entityType: 'QUOTE',
+                entityId: quote.id,
+                action: 'CREATE',
+                performedBy: user.id,
+                reason: `Orçamento criado ${user.role === 'CLIENTE' ? 'pelo cliente' : 'pela equipe'}`
+            });
+
             return res.status(201).json(quote);
         } catch (error) {
             if (error instanceof z.ZodError) {
@@ -146,7 +158,10 @@ export const quoteController = {
                     pet: {
                         select: { name: true }
                     },
-                    items: true
+                    items: true,
+                    appointments: {
+                        select: { id: true, category: true, status: true, startAt: true }
+                    }
                 },
                 orderBy: { createdAt: 'desc' }
             });
@@ -171,9 +186,31 @@ export const quoteController = {
                         select: { name: true }
                     },
                     pet: {
-                        select: { name: true }
+                        select: {
+                            id: true,
+                            name: true,
+                            species: true,
+                            breed: true,
+                            weight: true,
+                            coatType: true,
+                            temperament: true,
+                            age: true,
+                            observations: true,
+                            healthIssues: true,
+                            allergies: true,
+                            hasKnots: true,
+                            hasMattedFur: true
+                        }
                     },
                     items: true,
+                    appointments: {
+                        select: {
+                            id: true,
+                            startAt: true,
+                            status: true,
+                            category: true
+                        }
+                    },
                     statusHistory: {
                         orderBy: { createdAt: 'desc' }
                     }
@@ -182,6 +219,15 @@ export const quoteController = {
 
             if (!quote) {
                 return res.status(404).json({ error: 'Orçamento não encontrado' });
+            }
+
+            // Auto-update status if appointment exists and quote is not already AGENDADO or ENCERRADO
+            if (quote.appointments?.length > 0 && quote.status !== 'AGENDADO' && quote.status !== 'ENCERRADO') {
+                const updated = await prisma.quote.update({
+                    where: { id },
+                    data: { status: 'AGENDADO' }
+                });
+                quote.status = updated.status; // Update the in-memory quote object
             }
 
             if (user.role === 'CLIENTE' && quote.customerId !== user.customer?.id) {
@@ -220,6 +266,12 @@ export const quoteController = {
                 }
             }
 
+            // Fetch current state for audit log
+            const previousData = await prisma.quote.findUnique({
+                where: { id },
+                include: { items: true, pet: true, customer: true }
+            });
+
             const updatedQuote = await prisma.quote.update({
                 where: { id },
                 data: {
@@ -255,6 +307,7 @@ export const quoteController = {
                     });
                     console.log(`[AUTO] Fatura gerada para orçamento aprovado ${id}`);
 
+
                     if (quote.customer.user) {
                         await prisma.notification.create({
                             data: {
@@ -268,6 +321,16 @@ export const quoteController = {
                 }
             }
 
+            // Create audit log
+            await createAuditLog({
+                entityType: 'QUOTE',
+                entityId: id,
+                action: 'STATUS_CHANGE',
+                performedBy: user.id,
+                changes: [{ field: 'status', oldValue: oldStatus, newValue: status }],
+                reason: reason || `${user.role === 'CLIENTE' ? 'Cliente' : 'Equipe'} alterou status para ${status}`
+            });
+
             return res.json(updatedQuote);
         } catch (error) {
             console.error('Erro ao atualizar status do orçamento:', error);
@@ -277,14 +340,16 @@ export const quoteController = {
 
     async update(req: Request, res: Response) {
         try {
+            console.log(`[QUOTE_UPDATE] ID: ${req.params.id}, Body:`, JSON.stringify(req.body, null, 2));
             const { id } = req.params;
             const data = z.object({
                 items: z.array(z.object({
                     id: z.string().optional(),
-                    description: z.string(),
-                    quantity: z.number(),
-                    price: z.number(),
-                    serviceId: z.string().optional()
+                    description: z.string().min(1),
+                    quantity: z.number().default(1),
+                    price: z.number().default(0),
+                    serviceId: z.string().optional().nullable(),
+                    performerId: z.string().optional().nullable()
                 })).optional(),
                 status: z.nativeEnum(QuoteStatus).optional(),
                 totalAmount: z.number().optional(),
@@ -296,7 +361,10 @@ export const quoteController = {
                 knotRegions: z.string().optional(),
                 hairLength: z.string().optional(),
                 hasParasites: z.boolean().optional(),
-                petQuantity: z.number().int().optional()
+                petQuantity: z.number().int().optional(),
+                desiredAt: z.string().optional(),
+                scheduledAt: z.string().optional(),
+                transportAt: z.string().optional()
             }).parse(req.body);
 
             const user = (req as any).user;
@@ -308,6 +376,18 @@ export const quoteController = {
             const updateData: any = {
                 totalAmount: data.totalAmount
             };
+
+            if (data.desiredAt) {
+                updateData.desiredAt = new Date(data.desiredAt);
+            }
+
+            if (data.scheduledAt) {
+                updateData.scheduledAt = new Date(data.scheduledAt);
+            }
+
+            if (data.transportAt) {
+                updateData.transportAt = new Date(data.transportAt);
+            }
 
             if (data.status) {
                 updateData.status = data.status;
@@ -350,7 +430,8 @@ export const quoteController = {
                         description: item.description,
                         quantity: item.quantity,
                         price: item.price,
-                        serviceId: item.serviceId || null
+                        serviceId: item.serviceId || null,
+                        performerId: item.performerId || null
                     }))
                 };
             }
@@ -380,7 +461,11 @@ export const quoteController = {
             return res.json(updated);
         } catch (error) {
             console.error('Erro ao atualizar orçamento:', error);
-            return res.status(500).json({ error: 'Internal server error' });
+            if (error instanceof z.ZodError) {
+                console.error('Zod Validation Errors:', JSON.stringify(error.issues, null, 2));
+                return res.status(400).json({ error: 'Erro de validação', details: error.issues });
+            }
+            return res.status(500).json({ error: 'Internal server error', message: error instanceof Error ? error.message : String(error) });
         }
     },
 
@@ -489,10 +574,42 @@ export const quoteController = {
             const user = (req as any).user;
             if (user.role === 'CLIENTE') return res.status(403).json({ error: 'Acesso negado' });
 
+            // Check if quote exists and has been deleted
+            const quote = await prisma.quote.findUnique({ where: { id } });
+            if (!quote) {
+                return res.status(404).json({ error: 'Orçamento não encontrado' });
+            }
+
+            if (!quote.deletedAt) {
+                return res.status(400).json({ error: 'Este orçamento não está na lixeira' });
+            }
+
+            // Protection: Only allow permanent deletion after 90 days in trash
+            const ninetyDaysAgo = new Date();
+            ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+            if (quote.deletedAt > ninetyDaysAgo) {
+                const daysRemaining = Math.ceil((quote.deletedAt.getTime() - ninetyDaysAgo.getTime()) / (1000 * 60 * 60 * 24));
+                return res.status(400).json({
+                    error: `Proteção de dados ativa: Este orçamento só poderá ser excluído permanentemente após 90 dias na lixeira. Faltam ${daysRemaining} dias.`,
+                    daysRemaining
+                });
+            }
+
             // Delete items first due to FK
             await prisma.quoteItem.deleteMany({ where: { quoteId: id } });
             await prisma.statusHistory.deleteMany({ where: { quoteId: id } });
             await prisma.quote.delete({ where: { id } });
+
+            // Log the permanent deletion
+            await auditService.log({
+                userId: user.id,
+                action: 'DELETE_PERMANENT',
+                entity: 'quote',
+                entityId: id,
+                details: { deletedAfterDays: 90, reason: 'Exclusão permanente após período de retenção' }
+            });
+
             return res.status(204).send();
         } catch (error) {
             console.error('Erro ao excluir permanentemente:', error);
@@ -518,6 +635,53 @@ export const quoteController = {
         } catch (error) {
             console.error('Erro ao excluir em massa:', error);
             return res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
+    /**
+     * Verifica dependências de um orçamento (appointments e invoices)
+     * GET /quotes/:id/dependencies
+     */
+    async checkDependencies(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const user = (req as any).user;
+
+            if (user.role === 'CLIENTE') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+
+            const quoteService = await import('../services/quoteService');
+            const dependencies = await quoteService.checkDependencies(id);
+
+            return res.json(dependencies);
+        } catch (error: any) {
+            console.error('Erro ao verificar dependências:', error);
+            return res.status(400).json({ error: error.message || 'Erro ao verificar dependências' });
+        }
+    },
+
+    /**
+     * Delete em cascata com opções selecionáveis
+     * POST /quotes/:id/cascade-delete
+     */
+    async cascadeDelete(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const user = (req as any).user;
+            const options = req.body; // { deleteSpaAppointments, deleteTransportAppointments, deleteInvoice }
+
+            if (user.role === 'CLIENTE') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+
+            const quoteService = await import('../services/quoteService');
+            const result = await quoteService.cascadeDelete(id, options, user.email || user.id);
+
+            return res.status(200).json(result);
+        } catch (error: any) {
+            console.error('Erro ao excluir em cascata:', error);
+            return res.status(400).json({ error: error.message || 'Erro ao excluir orçamento' });
         }
     }
 };

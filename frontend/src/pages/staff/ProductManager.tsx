@@ -16,12 +16,15 @@ import BackButton from '../../components/BackButton';
 
 interface Product {
     id: string;
+    seqId?: number;
     name: string;
     description: string;
     price: number;
     stock: number;
     category: string;
 }
+
+type TabType = 'active' | 'trash';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -31,6 +34,7 @@ export default function ProductManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkMode, setIsBulkMode] = useState(false);
+    const [tab, setTab] = useState<TabType>('active');
 
     const handleSelectAll = () => {
         if (selectedIds.length === filteredProducts.length) {
@@ -51,12 +55,13 @@ export default function ProductManager() {
 
     useEffect(() => {
         fetchProducts();
-    }, []);
+    }, [tab]);
 
     const fetchProducts = async () => {
         setIsLoading(true);
         try {
-            const response = await api.get('/products');
+            const endpoint = tab === 'trash' ? '/products/trash' : '/products';
+            const response = await api.get(endpoint);
             setProducts(response.data);
         } catch (error) {
             console.error('Erro ao buscar produtos:', error);
@@ -90,6 +95,8 @@ export default function ProductManager() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const msg = editingProduct ? 'Deseja salvar as alterações neste produto?' : 'Deseja cadastrar este novo produto?';
+        if (!window.confirm(msg)) return;
         try {
             if (editingProduct) {
                 await api.patch(`/products/${editingProduct.id}`, formData);
@@ -119,13 +126,33 @@ export default function ProductManager() {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} produtos selecionados?`)) return;
+        const action = tab === 'trash' ? 'excluir PERMANENTEMENTE' : 'mover para a lixeira';
+        if (!window.confirm(`ATENÇÃO: Deseja realmente ${action} os ${selectedIds.length} produtos selecionados?`)) return;
         try {
-            await api.post('/products/bulk-delete', { ids: selectedIds });
+            if (tab === 'trash') {
+                for (const id of selectedIds) {
+                    await api.delete(`/products/${id}/permanent`);
+                }
+            } else {
+                await api.post('/products/bulk-delete', { ids: selectedIds });
+            }
             fetchProducts();
             setSelectedIds([]);
+            setIsBulkMode(false);
         } catch (error) {
-            alert('Erro ao excluir produtos');
+            alert('Erro ao processar produtos');
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        if (!window.confirm(`Deseja restaurar ${selectedIds.length} produtos da lixeira?`)) return;
+        try {
+            await api.post('/products/bulk-restore', { ids: selectedIds });
+            fetchProducts();
+            setSelectedIds([]);
+            setIsBulkMode(false);
+        } catch (error) {
+            alert('Erro ao restaurar produtos');
         }
     };
 
@@ -155,6 +182,22 @@ export default function ProductManager() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4">
+                            {/* Tabs Active/Trash */}
+                            <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+                                <button
+                                    onClick={() => { setTab('active'); setSelectedIds([]); }}
+                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    Ativos
+                                </button>
+                                <button
+                                    onClick={() => { setTab('trash'); setSelectedIds([]); }}
+                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    <Trash2 size={14} /> Lixeira
+                                </button>
+                            </div>
+
                             <button
                                 onClick={() => setIsBulkMode(!isBulkMode)}
                                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
@@ -174,9 +217,15 @@ export default function ProductManager() {
                                 />
                             </div>
 
-                            <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all">
-                                <Plus size={20} /> Novo Produto
-                            </button>
+                            {tab === 'active' && (
+                                <button
+                                    onClick={() => handleOpenModal()}
+                                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-green-600/20 hover:shadow-2xl hover:shadow-green-600/30 transition-all active:scale-95"
+                                >
+                                    <Plus size={14} strokeWidth={3} />
+                                    Novo Produto
+                                </button>
+                            )}
                         </div>
                     </div>
                 </header>
@@ -262,6 +311,7 @@ export default function ProductManager() {
                             </div>
 
                             <h3 className="text-lg font-black text-secondary mb-1 uppercase truncate">{product.name}</h3>
+                            <p className="text-[10px] font-black text-primary mb-2">PR-{String((product.seqId || 0) + 1999).padStart(4, '0')}</p>
                             <p className="text-gray-400 text-xs font-bold mb-4 line-clamp-2 h-8">{product.description || 'Sem descrição'}</p>
 
                             <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
@@ -312,14 +362,14 @@ export default function ProductManager() {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Preço</label>
                                         <div className="relative">
-                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                             <input
                                                 type="number"
                                                 step="0.01"
                                                 required
                                                 value={formData.price}
                                                 onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                                                className="w-full bg-gray-50 border-none rounded-2xl pl-14 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                                className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                                             />
                                         </div>
                                     </div>
@@ -355,6 +405,48 @@ export default function ProductManager() {
                         </motion.div>
                     </div>
                 )}
+
+                {/* Bulk Actions Bar */}
+                <AnimatePresence>
+                    {(selectedIds.length > 0 || isBulkMode) && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 50 }}
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
+                        >
+                            <div className="flex items-center gap-4">
+                                <button onClick={handleSelectAll} className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest">
+                                    {selectedIds.length === filteredProducts.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
+                                </button>
+                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
+                                    <span className="bg-green-600 px-4 py-1.5 rounded-full text-xs font-black shadow-lg">{selectedIds.length}</span>
+                                    selecionados
+                                </p>
+                            </div>
+                            <div className="h-10 w-px bg-white/10 ml-auto"></div>
+                            <div className="flex items-center gap-6">
+                                <button onClick={() => { setSelectedIds([]); setIsBulkMode(false); }} className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]">
+                                    Cancelar
+                                </button>
+                                {tab === 'trash' ? (
+                                    <>
+                                        <button onClick={handleBulkRestore} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
+                                            <RefreshCcw size={18} /> Restaurar
+                                        </button>
+                                        <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
+                                            <Trash2 size={18} /> Excluir Permanente
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
+                                        <Trash2 size={18} /> Mover para Lixeira
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
         </div>
     );

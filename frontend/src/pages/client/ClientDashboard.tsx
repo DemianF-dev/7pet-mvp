@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
+import ClientTutorial from '../../components/client/ClientTutorial';
 
 interface DashboardData {
     petCount: number;
@@ -68,6 +69,7 @@ export default function ClientDashboard() {
     return (
         <div className="min-h-screen bg-gray-50 flex">
             <Sidebar />
+            <ClientTutorial />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
@@ -86,7 +88,10 @@ export default function ClientDashboard() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input type="text" placeholder="Buscar agendamento..." className="bg-white border-none rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 w-64 shadow-sm" />
                         </div>
-                        <button className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-gray-400 hover:text-secondary relative shadow-sm transition-all border border-gray-50">
+                        <button
+                            id="tour-notifications"
+                            className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-gray-400 hover:text-secondary relative shadow-sm transition-all border border-gray-50"
+                        >
                             <Bell size={20} />
                             <div className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
                         </button>
@@ -106,6 +111,7 @@ export default function ClientDashboard() {
                         {quickActions.map((action, idx) => (
                             <motion.div
                                 key={idx}
+                                id={`tour-${action.title.toLowerCase().replace(/ /g, '-')}`}
                                 whileHover={{ y: -5 }}
                                 onClick={() => navigate(action.link)}
                                 className="glass-card p-6 flex flex-col justify-between hover:border-primary/30 transition-all cursor-pointer group"

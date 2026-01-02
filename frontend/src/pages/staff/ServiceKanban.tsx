@@ -27,9 +27,10 @@ interface Appointment {
     startAt: string;
     status: string;
     customerId: string;
-    customer: { name: string; phone?: string; user: { email: string } };
+    customer: { name: string; phone?: string; user: { email: string }; type: string };
     petId: string;
     pet: { name: string; species: string; breed: string };
+    seqId?: number;
     serviceId?: string; // Legacy
     services?: { id: string; name: string; basePrice: number; duration: number }[];
     service?: { name: string; basePrice: number; duration: number }; // Legacy
@@ -242,28 +243,38 @@ export default function ServiceKanban() {
                                         const min = date.getMinutes() < 30 ? '00' : '30';
                                         return `${hour}:${min}` === slot;
                                     })
-                                    .map(appt => (
-                                        <div
-                                            key={appt.id}
-                                            onClick={() => handleOpenDetails(appt)}
-                                            className="mb-2 p-3 bg-primary/10 border-l-4 border-primary rounded-xl cursor-pointer hover:bg-primary/20 transition-all shadow-sm"
-                                        >
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className="text-[10px] font-black text-primary uppercase">
-                                                    {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${appt.status === 'FINALIZADO' ? 'bg-green-100 text-green-600' : 'bg-primary/20 text-primary'}`}>
-                                                    {appt.status}
-                                                </span>
+                                    .map(appt => {
+                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                        const isRecurring = appt.customer?.type === 'RECORRENTE';
+
+                                        return (
+                                            <div
+                                                key={appt.id}
+                                                onClick={() => handleOpenDetails(appt)}
+                                                className={`mb-3 p-3 rounded-xl cursor-pointer transition-all shadow-sm border-l-4 ${isCat
+                                                    ? 'bg-pink-50 border-pink-400 text-pink-900 hover:bg-pink-100'
+                                                    : 'bg-blue-50 border-blue-400 text-blue-900 hover:bg-blue-100'
+                                                    }`}
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className={`text-[10px] font-black uppercase ${isCat ? 'text-pink-500' : 'text-blue-500'}`}>
+                                                        {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                    <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${appt.status === 'FINALIZADO' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                        {appt.status}
+                                                    </span>
+                                                </div>
+                                                <p className="font-bold text-xs truncate">
+                                                    {appt.services && appt.services.length > 0
+                                                        ? appt.services.map(s => s.name).join(', ')
+                                                        : appt.service?.name}
+                                                </p>
+                                                <p className="text-[10px] opacity-60 font-bold uppercase truncate">
+                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'} • {appt.customer.name}
+                                                </p>
                                             </div>
-                                            <p className="font-bold text-secondary text-xs truncate">
-                                                {appt.services && appt.services.length > 0
-                                                    ? appt.services.map(s => s.name).join(', ')
-                                                    : appt.service?.name}
-                                            </p>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase truncate">{appt.pet.name} • {appt.customer.name}</p>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                             </div>
                         </div>
                     ))}
@@ -332,23 +343,31 @@ export default function ServiceKanban() {
                                                 const min = d.getMinutes() < 30 ? '00' : '30';
                                                 return isSameDay(d, day) && `${hour}:${min}` === slot;
                                             })
-                                            .map(appt => (
-                                                <div
-                                                    key={appt.id}
-                                                    onClick={() => handleOpenDetails(appt)}
-                                                    className="p-1 px-2 bg-primary/10 border-l-2 border-primary rounded-lg cursor-pointer hover:bg-primary/20 transition-all text-left mb-1 shadow-sm"
-                                                >
-                                                    <div className="flex justify-between items-center mb-0.5">
-                                                        <p className="text-[8px] font-black text-primary">
-                                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            .map(appt => {
+                                                const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                                const isRecurring = appt.customer?.type === 'RECORRENTE';
+
+                                                return (
+                                                    <div
+                                                        key={appt.id}
+                                                        onClick={() => handleOpenDetails(appt)}
+                                                        className={`p-1 px-2 rounded-lg cursor-pointer transition-all text-left mb-1 shadow-sm border-l-2 ${isCat
+                                                            ? "bg-pink-50 border-pink-400 text-pink-700 hover:bg-pink-100"
+                                                            : "bg-blue-50 border-blue-400 text-blue-700 hover:bg-blue-100"
+                                                            }`}
+                                                    >
+                                                        <div className="flex justify-between items-center mb-0.5">
+                                                            <p className={`text-[8px] font-black ${isCat ? 'text-pink-500' : 'text-blue-500'}`}>
+                                                                {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                            <span className="text-[7px] font-black text-gray-400 capitalize">{appt.status.toLowerCase()}</span>
+                                                        </div>
+                                                        <p className="text-[9px] font-bold leading-tight line-clamp-1">
+                                                            AG-{String(appt.seqId || 0).padStart(4, '0')} • {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
                                                         </p>
-                                                        <span className="text-[7px] font-black text-gray-400 capitalize">{appt.status.toLowerCase()}</span>
                                                     </div>
-                                                    <p className="text-[9px] font-bold text-secondary leading-tight line-clamp-1">
-                                                        {appt.pet.name} • {appt.customer.name}
-                                                    </p>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                     </div>
                                 ))}
                             </div>
@@ -421,15 +440,23 @@ export default function ServiceKanban() {
                                         )}
                                     </div>
                                     <div className="space-y-1">
-                                        {dayAppts.slice(0, 3).map(appt => (
-                                            <div
-                                                key={appt.id}
-                                                onClick={() => handleOpenDetails(appt)}
-                                                className="p-1 px-2 bg-primary/10 border-l-2 border-primary rounded text-[9px] font-bold text-secondary truncate cursor-pointer hover:bg-primary/20 transition-all"
-                                            >
-                                                {new Date(appt.startAt).getHours()}:{new Date(appt.startAt).getMinutes().toString().padStart(2, '0')} {appt.pet.name}
-                                            </div>
-                                        ))}
+                                        {dayAppts.slice(0, 3).map(appt => {
+                                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                            const isRecurring = appt.customer?.type === 'RECORRENTE';
+
+                                            return (
+                                                <div
+                                                    key={appt.id}
+                                                    onClick={() => handleOpenDetails(appt)}
+                                                    className={`p-1 px-2 rounded text-[9px] font-bold truncate cursor-pointer transition-all border-l-2 ${isCat
+                                                        ? "bg-pink-50 border-pink-400 text-pink-700 hover:bg-pink-100"
+                                                        : "bg-blue-50 border-blue-400 text-blue-700 hover:bg-blue-100"
+                                                        }`}
+                                                >
+                                                    {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • AG-{String(appt.seqId || 0).padStart(4, '0')} • {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                </div>
+                                            );
+                                        })}
                                         {dayAppts.length > 3 && (
                                             <button
                                                 onClick={() => {
@@ -600,68 +627,78 @@ export default function ServiceKanban() {
                                     </span>
                                 </div>
 
-                                <div className="flex-1 bg-gray-100/50 rounded-[32px] p-4 overflow-y-auto space-y-3 custom-scrollbar">
+                                <div className="flex-1 bg-gray-100/50 rounded-[32px] p-4 overflow-y-auto space-y-3 custom-scrollbar border border-dashed border-gray-200">
                                     <AnimatePresence mode="popLayout">
-                                        {getColumnItems(col.key).map((appt) => (
-                                            <motion.div
-                                                key={appt.id}
-                                                layout
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.9 }}
-                                                onClick={() => handleOpenDetails(appt)}
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    // @ts-ignore
-                                                    e.dataTransfer.setData('apptId', appt.id);
-                                                }}
-                                                className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 group hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden"
-                                            >
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <div className="bg-primary/5 px-2 py-1 rounded-lg flex items-center gap-1 text-[9px] font-black text-primary border border-primary/10">
-                                                        <Clock size={10} />
-                                                        {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        {getColumnItems(col.key).map((appt) => {
+                                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                            const isRecurring = appt.customer?.type === 'RECORRENTE';
+
+                                            return (
+                                                <motion.div
+                                                    key={appt.id}
+                                                    layout
+                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.9 }}
+                                                    onClick={() => handleOpenDetails(appt)}
+                                                    draggable
+                                                    onDragStart={(e) => {
+                                                        // @ts-ignore
+                                                        e.dataTransfer.setData('apptId', appt.id);
+                                                    }}
+                                                    className={`p-4 rounded-[24px] shadow-sm group hover:shadow-lg transition-all cursor-pointer relative overflow-hidden border-2 ${isCat
+                                                        ? 'bg-pink-50 border-pink-100 border-l-[10px] border-l-pink-500 text-pink-900'
+                                                        : 'bg-blue-50 border-blue-100 border-l-[10px] border-l-blue-500 text-blue-900'
+                                                        }`}
+                                                >
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <div className={`px-2 py-1.5 rounded-xl flex items-center gap-1.5 text-[10px] font-black bg-white shadow-sm border ${isCat ? 'text-pink-500 border-pink-100' : 'text-blue-500 border-blue-100'}`}>
+                                                            <Clock size={12} />
+                                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                        <span className="text-[9px] font-black opacity-30 uppercase tracking-widest">
+                                                            AG-{String(appt.seqId || 0).padStart(4, '0')}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">#{appt.id.substring(0, 4)}</span>
-                                                </div>
 
-                                                <div className="space-y-0.5 mb-3">
-                                                    <h4 className="font-black text-secondary text-xs group-hover:text-primary transition-colors truncate">
-                                                        {appt.pet.name}
-                                                    </h4>
-                                                    <p className="text-[10px] text-gray-400 font-bold truncate">
-                                                        {appt.customer.name}
-                                                    </p>
-                                                </div>
+                                                    <div className="space-y-0.5 mb-4">
+                                                        <h4 className="font-black text-secondary text-base group-hover:text-primary transition-colors truncate uppercase leading-tight">
+                                                            {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                        </h4>
+                                                        <p className="text-[11px] opacity-70 font-bold truncate">
+                                                            {appt.customer.name}
+                                                        </p>
+                                                    </div>
 
-                                                <div className="flex gap-2">
-                                                    {col.key === 'PENDENTE' && (
-                                                        <button
-                                                            onClick={(e) => updateStatus(appt.id, 'CONFIRMADO', e)}
-                                                            className="flex-1 py-2 bg-purple-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-purple-600 transition-all shadow-md shadow-purple-500/10"
-                                                        >
-                                                            <CheckCircle size={12} /> OK
-                                                        </button>
-                                                    )}
-                                                    {col.key === 'CONFIRMADO' && (
-                                                        <button
-                                                            onClick={(e) => updateStatus(appt.id, 'EM_ATENDIMENTO', e)}
-                                                            className="flex-1 py-2 bg-secondary text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-primary transition-all shadow-md shadow-secondary/10"
-                                                        >
-                                                            <PlayCircle size={12} /> INICIAR
-                                                        </button>
-                                                    )}
-                                                    {col.key === 'EM_ATENDIMENTO' && (
-                                                        <button
-                                                            onClick={(e) => updateStatus(appt.id, 'FINALIZADO', e)}
-                                                            className="flex-1 py-2 bg-green-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-green-600 transition-all shadow-md shadow-green-500/10"
-                                                        >
-                                                            <CheckCircle size={12} /> FIM
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </motion.div>
-                                        ))}
+                                                    <div className="flex gap-2">
+                                                        {col.key === 'PENDENTE' && (
+                                                            <button
+                                                                onClick={(e) => updateStatus(appt.id, 'CONFIRMADO', e)}
+                                                                className="flex-1 py-2 bg-purple-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-purple-600 transition-all shadow-md shadow-purple-500/10"
+                                                            >
+                                                                <CheckCircle size={12} /> OK
+                                                            </button>
+                                                        )}
+                                                        {col.key === 'CONFIRMADO' && (
+                                                            <button
+                                                                onClick={(e) => updateStatus(appt.id, 'EM_ATENDIMENTO', e)}
+                                                                className="flex-1 py-2 bg-secondary text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-primary transition-all shadow-md shadow-secondary/10"
+                                                            >
+                                                                <PlayCircle size={12} /> INICIAR
+                                                            </button>
+                                                        )}
+                                                        {col.key === 'EM_ATENDIMENTO' && (
+                                                            <button
+                                                                onClick={(e) => updateStatus(appt.id, 'FINALIZADO', e)}
+                                                                className="flex-1 py-2 bg-green-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-green-600 transition-all shadow-md shadow-green-500/10"
+                                                            >
+                                                                <CheckCircle size={12} /> FIM
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })}
                                     </AnimatePresence>
                                     {getColumnItems(col.key).length === 0 && !isLoading && (
                                         <div className="text-center py-16 opacity-30 select-none">
@@ -741,7 +778,7 @@ export default function ServiceKanban() {
                         )}
                     </div>
                 )}
-            </main>
+            </main >
 
             <AnimatePresence>
                 {isFormOpen && (
@@ -768,6 +805,6 @@ export default function ServiceKanban() {
                     />
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }

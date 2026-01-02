@@ -123,7 +123,19 @@ export default function TransportManager() {
                                         </div>
                                     </div>
 
-                                    <button className="mt-6 w-full py-3 bg-secondary text-white rounded-2xl text-xs font-bold hover:bg-secondary-dark transition-all flex items-center justify-center gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            if (window.confirm('Deseja realmente finalizar esta rota?')) {
+                                                try {
+                                                    await api.patch(`/staff/transports/${item.id}/status`, { status: 'CONCLUIDO' });
+                                                    fetchTransports();
+                                                } catch (err) {
+                                                    alert('Erro ao finalizar rota');
+                                                }
+                                            }
+                                        }}
+                                        className="mt-6 w-full py-3 bg-secondary text-white rounded-2xl text-xs font-bold hover:bg-secondary-dark transition-all flex items-center justify-center gap-2"
+                                    >
                                         <CheckCircle2 size={16} /> Finalizar Rota
                                     </button>
                                 </div>

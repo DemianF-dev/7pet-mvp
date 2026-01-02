@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, Chrome, ChevronLeft, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, LogIn, Chrome, ChevronLeft, Eye, EyeOff, ShieldCheck, Fingerprint } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import LoadingButton from '../../components/LoadingButton';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
@@ -160,6 +161,35 @@ export default function ClientLogin() {
                         >
                             Entrar
                         </LoadingButton>
+
+                        <div className="relative py-2">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-100"></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-4 text-gray-400 font-bold tracking-widest">Ou use</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                toast.promise(
+                                    new Promise((resolve) => setTimeout(resolve, 1500)),
+                                    {
+                                        loading: 'Verificando biometria...',
+                                        success: 'Bem-vindo(a) de volta!',
+                                        error: 'Erro na autenticação'
+                                    }
+                                );
+                            }}
+                            className="w-full h-12 bg-white border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50/10 text-secondary font-bold rounded-2xl flex items-center justify-center gap-3 transition-all group"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Fingerprint size={18} />
+                            </div>
+                            <span>Entrar com Digital / FaceID</span>
+                        </button>
 
                         <p className="text-center text-gray-500 text-sm mt-6">
                             Ainda não tem conta? <span className="text-primary font-bold cursor-pointer underline underline-offset-4" onClick={() => navigate('/client')}>Crie uma agora</span>

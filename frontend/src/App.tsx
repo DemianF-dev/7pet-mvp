@@ -19,7 +19,9 @@ import AgendaSPA from './pages/staff/AgendaSPA';
 import AgendaLOG from './pages/staff/AgendaLOG';
 import TransportManager from './pages/staff/TransportManager';
 import QuoteManager from './pages/staff/QuoteManager';
+import QuoteEditor from './pages/staff/QuoteEditor';
 import CustomerManager from './pages/staff/CustomerManager';
+import CustomerDetail from './pages/staff/CustomerDetail';
 import ServiceManager from './pages/staff/ServiceManager';
 import BillingManager from './pages/staff/BillingManager';
 import ManagementDashboard from './pages/staff/ManagementDashboard';
@@ -28,6 +30,8 @@ import UserManager from './pages/staff/UserManager';
 import StaffNotificationList from './pages/staff/StaffNotificationList';
 import StaffProfile from './pages/staff/StaffProfile';
 import ProductManager from './pages/staff/ProductManager';
+import SupportTicketList from './pages/staff/SupportTicketList';
+import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { Toaster } from 'react-hot-toast';
@@ -36,6 +40,7 @@ function App() {
     return (
         <>
             <Toaster position="top-right" reverseOrder={false} />
+            <FeedbackWidget />
             <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/client" element={<ClientEntry />} />
@@ -64,7 +69,9 @@ function App() {
                     <Route path="/staff/agenda-log" element={<AgendaLOG />} />
                     <Route path="/staff/transport" element={<TransportManager />} />
                     <Route path="/staff/quotes" element={<QuoteManager />} />
+                    <Route path="/staff/quotes/:id" element={<QuoteEditor />} />
                     <Route path="/staff/customers" element={<CustomerManager />} />
+                    <Route path="/staff/customers/:id" element={<CustomerDetail />} />
                     <Route path="/staff/services" element={<ServiceManager />} />
                     <Route path="/staff/products" element={<ProductManager />} />
                     <Route path="/staff/billing" element={<BillingManager />} />
@@ -73,6 +80,7 @@ function App() {
                     <Route path="/staff/users" element={<UserManager />} />
                     <Route path="/staff/notifications" element={<StaffNotificationList />} />
                     <Route path="/staff/profile" element={<StaffProfile />} />
+                    <Route path="/staff/support" element={<SupportTicketList />} />
                 </Route>
 
                 {/* Fallback */}

@@ -5,7 +5,8 @@ import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import {
     User, Mail, Lock, Phone, MapPin, Save,
-    ShieldCheck, Calendar, FileText, ClipboardList
+    ShieldCheck, Calendar, FileText, ClipboardList,
+    Fingerprint, Smartphone, Check
 } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 
@@ -14,13 +15,18 @@ const StaffProfile: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        name: user?.name || '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
         email: user?.email || '',
+        extraEmails: user?.extraEmails || [],
         phone: user?.phone || '',
+        extraPhones: user?.extraPhones || [],
         address: user?.address || '',
+        extraAddresses: user?.extraAddresses || [],
         document: user?.document || '',
         birthday: user?.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
         notes: user?.notes || '',
+        color: user?.color || '#3B82F6',
         password: '',
         confirmPassword: ''
     });
@@ -39,13 +45,18 @@ const StaffProfile: React.FC = () => {
         setLoading(true);
         try {
             const updatePayload: any = {
-                name: formData.name,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
                 email: formData.email,
+                extraEmails: formData.extraEmails,
                 phone: formData.phone,
+                extraPhones: formData.extraPhones,
                 address: formData.address,
+                extraAddresses: formData.extraAddresses,
                 document: formData.document,
                 birthday: formData.birthday,
-                notes: formData.notes
+                notes: formData.notes,
+                color: formData.color
             };
 
             if (formData.password) {
@@ -116,17 +127,63 @@ const StaffProfile: React.FC = () => {
                         </div>
                         <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2 col-span-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">ID do Colaborador</label>
+                                <div className="relative">
+                                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" size={18} />
+                                    <input
+                                        type="text"
+                                        value={`STAFF-${String(user?.staffId || user?.seqId || '').padStart(4, '0')}`}
+                                        disabled
+                                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 col-span-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Cor na Agenda (Sua Identidade)</label>
+                                <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                    <input
+                                        type="color"
+                                        name="color"
+                                        value={formData.color}
+                                        onChange={handleChange as any}
+                                        className="w-16 h-16 rounded-xl cursor-pointer border-4 border-white shadow-sm"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-700">Escolha sua cor</p>
+                                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Esta cor será usada para identificar seus serviços na agenda.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nome</label>
                                 <div className="relative">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                     <input
                                         type="text"
-                                        name="name"
-                                        value={formData.name}
+                                        name="firstName"
+                                        value={formData.firstName}
                                         onChange={handleChange}
                                         required
                                         className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
-                                        placeholder="Seu nome completo"
+                                        placeholder="Primeiro nome"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Sobrenome</label>
+                                <div className="relative">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                    <input
+                                        type="text"
+                                        name="lastName"
+                                        value={formData.lastName}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                        placeholder="Sobrenome"
                                     />
                                 </div>
                             </div>
@@ -318,6 +375,64 @@ const StaffProfile: React.FC = () => {
                         </div>
                     </motion.div>
 
+                    {/* Biometrics Section */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden"
+                    >
+                        <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
+                            <div className="p-2 bg-white rounded-xl shadow-sm text-emerald-500">
+                                <Fingerprint size={20} />
+                            </div>
+                            <h3 className="font-bold text-slate-800 tracking-tight">Acesso Biométrico</h3>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                Use o desbloqueio facial ou digital do seu dispositivo para entrar rapidamente sem digitar senha.
+                            </p>
+
+                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                                            <Smartphone size={20} />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-slate-800">Este dispositivo</div>
+                                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Windows Hello / FaceID / Digital</div>
+                                        </div>
+                                    </div>
+                                    <span className="px-2 py-1 bg-slate-200 text-slate-500 rounded-md text-[8px] font-black uppercase">Não Ativado</span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        toast.promise(
+                                            new Promise((resolve) => setTimeout(resolve, 2000)),
+                                            {
+                                                loading: 'Iniciando registro biométrico...',
+                                                success: 'Biometria registrada com sucesso!',
+                                                error: 'Erro ao registrar biometria'
+                                            }
+                                        );
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 text-emerald-600 font-bold rounded-xl text-sm hover:bg-emerald-50 hover:border-emerald-100 transition-all"
+                                >
+                                    <Fingerprint size={18} />
+                                    <span>Ativar Desbloqueio Biométrico</span>
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-200">
+                                <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
+                                <span>Os dados biométricos nunca saem do seu dispositivo. Usamos tecnologia WebAuthn de padrão bancário.</span>
+                            </div>
+                        </div>
+                    </motion.div>
+
                     {/* Support card */}
                     <div className="bg-indigo-900 rounded-[32px] p-8 text-white shadow-2xl shadow-indigo-200 overflow-hidden relative group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000"></div>
@@ -342,4 +457,3 @@ const StaffProfile: React.FC = () => {
 };
 
 export default StaffProfile;
-

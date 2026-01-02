@@ -25,22 +25,26 @@ interface Appointment {
     startAt: string;
     status: string;
     customerId: string;
-    customer: { name: string; phone?: string; user: { email: string } };
+    customer: { name: string; phone?: string; user: { email: string }; type: string };
     petId: string;
     pet: { name: string; species: string; breed: string };
     services?: { id: string; name: string; basePrice: number; duration: number }[];
     service?: { name: string; basePrice: number; duration: number }; // Legacy
     transport?: any;
     deletedAt?: string;
+    performerId?: string;
+    performer?: { id: string; name: string; color?: string };
+    category?: string;
 }
 
 type ViewType = 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH';
+type TabType = 'active' | 'trash';
 
 const statusColumns = [
-    { key: 'PENDENTE', label: 'Solicitados', color: 'bg-purple-500' },
-    { key: 'CONFIRMADO', label: 'Confirmados', color: 'bg-blue-500' },
+    { key: 'PENDENTE', label: 'Solicitados', color: 'bg-orange-500' },
+    { key: 'CONFIRMADO', label: 'Confirmados', color: 'bg-green-500' },
     { key: 'EM_ATENDIMENTO', label: 'Em Atendimento', color: 'bg-purple-600' },
-    { key: 'FINALIZADO', label: 'Finalizado', color: 'bg-green-500' }
+    { key: 'FINALIZADO', label: 'Finalizado', color: 'bg-teal-500' }
 ];
 
 export default function AgendaSPA() {
@@ -57,6 +61,7 @@ export default function AgendaSPA() {
     const [preFillData, setPreFillData] = useState<any>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkMode, setIsBulkMode] = useState(false);
+    const [tab, setTab] = useState<TabType>('active');
 
     useEffect(() => {
         if (location.state?.prefill) {
@@ -69,8 +74,10 @@ export default function AgendaSPA() {
     const fetchAppointments = async () => {
         setIsLoading(true);
         try {
-            const response = await api.get('/appointments?category=SPA');
-            setAppointments(response.data);
+            const endpoint = tab === 'trash' ? '/appointments/trash' : '/appointments?category=SPA';
+            const response = await api.get(endpoint);
+            const data = tab === 'trash' ? response.data.filter((a: Appointment) => a.category === 'SPA') : response.data;
+            setAppointments(data);
         } catch (err) {
             console.error('Erro ao buscar agendamentos:', err);
         } finally {
@@ -80,7 +87,7 @@ export default function AgendaSPA() {
 
     useEffect(() => {
         fetchAppointments();
-    }, []);
+    }, [tab]);
 
     const toggleSelect = (id: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
@@ -88,13 +95,35 @@ export default function AgendaSPA() {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} agendamentos selecionados?`)) return;
+        const action = tab === 'trash' ? 'excluir PERMANENTEMENTE' : 'mover para a lixeira';
+        if (!window.confirm(`ATENÇÃO: Deseja realmente ${action} os ${selectedIds.length} agendamentos selecionados?`)) return;
         try {
-            await api.post('/appointments/bulk-delete', { ids: selectedIds });
+            if (tab === 'trash') {
+                // Permanent delete from trash
+                for (const id of selectedIds) {
+                    await api.delete(`/appointments/${id}/permanent`);
+                }
+            } else {
+                // Soft delete - move to trash
+                await api.post('/appointments/bulk-delete', { ids: selectedIds });
+            }
             fetchAppointments();
             setSelectedIds([]);
+            setIsBulkMode(false);
         } catch (err) {
-            alert('Erro ao excluir agendamentos');
+            alert('Erro ao processar agendamentos');
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        if (!window.confirm(`Deseja restaurar ${selectedIds.length} agendamentos da lixeira?`)) return;
+        try {
+            await api.post('/appointments/bulk-restore', { ids: selectedIds });
+            fetchAppointments();
+            setSelectedIds([]);
+            setIsBulkMode(false);
+        } catch (err) {
+            alert('Erro ao restaurar agendamentos');
         }
     };
 
@@ -185,10 +214,8 @@ export default function AgendaSPA() {
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {dayAppts.map(appt => {
-                            const statusColor = appt.status === 'PENDENTE' ? 'border-l-purple-500 from-purple-50/50 to-transparent' :
-                                appt.status === 'CONFIRMADO' ? 'border-l-blue-500 from-blue-50/50 to-transparent' :
-                                    appt.status === 'EM_ATENDIMENTO' ? 'border-l-purple-800 from-purple-100/50 to-transparent' :
-                                        'border-l-green-600 from-green-50/50 to-transparent';
+                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                            const isRecurring = appt.customer?.type === 'RECORRENTE';
 
                             const isSelected = selectedIds.includes(appt.id);
 
@@ -199,7 +226,11 @@ export default function AgendaSPA() {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     onClick={() => handleOpenDetails(appt)}
-                                    className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 flex items-center gap-6 hover:shadow-2xl hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] bg-gradient-to-r ${statusColor} ${isSelected ? 'ring-4 ring-primary/30 bg-primary/10 border-primary/40' : ''}`}
+                                    className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 flex items-center gap-6 hover:shadow-2xl hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] ${isSelected ? 'ring-4 ring-primary/30 bg-primary/10 border-primary/40' : 'bg-white'}`}
+                                    style={!isSelected && appt.performer?.color ? {
+                                        borderLeftColor: appt.performer.color,
+                                        backgroundColor: `${appt.performer.color}08`
+                                    } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
                                 >
                                     {(isBulkMode || isSelected) && (
                                         <button
@@ -220,7 +251,9 @@ export default function AgendaSPA() {
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2">Pet & Tutor(a)</p>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-2xl font-black text-secondary uppercase tracking-tighter bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 group-hover:border-primary/30 transition-colors">{appt.pet.name}</span>
+                                            <span className="text-2xl font-black text-secondary uppercase tracking-tighter bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 group-hover:border-primary/30 transition-colors">
+                                                {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                            </span>
                                             <div className="h-6 w-px bg-gray-100"></div>
                                             <span className="font-black text-gray-500 text-lg group-hover:text-secondary transition-colors">{appt.customer.name}</span>
                                         </div>
@@ -297,15 +330,18 @@ export default function AgendaSPA() {
                                 ) : (
                                     dayAppts.map(appt => {
                                         const isSelected = selectedIds.includes(appt.id);
+                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                        const isRecurring = appt.customer?.type === 'RECORRENTE';
+
                                         return (
                                             <div
                                                 key={appt.id}
                                                 onClick={() => handleOpenDetails(appt)}
-                                                className={`p-4 bg-white rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${appt.status === 'PENDENTE' ? 'border-l-purple-500 bg-purple-50/20' :
-                                                    appt.status === 'CONFIRMADO' ? 'border-l-blue-500 bg-blue-50/20' :
-                                                        appt.status === 'EM_ATENDIMENTO' ? 'border-l-purple-700 bg-purple-100/20' :
-                                                            'border-l-green-500 bg-green-50/20'
-                                                    } ${isSelected ? 'ring-4 ring-primary/20 bg-primary/5 border-primary/50' : 'border-gray-100'}`}
+                                                className={`p-4 rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${isSelected ? 'ring-4 ring-primary/20 bg-primary/5 border-primary/50' : 'bg-white border-gray-50'}`}
+                                                style={!isSelected && appt.performer?.color ? {
+                                                    borderLeftColor: appt.performer.color,
+                                                    backgroundColor: `${appt.performer.color}08`
+                                                } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
                                             >
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border shadow-sm ${appt.status === 'PENDENTE' ? 'bg-purple-600 text-white' :
@@ -324,8 +360,10 @@ export default function AgendaSPA() {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <p className="text-sm font-black text-secondary uppercase truncate drop-shadow-sm">{appt.pet.name}</p>
-                                                <p className="text-[10px] text-gray-700 font-bold truncate">{appt.customer.name}</p>
+                                                <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight">
+                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                </p>
+                                                <p className="text-[10px] opacity-70 font-bold truncate">{appt.customer.name}</p>
                                             </div>
                                         );
                                     })
@@ -384,21 +422,24 @@ export default function AgendaSPA() {
                                 <div className="space-y-1.5">
                                     {dayAppts.slice(0, 4).map(appt => {
                                         const isSelected = selectedIds.includes(appt.id);
+                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                        const isRecurring = appt.customer?.type === 'RECORRENTE';
+
                                         return (
                                             <div
                                                 key={appt.id}
                                                 onClick={() => handleOpenDetails(appt)}
-                                                className={`p-2 rounded-xl border shadow-sm text-[10px] font-black uppercase truncate cursor-pointer hover:scale-[1.02] transition-all flex items-center gap-2 ${appt.status === 'PENDENTE' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                                    appt.status === 'CONFIRMADO' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                                        appt.status === 'EM_ATENDIMENTO' ? 'bg-purple-200 text-purple-900 border-purple-300' :
-                                                            'bg-green-100 text-green-700 border-green-200'
-                                                    } ${isSelected ? 'ring-2 ring-primary border-primary shadow-primary/20 bg-white' : ''}`}
+                                                className={`p-2 rounded-xl border-l-[6px] shadow-sm text-[10px] font-black uppercase truncate cursor-pointer hover:scale-[1.02] transition-all flex items-center gap-2 ${isSelected ? 'ring-2 ring-primary border-primary shadow-primary/20 bg-white' : 'bg-white border-gray-100'}`}
+                                                style={!isSelected && appt.performer?.color ? {
+                                                    borderLeftColor: appt.performer.color,
+                                                    backgroundColor: `${appt.performer.color}15`,
+                                                    color: appt.performer.color
+                                                } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
                                             >
-                                                <div className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${appt.status === 'PENDENTE' ? 'bg-purple-500' :
-                                                    appt.status === 'CONFIRMADO' ? 'bg-blue-500' :
-                                                        appt.status === 'EM_ATENDIMENTO' ? 'bg-purple-700' : 'bg-green-500'
-                                                    }`} />
-                                                <span className="truncate">{appt.pet.name}</span>
+                                                <span className="shrink-0 tabular-nums opacity-60">
+                                                    {new Date(appt.startAt).getHours()}:{new Date(appt.startAt).getMinutes().toString().padStart(2, '0')}
+                                                </span>
+                                                <span className="truncate">{appt.pet.name} {isRecurring ? '(R)' : '(A)'}</span>
                                                 {isSelected && <CheckSquare size={12} className="ml-auto text-primary" />}
                                             </div>
                                         );
@@ -446,7 +487,31 @@ export default function AgendaSPA() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[32px] border border-white shadow-xl shadow-black/5">
+                        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+                            <button
+                                onClick={() => { setTab('active'); setSelectedIds([]); }}
+                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                Ativos
+                            </button>
+                            <button
+                                onClick={() => { setTab('trash'); setSelectedIds([]); }}
+                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                            >
+                                <Trash2 size={14} /> Lixeira
+                            </button>
+                        </div>
+
                         <div className="flex items-center gap-2 bg-gray-100/50 p-2 rounded-[28px]">
+                            <button
+                                onClick={fetchAppointments}
+                                disabled={isLoading}
+                                className="p-3 bg-white text-gray-400 hover:text-primary rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                title="Atualizar Agenda"
+                            >
+                                <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
+                            </button>
+
                             <button
                                 onClick={() => setIsBulkMode(!isBulkMode)}
                                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
@@ -469,12 +534,14 @@ export default function AgendaSPA() {
                             ))}
                         </div>
 
-                        <button
-                            onClick={handleCreateNew}
-                            className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-[26px] font-black shadow-lg shadow-primary/20 transition-all text-[11px] tracking-widest flex items-center gap-3 uppercase"
-                        >
-                            <Plus size={18} strokeWidth={3} /> NOVO ITEM
-                        </button>
+                        {tab === 'active' && (
+                            <button
+                                onClick={handleCreateNew}
+                                className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-[26px] font-black shadow-lg shadow-primary/20 transition-all text-[11px] tracking-widest flex items-center gap-3 uppercase"
+                            >
+                                <Plus size={18} strokeWidth={3} /> NOVO ITEM
+                            </button>
+                        )}
                     </div>
                 </header>
 
@@ -507,13 +574,32 @@ export default function AgendaSPA() {
                                 >
                                     Cancelar
                                 </button>
-                                <button
-                                    onClick={handleBulkDelete}
-                                    disabled={selectedIds.length === 0}
-                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                >
-                                    <Trash2 size={18} /> Apagar Agora
-                                </button>
+                                {tab === 'trash' ? (
+                                    <>
+                                        <button
+                                            onClick={handleBulkRestore}
+                                            disabled={selectedIds.length === 0}
+                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                        >
+                                            <RefreshCcw size={18} /> Restaurar
+                                        </button>
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            disabled={selectedIds.length === 0}
+                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                        >
+                                            <Trash2 size={18} /> Excluir Permanente
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        disabled={selectedIds.length === 0}
+                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                    >
+                                        <Trash2 size={18} /> Mover para Lixeira
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     )}
@@ -552,15 +638,18 @@ export default function AgendaSPA() {
                                         <div className="flex-1 bg-gray-50/50 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200">
                                             {getColumnItems(col.key).map((appt) => {
                                                 const isSelected = selectedIds.includes(appt.id);
+                                                const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                                const isRecurring = appt.customer?.type === 'RECORRENTE';
+
                                                 return (
                                                     <div
                                                         key={appt.id}
                                                         onClick={() => handleOpenDetails(appt)}
-                                                        className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${col.key === 'PENDENTE' ? 'bg-purple-50 border-purple-100 border-l-purple-600' :
-                                                            col.key === 'CONFIRMADO' ? 'bg-blue-50 border-blue-100 border-l-blue-600' :
-                                                                col.key === 'EM_ATENDIMENTO' ? 'bg-purple-100 border-purple-200 border-l-purple-800' :
-                                                                    'bg-green-50 border-green-100 border-l-green-600'
-                                                            } ${isSelected ? 'ring-4 ring-primary/20 bg-white border-primary/50 shadow-primary/10' : ''}`}
+                                                        className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-primary/20 bg-white border-primary/50 shadow-primary/10' : 'bg-white border-gray-100'}`}
+                                                        style={!isSelected && appt.performer?.color ? {
+                                                            borderLeftColor: appt.performer.color,
+                                                            backgroundColor: `${appt.performer.color}08`
+                                                        } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
                                                     >
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div className="bg-white px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary border border-gray-100 shadow-sm">
@@ -576,8 +665,10 @@ export default function AgendaSPA() {
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <h4 className="font-black text-secondary text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight">{appt.pet.name}</h4>
-                                                        <p className="text-[11px] text-gray-500 font-bold truncate mt-1">{appt.customer.name}</p>
+                                                        <h4 className="font-black text-secondary text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight">
+                                                            {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                        </h4>
+                                                        <p className="text-[11px] opacity-70 font-bold truncate mt-1">{appt.customer.name}</p>
                                                     </div>
                                                 );
                                             })}

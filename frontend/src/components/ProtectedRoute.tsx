@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import ClientTutorial from './client/ClientTutorial';
 
 interface ProtectedRouteProps {
     allowedRoles?: string[];
@@ -19,7 +20,12 @@ const ProtectedRoute = ({ allowedRoles, redirectTo = '/login' }: ProtectedRouteP
         return <Navigate to={homePath} replace />;
     }
 
-    return <Outlet />;
+    return (
+        <>
+            {user.role === 'CLIENTE' && <ClientTutorial />}
+            <Outlet />
+        </>
+    );
 };
 
 export default ProtectedRoute;

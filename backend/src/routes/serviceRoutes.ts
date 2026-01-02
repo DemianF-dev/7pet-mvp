@@ -13,7 +13,7 @@ router.use(authenticate);
 router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA']));
 
 router.post('/', async (req: Request, res: Response) => {
-    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel } = req.body;
+    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, responsibleId } = req.body;
 
     const existing = await prisma.service.findFirst({ where: { name } });
     if (existing) {
@@ -30,7 +30,8 @@ router.post('/', async (req: Request, res: Response) => {
             species: species || 'Canino',
             minWeight: minWeight ? Number(minWeight) : null,
             maxWeight: maxWeight ? Number(maxWeight) : null,
-            sizeLabel
+            sizeLabel,
+            responsibleId: responsibleId || null
         }
     });
     res.status(201).json(service);
@@ -75,7 +76,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel } = req.body;
+    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, responsibleId } = req.body;
 
     if (name) {
         const existing = await prisma.service.findFirst({
@@ -100,24 +101,77 @@ router.patch('/:id', async (req: Request, res: Response) => {
             species,
             minWeight: minWeight !== undefined ? (minWeight ? Number(minWeight) : null) : undefined,
             maxWeight: maxWeight !== undefined ? (maxWeight ? Number(maxWeight) : null) : undefined,
-            sizeLabel
+            sizeLabel,
+            responsibleId: responsibleId !== undefined ? (responsibleId || null) : undefined
         }
     });
     res.json(service);
 });
 
 router.delete('/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    await prisma.service.delete({ where: { id } });
-    res.status(204).send();
+    try {
+        const { id } = req.params;
+        const serviceService = await import('../services/serviceService');
+        await serviceService.remove(id);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao excluir serviço' });
+    }
 });
 
 router.post('/bulk-delete', async (req: Request, res: Response) => {
-    const { ids } = req.body;
-    await prisma.service.deleteMany({
-        where: { id: { in: ids } }
-    });
-    res.status(204).send();
+    try {
+        const { ids } = req.body;
+        const serviceService = await import('../services/serviceService');
+        await serviceService.bulkDelete(ids);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao excluir serviços em massa' });
+    }
+});
+
+// Trash system routes
+router.get('/trash', async (req: Request, res: Response) => {
+    try {
+        const serviceService = await import('../services/serviceService');
+        const trash = await serviceService.listTrash();
+        res.json(trash);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao listar lixeira' });
+    }
+});
+
+router.post('/bulk-restore', async (req: Request, res: Response) => {
+    try {
+        const { ids } = req.body;
+        const serviceService = await import('../services/serviceService');
+        await serviceService.bulkRestore(ids);
+        res.status(200).json({ message: 'Serviços restaurados com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao restaurar serviços' });
+    }
+});
+
+router.patch('/:id/restore', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const serviceService = await import('../services/serviceService');
+        await serviceService.restore(id);
+        res.status(200).json({ message: 'Serviço restaurado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao restaurar serviço' });
+    }
+});
+
+router.delete('/:id/permanent', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const serviceService = await import('../services/serviceService');
+        await serviceService.permanentRemove(id);
+        res.status(204).send();
+    } catch (error: any) {
+        res.status(400).json({ error: error.message || 'Erro ao excluir permanentemente' });
+    }
 });
 
 export default router;

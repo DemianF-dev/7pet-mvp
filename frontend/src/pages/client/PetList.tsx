@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import PetForm from '../../components/pets/PetForm';
 import api from '../../services/api';
+import ConfirmModal from '../../components/ConfirmModal';
 
 interface Pet {
     id: string;
@@ -32,6 +33,7 @@ export default function PetList() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPet, setEditingPet] = useState<Pet | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
+    const [petToDelete, setPetToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         fetchPets();
@@ -77,11 +79,12 @@ export default function PetList() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Tem certeza que deseja remover este pet?')) return;
+    const handleDelete = async () => {
+        if (!petToDelete) return;
         try {
-            await api.delete(`/pets/${id}`);
-            setPets(pets.filter(pet => pet.id !== id));
+            await api.delete(`/pets/${petToDelete}`);
+            setPets(pets.filter(pet => pet.id !== petToDelete));
+            setPetToDelete(null);
         } catch (error) {
             alert('Erro ao excluir pet');
         }
@@ -106,6 +109,7 @@ export default function PetList() {
                     </div>
 
                     <button
+                        id="tour-new-pet"
                         onClick={handleOpenCreateModal}
                         className="btn-primary flex items-center gap-2 px-6"
                     >
@@ -151,7 +155,7 @@ export default function PetList() {
                                             <Edit2 size={16} />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(pet.id)}
+                                            onClick={() => setPetToDelete(pet.id)}
                                             title="Excluir"
                                             className="p-2 bg-gray-100 hover:bg-red-500 hover:text-white rounded-lg transition-colors"
                                         >
@@ -200,6 +204,7 @@ export default function PetList() {
                         <h3 className="text-xl font-bold text-secondary mb-2">Nenhum pet encontrado</h3>
                         <p className="text-gray-400 mb-8">Comece adicionando o seu melhor amigo ao sistema.</p>
                         <button
+                            id="tour-first-pet"
                             onClick={handleOpenCreateModal}
                             className="btn-primary mx-auto flex items-center gap-2"
                         >
@@ -207,7 +212,8 @@ export default function PetList() {
                             Adicionar Meu Primeiro Pet
                         </button>
                     </div>
-                )}
+                )
+                }
 
                 <PetForm
                     isOpen={isModalOpen}
@@ -216,7 +222,17 @@ export default function PetList() {
                     initialData={editingPet}
                     isLoading={isSaving}
                 />
-            </main>
-        </div>
+
+                <ConfirmModal
+                    isOpen={!!petToDelete}
+                    onClose={() => setPetToDelete(null)}
+                    onConfirm={handleDelete}
+                    title="Remover Pet?"
+                    description="Tem certeza que deseja remover este pet? Esta ação não pode ser desfeita e todos os dados associados a ele serão perdidos."
+                    confirmText="Sim, Remover"
+                    confirmColor="bg-red-500"
+                />
+            </main >
+        </div >
     );
 }

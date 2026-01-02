@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
+import { auditService } from './auditService';
 
 export const create = async (data: {
     customerId: string;
@@ -12,6 +13,8 @@ export const create = async (data: {
         destination?: string;
         requestedPeriod?: TransportPeriod;
     };
+    performerId?: string;
+    quoteId?: string;
 }, isStaff: boolean = false) => {
     // Business Rule: Appointments must be at least 12h in advance
     const minLeadTime = 12 * 60 * 60 * 1000; // 12h in ms
@@ -27,19 +30,28 @@ export const create = async (data: {
 
     // Check for concurrency/double booking
     // Only Active appointments (not cancelled, not deleted) block the slot
-    const existingAppointment = await prisma.appointment.findFirst({
-        where: {
-            startAt: data.startAt,
-            deletedAt: null,
-            status: { notIn: [AppointmentStatus.CANCELADO] }
-        }
-    });
+    // Rule: We allow multiple appointments at the same time if they are in DIFFERENT categories (e.g., one SPA and one LOGISTICA)
+    // OR if it's the SAME pet/customer (dual agenda).
+    // Also, if isStaff is true, we can be more lenient or bypass.
+    if (!isStaff) {
+        const existingAppointment = await prisma.appointment.findFirst({
+            where: {
+                startAt: data.startAt,
+                category: data.category || 'SPA', // Check in the same category
+                deletedAt: null,
+                status: { notIn: [AppointmentStatus.CANCELADO] }
+            }
+        });
 
-    if (existingAppointment) {
-        throw new Error('⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário.');
+        if (existingAppointment) {
+            console.log('[AppointmentService] Conflict found for non-staff:', { startAt: data.startAt, category: data.category });
+            throw new Error('⚠️ Este horário já possui um agendamento nesta categoria. Por favor, escolha outro horário.');
+        }
+    } else {
+        console.log('[AppointmentService] Staff bypass for appointment creation:', { category: data.category });
     }
 
-    return prisma.appointment.create({
+    const appointment = await prisma.appointment.create({
         data: {
             customerId: data.customerId,
             petId: data.petId,
@@ -55,17 +67,34 @@ export const create = async (data: {
                     destination: data.transport.destination || '7Pet',
                     requestedPeriod: data.transport.requestedPeriod || TransportPeriod.MANHA
                 }
-            } : undefined
+            } : undefined,
+            quoteId: data.quoteId,
+            performerId: data.performerId || undefined
         },
         include: {
             pet: true,
             services: true,
             transport: true,
+            performer: true,
             customer: {
                 include: { pets: true }
             }
         }
     });
+
+    // Logging
+    if (data.customerId) {
+        await auditService.log({
+            entityType: 'Appointment',
+            entityId: appointment.id,
+            action: 'CREATE',
+            performedBy: 'SYSTEM', // Default, should be passed from controller
+            newData: appointment,
+            reason: 'Agendamento criado'
+        });
+    }
+
+    return appointment;
 };
 
 export const list = async (filters: { customerId?: string; status?: AppointmentStatus }) => {
@@ -78,6 +107,7 @@ export const list = async (filters: { customerId?: string; status?: AppointmentS
             pet: true,
             services: true,
             transport: true,
+            performer: true,
             customer: {
                 include: { pets: true }
             }
@@ -93,6 +123,7 @@ export const get = async (id: string) => {
             pet: true,
             services: true,
             transport: true,
+            performer: true,
             customer: {
                 include: { pets: true }
             }
@@ -100,12 +131,14 @@ export const get = async (id: string) => {
     });
 };
 
-export const update = async (id: string, data: any) => {
-    return prisma.appointment.update({
+export const update = async (id: string, data: any, userId?: string) => {
+    const previous = await get(id);
+    const updated = await prisma.appointment.update({
         where: { id },
         data: {
             petId: data.petId,
             startAt: data.startAt,
+            status: data.status, // Allow status update via regular update too
             category: data.category,
             services: data.serviceIds ? {
                 set: [], // Clear existing relations
@@ -124,24 +157,55 @@ export const update = async (id: string, data: any) => {
                         requestedPeriod: data.transport.requestedPeriod
                     }
                 }
-            } : undefined
+            } : undefined,
+            performerId: data.performerId !== undefined ? (data.performerId || null) : undefined
         },
         include: {
             pet: true,
             services: true,
             transport: true,
+            performer: true,
             customer: {
                 include: { pets: true }
             }
         }
     });
+
+    if (userId) {
+        await auditService.log({
+            entityType: 'Appointment',
+            entityId: id,
+            action: 'UPDATE',
+            performedBy: userId,
+            previousData: previous,
+            newData: updated,
+            reason: data.reason || 'Atualização de agendamento'
+        });
+    }
+
+    return updated;
 };
 
-export const updateStatus = async (id: string, status: AppointmentStatus) => {
-    return prisma.appointment.update({
+export const updateStatus = async (id: string, status: AppointmentStatus, userId?: string, reason?: string) => {
+    const previous = await get(id);
+    const updated = await prisma.appointment.update({
         where: { id },
         data: { status }
     });
+
+    if (userId) {
+        await auditService.log({
+            entityType: 'Appointment',
+            entityId: id,
+            action: 'UPDATE',
+            performedBy: userId,
+            previousData: { status: previous?.status },
+            newData: { status: updated.status },
+            reason: reason || `Alteração de status para ${status}`
+        });
+    }
+
+    return updated;
 };
 
 // Soft Delete
@@ -176,6 +240,7 @@ export const listTrash = async () => {
             pet: true,
             services: true,
             transport: true,
+            performer: true,
             customer: {
                 include: { pets: true }
             }
@@ -231,11 +296,11 @@ export const updateQuoteStatus = async (quoteId: string) => {
     await prisma.quote.update({
         where: { id: quoteId },
         data: {
-            status: 'AGENDAR',
+            status: 'AGENDADO',
             statusHistory: {
                 create: {
                     oldStatus: 'APROVADO',
-                    newStatus: 'AGENDAR',
+                    newStatus: 'AGENDADO',
                     changedBy: 'SYSTEM',
                     reason: 'Agendamento criado automaticamente'
                 }
@@ -245,7 +310,24 @@ export const updateQuoteStatus = async (quoteId: string) => {
 };
 
 export const bulkDelete = async (ids: string[]) => {
-    return prisma.appointment.deleteMany({
-        where: { id: { in: ids } }
+    // Soft delete - move to trash
+    return prisma.appointment.updateMany({
+        where: {
+            id: { in: ids },
+            deletedAt: null // Only delete active appointments
+        },
+        data: { deletedAt: new Date() }
     });
 };
+
+export const bulkRestore = async (ids: string[]) => {
+    // Restore from trash
+    return prisma.appointment.updateMany({
+        where: {
+            id: { in: ids },
+            deletedAt: { not: null } // Only restore deleted appointments
+        },
+        data: { deletedAt: null }
+    });
+};
+

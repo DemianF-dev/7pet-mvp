@@ -3,35 +3,52 @@ import { persist } from 'zustand/middleware';
 
 interface User {
     id: string;
+    seqId: number;
     email: string;
+    extraEmails?: string[];
     role: 'CLIENTE' | 'OPERACIONAL' | 'GESTAO' | 'ADMIN' | 'SPA' | 'MASTER';
     name?: string;
+    firstName?: string;
+    lastName?: string;
     phone?: string;
+    extraPhones?: string[];
     address?: string;
+    extraAddresses?: string[];
     document?: string;
     birthday?: string;
     notes?: string;
+    staffId?: number;
     customer?: {
         id: string;
         name: string;
         phone?: string;
         address?: string;
         type?: string;
+        discountPercentage?: number;
+        recurringFrequency?: string;
+        discoverySource?: string;
+        communicationPrefs?: string[];
+        communicationOther?: string;
+        additionalGuardians?: any[];
+        // Legacy
         secondaryGuardianName?: string;
         secondaryGuardianPhone?: string;
         secondaryGuardianEmail?: string;
         secondaryGuardianAddress?: string;
-        discountPercentage?: number;
-        recurringFrequency?: string;
     };
+    showTutorial?: boolean;
+    createdAt?: string;
     permissions?: string[];
 }
 
 interface AuthState {
     user: User | null;
     token: string | null;
+    isTutorialActive: boolean;
+    tutorialStep: number;
     setAuth: (user: User, token: string) => void;
     updateUser: (user: User) => void;
+    setTutorial: (active: boolean, step?: number) => void;
     logout: () => void;
 }
 
@@ -40,6 +57,8 @@ export const useAuthStore = create<AuthState>()(
         (set) => ({
             user: null,
             token: null,
+            isTutorialActive: false,
+            tutorialStep: 0,
             setAuth: (user, token) => {
                 // Ensure permissions is a proper array
                 if (typeof user.permissions === 'string') {
@@ -64,9 +83,15 @@ export const useAuthStore = create<AuthState>()(
                 }
                 set({ user });
             },
+            setTutorial: (active, step) => {
+                set((state) => ({
+                    isTutorialActive: active,
+                    tutorialStep: step !== undefined ? step : state.tutorialStep
+                }));
+            },
             logout: () => {
                 localStorage.removeItem('7pet-token');
-                set({ user: null, token: null });
+                set({ user: null, token: null, isTutorialActive: false, tutorialStep: 0 });
             },
         }),
         {

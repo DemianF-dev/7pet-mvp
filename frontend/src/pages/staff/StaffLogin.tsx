@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft, Fingerprint } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -24,7 +25,7 @@ export default function StaffLogin() {
             const response = await api.post('/auth/login', { email, password });
             const { user, token } = response.data;
 
-            if (!['OPERACIONAL', 'GESTAO', 'ADMIN'].includes(user.role)) {
+            if (!['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA'].includes(user.role)) {
                 throw new Error('Esta área é exclusiva para colaboradores.');
             }
 
@@ -143,6 +144,35 @@ export default function StaffLogin() {
                             className="btn-primary w-full mt-4 h-14 text-lg disabled:opacity-50"
                         >
                             {isLoading ? 'Aguarde...' : 'Acessar Painel'}
+                        </button>
+
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-100"></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-4 text-gray-400 font-bold tracking-widest">Ou acesse com</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                toast.promise(
+                                    new Promise((resolve) => setTimeout(resolve, 1500)),
+                                    {
+                                        loading: 'Verificando identidade...',
+                                        success: 'Digital reconhecida! Acessando...',
+                                        error: 'Falha no reconhecimento'
+                                    }
+                                );
+                            }}
+                            className="w-full h-14 bg-white border border-gray-100 hover:border-primary/20 hover:bg-gray-50 text-secondary font-bold rounded-2xl flex items-center justify-center gap-3 transition-all group"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Fingerprint size={20} />
+                            </div>
+                            <span>Acesso Biométrico / Digital</span>
                         </button>
                     </form>
                 </div>

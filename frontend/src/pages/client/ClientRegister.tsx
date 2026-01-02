@@ -9,7 +9,8 @@ export default function ClientRegister() {
     const navigate = useNavigate();
     const setAuth = useAuthStore((state) => state.setAuth);
     const [showPassword, setShowPassword] = useState(false);
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
@@ -22,8 +23,13 @@ export default function ClientRegister() {
         setError('');
 
         // Validation
-        if (!name.trim()) {
-            setError('Por favor, preencha seu nome completo.');
+        if (!firstName.trim()) {
+            setError('Por favor, preencha seu primeiro nome.');
+            setIsLoading(false);
+            return;
+        }
+        if (!lastName.trim()) {
+            setError('Por favor, preencha seu sobrenome.');
             setIsLoading(false);
             return;
         }
@@ -42,9 +48,10 @@ export default function ClientRegister() {
         console.log('[ClientRegister] API URL:', import.meta.env.VITE_API_URL);
 
         try {
-            console.log('[ClientRegister] Enviando dados:', { name, email, phone, role: 'CLIENTE' });
+            console.log('[ClientRegister] Enviando dados:', { firstName, lastName, email, phone, role: 'CLIENTE' });
             const response = await api.post('/auth/register', {
-                name,
+                firstName,
+                lastName,
                 email,
                 phone,
                 password,
@@ -103,17 +110,30 @@ export default function ClientRegister() {
                         )}
 
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-secondary ml-1">Nome Completo</label>
-                                <div className="relative">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-secondary ml-1">Nome</label>
+                                    <div className="relative">
+                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                        <input
+                                            type="text"
+                                            required
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                            placeholder="Nome"
+                                            className="input-field pl-12"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-secondary ml-1">Sobrenome</label>
                                     <input
                                         type="text"
                                         required
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="Seu nome"
-                                        className="input-field pl-12"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        placeholder="Sobrenome"
+                                        className="input-field"
                                     />
                                 </div>
                             </div>

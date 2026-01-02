@@ -1,0 +1,575 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+    User, Mail, Phone, MapPin, Save, Calendar,
+    Trash2, Plus, X, MessageSquare,
+    Info, Users, CreditCard
+} from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import api from '../../services/api';
+import StaffSidebar from '../../components/StaffSidebar';
+import BackButton from '../../components/BackButton';
+import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
+
+interface Guardian {
+    name: string;
+    phone: string;
+    email: string;
+    address: string;
+    birthday: string;
+}
+
+interface CustomerDetailProps {
+    customerId?: string;
+    onClose?: () => void;
+}
+
+export default function CustomerDetail({ customerId, onClose }: CustomerDetailProps = {}) {
+    const { id: paramId } = useParams();
+    const id = customerId || paramId;
+    const isModal = !!customerId;
+
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // Form State
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [extraEmails, setExtraEmails] = useState<string[]>([]);
+    const [phone, setPhone] = useState('');
+    const [extraPhones, setExtraPhones] = useState<string[]>([]);
+    const [address, setAddress] = useState('');
+    const [extraAddresses, setExtraAddresses] = useState<string[]>([]);
+    const [birthday, setBirthday] = useState('');
+    const [document, setDocument] = useState('');
+    const [discoverySource, setDiscoverySource] = useState('');
+    const [communicationPrefs, setCommunicationPrefs] = useState<string[]>([]);
+    const [communicationOther, setCommunicationOther] = useState('');
+    const [additionalGuardians, setAdditionalGuardians] = useState<Guardian[]>([]);
+    const [internalNotes, setInternalNotes] = useState('');
+    const [type, setType] = useState('AVULSO');
+    const [recurringFrequency, setRecurringFrequency] = useState('');
+    const [recurrenceDiscount, setRecurrenceDiscount] = useState(0);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [seqId, setSeqId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (id && id !== 'new') {
+            fetchCustomer();
+        } else {
+            setLoading(false);
+        }
+    }, [id]);
+
+    const fetchCustomer = async () => {
+        try {
+            const response = await api.get(`/customers/${id}`);
+            const data = response.data;
+            const u = data.user || {};
+
+            setFirstName(u.firstName || '');
+            setLastName(u.lastName || '');
+            setEmail(u.email || '');
+            setExtraEmails(u.extraEmails || []);
+            setPhone(u.phone || '');
+            setExtraPhones(u.extraPhones || []);
+            setAddress(u.address || '');
+            setExtraAddresses(u.extraAddresses || []);
+            setBirthday(u.birthday ? new Date(u.birthday).toISOString().split('T')[0] : '');
+            setDocument(u.document || '');
+            setDiscoverySource(data.discoverySource || '');
+            setCommunicationPrefs(data.communicationPrefs || []);
+            setCommunicationOther(data.communicationOther || '');
+            setAdditionalGuardians(data.additionalGuardians || []);
+            setInternalNotes(data.internalNotes || '');
+            setInternalNotes(data.internalNotes || '');
+            setType(data.type || 'AVULSO');
+            setRecurringFrequency(data.recurrenceFrequency || '');
+            setRecurrenceDiscount(data.recurrenceDiscount || 0);
+            setSeqId(u.seqId || null);
+        } catch (error) {
+            console.error('Erro ao buscar cliente:', error);
+            toast.error('Erro ao carregar dados do cliente');
+            if (!isModal) navigate('/staff/customers');
+            else if (onClose) onClose();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const payload = {
+                firstName,
+                lastName,
+                email,
+                extraEmails,
+                phone,
+                extraPhones,
+                address,
+                extraAddresses,
+                birthday,
+                document,
+                discoverySource,
+                communicationPrefs,
+                communicationOther,
+                additionalGuardians,
+                internalNotes,
+                type,
+                recurringFrequency,
+                recurrenceDiscount,
+            };
+
+            console.log('💾 Salvando cliente com payload:', JSON.stringify(payload, null, 2));
+
+            if (id === 'new') {
+                await api.post('/customers', payload);
+                toast.success('Cliente criado com sucesso!');
+            } else {
+                await api.patch(`/customers/${id}`, payload);
+                toast.success('Perfil atualizado com sucesso!');
+            }
+            if (!isModal) navigate('/staff/customers');
+            // If modal, maybe just toast and remain open? Or close? User usually wants to keep working. I'll just toast.
+        } catch (error: any) {
+            console.error('❌ Erro ao salvar cliente:', error);
+            console.error('📊 Resposta do servidor:', error.response?.data);
+
+            // Show detailed error if available
+            if (error.response?.data?.details) {
+                console.error('📋 Detalhes da validação:', error.response.data.details);
+                const errorMsg = error.response.data.details.map((d: any) =>
+                    `Campo "${d.field}": ${d.message}`
+                ).join('\n');
+                toast.error(`Dados inválidos:\n${errorMsg}`);
+            } else {
+                toast.error(error.response?.data?.error || 'Erro ao salvar cliente');
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm('Tem certeza que deseja excluir este cliente?')) return;
+        try {
+            await api.delete(`/customers/${id}`);
+            toast.success('Cliente excluído');
+            if (onClose) onClose();
+            else navigate('/staff/customers');
+        } catch (error) {
+            toast.error('Erro ao excluir cliente');
+        }
+    };
+
+    if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
+
+    const content = (
+        <>
+            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    {!isModal && <BackButton className="mb-4 ml-[-1rem]" />}
+                    <div className="flex items-center gap-3">
+                        {isModal && onClose && (
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors -ml-2">
+                                <X size={24} className="text-gray-400" />
+                            </button>
+                        )}
+                        <h1 className="text-3xl font-black text-secondary tracking-tight">
+                            {id === 'new' ? 'Novo' : 'Editar'} <span className="text-primary">Cliente</span>
+                        </h1>
+                    </div>
+                    {seqId && <p className="text-gray-400 font-bold mt-1 uppercase tracking-widest text-xs ml-1">Ficha CL-{String(seqId).padStart(4, '0')}</p>}
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {id !== 'new' && (
+                        <button
+                            onClick={handleDelete}
+                            className="p-4 bg-white text-red-500 rounded-2xl shadow-sm border border-red-50 hover:bg-red-50 transition-colors"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    )}
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="bg-primary text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                    >
+                        {saving ? <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div> : <Save size={18} />}
+                        Salvar Alterações
+                    </button>
+                </div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    {/* IDENTIFICATION */}
+                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <User size={16} /> Identificação Básica
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Nome</label>
+                                <input
+                                    type="text"
+                                    value={firstName}
+                                    onChange={e => setFirstName(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="Primeiro nome"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Sobrenome</label>
+                                <input
+                                    type="text"
+                                    value={lastName}
+                                    onChange={e => setLastName(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="Sobrenome"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF / Documento</label>
+                                <div className="relative">
+                                    <CreditCard size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                                    <input
+                                        type="text"
+                                        value={document}
+                                        onChange={e => setDocument(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                        placeholder="000.000.000-00"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Data de Nascimento</label>
+                                <div className="relative">
+                                    <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                                    <input
+                                        type="date"
+                                        value={birthday}
+                                        onChange={e => setBirthday(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* CONTACTS */}
+                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Phone size={16} /> Canais de Contato
+                        </h3>
+                        <div className="space-y-6">
+                            {/* Emails */}
+                            <div className="space-y-4">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">E-mails</label>
+                                <div className="relative">
+                                    <Mail size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={e => setEmail(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                        placeholder="E-mail principal (login)"
+                                    />
+                                </div>
+                                {extraEmails.map((em, idx) => (
+                                    <div key={idx} className="flex gap-2">
+                                        <input
+                                            type="email"
+                                            value={em}
+                                            onChange={e => {
+                                                const newEmails = [...extraEmails];
+                                                newEmails[idx] = e.target.value;
+                                                setExtraEmails(newEmails);
+                                            }}
+                                            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                        />
+                                        <button onClick={() => setExtraEmails(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                    </div>
+                                ))}
+                                <button onClick={() => setExtraEmails([...extraEmails, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar E-mail</button>
+                            </div>
+
+                            {/* Phones */}
+                            <div className="space-y-4">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Telefones</label>
+                                <div className="relative">
+                                    <Phone size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
+                                    <input
+                                        type="text"
+                                        value={phone}
+                                        onChange={e => setPhone(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                        placeholder="Telefone principal"
+                                    />
+                                </div>
+                                {extraPhones.map((ph, idx) => (
+                                    <div key={idx} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={ph}
+                                            onChange={e => {
+                                                const newPhones = [...extraPhones];
+                                                newPhones[idx] = e.target.value;
+                                                setExtraPhones(newPhones);
+                                            }}
+                                            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                        />
+                                        <button onClick={() => setExtraPhones(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                    </div>
+                                ))}
+                                <button onClick={() => setExtraPhones([...extraPhones, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Telefone</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ADDRESSES */}
+                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <MapPin size={16} /> Localização
+                        </h3>
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <MapPin size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
+                                <input
+                                    type="text"
+                                    value={address}
+                                    onChange={e => setAddress(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="Endereço principal"
+                                />
+                            </div>
+                            {extraAddresses.map((addr, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={addr}
+                                        onChange={e => {
+                                            const newAddresses = [...extraAddresses];
+                                            newAddresses[idx] = e.target.value;
+                                            setExtraAddresses(newAddresses);
+                                        }}
+                                        className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    />
+                                    <button onClick={() => setExtraAddresses(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                </div>
+                            ))}
+                            <button onClick={() => setExtraAddresses([...extraAddresses, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Endereço</button>
+                        </div>
+                    </section>
+
+                    {/* GUARDIANS */}
+                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Users size={16} /> Tutores Adicionais
+                        </h3>
+                        <div className="space-y-6">
+                            {additionalGuardians.map((g, idx) => (
+                                <div key={idx} className="bg-gray-50 p-6 rounded-3xl relative border border-gray-100">
+                                    <button
+                                        onClick={() => setAdditionalGuardians(prev => prev.filter((_, i) => i !== idx))}
+                                        className="absolute top-4 right-4 text-red-300 hover:text-red-500 transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <input
+                                            value={g.name}
+                                            onChange={e => {
+                                                const updated = [...additionalGuardians];
+                                                updated[idx].name = e.target.value;
+                                                setAdditionalGuardians(updated);
+                                            }}
+                                            placeholder="Nome do tutor"
+                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                        />
+                                        <input
+                                            value={g.phone}
+                                            onChange={e => {
+                                                const updated = [...additionalGuardians];
+                                                updated[idx].phone = e.target.value;
+                                                setAdditionalGuardians(updated);
+                                            }}
+                                            placeholder="Telefone"
+                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                        />
+                                        <input
+                                            value={g.email}
+                                            onChange={e => {
+                                                const updated = [...additionalGuardians];
+                                                updated[idx].email = e.target.value;
+                                                setAdditionalGuardians(updated);
+                                            }}
+                                            placeholder="E-mail"
+                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                        />
+                                        <input
+                                            type="date"
+                                            value={g.birthday}
+                                            onChange={e => {
+                                                const updated = [...additionalGuardians];
+                                                updated[idx].birthday = e.target.value;
+                                                setAdditionalGuardians(updated);
+                                            }}
+                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                        />
+                                        <input
+                                            value={g.address}
+                                            onChange={e => {
+                                                const updated = [...additionalGuardians];
+                                                updated[idx].address = e.target.value;
+                                                setAdditionalGuardians(updated);
+                                            }}
+                                            placeholder="Endereço"
+                                            className="md:col-span-2 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => setAdditionalGuardians([...additionalGuardians, { name: '', phone: '', email: '', address: '', birthday: '' }])}
+                                className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                            >
+                                <Plus size={16} /> Adicionar Novo Tutor
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <div className="space-y-8">
+                    {/* PREFERENCES */}
+                    <section className="bg-secondary p-8 rounded-[40px] text-white shadow-xl">
+                        <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                            <MessageSquare size={16} /> Preferências
+                        </h3>
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Tipo de Cliente</label>
+                                <div className="flex gap-2">
+                                    {['AVULSO', 'RECORRENTE'].map(t => (
+                                        <button
+                                            key={t}
+                                            onClick={() => {
+                                                if (t === 'RECORRENTE' && type !== 'RECORRENTE') {
+                                                    setShowCelebration(true);
+                                                    return;
+                                                }
+                                                setType(t);
+                                                if (t === 'AVULSO') {
+                                                    setRecurringFrequency('');
+                                                    setRecurrenceDiscount(0);
+                                                }
+                                            }}
+                                            className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all border ${type === t ? 'bg-primary border-primary text-white' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                                        >
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Canal de Preferência</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['APP', 'WHATSAPP', 'TELEFONE', 'OUTROS'].map(pref => (
+                                        <label key={pref} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${communicationPrefs.includes(pref) ? 'bg-primary/20 border-primary/40' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={communicationPrefs.includes(pref)}
+                                                onChange={() => {
+                                                    if (communicationPrefs.includes(pref)) setCommunicationPrefs(prev => prev.filter(p => p !== pref));
+                                                    else setCommunicationPrefs([...communicationPrefs, pref]);
+                                                }}
+                                                className="rounded border-white/20 bg-white/10 text-primary"
+                                            />
+                                            <span className="text-[10px] font-black">{pref}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {communicationPrefs.includes('OUTROS') && (
+                                    <input
+                                        value={communicationOther}
+                                        onChange={e => setCommunicationOther(e.target.value)}
+                                        placeholder="Explique qual canal..."
+                                        className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-primary/50"
+                                    />
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Como conheceu a 7Pet?</label>
+                                <input
+                                    value={discoverySource}
+                                    onChange={e => setDiscoverySource(e.target.value)}
+                                    className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:ring-1 focus:ring-primary/50"
+                                    placeholder="Ex: Instagram, Indicação..."
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* NOTES */}
+                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Info size={16} /> Observações Internas
+                        </h3>
+                        <textarea
+                            value={internalNotes}
+                            onChange={e => setInternalNotes(e.target.value)}
+                            rows={6}
+                            className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 text-sm text-secondary font-medium focus:ring-2 focus:ring-primary/10 transition-all outline-none resize-none"
+                            placeholder="Notas restritas ao operacional..."
+                        />
+                    </section>
+                </div>
+            </div>
+        </>
+    );
+
+    if (isModal) {
+        return (
+            <div className="bg-gray-50 h-full overflow-y-auto px-6 py-6 rounded-[40px] shadow-none">
+                {content}
+                <RecurrenceCelebrationModal
+                    isOpen={showCelebration}
+                    onClose={() => setShowCelebration(false)}
+                    onConfirm={(freq, discount) => {
+                        setType('RECORRENTE');
+                        setRecurringFrequency(freq);
+                        setRecurrenceDiscount(discount);
+                        setShowCelebration(false);
+                        toast.success('Cliente promovido a Recorrente!');
+                    }}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex">
+            <StaffSidebar />
+            <main className="flex-1 md:ml-64 p-6 md:p-10">
+                {content}
+                <RecurrenceCelebrationModal
+                    isOpen={showCelebration}
+                    onClose={() => setShowCelebration(false)}
+                    onConfirm={(freq, discount) => {
+                        setType('RECORRENTE');
+                        setRecurringFrequency(freq);
+                        setRecurrenceDiscount(discount);
+                        setShowCelebration(false);
+                        toast.success('Cliente promovido a Recorrente!');
+                    }}
+                />
+            </main>
+        </div>
+    );
+}

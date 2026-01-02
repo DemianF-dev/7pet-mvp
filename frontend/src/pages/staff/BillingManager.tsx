@@ -27,6 +27,9 @@ interface Invoice {
     dueDate: string;
     createdAt: string;
     quoteId?: string;
+    quote?: { seqId: number };
+    appointmentId?: string;
+    appointment?: { seqId: number };
     payments: Array<{
         id: string;
         amount: number;
@@ -97,6 +100,8 @@ export default function BillingManager() {
             return;
         }
 
+        if (!window.confirm(`Deseja realmente alterar o status desta fatura para ${status}?`)) return;
+
         try {
             await api.patch(`/invoices/${selectedInvoice.id}/status`, { status });
             // Update local state
@@ -111,6 +116,8 @@ export default function BillingManager() {
     const handleRegisterPayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedInvoice) return;
+
+        if (!window.confirm(`Confirmar o recebimento de R$ ${paymentAmount} via ${paymentMethod}?`)) return;
 
         try {
             // Start - Custom logic to read checkbox manually since not in state
@@ -316,7 +323,19 @@ export default function BillingManager() {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-secondary">{invoice.customer.name}</p>
-                                                    <p className="text-xs text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
+                                                        {invoice.quote?.seqId && (
+                                                            <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                                                OR-{String(invoice.quote.seqId).padStart(4, '0')}
+                                                            </span>
+                                                        )}
+                                                        {invoice.appointment?.seqId && (
+                                                            <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                                                AG-{String(invoice.appointment.seqId).padStart(4, '0')}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -474,14 +493,14 @@ export default function BillingManager() {
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Valor Recebido</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
+                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                                         <input
                                                             type="number"
                                                             step="0.01"
                                                             required
                                                             value={paymentAmount}
                                                             onChange={(e) => setPaymentAmount(e.target.value)}
-                                                            className="input-field pl-14 font-mono"
+                                                            className="input-field !pl-12 font-mono"
                                                             placeholder="0,00"
                                                         />
                                                     </div>

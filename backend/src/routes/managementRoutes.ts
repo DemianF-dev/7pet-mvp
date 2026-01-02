@@ -1,22 +1,37 @@
 import { Router } from 'express';
 import * as managementController from '../controllers/managementController';
+import { auditController } from '../controllers/auditController';
 import { authenticate, authorize } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Only GESTAO and ADMIN roles can access these routes
+// Only ADMIN (and MASTER via bypass) can access most of these routes
+// However, listing users is needed for appointment professional selection
 router.use(authenticate);
-router.use(authorize(['GESTAO', 'ADMIN']));
+
+// Publicly available to staff for selection (but still filtered in controller if needed)
+router.get('/users', authorize(['ADMIN', 'GESTAO', 'OPERACIONAL', 'SPA']), managementController.listUsers);
+
+// Restricted actions
+router.use(authorize(['ADMIN']));
 
 router.get('/kpis', managementController.getKPIs);
 router.get('/reports', managementController.getReports);
 // User Management
-router.get('/users', managementController.listUsers);
 router.post('/users', managementController.createUser);
 router.get('/users/:id', managementController.getUser);
 router.put('/users/:id', managementController.updateUser); // Details + Role + Permissions
 router.delete('/users/:id', managementController.deleteUser);
 // Legacy individual role update kept if needed, but updateUser covers it
 router.put('/users/:id/role', managementController.updateUserRole);
+
+// Role Permissions
+router.get('/roles/permissions', managementController.listRolePermissions);
+router.put('/roles/:role/permissions', managementController.updateRolePermissions);
+router.delete('/roles/:role', managementController.deleteRole);
+
+// Audit Logs
+router.get('/audit/:entityType/:entityId', auditController.getLogs);
+router.post('/audit/:logId/rollback', auditController.rollback);
 
 export default router;

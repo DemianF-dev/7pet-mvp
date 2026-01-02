@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import BackButton from '../../components/BackButton';
 import api from '../../services/api';
+import ConfirmModal from '../../components/ConfirmModal';
 import ServiceAutocomplete from '../../components/ServiceAutocomplete';
 import LoadingButton from '../../components/LoadingButton';
 
@@ -78,20 +79,36 @@ export default function QuoteRequest() {
         petQuantity: 1,
         period: 'MANHA'
     });
+    const [communicationPrefs, setCommunicationPrefs] = useState<string[]>(['APP']);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [servicesRes, petsRes] = await Promise.all([
+                const [servicesRes, petsRes, userRes] = await Promise.all([
                     api.get('/services'),
-                    api.get('/pets')
+                    api.get('/pets'),
+                    api.get('/auth/me')
                 ]);
                 setServices(servicesRes.data);
                 setPets(petsRes.data);
+                if (userRes.data?.customer?.communicationPrefs) {
+                    setCommunicationPrefs(userRes.data.customer.communicationPrefs);
+                }
+
+                // Set default origin address if available
+                const userAddress = userRes.data?.address || userRes.data?.customer?.address;
+                if (userAddress) {
+                    setTransportDetails(prev => ({
+                        ...prev,
+                        origin: userAddress,
+                        returnAddress: userAddress
+                    }));
+                }
             } catch (err) {
                 console.error('Erro ao buscar dados:', err);
             }
@@ -101,19 +118,17 @@ export default function QuoteRequest() {
 
     const selectedPet = pets.find(p => p.id === selectedPetId);
 
-    // Filter services based on selected pet
+    // Filter services based on selected pet species only
+    // Weight-based pricing adjustments are handled by operators during quote review
     const availableServices = services.filter(s => {
         if (!selectedPet) return true;
+
+        // Only filter by species - show all services for the pet's species
         const speciesMatch = s.species.toLowerCase().includes(selectedPet.species.toLowerCase()) ||
             (selectedPet.species.toLowerCase() === 'cachorro' && s.species === 'Canino') ||
             (selectedPet.species.toLowerCase() === 'gato' && s.species === 'Felino');
-        if (!speciesMatch) return false;
-        if (selectedPet.weight && (s.minWeight !== null || s.maxWeight !== null)) {
-            const min = s.minWeight ?? 0;
-            const max = s.maxWeight ?? 999;
-            if (selectedPet.weight < min || selectedPet.weight > max) return false;
-        }
-        return true;
+
+        return speciesMatch;
     });
 
 
@@ -146,7 +161,7 @@ export default function QuoteRequest() {
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleConfirmSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!selectedPetId) {
@@ -164,6 +179,11 @@ export default function QuoteRequest() {
             return;
         }
 
+        setError(null);
+        setShowConfirmSubmit(true);
+    };
+
+    const handleSubmit = async () => {
         setIsSubmitting(true);
         setError(null);
         try {
@@ -184,9 +204,15 @@ export default function QuoteRequest() {
                 hasKnots: spaDetails.hasKnots,
                 knotRegions: spaDetails.knotRegions.join(', '),
                 hairLength: spaDetails.hairLength,
-                hasParasites: spaDetails.hasParasites
+                hasParasites: spaDetails.hasParasites,
+                communicationPrefs // This will be saved in the user profile too via the backend if we want, but for now it's just in the quote if we add it or we can call updateMe
             });
+
+            // Proactively update user preference
+            await api.patch('/auth/me', { communicationPrefs });
+
             setSuccess(true);
+            setShowConfirmSubmit(false); // Close modal on success
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao enviar solicitação.');
         } finally {
@@ -298,7 +324,7 @@ export default function QuoteRequest() {
                     <motion.form
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        onSubmit={handleSubmit}
+                        onSubmit={handleConfirmSubmit}
                         className="space-y-6"
                     >
                         <div className="bg-white rounded-[48px] p-10 shadow-sm border border-gray-50 overflow-hidden relative">
@@ -576,6 +602,31 @@ export default function QuoteRequest() {
                             </div>
                         )}
 
+                        {/* Communication Preference */}
+                        <div id="tour-communication" className="bg-white p-8 rounded-[40px] shadow-lg border border-gray-50 mb-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div>
+                                <h3 className="text-lg font-black text-secondary uppercase tracking-tight">Como prefere receber o orçamento?</h3>
+                                <p className="text-xs text-gray-400 font-medium">Sua resposta nos ajuda a agilizar o atendimento.</p>
+                            </div>
+                            <div className="flex gap-3">
+                                {[
+                                    { id: 'APP', label: 'Pelo App', icon: <Sparkles size={14} /> },
+                                    { id: 'WHATSAPP', label: 'WhatsApp', icon: <Send size={14} /> }
+                                ].map(pref => (
+                                    <button
+                                        key={pref.id}
+                                        type="button"
+                                        onClick={() => setCommunicationPrefs(prev =>
+                                            prev.includes(pref.id) ? prev.filter(p => p !== pref.id) : [...prev, pref.id]
+                                        )}
+                                        className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all border-2 ${communicationPrefs.includes(pref.id) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                                    >
+                                        {pref.icon} {pref.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-8 rounded-[40px] shadow-lg border border-gray-50">
                             <button type="button" onClick={() => setStep(1)} className="font-black text-gray-400 hover:text-secondary uppercase tracking-widest text-xs">Voltar</button>
                             <LoadingButton
@@ -591,6 +642,15 @@ export default function QuoteRequest() {
                     </motion.form>
                 )}
             </main>
+
+            <ConfirmModal
+                isOpen={showConfirmSubmit}
+                onClose={() => setShowConfirmSubmit(false)}
+                onConfirm={handleSubmit}
+                title="Enviar Solicitação?"
+                description="Confirma o envio dos dados? Nossa equipe analisará as informações e retornará com o orçamento o mais breve possível."
+                confirmText="Sim, Enviar"
+            />
         </div>
     );
 }

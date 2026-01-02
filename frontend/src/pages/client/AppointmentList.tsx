@@ -4,6 +4,7 @@ import BackButton from '../../components/BackButton';
 import { motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
+import ConfirmModal from '../../components/ConfirmModal';
 
 interface Appointment {
     id: string;
@@ -26,6 +27,7 @@ const statusColors: any = {
 export default function AppointmentList() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [confirmAppointment, setConfirmAppointment] = useState<Appointment | null>(null);
 
     useEffect(() => {
         const fetchAppointments = async () => {
@@ -128,17 +130,7 @@ export default function AppointmentList() {
                                                     {appt.status}
                                                 </span>
                                                 <button
-                                                    onClick={() => {
-                                                        const phone = '5511983966451'; // Número do atendimento 7Pet
-                                                        const message = `Olá! Gostaria de solicitar alteração/cancelamento do meu agendamento:\n\n` +
-                                                            `📋 ID: ${appt.id}\n` +
-                                                            `🐾 Pet: ${appt.pet.name}\n` +
-                                                            `📅 Data: ${new Date(appt.startAt).toLocaleDateString('pt-BR')}\n` +
-                                                            `🕐 Horário: ${new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n` +
-                                                            `💼 Serviço: ${appt.services.map(s => s.name).join(', ')}`;
-                                                        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-                                                        window.open(whatsappUrl, '_blank');
-                                                    }}
+                                                    onClick={() => setConfirmAppointment(appt)}
                                                     className="flex items-center gap-2 px-4 py-2 text-white bg-green-500 hover:bg-green-600 rounded-xl transition-colors text-xs font-bold shadow-sm hover:shadow-md"
                                                     title="Solicitar alteração via WhatsApp"
                                                 >
@@ -206,6 +198,27 @@ export default function AppointmentList() {
                     </div>
                 )}
             </main>
+
+            <ConfirmModal
+                isOpen={!!confirmAppointment}
+                onClose={() => setConfirmAppointment(null)}
+                onConfirm={() => {
+                    if (!confirmAppointment) return;
+                    const phone = '5511983966451';
+                    const message = `Olá! Gostaria de solicitar alteração/cancelamento do meu agendamento:\n\n` +
+                        `📋 ID: ${confirmAppointment.id}\n` +
+                        `🐾 Pet: ${confirmAppointment.pet.name}\n` +
+                        `📅 Data: ${new Date(confirmAppointment.startAt).toLocaleDateString('pt-BR')}\n` +
+                        `🕐 Horário: ${new Date(confirmAppointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n` +
+                        `💼 Serviço: ${confirmAppointment.services.map(s => s.name).join(', ')}`;
+                    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                }}
+                title="Falar com Atendente?"
+                description="Você será redirecionado para o WhatsApp para solicitar a alteração ou cancelamento deste agendamento diretamente com nossa equipe."
+                confirmText="Ir para WhatsApp"
+                confirmColor="bg-green-500"
+            />
         </div>
     );
 }

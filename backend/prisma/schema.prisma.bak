@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  seqId         Int            @unique @default(autoincrement())
+  staffId       Int?           @unique
+  firstName     String?
+  lastName      String?
+  name          String?
+  email         String         @unique
+  passwordHash  String?
+  googleId      String?        @unique
+  role          String         @default("CLIENTE")
+  phone         String?
+  extraPhones   Json?          @default("[]")
+  extraEmails   Json?          @default("[]")
+  document      String?
+  address       String?
+  extraAddresses Json?         @default("[]")
+  birthday      DateTime?
+  admissionDate DateTime?
+  notes         String?
+  permissions   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  showTutorial  Boolean        @default(true)
+  customer      Customer?
+  notifications Notification[]
+  authenticators Authenticator[]
+  assignedServices    Service[]   @relation("ServiceResponsible")
+  performedItems      QuoteItem[] @relation("ItemPerformer")
+  assignedAppointments Appointment[] @relation("AppointmentPerformer")
+  color               String?     @default("#3B82F6")
+}
+
+model Authenticator {
+  id                   String   @id @default(uuid())
+  credentialID         String   @unique
+  credentialPublicKey  Bytes
+  counter              BigInt
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id                       String        @id @default(uuid())
+  userId                   String        @unique
+  name                     String
+  phone                    String?
+  address                  String?
+  noShowCount              Int           @default(0)
+  isBlocked                Boolean       @default(false)
+  requiresPrepayment       Boolean       @default(false)
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  type                     String        @default("AVULSO")
+  recurringFrequency       String?
+  discountPercentage       Float         @default(0.0)
+  internalNotes            String?
+  balance                  Float         @default(0.0)
+  secondaryGuardianAddress String?
+  secondaryGuardianEmail   String?
+  secondaryGuardianName    String?
+  secondaryGuardianPhone   String?
+  discoverySource      String?
+  communicationPrefs   Json?         @default("[]")
+  communicationOther   Json?
+  additionalGuardians  Json?         @default("[]")
+  recurrenceFrequency String? // SEMANAL, QUINZENAL, MENSAL
+  recurrenceDiscount  Float? // Default 0
+  appointments             Appointment[]
+  user                     User          @relation(fields: [userId], references: [id])
+  invoices                 Invoice[]
+  pets                     Pet[]
+  quotes                   Quote[]
+}
+
+model Pet {
+  id               String        @id @default(uuid())
+  customerId       String
+  name             String
+  species          String
+  breed            String?
+  weight           Float?
+  observations     String?
+  preferences      String?
+  coatType         String?
+  usesPerfume      Boolean       @default(false)
+  usesOrnaments    Boolean       @default(false)
+  marketingConsent Boolean       @default(false)
+  temperament      String?
+  firstTime        Boolean       @default(false)
+  age              String?
+  healthIssues     String?
+  allergies        String?
+  hasKnots         Boolean       @default(false)
+  hasMattedFur     Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  usedToGrooming   Boolean       @default(true)
+  appointments     Appointment[]
+  customer         Customer      @relation(fields: [customerId], references: [id])
+  quotes           Quote[]
+}
+
+model Service {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  basePrice    Float
+  duration     Int
+  category     String?
+  species      String        @default("Canino")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  maxWeight    Float?
+  minWeight    Float?
+  sizeLabel    String?
+  responsibleId String?
+  responsible   User?         @relation("ServiceResponsible", fields: [responsibleId], references: [id])
+  quoteItems   QuoteItem[]
+  appointments Appointment[] @relation("AppointmentToService")
+}
+
+model Appointment {
+  id                 String              @id @default(uuid())
+  seqId              Int                 @unique @default(autoincrement())
+  customerId         String
+  petId              String
+  startAt            DateTime
+  status             AppointmentStatus   @default(PENDENTE)
+  cancellationReason String?
+  noShowReason       String?
+  deletedAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  notified24h        Boolean             @default(false)
+  notified1h         Boolean             @default(false)
+  category           AppointmentCategory @default(SPA)
+  customer           Customer            @relation(fields: [customerId], references: [id])
+  pet                Pet                 @relation(fields: [petId], references: [id])
+  invoice            Invoice?
+  statusHistory      StatusHistory[]
+  transport          TransportDetails?
+  services           Service[]           @relation("AppointmentToService")
+  performerId        String?
+  performer          User?               @relation("AppointmentPerformer", fields: [performerId], references: [id])
+  quote              Quote?
+}
+
+model TransportDetails {
+  id              String          @id @default(uuid())
+  appointmentId   String          @unique
+  origin          String
+  destination     String
+  requestedPeriod TransportPeriod
+  confirmedTime   DateTime?
+  status          String          @default("SOLICITADO")
+  appointment     Appointment     @relation(fields: [appointmentId], references: [id])
+}
+
+model Quote {
+  id                     String           @id @default(uuid())
+  seqId                  Int              @unique @default(autoincrement())
+  customerId             String
+  petId                  String?
+  status                 QuoteStatus      @default(SOLICITADO)
+  totalAmount            Float            @default(0)
+  desiredAt              DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  deletedAt              DateTime?
+  transportDestination   String?          @default("7Pet")
+  transportOrigin        String?
+  transportPeriod        TransportPeriod?
+  type                   QuoteType        @default(SPA)
+  hairLength             String?
+  hasKnots               Boolean          @default(false)
+  hasParasites           Boolean          @default(false)
+  knotRegions            String?
+  petQuantity            Int              @default(1)
+  transportReturnAddress String?
+  invoice                Invoice?
+  appointmentId          String?          @unique
+  appointment            Appointment?     @relation(fields: [appointmentId], references: [id])
+  customer               Customer         @relation(fields: [customerId], references: [id])
+  pet                    Pet?             @relation(fields: [petId], references: [id])
+  items                  QuoteItem[]
+  statusHistory          StatusHistory[]
+}
+
+model QuoteItem {
+  id          String   @id @default(uuid())
+  quoteId     String
+  description String
+  quantity    Int      @default(1)
+  price       Float    @default(0)
+  serviceId   String?
+  performerId String?
+  performer   User?    @relation("ItemPerformer", fields: [performerId], references: [id])
+  quote       Quote    @relation(fields: [quoteId], references: [id])
+  service     Service? @relation(fields: [serviceId], references: [id])
+}
+
+model Invoice {
+  id            String          @id @default(uuid())
+  customerId    String
+  quoteId       String?         @unique
+  appointmentId String?         @unique
+  amount        Float
+  status        InvoiceStatus   @default(PENDENTE)
+  dueDate       DateTime
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id])
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  quote         Quote?          @relation(fields: [quoteId], references: [id])
+  payments      PaymentRecord[]
+}
+
+model PaymentRecord {
+  id        String   @id @default(uuid())
+  invoiceId String
+  amount    Float
+  paidAt    DateTime @default(now())
+  method    String?
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+}
+
+model StatusHistory {
+  id            String       @id @default(uuid())
+  appointmentId String?
+  quoteId       String?
+  oldStatus     String
+  newStatus     String
+  changedBy     String
+  reason        String?
+  createdAt     DateTime     @default(now())
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  quote         Quote?       @relation(fields: [quoteId], references: [id])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  title      String
+  message    String
+  type       String
+  read       Boolean  @default(false)
+  resolved   Boolean  @default(false)
+  relatedId  String?
+  priority   String?  @default("LOW")
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+  resolvedBy String?
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  entityType   String
+  entityId     String
+  action       String
+  performedBy  String
+  previousData Json?
+  newData      Json?
+  createdAt    DateTime @default(now())
+  reason       String? 
+}
+
+model RolePermission {
+  role        String   @id // slug e.g., "OPERACIONAL"
+  label       String?  // Display name e.g., "Banho e Tosa"
+  permissions String   // JSON string of module IDs
+  updatedAt   DateTime @updatedAt
+}
+
+// Roles are now handled as strings for flexibility
+
+enum AppointmentStatus {
+  PENDENTE
+  CONFIRMADO
+  EM_ATENDIMENTO
+  FINALIZADO
+  CANCELADO
+  NO_SHOW
+}
+
+enum QuoteStatus {
+  SOLICITADO
+  EM_PRODUCAO
+  CALCULADO
+  ENVIADO
+  APROVADO
+  REJEITADO
+  AGENDAR
+  ENCERRADO
+  AGENDADO
+}
+
+enum InvoiceStatus {
+  PENDENTE
+  PAGO
+  VENCIDO
+  MONITORAR
+  NEGOCIADO
+  ENCERRADO
+}
+
+enum TransportPeriod {
+  MANHA
+  TARDE
+  NOITE
+}
+
+enum QuoteType {
+  SPA
+  TRANSPORTE
+  SPA_TRANSPORTE
+}
+
+enum AppointmentCategory {
+  SPA
+  LOGISTICA
+}
