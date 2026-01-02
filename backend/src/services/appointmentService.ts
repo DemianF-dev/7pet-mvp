@@ -251,9 +251,27 @@ export const listTrash = async () => {
 
 // Hard Delete
 export const permanentRemove = async (id: string) => {
-    return prisma.appointment.delete({
-        where: { id }
-    });
+    // Delete related records first to avoid foreign key constraints
+    await prisma.$transaction([
+        prisma.statusHistory.deleteMany({ where: { appointmentId: id } }),
+        prisma.transportDetails.deleteMany({ where: { appointmentId: id } }),
+        // Note: Invoice might be linked to others, but if it was created FOR this appt, 
+        // we might want to handle it. For now, let's at least unlink or delete if unique.
+        // If there's an invoice, we just delete it if it's only linked to this appointment.
+        prisma.invoice.deleteMany({ where: { appointmentId: id } }),
+        prisma.appointment.delete({
+            where: { id }
+        })
+    ]);
+};
+
+export const bulkPermanentRemove = async (ids: string[]) => {
+    return prisma.$transaction([
+        prisma.statusHistory.deleteMany({ where: { appointmentId: { in: ids } } }),
+        prisma.transportDetails.deleteMany({ where: { appointmentId: { in: ids } } }),
+        prisma.invoice.deleteMany({ where: { appointmentId: { in: ids } } }),
+        prisma.appointment.deleteMany({ where: { id: { in: ids } } })
+    ]);
 };
 
 // Business Rule: Process No-Shows

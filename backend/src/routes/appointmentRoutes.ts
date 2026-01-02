@@ -12,6 +12,7 @@ router.get('/', appointmentController.list);
 router.post('/', appointmentController.create);
 router.post('/bulk-delete', appointmentController.bulkDelete);
 router.post('/bulk-restore', appointmentController.bulkRestore);
+router.post('/bulk-permanent', appointmentController.bulkPermanentRemove);
 
 
 // ID paths

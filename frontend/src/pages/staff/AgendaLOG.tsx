@@ -100,9 +100,7 @@ export default function AgendaLOG() {
         try {
             if (tab === 'trash') {
                 // Permanent delete from trash
-                for (const id of selectedIds) {
-                    await api.delete(`/appointments/${id}/permanent`);
-                }
+                await api.post('/appointments/bulk-permanent', { ids: selectedIds });
             } else {
                 // Soft delete - move to trash
                 await api.post('/appointments/bulk-delete', { ids: selectedIds });

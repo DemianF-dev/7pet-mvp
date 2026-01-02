@@ -204,3 +204,14 @@ export const bulkRestore = async (req: any, res: Response) => {
     }
 };
 
+export const bulkPermanentRemove = async (req: any, res: Response) => {
+    try {
+        if (req.user.role === 'CLIENTE') return res.status(403).json({ error: 'Acesso negado' });
+        const { ids } = req.body;
+        await appointmentService.bulkPermanentRemove(ids);
+        res.status(204).send();
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+

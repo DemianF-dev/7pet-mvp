@@ -124,6 +124,21 @@ export default function ServiceKanban() {
         }
     };
 
+    const handleBulkPermanentDelete = async () => {
+        if (trashAppointments.length === 0) return;
+        if (!window.confirm(`ATENÇÃO: Você está prestes a excluir PERMANENTEMENTE ${trashAppointments.length} agendamentos. Esta ação não pode ser desfeita. Deseja continuar?`)) return;
+
+        try {
+            const ids = trashAppointments.map(a => a.id);
+            await api.post('/appointments/bulk-permanent', { ids });
+            fetchTrash();
+            alert('Lixeira esvaziada com sucesso!');
+        } catch (err) {
+            console.error('Erro ao esvaziar lixeira:', err);
+            alert('Erro ao esvaziar a lixeira');
+        }
+    };
+
     const updateStatus = async (id: string, status: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
 
@@ -726,10 +741,18 @@ export default function ServiceKanban() {
                             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
                                 <Trash2 size={32} />
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <h2 className="text-2xl font-bold text-secondary">Lixeira de Agendamentos</h2>
                                 <p className="text-gray-400 text-sm">Itens excluídos nos últimos 15 dias.</p>
                             </div>
+                            {trashAppointments.length > 0 && (
+                                <button
+                                    onClick={handleBulkPermanentDelete}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-red-500/20 transition-all flex items-center gap-2"
+                                >
+                                    <Trash2 size={18} /> Esvaziar Lixeira
+                                </button>
+                            )}
                         </div>
 
                         {trashAppointments.length === 0 ? (
