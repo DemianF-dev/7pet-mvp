@@ -213,9 +213,13 @@ export const customerController = {
             }
 
             return res.json(customer);
-        } catch (error) {
-            console.error('Erro ao buscar cliente:', error);
-            return res.status(500).json({ error: 'Erro interno do servidor' });
+        } catch (error: any) {
+            console.error('CRITICAL ERROR fetching customer:', error);
+            return res.status(500).json({
+                error: 'Erro interno do servidor ao carregar perfil',
+                message: error.message,
+                prismaError: error.code // Prisma error code if available
+            });
         }
     },
 
