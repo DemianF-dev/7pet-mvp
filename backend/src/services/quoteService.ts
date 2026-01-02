@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { QuoteDependencies, CascadeDeleteOptions } from '../types/QuoteDependencies';
-
-const prisma = new PrismaClient();
 
 /**
  * Verifica dependências de um orçamento (appointments e invoices)
@@ -141,11 +139,15 @@ export const cascadeDelete = async (
             }
         }
 
-        // 3. Deletar fatura se solicitado
+        // 3. Unlink invoice if requested (better than deleting to maintain history, or use soft-delete if preferred)
         if (options.deleteInvoice && quote.invoice && !quote.invoice.deletedAt) {
             await tx.invoice.update({
                 where: { id: quote.invoice.id },
-                data: { deletedAt: now }
+                data: {
+                    deletedAt: now,
+                    quoteId: null, // Unlink it from the quote
+                    appointmentId: null // Unlink from appt too just in case
+                }
             });
             deletedInvoice = true;
         }

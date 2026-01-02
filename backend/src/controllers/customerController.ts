@@ -1,10 +1,7 @@
-
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import prisma from '../lib/prisma';
 import { createAuditLog, detectChanges } from '../utils/auditLogger';
-
-const prisma = new PrismaClient();
 
 const customerSchema = z.object({
     firstName: z.string().min(1, 'Primeiro nome é obrigatório').optional().nullable(),
@@ -140,6 +137,7 @@ export const customerController = {
     async list(req: Request, res: Response) {
         try {
             const customers = await prisma.customer.findMany({
+                where: { deletedAt: null }, // Only active customers
                 include: {
                     user: {
                         select: {
@@ -151,7 +149,9 @@ export const customerController = {
                             phone: true
                         }
                     },
-                    pets: true,
+                    pets: {
+                        where: { deletedAt: null }
+                    },
                     _count: {
                         select: { appointments: true, quotes: true }
                     }
@@ -186,10 +186,25 @@ export const customerController = {
                             document: true
                         }
                     },
-                    pets: true,
-                    appointments: { orderBy: { startAt: 'desc' } },
-                    quotes: { orderBy: { createdAt: 'desc' }, include: { items: true } },
-                    invoices: { orderBy: { createdAt: 'desc' } }
+                    pets: {
+                        where: { deletedAt: null }
+                    },
+                    appointments: {
+                        where: { deletedAt: null },
+                        orderBy: { startAt: 'desc' },
+                        take: 50
+                    },
+                    quotes: {
+                        where: { deletedAt: null },
+                        orderBy: { createdAt: 'desc' },
+                        include: { items: true },
+                        take: 50
+                    },
+                    invoices: {
+                        where: { deletedAt: null },
+                        orderBy: { createdAt: 'desc' },
+                        take: 50
+                    }
                 }
             });
 
