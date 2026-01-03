@@ -10,10 +10,10 @@ export default defineConfig({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {
-                name: '7Pet - Pet Shop & Hotel',
-                short_name: '7Pet',
-                description: 'Seu Pet Shop e Hotelzinho de confiança',
-                theme_color: '#00D664',
+                name: '7pet',
+                short_name: '7pet',
+                description: '7Pet - Soluções para Pets',
+                theme_color: '#4B96C3', // Blue from the logo background roughly
                 background_color: '#ffffff',
                 display: 'standalone',
                 scope: '/',

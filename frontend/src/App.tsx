@@ -34,6 +34,7 @@ import SupportTicketList from './pages/staff/SupportTicketList';
 import TransportConfig from './pages/staff/TransportConfig';
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -42,6 +43,7 @@ function App() {
         <>
             <Toaster position="top-right" reverseOrder={false} />
             <FeedbackWidget />
+            <PWAInstallPrompt />
             <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/client" element={<ClientEntry />} />
