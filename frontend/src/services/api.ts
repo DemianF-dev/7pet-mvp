@@ -48,8 +48,18 @@ api.interceptors.response.use(
         }
         // 500 Internal Server Error
         else if (error.response.status >= 500) {
-            const serverMessage = error.response.data?.message || error.response.data?.error || 'Erro interno no servidor.';
-            toast.error(`${serverMessage} Tente novamente mais tarde.`, {
+            console.error('[API Error] 🔴 Server Error:', error.response.data);
+
+            const data = error.response.data;
+            let message = 'Erro interno no servidor.';
+
+            if (typeof data === 'string') {
+                message = data;
+            } else if (data && typeof data === 'object') {
+                message = data.message || data.error || (typeof data.error === 'string' ? data.error : JSON.stringify(data.error)) || message;
+            }
+
+            toast.error(`${message} Tente novamente mais tarde.`, {
                 duration: 5000
             });
         }

@@ -2,6 +2,9 @@
   "name": "7pet-monorepo",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "postinstall": "prisma generate --schema=backend/prisma/schema.prisma"
+  },
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "axios": "^1.13.2",
