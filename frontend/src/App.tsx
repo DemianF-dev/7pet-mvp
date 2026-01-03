@@ -65,7 +65,7 @@ function App() {
 
                 {/* Colaborador Routes */}
                 <Route path="/staff/login" element={<StaffLogin />} />
-                <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER']} redirectTo="/staff/login" />}>
+                <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA']} redirectTo="/staff/login" />}>
                     <Route path="/staff/dashboard" element={<StaffDashboard />} />
                     <Route path="/staff/kanban" element={<ServiceKanban />} />
                     <Route path="/staff/agenda-spa" element={<AgendaSPA />} />

@@ -24,9 +24,11 @@ export default function StaffLogin() {
         try {
             const response = await api.post('/auth/login', { email, password });
             const { user, token } = response.data;
+            const userRole = (user.role || '').toUpperCase().trim();
+            const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA'];
 
-            if (!['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA'].includes(user.role)) {
-                throw new Error('Esta área é exclusiva para colaboradores.');
+            if (!staffRoles.includes(userRole)) {
+                throw new Error(`Esta área é exclusiva para colaboradores. (Sua conta está como: ${userRole})`);
             }
 
             setAuth(user, token);

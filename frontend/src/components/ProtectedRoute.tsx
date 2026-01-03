@@ -14,9 +14,10 @@ const ProtectedRoute = ({ allowedRoles, redirectTo = '/login' }: ProtectedRouteP
         return <Navigate to={redirectTo} replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    const userRole = (user.role || '').toUpperCase().trim();
+    if (allowedRoles && !allowedRoles.includes(userRole)) {
         // Redirect to their respective dashboard if they try to access a route they don't have permission for
-        const homePath = user.role === 'CLIENTE' ? '/client/dashboard' : '/staff/dashboard';
+        const homePath = userRole === 'CLIENTE' ? '/client/dashboard' : '/staff/dashboard';
         return <Navigate to={homePath} replace />;
     }
 
