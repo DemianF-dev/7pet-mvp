@@ -48,19 +48,32 @@ api.interceptors.response.use(
         }
         // 500 Internal Server Error
         else if (error.response.status >= 500) {
-            console.error('[API Error] 🔴 Server Error:', error.response.data);
+            console.error('[API Error] 🔴 Server Error Details:', {
+                status: error.response.status,
+                data: error.response.data,
+                url: error.config?.url
+            });
 
             const data = error.response.data;
             let message = 'Erro interno no servidor.';
 
             if (typeof data === 'string') {
-                message = data;
+                if (data.includes('<!DOCTYPE html>')) {
+                    message = 'Erro crítico (Vercel Function Crash).';
+                } else {
+                    message = data;
+                }
             } else if (data && typeof data === 'object') {
-                message = data.message || data.error || (typeof data.error === 'string' ? data.error : JSON.stringify(data.error)) || message;
+                const errorObj = data.error || data;
+                if (typeof errorObj === 'string') {
+                    message = errorObj;
+                } else if (errorObj && typeof errorObj === 'object') {
+                    message = errorObj.message || errorObj.code || JSON.stringify(errorObj);
+                }
             }
 
-            toast.error(`${message} Tente novamente mais tarde.`, {
-                duration: 5000
+            toast.error(`${message} (500)`, {
+                duration: 6000
             });
         }
         return Promise.reject(error);
