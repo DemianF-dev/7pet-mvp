@@ -26,6 +26,7 @@ import { toast } from 'react-hot-toast';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 
 interface UserData {
     id: string;
@@ -105,6 +106,9 @@ export default function UserManager() {
     const [editingRoleLabel, setEditingRoleLabel] = useState('');
     const [editingRolePerms, setEditingRolePerms] = useState<string[]>([]);
     const [hasRoleChanges, setHasRoleChanges] = useState(false);
+
+    // Bulk Selection
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -230,6 +234,40 @@ export default function UserManager() {
         }
     };
 
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = () => {
+        setSelectedIds(filteredUsers.length === selectedIds.length ? [] : filteredUsers.map(u => u.id));
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`TEM CERTEZA que deseja excluir ${selectedIds.length} usuário(s)?\n\nEsta ação é IRREVERSÍVEL.`)) return;
+
+        try {
+            const results = await Promise.allSettled(
+                selectedIds.map(id => api.delete(`/management/users/${id}`))
+            );
+
+            const succeeded = results.filter(r => r.status === 'fulfilled').length;
+            const failed = results.filter(r => r.status === 'rejected').length;
+
+            if (failed > 0) {
+                toast.error(`${succeeded} excluído(s).\n${failed} falharam.`);
+            } else {
+                toast.success(`${succeeded} usuário(s) excluído(s)!`);
+            }
+
+            await fetchUsers();
+            setSelectedIds([]);
+        } catch (error) {
+            toast.error('Erro ao excluir usuários');
+        }
+    };
+
     const handleCreateRole = async () => {
         if (!newRoleData.slug || !newRoleData.label) {
             alert('Slug e Nome do cargo são obrigatórios');
@@ -350,6 +388,7 @@ export default function UserManager() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
@@ -438,10 +477,50 @@ export default function UserManager() {
                         </div>
                     </div>
 
+                    {/* Bulk Action Bar */}
+                    <AnimatePresence>
+                        {selectedIds.length > 0 && (
+                            <motion.div
+                                initial={{ y: 50, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 50, opacity: 0 }}
+                                className="px-8 pb-6 flex items-center gap-6"
+                            >
+                                <div className="bg-secondary text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-4 flex-1">
+                                    <span className="bg-primary text-white text-xs font-black w-7 h-7 rounded-full flex items-center justify-center">
+                                        {selectedIds.length}
+                                    </span>
+                                    <p className="text-sm font-bold">Usuários Selecionados</p>
+                                    <div className="h-6 w-px bg-white/20 ml-auto"></div>
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                    >
+                                        <Trash2 size={14} /> EXCLUIR EM MASSA
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedIds([])}
+                                        className="text-white/50 hover:text-white text-xs font-bold"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
+                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={filteredUsers.length > 0 && selectedIds.length === filteredUsers.length}
+                                            onChange={handleSelectAll}
+                                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                    </th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cargo</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cadastro</th>
@@ -449,56 +528,67 @@ export default function UserManager() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {filteredUsers.map((u) => (
-                                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div
-                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-sm ${u.role === 'CLIENTE' ? 'bg-slate-300' : ''}`}
-                                                    style={{ backgroundColor: u.role === 'CLIENTE' ? undefined : (u.color || '#3B82F6') }}
-                                                >
-                                                    {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-black text-secondary text-sm">
-                                                            {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
-                                                        </span>
-                                                        <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
-                                                            {u.role === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
-                                                        </span>
+                                {filteredUsers.map((u) => {
+                                    const isSelected = selectedIds.includes(u.id);
+                                    return (
+                                        <tr key={u.id} className={`hover:bg-gray-50/50 transition-colors group ${isSelected ? 'bg-primary/5' : ''}`}>
+                                            <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelect(u.id)}
+                                                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                                                />
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div
+                                                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-sm ${u.role === 'CLIENTE' ? 'bg-slate-300' : ''}`}
+                                                        style={{ backgroundColor: u.role === 'CLIENTE' ? undefined : (u.color || '#3B82F6') }}
+                                                    >
+                                                        {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
                                                     </div>
-                                                    <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
-                                                    {u.document && (
-                                                        <span className="text-[10px] text-primary font-black mt-1 flex items-center gap-1">
-                                                            <FileText size={10} /> {u.document}
-                                                        </span>
-                                                    )}
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-black text-secondary text-sm">
+                                                                {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
+                                                            </span>
+                                                            <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
+                                                                {u.role === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
+                                                        {u.document && (
+                                                            <span className="text-[10px] text-primary font-black mt-1 flex items-center gap-1">
+                                                                <FileText size={10} /> {u.document}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex flex-col gap-1">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${u.role === 'ADMIN' ? 'bg-secondary text-white' :
-                                                    u.role === 'CLIENTE' ? 'bg-gray-100 text-gray-400' : 'bg-primary/10 text-primary'
-                                                    }`}>
-                                                    {rolePermissions.find(rp => rp.role === u.role)?.label || u.role}
-                                                </span>
-                                                <span className="text-[9px] font-black text-gray-300 ml-1 uppercase tracking-tighter">
-                                                    ID: {u.role === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 text-xs font-bold text-gray-400">
-                                            {new Date(u.createdAt).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <button onClick={() => handleOpenUser(u)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-secondary">
-                                                <ChevronRight size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${u.role === 'ADMIN' ? 'bg-secondary text-white' :
+                                                        u.role === 'CLIENTE' ? 'bg-gray-100 text-gray-400' : 'bg-primary/10 text-primary'
+                                                        }`}>
+                                                        {rolePermissions.find(rp => rp.role === u.role)?.label || u.role}
+                                                    </span>
+                                                    <span className="text-[9px] font-black text-gray-300 ml-1 uppercase tracking-tighter">
+                                                        ID: {u.role === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-xs font-bold text-gray-400">
+                                                {new Date(u.createdAt).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <button onClick={() => handleOpenUser(u)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-secondary">
+                                                    <ChevronRight size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

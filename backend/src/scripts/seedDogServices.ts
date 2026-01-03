@@ -1,84 +1,91 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 
-const prisma = new PrismaClient();
+async function seedDogServices() {
+    const services = [
+        // Banho - Pelo Longo - Cachorro
+        { name: 'Banho Pelo Longo - Pequeno (1-10kg)', description: 'Banho completo para cães de pelo longo porte pequeno', basePrice: 60.00, duration: 60, category: 'Banho', species: 'Canino', minWeight: 1, maxWeight: 10, sizeLabel: 'P' },
+        { name: 'Banho Pelo Longo - Médio (11-25kg)', description: 'Banho completo para cães de pelo longo porte médio', basePrice: 70.00, duration: 75, category: 'Banho', species: 'Canino', minWeight: 11, maxWeight: 25, sizeLabel: 'M' },
+        { name: 'Banho Pelo Longo - Grande (26-35kg)', description: 'Banho completo para cães de pelo longo porte grande', basePrice: 80.00, duration: 90, category: 'Banho', species: 'Canino', minWeight: 26, maxWeight: 35, sizeLabel: 'G' },
+        { name: 'Banho Pelo Longo - Extra Grande (36kg+)', description: 'Banho completo para cães de pelo longo porte extra grande', basePrice: 90.00, duration: 105, category: 'Banho', species: 'Canino', minWeight: 36, maxWeight: null, sizeLabel: 'GG' },
 
-const sizes = ['PP', 'P', 'M', 'G', 'GG', 'XG'];
-const weightLabels = {
-    'PP': '0 a 2,99 kg',
-    'P': '3 a 7,99 kg',
-    'M': '8 a 17,99 kg',
-    'G': '18 a 34,99 kg',
-    'GG': '35 a 49,99 kg',
-    'XG': '> 50 kg'
-};
+        // Banho - Pelo Curto - Cachorro
+        { name: 'Banho Pelo Curto - Pequeno (1-10kg)', description: 'Banho completo para cães de pelo curto porte pequeno', basePrice: 50.00, duration: 45, category: 'Banho', species: 'Canino', minWeight: 1, maxWeight: 10, sizeLabel: 'P' },
+        { name: 'Banho Pelo Curto - Médio (11-25kg)', description: 'Banho completo para cães de pelo curto porte médio', basePrice: 60.00, duration: 60, category: 'Banho', species: 'Canino', minWeight: 11, maxWeight: 25, sizeLabel: 'M' },
+        { name: 'Banho Pelo Curto - Grande (26-35kg)', description: 'Banho completo para cães de pelo curto porte grande', basePrice: 70.00, duration: 75, category: 'Banho', species: 'Canino', minWeight: 26, maxWeight: 35, sizeLabel: 'G' },
+        { name: 'Banho Pelo Curto - Extra Grande (36kg+)', description: 'Banho completo para cães de pelo curto porte extra grande', basePrice: 80.00, duration: 90, category: 'Banho', species: 'Canino', minWeight: 36, maxWeight: null, sizeLabel: 'GG' },
 
-async function main() {
-    console.log('Iniciando cadastro de serviços de Cães...');
+        // Tosa Higiênica - Cachorro
+        { name: 'Tosa Higiênica - Pequeno (1-10kg)', description: 'Tosa higiênica para cães porte pequeno', basePrice: 30.00, duration: 30, category: 'Tosa', species: 'Canino', minWeight: 1, maxWeight: 10, sizeLabel: 'P' },
+        { name: 'Tosa Higiênica - Médio (11-25kg)', description: 'Tosa higiênica para cães porte médio', basePrice: 40.00, duration: 40, category: 'Tosa', species: 'Canino', minWeight: 11, maxWeight: 25, sizeLabel: 'M' },
+        { name: 'Tosa Higiênica - Grande (26-35kg)', description: 'Tosa higiênica para cães porte grande', basePrice: 50.00, duration: 50, category: 'Tosa', species: 'Canino', minWeight: 26, maxWeight: 35, sizeLabel: 'G' },
+        { name: 'Tosa Higiênica - Extra Grande (36kg+)', description: 'Tosa higiênica para cães porte extra grande', basePrice: 60.00, duration: 60, category: 'Tosa', species: 'Canino', minWeight: 36, maxWeight: null, sizeLabel: 'GG' },
 
-    const servicesData = [
-        // BANHOS PELOS CURTOS
-        { category: 'Banho Pelo Curto', sub: 'Linha Tradicional', duration: 45, prices: [40, 50, 70, 95, 135, 185] },
-        { category: 'Banho Pelo Curto', sub: 'Linha Especial (Máscara)', duration: 60, prices: [60, 70, 90, 115, 165, 225] },
-        { category: 'Banho Pelo Curto', sub: 'Medicamentoso (Anti-pulgas/Clorexidina)', duration: 60, prices: [50, 60, 80, 110, 155, 215] },
-        { category: 'Banho Pelo Curto', sub: 'Medicamentoso (Prod. Cliente)', duration: 45, prices: [35, 45, 65, 90, 130, 180] },
+        // Tosa Completa - Cachorro
+        { name: 'Tosa Completa - Pequeno (1-10kg)', description: 'Tosa completa para cães porte pequeno', basePrice: 80.00, duration: 90, category: 'Tosa', species: 'Canino', minWeight: 1, maxWeight: 10, sizeLabel: 'P' },
+        { name: 'Tosa Completa - Médio (11-25kg)', description: 'Tosa completa para cães porte médio', basePrice: 100.00, duration: 105, category: 'Tosa', species: 'Canino', minWeight: 11, maxWeight: 25, sizeLabel: 'M' },
+        { name: 'Tosa Completa - Grande (26-35kg)', description: 'Tosa completa para cães porte grande', basePrice: 120.00, duration: 120, category: 'Tosa', species: 'Canino', minWeight: 26, maxWeight: 35, sizeLabel: 'G' },
+        { name: 'Tosa Completa - Extra Grande (36kg+)', description: 'Tosa completa para cães porte extra grande', basePrice: 150.00, duration: 150, category: 'Tosa', species: 'Canino', minWeight: 36, maxWeight: null, sizeLabel: 'GG' },
 
-        // BANHOS PELOS MÉDIOS
-        { category: 'Banho Pelo Médio', sub: 'Tradicionais', duration: 60, prices: [45, 55, 75, 100, 140, 195] },
-        { category: 'Banho Pelo Médio', sub: 'Linha Especial (Máscara)', duration: 75, prices: [65, 75, 95, 120, 170, 235] },
-        { category: 'Banho Pelo Médio', sub: 'Medicamentoso (Anti-pulgas/Clorexidina)', duration: 75, prices: [55, 65, 85, 115, 160, 225] },
-        { category: 'Banho Pelo Médio', sub: 'Medicamentoso (Prod. Cliente)', duration: 60, prices: [40, 50, 70, 95, 135, 190] },
+        // Banho & Tosa - Cachorro
+        { name: 'Banho & Tosa - Pequeno (1-10kg)', description: 'Banho e tosa completa para cães porte pequeno', basePrice: 100.00, duration: 120, category: 'Banho & Tosa', species: 'Canino', minWeight: 1, maxWeight: 10, sizeLabel: 'P' },
+        { name: 'Banho & Tosa - Médio (11-25kg)', description: 'Banho e tosa completa para cães porte médio', basePrice: 130.00, duration: 150, category: 'Banho & Tosa', species: 'Canino', minWeight: 11, maxWeight: 25, sizeLabel: 'M' },
+        { name: 'Banho & Tosa - Grande (26-35kg)', description: 'Banho e tosa completa para cães porte grande', basePrice: 160.00, duration: 180, category: 'Banho & Tosa', species: 'Canino', minWeight: 26, maxWeight: 35, sizeLabel: 'G' },
+        { name: 'Banho & Tosa - Extra Grande (36kg+)', description: 'Banho e tosa completa para cães porte extra grande', basePrice: 200.00, duration: 210, category: 'Banho & Tosa', species: 'Canino', minWeight: 36, maxWeight: null, sizeLabel: 'GG' },
 
-        // BANHOS PELOS LONGOS
-        { category: 'Banho Pelo Longo', sub: 'Tradicionais', duration: 75, prices: [50, 60, 80, 105, 145, 205] },
-        { category: 'Banho Pelo Longo', sub: 'Linha Especial (Máscara)', duration: 90, prices: [70, 80, 100, 125, 175, 245] },
-        { category: 'Banho Pelo Longo', sub: 'Medicamentoso (Anti-pulgas/Clorexidina)', duration: 90, prices: [60, 70, 90, 120, 165, 235] },
-        { category: 'Banho Pelo Longo', sub: 'Medicamentoso (Prod. Cliente)', duration: 75, prices: [45, 55, 75, 100, 140, 200] },
-
-        // TOSAS
-        { category: 'Tosa', sub: 'Higiênica', duration: 30, prices: [15, 20, 25, 35, 45, 55] },
-        { category: 'Tosa', sub: 'Estética (Geral Tesoura)', duration: 120, prices: [80, 90, 100, 125, 155, 190] },
-        { category: 'Tosa', sub: 'Raça (Trimming)', duration: 120, prices: [90, 100, 110, 130, 160, 200] },
-        { category: 'Tosa', sub: 'Bebê', duration: 90, prices: [100, 110, 120, 145, 175, 220] },
-
-        // EXTRAS
-        { category: 'Extra', sub: 'Desembolo Básico (/hr)', duration: 60, prices: [20, 25, 30, 35, 45, 55] },
-        { category: 'Extra', sub: 'Desembolo Intermediário (/hr)', duration: 60, prices: [30, 35, 40, 45, 55, 65] },
-        { category: 'Extra', sub: 'Desembolo Avançado (/hr)', duration: 60, prices: [40, 45, 50, 55, 65, 75] },
-        { category: 'Extra', sub: 'Corte de Unhas', duration: 15, prices: [15, 15, 20, 20, 25, 25] },
-        { category: 'Extra', sub: 'Limpeza de Ouvidos', duration: 10, prices: [7, 7, 7, 10, 10, 10] },
-        { category: 'Extra', sub: 'Head Trimming (Tesoura Cabecinha)', duration: 20, prices: [10, 15, 20, 20, 25, 30] },
-        { category: 'Extra', sub: 'Escovação de Dentes (c/ escova)', duration: 10, prices: [5, 5, 5, 7.5, 7.5, 7.5] },
-        { category: 'Extra', sub: 'Escovação de Dentes (s/ escova)', duration: 15, prices: [15, 15, 15, 17.5, 17.5, 17.5] },
-        { category: 'Extra', sub: 'Hidratação Patas e Focinho', duration: 10, prices: [7, 7, 10, 10, 17.5, 17.5] },
-        { category: 'Extra', sub: 'Remoção de Pelos Mortos (Stripping)', duration: 45, prices: [15, 20, 40, 55, 80, 100] },
-        { category: 'Extra', sub: 'Penteado', duration: 20, prices: [20, 20, 25, 25, 30, 30] },
+        // Serviços Adicionais
+        { name: 'Corte de Unha', description: 'Corte e lixamento de unhas', basePrice: 15.00, duration: 15, category: 'Adicional', species: 'Canino', minWeight: null, maxWeight: null, sizeLabel: null },
+        { name: 'Limpeza de Ouvido', description: 'Limpeza completa dos ouvidos', basePrice: 15.00, duration: 10, category: 'Adicional', species: 'Canino', minWeight: null, maxWeight: null, sizeLabel: null },
+        { name: 'Escovação de Pelos', description: 'Escovação e desembaraço de nós', basePrice: 20.00, duration: 20, category: 'Adicional', species: 'Canino', minWeight: null, maxWeight: null, sizeLabel: null },
+        { name: 'Hidratação Premium', description: 'Hidratação profunda dos pelos', basePrice: 25.00, duration: 30, category: 'Adicional', species: 'Canino', minWeight: null, maxWeight: null, sizeLabel: null },
+        { name: 'Perfume Premium', description: 'Aplicação de perfume premium', basePrice: 10.00, duration: 5, category: 'Adicional', species: 'Canino', minWeight: null, maxWeight: null, sizeLabel: null },
+        { name: 'Laço/Bandana', description: 'Colocação de laço ou bandana', basePrice: 5.00, duration: 5, category: 'Adicional', species: 'Canino', minWeight: null, maxWeight: null, sizeLabel: null },
     ];
 
-    for (const service of servicesData) {
-        for (let i = 0; i < sizes.length; i++) {
-            const size = sizes[i];
-            const price = service.prices[i];
-            const weight = weightLabels[size as keyof typeof weightLabels];
+    console.log('🐕 Cadastrando serviços para cachorros...');
+    let successCount = 0;
+    let errorCount = 0;
 
-            await prisma.service.create({
+    for (const service of services) {
+        try {
+            // Check if already exists
+            const exists = await prisma.service.findFirst({
+                where: { name: service.name }
+            });
+
+            if (exists) {
+                console.log(`⏭️  ${service.name} (já existe)`);
+                continue;
+            }
+
+            const created = await prisma.service.create({
                 data: {
-                    name: `${service.category} - ${service.sub} (${size})`,
-                    basePrice: price,
-                    description: `Porte ${size} - Peso: ${weight}`,
-                    category: service.category,
+                    name: service.name,
+                    description: service.description,
+                    basePrice: service.basePrice,
                     duration: service.duration,
-                    species: 'Cachorro'
+                    category: service.category,
+                    species: service.species,
+                    minWeight: service.minWeight,
+                    maxWeight: service.maxWeight,
+                    sizeLabel: service.sizeLabel,
                 }
             });
+            console.log(`✅ ${created.name} - R$ ${created.basePrice.toFixed(2)}`);
+            successCount++;
+        } catch (error: any) {
+            console.error(`❌ Erro ao cadastrar ${service.name}:`, error.message);
+            errorCount++;
         }
     }
 
-    console.log('✅ Todos os serviços de Cães foram cadastrados com sucesso!');
+    console.log(`\n📊 Resumo:`);
+    console.log(`✅ ${successCount} serviços cadastrados`);
+    console.log(`❌ ${errorCount} erros`);
 }
 
-main()
+seedDogServices()
     .catch((e) => {
-        console.error(e);
+        console.error('Erro no seed:', e);
         process.exit(1);
     })
     .finally(async () => {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
     Search,
     Plus,
@@ -20,6 +21,8 @@ import StaffSidebar from '../../components/StaffSidebar';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
+import toast from 'react-hot-toast';
 
 interface Customer {
     id: string;
@@ -45,9 +48,14 @@ interface Customer {
 
 type TabType = 'active' | 'trash';
 
+const fetchCustomers = async (tab: TabType): Promise<Customer[]> => {
+    const endpoint = tab === 'trash' ? '/customers/trash' : '/customers';
+    const response = await api.get(endpoint);
+    return response.data;
+};
+
 export default function CustomerManager() {
-    const [customers, setCustomers] = useState<Customer[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkMode, setIsBulkMode] = useState(false);
@@ -55,28 +63,45 @@ export default function CustomerManager() {
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [tab, setTab] = useState<TabType>('active');
 
+    const { data: customers = [], isLoading, isFetching } = useQuery({
+        queryKey: ['customers', tab],
+        queryFn: () => fetchCustomers(tab),
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const bulkDeleteMutation = useMutation({
+        mutationFn: (ids: string[]) => api.post('/customers/bulk-delete', { ids }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            setSelectedIds([]);
+            setIsBulkMode(false);
+            toast.success('Clientes movidos para a lixeira');
+        }
+    });
+
+    const permanentDeleteMutation = useMutation({
+        mutationFn: (id: string) => api.delete(`/customers/${id}/permanent`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            toast.success('Cliente excluído permanentemente');
+        }
+    });
+
+    const bulkRestoreMutation = useMutation({
+        mutationFn: (ids: string[]) => api.post('/customers/bulk-restore', { ids }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            setSelectedIds([]);
+            setIsBulkMode(false);
+            toast.success('Clientes restaurados com sucesso');
+        }
+    });
+
     const handleSelectAll = () => {
         if (selectedIds.length === filteredCustomers.length) {
             setSelectedIds([]);
         } else {
             setSelectedIds(filteredCustomers.map(c => c.id));
-        }
-    };
-
-    useEffect(() => {
-        fetchCustomers();
-    }, [tab]);
-
-    const fetchCustomers = async () => {
-        setIsLoading(true);
-        try {
-            const endpoint = tab === 'trash' ? '/customers/trash' : '/customers';
-            const response = await api.get(endpoint);
-            setCustomers(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar clientes:', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -88,32 +113,21 @@ export default function CustomerManager() {
     const handleBulkDelete = async () => {
         const action = tab === 'trash' ? 'excluir PERMANENTEMENTE' : 'mover para a lixeira';
         if (!window.confirm(`ATENÇÃO: Deseja realmente ${action} os ${selectedIds.length} clientes selecionados?`)) return;
-        try {
-            if (tab === 'trash') {
-                for (const id of selectedIds) {
-                    await api.delete(`/customers/${id}/permanent`);
-                }
-            } else {
-                await api.post('/customers/bulk-delete', { ids: selectedIds });
+
+        if (tab === 'trash') {
+            // Sequential deletion for permanent delete (backend might not have bulk permanent delete)
+            for (const id of selectedIds) {
+                await permanentDeleteMutation.mutateAsync(id);
             }
-            fetchCustomers();
             setSelectedIds([]);
-            setIsBulkMode(false);
-        } catch (error) {
-            alert('Erro ao processar clientes');
+        } else {
+            bulkDeleteMutation.mutate(selectedIds);
         }
     };
 
     const handleBulkRestore = async () => {
         if (!window.confirm(`Deseja restaurar ${selectedIds.length} clientes da lixeira?`)) return;
-        try {
-            await api.post('/customers/bulk-restore', { ids: selectedIds });
-            fetchCustomers();
-            setSelectedIds([]);
-            setIsBulkMode(false);
-        } catch (error) {
-            alert('Erro ao restaurar clientes');
-        }
+        bulkRestoreMutation.mutate(selectedIds);
     };
 
     const filteredCustomers = customers.filter(c =>
@@ -128,6 +142,7 @@ export default function CustomerManager() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                         <div>
@@ -248,6 +263,11 @@ export default function CustomerManager() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-white border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold"
                         />
+                        {isFetching && !isLoading && (
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2">
+                                <RefreshCcw size={16} className="animate-spin text-primary opacity-50" />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -521,7 +541,7 @@ export default function CustomerManager() {
                             customerId={selectedCustomerId}
                             onUpdate={() => {
                                 setSelectedCustomerId(null);
-                                fetchCustomers();
+                                queryClient.invalidateQueries({ queryKey: ['customers'] });
                             }}
                         />
                     )}

@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import StaffSidebar from '../../components/StaffSidebar';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
 
 interface Guardian {
@@ -171,17 +172,14 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         <>
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    {!isModal && <BackButton className="mb-4 ml-[-1rem]" />}
-                    <div className="flex items-center gap-3">
-                        {isModal && onClose && (
-                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors -ml-2">
-                                <X size={24} className="text-gray-400" />
-                            </button>
-                        )}
-                        <h1 className="text-3xl font-black text-secondary tracking-tight">
-                            {id === 'new' ? 'Novo' : 'Editar'} <span className="text-primary">Cliente</span>
-                        </h1>
-                    </div>
+                    {isModal && onClose && (
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors -ml-2">
+                            <X size={24} className="text-gray-400" />
+                        </button>
+                    )}
+                    <h1 className="text-3xl font-black text-secondary tracking-tight">
+                        {id === 'new' ? 'Novo' : 'Editar'} <span className="text-primary">Cliente</span>
+                    </h1>
                     {seqId && <p className="text-gray-400 font-bold mt-1 uppercase tracking-widest text-xs ml-1">Ficha CL-{String(seqId).padStart(4, '0')}</p>}
                 </div>
 
@@ -557,6 +555,10 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         <div className="min-h-screen bg-gray-50 flex">
             <StaffSidebar />
             <main className="flex-1 md:ml-64 p-6 md:p-10">
+                <header className="mb-10">
+                    <Breadcrumbs />
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                </header>
                 {content}
                 <RecurrenceCelebrationModal
                     isOpen={showCelebration}

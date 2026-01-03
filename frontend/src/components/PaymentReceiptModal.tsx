@@ -35,7 +35,7 @@ export default function PaymentReceiptModal({ isOpen, onClose, payment, customer
     };
 
     const handleShare = () => {
-        const text = `Comprovante de Pagamento - 7Pet\n\nCliente: ${customerName}\nValor: R$ ${payment.amount.toFixed(2)}\nData: ${new Date(payment.paidAt).toLocaleDateString('pt-BR')}\nMétodo: ${payment.method}\nID: ${payment.id}`;
+        const text = `Comprovante de Pagamento - 7Pet\n\nCliente: ${customerName}\nValor: R$ ${payment.amount.toFixed(2)}\nData: ${new Date(payment.paidAt).toLocaleString('pt-BR')}\nMétodo: ${payment.method}\nID: ${payment.id}`;
 
         if (navigator.share) {
             navigator.share({
@@ -116,8 +116,8 @@ export default function PaymentReceiptModal({ isOpen, onClose, payment, customer
                                         <Calendar size={18} />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data</p>
-                                        <p className="font-bold text-secondary text-sm">{new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data / Horário</p>
+                                        <p className="font-bold text-secondary text-sm">{new Date(payment.paidAt).toLocaleString('pt-BR')}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">

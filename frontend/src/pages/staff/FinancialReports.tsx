@@ -14,6 +14,7 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { motion } from 'framer-motion';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -109,6 +110,7 @@ export default function FinancialReports() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                         <div>

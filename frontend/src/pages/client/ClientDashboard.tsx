@@ -1,5 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import {
     User,
     Calendar,
@@ -18,6 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
 import ClientTutorial from '../../components/client/ClientTutorial';
+import Skeleton from '../../components/Skeleton';
 
 interface DashboardData {
     petCount: number;
@@ -25,26 +26,20 @@ interface DashboardData {
     recentQuotes: any[];
 }
 
+const fetchClientDashboardData = async (): Promise<DashboardData> => {
+    const response = await api.get('/dashboard/client');
+    return response.data;
+};
+
 export default function ClientDashboard() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const [data, setData] = useState<DashboardData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const response = await api.get('/dashboard/client');
-                setData(response.data);
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, []);
+    const { data, isLoading } = useQuery({
+        queryKey: ['client-dashboard'],
+        queryFn: fetchClientDashboardData,
+        staleTime: 5 * 60 * 1000,
+    });
 
     const quickActions = [
         { title: 'Meus Dados', icon: <User className="text-secondary" />, desc: 'Editar perfil e preferências', color: 'bg-gray-100', link: '/client/profile' },
@@ -103,8 +98,17 @@ export default function ClientDashboard() {
                 </header>
 
                 {isLoading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="h-48 bg-white p-8 rounded-[32px] shadow-sm border border-gray-50 flex flex-col justify-between">
+                                <div className="space-y-4">
+                                    <Skeleton variant="rounded" className="w-12 h-12" />
+                                    <Skeleton variant="text" className="h-6 w-32" />
+                                    <Skeleton variant="text" className="h-4 w-full opacity-50" />
+                                </div>
+                                <Skeleton variant="rounded" className="h-4 w-20" />
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

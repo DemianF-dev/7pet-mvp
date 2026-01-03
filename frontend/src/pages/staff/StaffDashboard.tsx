@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Calendar,
     Truck,
@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 
 interface DashboardMetrics {
     todayAppointments: number;
@@ -26,27 +27,25 @@ interface DashboardMetrics {
     pendingTickets?: number;
 }
 
+const fetchMetrics = async (): Promise<DashboardMetrics> => {
+    const response = await api.get('/staff/metrics');
+    return response.data;
+};
+
 export default function StaffDashboard() {
     const { user } = useAuthStore();
     const navigate = useNavigate();
-    const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
 
-    const fetchMetrics = async () => {
-        setIsLoading(true);
-        try {
-            const response = await api.get('/staff/metrics');
-            setMetrics(response.data);
-        } catch (err) {
-            console.error('Erro ao buscar métricas:', err);
-        } finally {
-            setIsLoading(false);
-        }
+    const { data: metrics, isLoading, isPlaceholderData, isFetching } = useQuery({
+        queryKey: ['staff-metrics'],
+        queryFn: fetchMetrics,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['staff-metrics'] });
     };
-
-    useEffect(() => {
-        fetchMetrics();
-    }, []);
 
     const isMaster = user?.role === 'MASTER';
 
@@ -108,24 +107,31 @@ export default function StaffDashboard() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex justify-between items-start">
+                <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
                     <div>
+                        <Breadcrumbs />
                         <h1 className="text-4xl font-extrabold text-secondary">Dashboard <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Operacional</span></h1>
                         <p className="text-gray-500 mt-3">Métricas globais e acesso rápido aos processos.</p>
                     </div>
                     <button
-                        onClick={fetchMetrics}
-                        disabled={isLoading}
+                        onClick={handleRefresh}
+                        disabled={isFetching}
                         className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
                         title="Atualizar Dados"
                     >
-                        <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                        <RefreshCcw size={20} className={isFetching ? 'animate-spin' : ''} />
                     </button>
                 </header>
 
                 {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-                        {[1, 2, 3].map(i => <div key={i} className="h-40 bg-gray-200 rounded-[32px]"></div>)}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-48 bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 flex flex-col justify-center animate-pulse">
+                                <div className="w-14 h-14 bg-gray-100 rounded-2xl mb-6"></div>
+                                <div className="h-2 w-20 bg-gray-100 rounded-full mb-2"></div>
+                                <div className="h-10 w-12 bg-gray-200 rounded-xl"></div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="space-y-10">

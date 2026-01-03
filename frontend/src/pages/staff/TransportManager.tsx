@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 
 interface Transport {
     id: string;
@@ -42,9 +43,10 @@ export default function TransportManager() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10 flex justify-between items-start">
+                <header className="mb-10">
+                    <Breadcrumbs />
+                    <BackButton className="mb-4 ml-[-1rem]" />
                     <div>
-                        <BackButton className="mb-4 ml-[-1rem]" />
                         <h1 className="text-4xl font-extrabold text-secondary">Logística & <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Transporte</span></h1>
                         <p className="text-gray-500 mt-3">Organize as rotas de busca e entrega dos pets.</p>
                     </div>

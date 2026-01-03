@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
@@ -13,20 +16,47 @@ import staffRoutes from './routes/staffRoutes';
 import managementRoutes from './routes/managementRoutes';
 import productRoutes from './routes/productRoutes';
 import supportRoutes from './routes/supportRoutes';
+import mapsRoutes from './routes/mapsRoutes';
+import transportSettingsRoute from './routes/transportSettingsRoutes';
 
 import notificationRoutes from './routes/notificationRoutes';
 import { runNotificationScheduler } from './schedulers/notificationScheduler';
+import { errorHandler } from './middlewares/errorMiddleware';
+
 import prisma from './lib/prisma';
+import Logger from './lib/logger';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300, // Limit each IP to 300 requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Muitas requisições deste IP, tente novamente mais tarde.'
+});
+
+// Security Middleware
+app.use(helmet());
+app.use(compression());
+app.use(limiter);
+
+// Request Logger Middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
+    next();
+});
+
+// CORS Configuration
 app.use(cors({
-    origin: '*', // Allow all origins for MVP/Dev. In prod, lock this down.
+    origin: true, // Allow any origin that sends the request
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json({ limit: '10mb' }));
 
@@ -44,6 +74,8 @@ app.use('/invoices', invoiceRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/products', productRoutes);
 app.use('/support', supportRoutes);
+app.use('/maps', mapsRoutes);
+app.use('/settings/transport', transportSettingsRoute);
 
 // Start Scheduler
 runNotificationScheduler();
@@ -94,9 +126,13 @@ app.get('/diagnose-db', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`⏱️  Notification scheduler started`);
-});
+app.use(errorHandler);
+
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        Logger.info(`🚀 Server running on http://localhost:${PORT}`);
+        Logger.info(`⏱️  Notification scheduler started`);
+    });
+}
 
 export default app;

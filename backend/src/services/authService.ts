@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import Logger from '../lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
@@ -122,7 +123,7 @@ export const forgotPassword = async (email: string) => {
 
     await Promise.all(notificationPromises);
 
-    console.log(`[NOTIFICAÇÃO ADMIN] Solicitação de senha para ${email} enviada aos admins.`);
+    Logger.info(`[NOTIFICAÇÃO ADMIN] Solicitação de senha para ${email} enviada aos admins.`);
 
     return {
         message: 'Sua solicitação foi enviada ao administrador. Por favor, aguarde o contato para receber sua nova senha.'

@@ -149,9 +149,7 @@ export const customerController = {
                             phone: true
                         }
                     },
-                    pets: {
-                        where: { deletedAt: null }
-                    },
+                    pets: true,
                     _count: {
                         select: { appointments: true, quotes: true }
                     }
@@ -159,9 +157,13 @@ export const customerController = {
                 orderBy: { createdAt: 'desc' }
             });
             return res.json(customers);
-        } catch (error) {
-            console.error('Erro ao listar clientes:', error);
-            return res.status(500).json({ error: 'Erro interno do servidor' });
+        } catch (error: any) {
+            console.error('CRITICAL ERROR listing customers:', error);
+            return res.status(500).json({
+                error: 'Erro interno do servidor ao listar clientes',
+                message: error.message,
+                prismaError: error.code
+            });
         }
     },
 
@@ -186,9 +188,7 @@ export const customerController = {
                             document: true
                         }
                     },
-                    pets: {
-                        where: { deletedAt: null }
-                    },
+                    pets: true,
                     appointments: {
                         where: { deletedAt: null },
                         orderBy: { startAt: 'desc' },

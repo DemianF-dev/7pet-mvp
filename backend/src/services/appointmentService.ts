@@ -108,6 +108,16 @@ export const list = async (filters: { customerId?: string; status?: AppointmentS
             services: true,
             transport: true,
             performer: true,
+            invoice: {
+                select: { id: true, status: true, amount: true }
+            },
+            quote: {
+                include: {
+                    invoice: {
+                        select: { id: true, status: true, amount: true }
+                    }
+                }
+            },
             customer: {
                 include: { pets: true }
             }
@@ -124,6 +134,16 @@ export const get = async (id: string) => {
             services: true,
             transport: true,
             performer: true,
+            invoice: {
+                include: { payments: true, customer: true }
+            },
+            quote: {
+                include: {
+                    invoice: {
+                        include: { payments: true, customer: true }
+                    }
+                }
+            },
             customer: {
                 include: { pets: true }
             }
@@ -310,14 +330,21 @@ export const processNoShows = async () => {
 };
 
 // Update Quote Status when appointment is created
-export const updateQuoteStatus = async (quoteId: string) => {
+export const updateQuoteStatus = async (quoteId: string, appointmentId?: string) => {
+    const quote = await prisma.quote.findUnique({
+        where: { id: quoteId },
+        select: { status: true }
+    });
+
+    if (!quote || quote.status === 'AGENDADO') return;
+
     await prisma.quote.update({
         where: { id: quoteId },
         data: {
             status: 'AGENDADO',
             statusHistory: {
                 create: {
-                    oldStatus: 'APROVADO',
+                    oldStatus: quote.status,
                     newStatus: 'AGENDADO',
                     changedBy: 'SYSTEM',
                     reason: 'Agendamento criado automaticamente'

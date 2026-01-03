@@ -1,9 +1,11 @@
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
+import { messagingService } from '../services/messagingService';
 
 export const runNotificationScheduler = () => {
+    // Don't run scheduler in test environment
+    if (process.env.NODE_ENV === 'test') return;
+
     // Run every minute
     setInterval(async () => {
         try {
@@ -39,14 +41,12 @@ async function checkAppointments() {
     for (const appt of appointments24 as any[]) {
         if (!appt.customer.user) continue;
 
-        await prisma.notification.create({
-            data: {
-                userId: appt.customer.user.id,
-                title: 'Lembrete de Agendamento',
-                message: `Olá! Lembrando do agendamento de ${appt.pet.name} amanhã às ${appt.startAt.getHours()}:${appt.startAt.getMinutes().toString().padStart(2, '0')}.`,
-                type: 'REMINDER'
-            }
-        });
+        await messagingService.notifyUser(
+            appt.customer.user.id,
+            'Lembrete de Agendamento',
+            `Olá! Lembrando do agendamento de ${appt.pet.name} amanhã às ${appt.startAt.getHours()}:${appt.startAt.getMinutes().toString().padStart(2, '0')}.`,
+            'REMINDER'
+        );
 
         await prisma.appointment.update({
             where: { id: appt.id },
@@ -74,14 +74,12 @@ async function checkAppointments() {
     for (const appt of appointments1 as any[]) {
         if (!appt.customer.user) continue;
 
-        await prisma.notification.create({
-            data: {
-                userId: appt.customer.user.id,
-                title: 'Seu agendamento é em breve!',
-                message: `Estamos esperando ${appt.pet.name} daqui a pouco, às ${appt.startAt.getHours()}:${appt.startAt.getMinutes().toString().padStart(2, '0')}.`,
-                type: 'REMINDER_URGENT'
-            }
-        });
+        await messagingService.notifyUser(
+            appt.customer.user.id,
+            'Seu agendamento é em breve!',
+            `Estamos esperando ${appt.pet.name} daqui a pouco, às ${appt.startAt.getHours()}:${appt.startAt.getMinutes().toString().padStart(2, '0')}.`,
+            'REMINDER_URGENT'
+        );
 
         await prisma.appointment.update({
             where: { id: appt.id },

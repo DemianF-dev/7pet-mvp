@@ -31,6 +31,7 @@ import StaffNotificationList from './pages/staff/StaffNotificationList';
 import StaffProfile from './pages/staff/StaffProfile';
 import ProductManager from './pages/staff/ProductManager';
 import SupportTicketList from './pages/staff/SupportTicketList';
+import TransportConfig from './pages/staff/TransportConfig';
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -81,6 +82,7 @@ function App() {
                     <Route path="/staff/notifications" element={<StaffNotificationList />} />
                     <Route path="/staff/profile" element={<StaffProfile />} />
                     <Route path="/staff/support" element={<SupportTicketList />} />
+                    <Route path="/staff/transport-config" element={<TransportConfig />} />
                 </Route>
 
                 {/* Fallback */}

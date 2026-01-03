@@ -479,7 +479,7 @@ export const updateRolePermissions = async (req: Request, res: Response) => {
         const perms = await prisma.rolePermission.upsert({
             where: { role },
             update: { permissions, label },
-            create: { role, permissions, label: label || role }
+            create: { role, permissions, label: label || role, updatedAt: new Date() }
         });
         res.json(perms);
     } catch (error) {

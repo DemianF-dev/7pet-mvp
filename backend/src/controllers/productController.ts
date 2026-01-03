@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 const productSchema = z.object({
     name: z.string().min(1, 'Nome é obrigatório'),
@@ -31,7 +31,7 @@ export const productController = {
             res.json(product);
         } catch (error: any) {
             if (error instanceof z.ZodError) {
-                return res.status(400).json({ errors: error.errors });
+                return res.status(400).json({ errors: error.issues });
             }
             res.status(500).json({ error: 'Erro ao criar produto' });
         }

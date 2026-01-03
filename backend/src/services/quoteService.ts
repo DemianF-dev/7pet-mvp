@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import { QuoteDependencies, CascadeDeleteOptions } from '../types/QuoteDependencies';
+import { messagingService } from './messagingService';
 
 /**
  * Verifica dependências de um orçamento (appointments e invoices)
@@ -172,4 +173,118 @@ export const cascadeDelete = async (
         success: true,
         message: 'Orçamento e itens selecionados movidos para a lixeira'
     };
+};
+
+/**
+ * One-Click Approval & Scheduling
+ */
+export const approveAndSchedule = async (id: string, performerId?: string, authUser?: any) => {
+    const quote = await prisma.quote.findUnique({
+        where: { id },
+        include: {
+            items: true,
+            customer: { include: { user: true } },
+            pet: true
+        }
+    });
+
+    if (!quote) throw new Error('Orçamento não encontrado');
+    if (quote.status === 'AGENDADO' || quote.status === 'ENCERRADO') {
+        throw new Error('Este orçamento já está em um status finalizado (já agendado ou encerrado).');
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+        // 1. Approve Quote
+        await tx.quote.update({
+            where: { id },
+            data: {
+                status: 'APROVADO',
+                statusHistory: {
+                    create: {
+                        oldStatus: quote.status,
+                        newStatus: 'APROVADO',
+                        changedBy: authUser?.id || 'SYSTEM',
+                        reason: 'Aprovação e Agendamento Automático (One-Click)'
+                    }
+                }
+            }
+        });
+
+        // 2. Create Invoice
+        const existingInvoice = await tx.invoice.findUnique({ where: { quoteId: id } });
+        if (!existingInvoice) {
+            await tx.invoice.create({
+                data: {
+                    customerId: quote.customerId,
+                    quoteId: id,
+                    amount: quote.totalAmount,
+                    status: 'PENDENTE',
+                    dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+                }
+            });
+        }
+
+        const appointments = [];
+
+        // 3. Create SPA Appointment if applicable
+        if (quote.type === 'SPA' || quote.type === 'SPA_TRANSPORTE') {
+            const appt = await tx.appointment.create({
+                data: {
+                    customerId: quote.customerId,
+                    petId: quote.petId!,
+                    startAt: quote.scheduledAt || quote.desiredAt || new Date(),
+                    status: 'CONFIRMADO',
+                    category: 'SPA',
+                    quoteId: id,
+                    performerId: performerId || undefined,
+                    services: {
+                        connect: quote.items.filter(i => i.serviceId).map(i => ({ id: i.serviceId! }))
+                    }
+                }
+            });
+            appointments.push(appt);
+        }
+
+        // 4. Create Logistics Appointment if applicable
+        if (quote.type === 'TRANSPORTE' || quote.type === 'SPA_TRANSPORTE') {
+            const appt = await tx.appointment.create({
+                data: {
+                    customerId: quote.customerId,
+                    petId: quote.petId!,
+                    startAt: quote.transportAt || quote.desiredAt || new Date(),
+                    status: 'CONFIRMADO',
+                    category: 'LOGISTICA',
+                    quoteId: id,
+                    transport: {
+                        create: {
+                            origin: quote.transportOrigin || 'Endereço do Cliente',
+                            destination: quote.transportDestination || '7Pet',
+                            requestedPeriod: quote.transportPeriod || 'MANHA'
+                        }
+                    }
+                }
+            });
+            appointments.push(appt);
+        }
+
+        // 5. Final Status Update
+        await tx.quote.update({
+            where: { id },
+            data: { status: 'AGENDADO' }
+        });
+
+        return appointments;
+    });
+
+    // 6. Notifications
+    if (quote.customer.user) {
+        await messagingService.notifyUser(
+            quote.customer.user.id,
+            'Orçamento Aprovado e Agendado!',
+            `Olá ${quote.customer.name}! Seu orçamento para o pet ${quote.pet?.name} foi aprovado e acabamos de confirmar os agendamentos no sistema. Você pode conferir os detalhes no seu painel.`,
+            'APPOINTMENT_CONFIRMED'
+        );
+    }
+
+    return result;
 };

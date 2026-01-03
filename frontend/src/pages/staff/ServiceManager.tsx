@@ -15,11 +15,15 @@ import {
     Clock,
     LayoutGrid,
     List,
+    RotateCcw,
+    X,
+    Filter,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 
 interface Service {
     id: string;
@@ -29,6 +33,11 @@ interface Service {
     basePrice: number;
     duration: number;
     category: string;
+    subcategory?: string;
+    type?: string;
+    coatType?: string;
+    unit?: string;
+    sizeLabel?: string;
     species: string;
     responsibleId?: string;
 }
@@ -55,6 +64,14 @@ export default function ServiceManager() {
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
     const [users, setUsers] = useState<User[]>([]);
     const [tab, setTab] = useState<TabType>('active');
+
+    // Advanced Filters
+    const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+    const [subcategoryFilter, setSubcategoryFilter] = useState<string>('ALL');
+    const [typeFilter, setTypeFilter] = useState<string>('ALL');
+    const [sizeFilter, setSizeFilter] = useState<string>('ALL');
+    const [coatFilter, setCoatFilter] = useState<string>('ALL');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
     const handleSelectAll = () => {
         if (selectedIds.length === filteredServices.length) {
@@ -147,12 +164,31 @@ export default function ServiceManager() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('ATENÇÃO: Deseja realmente excluir este serviço?')) return;
+        const msg = tab === 'trash'
+            ? 'ATENÇÃO: Esta ação não pode ser desfeita. Deseja excluir PERMANENTEMENTE este serviço?'
+            : 'ATENÇÃO: Deseja mover este serviço para a lixeira?';
+
+        if (!window.confirm(msg)) return;
+
         try {
-            await api.delete(`/services/${id}`);
+            if (tab === 'trash') {
+                await api.delete(`/services/${id}/permanent`);
+            } else {
+                await api.delete(`/services/${id}`);
+            }
+            fetchServices();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Erro ao excluir serviço');
+        }
+    };
+
+    const handleRestore = async (id: string) => {
+        if (!window.confirm('Deseja restaurar este serviço?')) return;
+        try {
+            await api.patch(`/services/${id}/restore`);
             fetchServices();
         } catch (error) {
-            alert('Erro ao excluir serviço');
+            alert('Erro ao restaurar serviço');
         }
     };
 
@@ -239,15 +275,37 @@ export default function ServiceManager() {
         }
     };
 
+    // Extract unique values for filters
+    const uniqueCategories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+    const uniqueSubcategories = Array.from(new Set(services.map(s => s.subcategory).filter(Boolean)));
+    const uniqueTypes = Array.from(new Set(services.map(s => s.type).filter(Boolean)));
+    const uniqueSizes = Array.from(new Set(services.map(s => s.sizeLabel).filter(Boolean)));
+    const uniqueCoats = Array.from(new Set(services.map(s => s.coatType).filter(Boolean)));
+
     const filteredServices = services.filter(s => {
         const matchesSpecies = s.species === speciesFilter;
-        const matchesGlobal = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (s.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesCategory = categoryFilter === 'ALL' || s.category === categoryFilter;
+        const matchesSubcategory = subcategoryFilter === 'ALL' || s.subcategory === subcategoryFilter;
+        const matchesType = typeFilter === 'ALL' || s.type === typeFilter;
+        const matchesSize = sizeFilter === 'ALL' || s.sizeLabel === sizeFilter;
+        const matchesCoat = coatFilter === 'ALL' || s.coatType === coatFilter;
 
-        return matchesSpecies && matchesGlobal;
+        return matchesSpecies && matchesSearch && matchesCategory && matchesSubcategory &&
+            matchesType && matchesSize && matchesCoat;
     });
 
     const sortedServices = [...filteredServices];
+
+    // Count active filters
+    const activeFiltersCount = [
+        categoryFilter !== 'ALL',
+        subcategoryFilter !== 'ALL',
+        typeFilter !== 'ALL',
+        sizeFilter !== 'ALL',
+        coatFilter !== 'ALL'
+    ].filter(Boolean).length;
 
 
     return (
@@ -256,6 +314,7 @@ export default function ServiceManager() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                         <div>
@@ -299,7 +358,41 @@ export default function ServiceManager() {
                                 />
                             </div>
 
+                            {/* Advanced Filters Toggle */}
+                            <button
+                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all relative ${showAdvancedFilters ? 'bg-primary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-primary shadow-sm'}`}
+                            >
+                                <Filter size={14} strokeWidth={showAdvancedFilters ? 3 : 2} />
+                                <span className="uppercase tracking-[0.15em]">Filtros Avançados</span>
+                                {activeFiltersCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">
+                                        {activeFiltersCount}
+                                    </span>
+                                )}
+                            </button>
+
                             <div className="flex gap-3">
+                                <button
+                                    onClick={() => fetchServices()}
+                                    className="p-3 bg-white rounded-2xl hover:bg-gray-50 text-secondary transition-all shadow-sm border border-gray-100"
+                                    title="Atualizar Lista"
+                                >
+                                    <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setTab(tab === 'active' ? 'trash' : 'active');
+                                        setSelectedIds([]);
+                                    }}
+                                    className={`p-3 rounded-2xl transition-all shadow-sm border border-gray-100 flex items-center gap-2 ${tab === 'trash' ? 'bg-red-50 text-red-500 border-red-100 ring-2 ring-red-100' : 'bg-white text-gray-400 hover:text-red-400'}`}
+                                    title={tab === 'active' ? 'Ver Lixeira' : 'Voltar aos Serviços Ativos'}
+                                >
+                                    <Trash2 size={18} />
+                                    {tab === 'trash' && <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">Lixeira</span>}
+                                </button>
+
                                 {/* View Toggle */}
                                 <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
                                     <button
@@ -357,13 +450,204 @@ export default function ServiceManager() {
                                 >
                                     Cancelar
                                 </button>
-                                <button
-                                    onClick={handleBulkDelete}
-                                    disabled={selectedIds.length === 0}
-                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                >
-                                    <Trash2 size={18} /> Apagar Agora
-                                </button>
+                                {tab === 'trash' ? (
+                                    <>
+                                        <button
+                                            onClick={handleBulkRestore}
+                                            disabled={selectedIds.length === 0}
+                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 active:scale-95 transition-all"
+                                        >
+                                            <RotateCcw size={18} /> Restaurar
+                                        </button>
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            disabled={selectedIds.length === 0}
+                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl bg-red-600 hover:bg-red-700 text-white shadow-red-600/20 active:scale-95 transition-all"
+                                        >
+                                            <Trash2 size={18} /> Excluir Definitivamente
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        disabled={selectedIds.length === 0}
+                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                    >
+                                        <Trash2 size={18} /> Apagar Agora
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Advanced Filters Panel */}
+                <AnimatePresence>
+                    {showAdvancedFilters && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mb-8 overflow-hidden"
+                        >
+                            <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                                        <Filter size={14} />
+                                        Filtros Avançados
+                                    </h3>
+                                    {activeFiltersCount > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                setCategoryFilter('ALL');
+                                                setSubcategoryFilter('ALL');
+                                                setTypeFilter('ALL');
+                                                setSizeFilter('ALL');
+                                                setCoatFilter('ALL');
+                                            }}
+                                            className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest flex items-center gap-2 transition-colors"
+                                        >
+                                            <RotateCcw size={12} />
+                                            Limpar Filtros
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                    {/* Category Filter */}
+                                    <div>
+                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                            Categoria
+                                        </label>
+                                        <select
+                                            value={categoryFilter}
+                                            onChange={(e) => setCategoryFilter(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            {uniqueCategories.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Subcategory Filter */}
+                                    <div>
+                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                            Subcategoria
+                                        </label>
+                                        <select
+                                            value={subcategoryFilter}
+                                            onChange={(e) => setSubcategoryFilter(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        >
+                                            <option value="ALL">Todas</option>
+                                            {uniqueSubcategories.map(sub => (
+                                                <option key={sub} value={sub}>{sub}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Type Filter */}
+                                    <div>
+                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                            Tipo
+                                        </label>
+                                        <select
+                                            value={typeFilter}
+                                            onChange={(e) => setTypeFilter(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            {uniqueTypes.map(type => (
+                                                <option key={type} value={type}>{type}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Size Filter */}
+                                    <div>
+                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                            Porte
+                                        </label>
+                                        <select
+                                            value={sizeFilter}
+                                            onChange={(e) => setSizeFilter(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            {uniqueSizes.map(size => (
+                                                <option key={size} value={size}>{size}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Coat Type Filter */}
+                                    <div>
+                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                            Pelo
+                                        </label>
+                                        <select
+                                            value={coatFilter}
+                                            onChange={(e) => setCoatFilter(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        >
+                                            <option value="ALL">Todos</option>
+                                            {uniqueCoats.map(coat => (
+                                                <option key={coat} value={coat}>{coat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Active Filters Display */}
+                                {activeFiltersCount > 0 && (
+                                    <div className="mt-6 pt-6 border-t border-gray-100">
+                                        <p className="text-xs font-bold text-gray-500 mb-3">Filtros Ativos:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {categoryFilter !== 'ALL' && (
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                    Categoria: {categoryFilter}
+                                                    <button onClick={() => setCategoryFilter('ALL')} className="hover:text-red-500 transition-colors">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {subcategoryFilter !== 'ALL' && (
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                    Subcategoria: {subcategoryFilter}
+                                                    <button onClick={() => setSubcategoryFilter('ALL')} className="hover:text-red-500 transition-colors">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {typeFilter !== 'ALL' && (
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                    Tipo: {typeFilter}
+                                                    <button onClick={() => setTypeFilter('ALL')} className="hover:text-red-500 transition-colors">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {sizeFilter !== 'ALL' && (
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                    Porte: {sizeFilter}
+                                                    <button onClick={() => setSizeFilter('ALL')} className="hover:text-red-500 transition-colors">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {coatFilter !== 'ALL' && (
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                    Pelo: {coatFilter}
+                                                    <button onClick={() => setCoatFilter('ALL')} className="hover:text-red-500 transition-colors">
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
@@ -477,27 +761,48 @@ export default function ServiceManager() {
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex justify-end gap-1">
-                                                <button
-                                                    onClick={() => handleOpenModal(service)}
-                                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                                                    title="Editar"
-                                                >
-                                                    <Edit2 size={16} className="text-gray-400" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDuplicate(service)}
-                                                    className="p-2 hover:bg-blue-50 rounded-xl transition-colors"
-                                                    title="Duplicar"
-                                                >
-                                                    <Copy size={16} className="text-blue-400" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(service.id)}
-                                                    className="p-2 hover:bg-red-50 rounded-xl transition-colors"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={16} className="text-red-400" />
-                                                </button>
+                                                {tab === 'trash' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleRestore(service.id)}
+                                                            className="p-2 hover:bg-orange-50 rounded-xl transition-colors"
+                                                            title="Restaurar"
+                                                        >
+                                                            <RotateCcw size={16} className="text-orange-400" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(service.id)}
+                                                            className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                                            title="Excluir Permanentemente"
+                                                        >
+                                                            <Trash2 size={16} className="text-red-600" />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleOpenModal(service)}
+                                                            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit2 size={16} className="text-gray-400" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDuplicate(service)}
+                                                            className="p-2 hover:bg-blue-50 rounded-xl transition-colors"
+                                                            title="Duplicar"
+                                                        >
+                                                            <Copy size={16} className="text-blue-400" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(service.id)}
+                                                            className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                                            title="Excluir"
+                                                        >
+                                                            <Trash2 size={16} className="text-red-400" />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -537,15 +842,28 @@ export default function ServiceManager() {
                                                 {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
                                             </button>
                                         )}
-                                        <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
-                                            <Edit2 size={16} className="text-gray-400" />
-                                        </button>
-                                        <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
-                                            <Copy size={16} className="text-blue-400" />
-                                        </button>
-                                        <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
-                                            <Trash2 size={16} className="text-red-400" />
-                                        </button>
+                                        {tab === 'trash' ? (
+                                            <>
+                                                <button onClick={() => handleRestore(service.id)} className="p-2 hover:bg-orange-50 rounded-xl transition-colors" title="Restaurar">
+                                                    <RotateCcw size={16} className="text-orange-400" />
+                                                </button>
+                                                <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir Permanentemente">
+                                                    <Trash2 size={16} className="text-red-600" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
+                                                    <Edit2 size={16} className="text-gray-400" />
+                                                </button>
+                                                <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
+                                                    <Copy size={16} className="text-blue-400" />
+                                                </button>
+                                                <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
+                                                    <Trash2 size={16} className="text-red-400" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 

@@ -12,7 +12,8 @@ export type QuoteStatus =
     | 'REJEITADO'
     | 'AGENDAR'
     | 'AGENDADO'
-    | 'ENCERRADO';
+    | 'ENCERRADO'
+    | 'FATURAR';
 
 export type AppointmentStatus =
     | 'PENDENTE'
@@ -42,6 +43,8 @@ export const getQuoteStatusColor = (status: string) => {
             return 'bg-teal-100 text-teal-700 border-teal-200';
         case 'ENCERRADO':
             return 'bg-gray-100 text-gray-400 border-gray-200 opacity-60';
+        case 'FATURAR':
+            return 'bg-orange-100 text-orange-700 border-orange-200 font-extrabold ring-1 ring-orange-400';
         default:
             return 'bg-gray-100 text-gray-600 border-gray-200';
     }

@@ -1,7 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import {
+    useQuotes,
+    useBulkDeleteQuotes,
+    useDuplicateQuote,
+    useDeleteQuote,
+    usePermanentDeleteQuote,
+    useRestoreQuote,
+    useReactivateQuote
+} from '../../hooks/useQuotes';
 import BackButton from '../../components/BackButton';
 import QuoteEditor from './QuoteEditor';
-import { X, Search, Filter, Edit, Trash2, Copy, CheckSquare, Square, RefreshCcw, Archive, Share2, Calendar } from 'lucide-react';
+import { X, Search, Filter, Edit, Trash2, Copy, CheckSquare, Square, RefreshCcw, Archive, Share2, Calendar, DollarSign } from 'lucide-react';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
@@ -10,6 +21,10 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { getQuoteStatusColor } from '../../utils/statusColors';
 import CascadeDeleteModal from '../../components/modals/CascadeDeleteModal';
+import toast from 'react-hot-toast';
+import QuoteTableRow from '../../components/staff/QuoteTableRow';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
+import Skeleton from '../../components/Skeleton';
 
 interface QuoteItem {
     id: string;
@@ -41,9 +56,10 @@ interface Quote {
     appointments?: { id: string; category: string; status: string; startAt?: string }[];
 }
 
+
 export default function QuoteManager() {
-    const [quotes, setQuotes] = useState<Quote[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [view, setView] = useState<'active' | 'trash' | 'history'>('active');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -56,8 +72,31 @@ export default function QuoteManager() {
     const [viewCustomerData, setViewCustomerData] = useState<string | null>(null);
     const [preFillData, setPreFillData] = useState<any>(null);
     const [appointmentSelectionQuote, setAppointmentSelectionQuote] = useState<Quote | null>(null);
-    const [cascadeModalOpen, setCascadeModalOpen] = useState(false);
     const [selectedQuoteForDelete, setSelectedQuoteForDelete] = useState<string | null>(null);
+
+    // Advanced Filters
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [valueRange, setValueRange] = useState({ min: 0, max: 0 });
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+    // React Query Hooks
+    const { data: quotes = [], isLoading, isFetching } = useQuotes(view);
+    const bulkDeleteMutation = useBulkDeleteQuotes();
+    const duplicateMutation = useDuplicateQuote();
+    const deleteMutation = useDeleteQuote();
+    const permanentDeleteMutation = usePermanentDeleteQuote();
+    const restoreMutation = useRestoreQuote();
+    const reactivateMutation = useReactivateQuote();
+
+    const handleRestore = (id: string) => {
+        if (!window.confirm('Restaurar este orçamento?')) return;
+        restoreMutation.mutate(id);
+    };
+
+    const handleReactivate = (id: string) => {
+        if (!window.confirm('Reativar este orçamento? Especialmente útil para orçamentos encerrados.')) return;
+        reactivateMutation.mutate(id);
+    };
 
     const handleSelectAll = () => {
         if (selectedIds.length === filteredQuotes.length) {
@@ -67,24 +106,7 @@ export default function QuoteManager() {
         }
     };
 
-    const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'AGENDADO', 'ENCERRADO'];
-
-    useEffect(() => {
-        fetchQuotes();
-    }, [view]);
-
-    const fetchQuotes = async () => {
-        setIsLoading(true);
-        try {
-            const endpoint = view === 'trash' ? '/quotes/trash' : '/quotes';
-            const response = await api.get(endpoint);
-            setQuotes(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar orçamentos:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const statuses = ['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'AGENDADO', 'ENCERRADO', 'FATURAR'];
 
     const toggleSelect = (id: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
@@ -92,24 +114,14 @@ export default function QuoteManager() {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`ATENÇÃO: Deseja realmente excluir PERMANENTEMENTE os ${selectedIds.length} orçamentos selecionados ? `)) return;
-        try {
-            await api.post('/quotes/bulk-delete', { ids: selectedIds });
-            fetchQuotes();
-            setSelectedIds([]);
-        } catch (error) {
-            alert('Erro ao excluir orçamentos');
-        }
+        if (!window.confirm(`Deseja excluir ${selectedIds.length} orçamentos?`)) return;
+        bulkDeleteMutation.mutate(selectedIds, {
+            onSuccess: () => setSelectedIds([])
+        });
     };
-
-    const handleDuplicate = async (id: string) => {
+    const handleDuplicate = (id: string) => {
         if (!window.confirm('Deseja duplicar este orçamento?')) return;
-        try {
-            await api.post(`/quotes/${id}/duplicate`);
-            fetchQuotes();
-        } catch (error) {
-            console.error('Erro ao duplicar:', error);
-        }
+        duplicateMutation.mutate(id);
     };
 
     const handleShare = (quote: Quote) => {
@@ -125,28 +137,31 @@ export default function QuoteManager() {
         window.open(url, '_blank');
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if (!window.confirm('Mover orçamento para a lixeira?')) return;
-        try {
-            await api.delete(`/quotes/${id}`);
-            fetchQuotes();
-        } catch (error) {
-            console.error('Erro ao deletar:', error);
-        }
+        deleteMutation.mutate(id);
     };
 
-    const handlePermanentDelete = async (id: string) => {
+    const handlePermanentDelete = (id: string) => {
         if (!window.confirm('EXCLUIR PERMANENTEMENTE? Esta ação não pode ser desfeita.')) return;
+        permanentDeleteMutation.mutate(id);
+    };
+
+    const handleBatchBill = async () => {
+        const hasFaturar = quotes.some(q => q.status === 'FATURAR');
+        if (!hasFaturar) {
+            toast.error('Nenhum orçamento com status FATURAR encontrado.');
+            return;
+        }
+
+        if (!window.confirm('Deseja gerar faturas individuais para todos os orçamentos com status FATURAR? Orçamentos do mesmo cliente serão agrupados em uma única fatura.')) return;
+
         try {
-            await api.delete(`/quotes/${id}/permanent`);
-            fetchQuotes();
-        } catch (error: any) {
-            if (error.response?.data?.error) {
-                alert(error.response.data.error);
-            } else {
-                console.error('Erro ao excluir permanentemente:', error);
-                alert('Erro ao tentar excluir permanentemente o orçamento');
-            }
+            const response = await api.post('/invoices/batch');
+            toast.success(response.data.message);
+            queryClient.invalidateQueries({ queryKey: ['quotes'] });
+        } catch (error) {
+            toast.error('Erro ao processar faturamento em lote');
         }
     };
 
@@ -202,7 +217,14 @@ export default function QuoteManager() {
 
             const matchesStatus = statusFilter === 'ALL' || q.status === statusFilter;
 
-            return matchesSearch && matchesStatus;
+            const quoteDate = new Date(q.createdAt);
+            const matchesDate = (!dateRange.start || quoteDate >= new Date(dateRange.start)) &&
+                (!dateRange.end || quoteDate <= new Date(dateRange.end));
+
+            const matchesValue = (!valueRange.min || q.totalAmount >= valueRange.min) &&
+                (!valueRange.max || q.totalAmount <= valueRange.max);
+
+            return matchesSearch && matchesStatus && matchesDate && matchesValue;
         });
 
     const getStatusColor = (status: string) => getQuoteStatusColor(status);
@@ -214,6 +236,7 @@ export default function QuoteManager() {
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
                     <div className="flex-1">
+                        <Breadcrumbs />
                         <BackButton className="mb-4 ml-[-1rem]" />
                         <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
                             <div className="h-[2px] w-6 bg-primary"></div>
@@ -224,12 +247,21 @@ export default function QuoteManager() {
 
                     <div className="flex flex-wrap items-center gap-4">
                         <button
-                            onClick={fetchQuotes}
-                            disabled={isLoading}
+                            onClick={handleBatchBill}
+                            className="bg-orange-500 text-white px-6 py-4 rounded-[20px] font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20"
+                            title="Faturar Orçamentos Pendentes"
+                        >
+                            <DollarSign size={18} />
+                            Faturamento Lote
+                        </button>
+
+                        <button
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                            disabled={isFetching}
                             className="bg-white p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
                             title="Atualizar Lista"
                         >
-                            <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+                            <RefreshCcw size={20} className={isFetching ? 'animate-spin' : ''} />
                         </button>
 
                         <button
@@ -303,7 +335,7 @@ export default function QuoteManager() {
                     )}
                 </AnimatePresence>
 
-                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <div className="flex-1 relative">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
@@ -322,15 +354,76 @@ export default function QuoteManager() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-transparent border-none py-4 px-6 text-xs font-black uppercase tracking-widest text-secondary focus:ring-0 min-w-[200px] appearance-none"
+                            className="bg-transparent border-none py-4 px-6 text-xs font-black uppercase tracking-widest text-secondary focus:ring-0 min-w-[200px] appearance-none cursor-pointer"
                         >
                             <option value="ALL">Todos os Status</option>
                             {statuses.map(s => (
                                 <option key={s} value={s}>{s}</option>
                             ))}
                         </select>
+                        <button
+                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                            className={`px-6 py-4 border-l border-gray-100 transition-all ${showAdvancedFilters ? 'bg-primary text-white' : 'hover:bg-gray-50 text-gray-400'}`}
+                        >
+                            <Filter size={18} />
+                        </button>
                     </div>
                 </div>
+
+                <AnimatePresence>
+                    {showAdvancedFilters && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden mb-8"
+                        >
+                            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Inicial</label>
+                                    <input
+                                        type="date"
+                                        value={dateRange.start}
+                                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Final</label>
+                                    <input
+                                        type="date"
+                                        value={dateRange.end}
+                                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor Mínimo</label>
+                                    <input
+                                        type="number"
+                                        placeholder="R$ 0,00"
+                                        value={valueRange.min || ''}
+                                        onChange={(e) => setValueRange({ ...valueRange, min: parseFloat(e.target.value) || 0 })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary"
+                                    />
+                                </div>
+                                <div className="space-y-2 flex flex-col justify-end">
+                                    <button
+                                        onClick={() => {
+                                            setDateRange({ start: '', end: '' });
+                                            setValueRange({ min: 0, max: 0 });
+                                            setSearchTerm('');
+                                            setStatusFilter('ALL');
+                                        }}
+                                        className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                                    >
+                                        Limpar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
                     <table className="w-full text-left">
@@ -355,12 +448,40 @@ export default function QuoteManager() {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan={6} className="px-8 py-32 text-center">
-                                        <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
-                                    </td>
-                                </tr>
-                            ) : filteredQuotes.length === 0 ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-8 py-6"><Skeleton variant="rounded" className="h-6 w-6" /></td>
+                                        <td className="px-8 py-6">
+                                            <div className="space-y-2">
+                                                <Skeleton variant="text" className="h-4 w-32" />
+                                                <Skeleton variant="text" className="h-3 w-48 opacity-50" />
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Skeleton variant="text" className="h-3 w-20" />
+                                                <Skeleton variant="text" className="h-3 w-16 opacity-50" />
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex justify-center">
+                                                <Skeleton variant="rounded" className="h-6 w-24" />
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <div className="flex justify-end">
+                                                <Skeleton variant="text" className="h-5 w-16" />
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex justify-end gap-2">
+                                                <Skeleton variant="circular" className="h-8 w-8" />
+                                                <Skeleton variant="circular" className="h-8 w-8" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (filteredQuotes || []).length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-8 py-32 text-center">
                                         <div className="bg-gray-50 rounded-[40px] p-20 border-2 border-dashed border-gray-100">
@@ -370,197 +491,55 @@ export default function QuoteManager() {
                                     </td>
                                 </tr>
                             ) : (filteredQuotes || []).map(quote => quote && (
-                                <tr key={quote.id} className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(quote.id) ? 'bg-primary/5' : ''}`}>
-                                    <td className="px-8 py-6">
-                                        {(isBulkMode || selectedIds.includes(quote.id)) && (
-                                            <button
-                                                onClick={(e) => toggleSelect(quote.id, e)}
-                                                className={`transition-all ${selectedIds.includes(quote.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
-                                            >
-                                                {selectedIds.includes(quote.id) ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
-                                            </button>
-                                        )}
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex flex-col">
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setViewCustomerData(quote.customerId); }}
-                                                    className="font-black text-secondary uppercase tracking-tighter text-lg hover:text-primary transition-colors text-left"
-                                                >
-                                                    {quote.customer.name}
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setSelectedQuoteId(quote.id); }}
-                                                    className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest hover:bg-secondary hover:text-white transition-colors"
-                                                >
-                                                    OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
-                                                </button>
-                                            </div>
-                                            {quote.pet && (
-                                                <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
-                                                    Pet: {quote.pet.name}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6 text-center">
-                                        <div className="flex flex-col gap-1 items-center">
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-[11px] font-black text-secondary uppercase tracking-widest">
-                                                    {quote.desiredAt ? new Date(quote.desiredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Sem data'}
-                                                </span>
-                                                <span className="text-[9px] font-bold text-gray-400">Criado em {new Date(quote.createdAt).toLocaleDateString('pt-BR')}</span>
-                                            </div>
-                                            {quote.type && (
-                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-[0.1em] ${quote.type === 'SPA' ? 'bg-blue-100 text-blue-600' : quote.type === 'TRANSPORTE' ? 'bg-orange-100 text-orange-600' : 'bg-purple-100 text-purple-600'}`}>
-                                                    {quote.type.replace('_', ' ')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6 text-center">
-                                        {quote.status === 'AGENDADO' && quote.appointments && quote.appointments.length > 0 ? (
-                                            <button
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    if (quote.appointments!.length === 1) {
-                                                        try {
-                                                            const res = await api.get(`/appointments/${quote.appointments![0].id}`);
-                                                            setViewAppointmentData(res.data);
-                                                            setSelectedAppointmentId(quote.appointments![0].id);
-                                                        } catch (err) {
-                                                            console.error('Erro ao buscar agendamento', err);
-                                                            alert('Erro ao carregar detalhes do agendamento');
-                                                        }
-                                                    } else {
-                                                        setAppointmentSelectionQuote(quote);
-                                                    }
-                                                }}
-                                                className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(quote.status)} hover:ring-2 hover:ring-offset-2 hover:ring-green-500 transition-all cursor-pointer`}
-                                            >
-                                                {quote.status}
-                                            </button>
-                                        ) : (
-                                            <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(quote.status)}`}>
-                                                {quote.status}
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-8 py-6 text-right font-black text-secondary text-lg">
-                                        R$ {quote.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {view === 'trash' ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (window.confirm('Deseja restaurar este orçamento para a lista de ativos?')) {
-                                                                api.post(`/quotes/${quote.id}/restore`).then(() => fetchQuotes());
-                                                            }
-                                                        }}
-                                                        className="p-2 hover:bg-green-50 text-green-500 rounded-xl transition-all"
-                                                        title="Restaurar"
-                                                    >
-                                                        <RefreshCcw size={18} />
-                                                    </button>
-                                                    <button onClick={() => handlePermanentDelete(quote.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-all" title="Excluir Permanente"><Trash2 size={18} /></button>
-                                                </>
-                                            ) : view === 'history' ? (
-                                                <>
-                                                    <button onClick={() => handleDuplicate(quote.id)} className="p-2 hover:bg-blue-50 text-blue-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Duplicar Orçamento"><Copy size={18} /></button>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('Deseja REATIVAR este orçamento? Ele voltará para a lista de ativos com status SOLICITADO.')) {
-                                                                try {
-                                                                    await api.patch(`/quotes/${quote.id}`, { status: 'SOLICITADO' });
-                                                                    fetchQuotes();
-                                                                } catch (err) {
-                                                                    alert('Erro ao reativar orçamento');
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-2"
-                                                        title="Reativar Orçamento"
-                                                    >
-                                                        <RefreshCcw size={14} /> Reativar
-                                                    </button>
-                                                    <button onClick={() => setSelectedQuoteId(quote.id)} className="p-2 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button onClick={() => handleDuplicate(quote.id)} className="p-2 hover:bg-blue-50 text-blue-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Duplicar"><Copy size={18} /></button>
-                                                    <button onClick={() => handleShare(quote)} className="p-2 hover:bg-green-50 text-green-600 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Compartilhar no WhatsApp"><Share2 size={18} /></button>
-                                                    <button onClick={() => handleDelete(quote.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Mover para Lixeira"><Trash2 size={18} /></button>
-                                                    <button onClick={() => setSelectedQuoteId(quote.id)} className="p-2 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
-                                                    {quote.status === 'APROVADO' && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleSchedule(quote); }}
-                                                            className="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-2"
-                                                            title="Agendar Agora"
-                                                        >
-                                                            <Calendar size={14} /> Agendar
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
+                                <QuoteTableRow
+                                    key={quote.id}
+                                    quote={quote}
+                                    view={view}
+                                    isBulkMode={isBulkMode}
+                                    isSelected={selectedIds.includes(quote.id)}
+                                    onToggleSelect={toggleSelect}
+                                    onViewCustomer={setViewCustomerData}
+                                    onViewDetails={(id) => navigate(`/staff/quotes/${id}`)}
+                                    onDuplicate={handleDuplicate}
+                                    onShare={handleShare}
+                                    onDelete={handleDelete}
+                                    onPermanentDelete={handlePermanentDelete}
+                                    onRestore={handleRestore}
+                                    onReactivate={handleReactivate}
+                                    onSchedule={handleSchedule}
+                                    onViewAppointment={async (q) => {
+                                        if (q.appointments!.length === 1) {
+                                            try {
+                                                const res = await api.get(`/appointments/${q.appointments![0].id}`);
+                                                setViewAppointmentData(res.data);
+                                                setSelectedAppointmentId(q.appointments![0].id);
+                                            } catch (err) {
+                                                console.error('Erro ao buscar agendamento', err);
+                                                alert('Erro ao carregar detalhes do agendamento');
+                                            }
+                                        } else {
+                                            setAppointmentSelectionQuote(q);
+                                        }
+                                    }}
+                                />
                             ))}
                         </tbody>
                     </table>
                 </div>
 
-                {/* Edit Modal */}
-                <AnimatePresence>
-                    {selectedQuoteId && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                onClick={() => setSelectedQuoteId(null)}
-                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            />
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="bg-white w-full max-w-6xl max-h-[90vh] rounded-[40px] shadow-2xl relative z-10 overflow-hidden flex flex-col"
-                            >
-                                <button
-                                    onClick={() => setSelectedQuoteId(null)}
-                                    className="absolute top-6 right-6 z-50 p-2 bg-white/50 hover:bg-white rounded-full text-gray-400 hover:text-red-500 transition-all shadow-sm"
-                                >
-                                    <X size={24} />
-                                </button>
-                                <QuoteEditor
-                                    quoteId={selectedQuoteId}
-                                    onClose={() => setSelectedQuoteId(null)}
-                                    onUpdate={fetchQuotes}
-                                    onSchedule={(qData) => {
-                                        setSelectedQuoteId(null);
-                                        handleSchedule(qData);
-                                    }}
-                                />
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                {/* Edit Modal (Removed to avoid nesting - now using direct page navigation) */}
 
                 <AppointmentFormModal
                     isOpen={isAppointmentModalOpen}
                     onClose={() => setIsAppointmentModalOpen(false)}
-                    onSuccess={fetchQuotes}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
                     preFill={preFillData}
                 />
 
                 <AppointmentDetailsModal
                     isOpen={!!selectedAppointmentId}
                     onClose={() => setSelectedAppointmentId(null)}
-                    onSuccess={fetchQuotes}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
                     appointment={viewAppointmentData}
                     onModify={() => { }}
                     onCopy={() => { }}
@@ -573,7 +552,7 @@ export default function QuoteManager() {
                             isOpen={!!viewCustomerData}
                             onClose={() => setViewCustomerData(null)}
                             customerId={viewCustomerData}
-                            onUpdate={fetchQuotes}
+                            onUpdate={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
                         />
                     )}
                 </AnimatePresence>

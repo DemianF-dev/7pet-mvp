@@ -1,27 +1,27 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Plus,
-    Trash2,
     Send,
     CheckCircle2,
     AlertCircle,
-    Truck,
-    Scissors,
-    Sparkles,
-    ChevronRight,
     ChevronLeft,
-    MapPin,
-    Minus,
-    RefreshCcw
+    Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import BackButton from '../../components/BackButton';
 import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
-import ServiceAutocomplete from '../../components/ServiceAutocomplete';
 import LoadingButton from '../../components/LoadingButton';
+
+// Refactored Components
+import QuoteTypeSelection from '../../components/client/QuoteTypeSelection';
+import PetDateSelection from '../../components/client/PetDateSelection'; // Keep for compat if needed, but we'll use others
+import SPAServicesSection from '../../components/client/SPAServicesSection';
+import TransportSection from '../../components/client/TransportSection';
+import PetHairSelection from '../../components/client/PetHairSelection';
+import DateTimeSelection from '../../components/client/DateTimeSelection';
 
 const SHOP_ADDRESS = "The Pet - Av Hildebrando de Lima, 525, Km 18, Osasco, SP";
 
@@ -34,6 +34,7 @@ interface Service {
     minWeight?: number;
     maxWeight?: number;
     sizeLabel?: string;
+    coatType?: string;
 }
 
 interface Pet {
@@ -46,9 +47,20 @@ interface Pet {
 
 type QuoteType = 'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE';
 
-const KNOT_REGIONS = [
-    'Orelhas', 'Rostinho', 'Pescoço', 'Barriga', 'Costas', 'Patas', 'Bumbum', 'Rabo'
-];
+const fetchServices = async (): Promise<Service[]> => {
+    const response = await api.get('/services');
+    return response.data;
+};
+
+const fetchPets = async (): Promise<Pet[]> => {
+    const response = await api.get('/pets');
+    return response.data;
+};
+
+const fetchMe = async () => {
+    const response = await api.get('/auth/me');
+    return response.data;
+};
 
 export default function QuoteRequest() {
     const navigate = useNavigate();
@@ -56,11 +68,15 @@ export default function QuoteRequest() {
     const [quoteType, setQuoteType] = useState<QuoteType | null>(null);
 
     const [items, setItems] = useState([{ serviceId: '', description: '', quantity: 1 }]);
-    const [services, setServices] = useState<Service[]>([]);
-    const [pets, setPets] = useState<Pet[]>([]);
     const [selectedPetId, setSelectedPetId] = useState('');
     const [desiredDate, setDesiredDate] = useState('');
     const [desiredTime, setDesiredTime] = useState('');
+
+    const { data: services = [] } = useQuery({ queryKey: ['services'], queryFn: fetchServices });
+    const { data: pets = [] } = useQuery({ queryKey: ['pets'], queryFn: fetchPets });
+    const { data: userData } = useQuery({ queryKey: ['me'], queryFn: fetchMe });
+
+    const [communicationPrefs, setCommunicationPrefs] = useState<string[]>(['APP']);
 
     // SPA Details
     const [spaDetails, setSpaDetails] = useState({
@@ -79,58 +95,105 @@ export default function QuoteRequest() {
         petQuantity: 1,
         period: 'MANHA'
     });
-    const [communicationPrefs, setCommunicationPrefs] = useState<string[]>(['APP']);
+
+    useEffect(() => {
+        if (userData?.customer?.communicationPrefs) {
+            setCommunicationPrefs(userData.customer.communicationPrefs);
+        }
+        const userAddress = userData?.address || userData?.customer?.address;
+        if (userAddress && !transportDetails.origin) {
+            setTransportDetails(prev => ({
+                ...prev,
+                origin: userAddress,
+                returnAddress: userAddress
+            }));
+        }
+    }, [userData]);
+
+    const [transportInfo, setTransportInfo] = useState<{
+        distanceText: string;
+        durationText: string;
+        distanceValue: number;
+        durationValue: number;
+        estimatedPrice?: number;
+    } | null>(null);
+    const [isCalculatingTransport, setIsCalculatingTransport] = useState(false);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [servicesRes, petsRes, userRes] = await Promise.all([
-                    api.get('/services'),
-                    api.get('/pets'),
-                    api.get('/auth/me')
-                ]);
-                setServices(servicesRes.data);
-                setPets(petsRes.data);
-                if (userRes.data?.customer?.communicationPrefs) {
-                    setCommunicationPrefs(userRes.data.customer.communicationPrefs);
-                }
-
-                // Set default origin address if available
-                const userAddress = userRes.data?.address || userRes.data?.customer?.address;
-                if (userAddress) {
-                    setTransportDetails(prev => ({
-                        ...prev,
-                        origin: userAddress,
-                        returnAddress: userAddress
-                    }));
-                }
-            } catch (err) {
-                console.error('Erro ao buscar dados:', err);
-            }
-        };
-        fetchData();
-    }, []);
-
     const selectedPet = pets.find(p => p.id === selectedPetId);
 
-    // Filter services based on selected pet species only
-    // Weight-based pricing adjustments are handled by operators during quote review
+    // Helper: Determine pet size based on weight
+    const getPetSize = (weight?: number): string | null => {
+        if (!weight) return null;
+        if (weight <= 3) return 'PP';
+        if (weight <= 7) return 'P';
+        if (weight <= 15) return 'M';
+        if (weight <= 30) return 'G';
+        if (weight <= 45) return 'GG';
+        return 'XG';
+    };
+
+    const petSize = selectedPet ? getPetSize(selectedPet.weight) : null;
+
+    // Filter services based on selected pet species, size (porte), and hair type
     const availableServices = services.filter(s => {
         if (!selectedPet) return true;
 
-        // Only filter by species - show all services for the pet's species
-        const speciesMatch = s.species.toLowerCase().includes(selectedPet.species.toLowerCase()) ||
-            (selectedPet.species.toLowerCase() === 'cachorro' && s.species === 'Canino') ||
-            (selectedPet.species.toLowerCase() === 'gato' && s.species === 'Felino');
+        // 1. Species Match (Canino/Felino)
+        const petSpecies = selectedPet.species.toLowerCase();
+        const serviceSpecies = s.species.toLowerCase();
 
-        return speciesMatch;
+        const speciesMatch = serviceSpecies.includes(petSpecies) ||
+            (petSpecies === 'cachorro' && serviceSpecies === 'canino') ||
+            (petSpecies === 'gato' && serviceSpecies === 'felino');
+
+        if (!speciesMatch) return false;
+
+        // 2. Size/Porte Match - Show only services for the pet's size
+        if (petSize && s.sizeLabel) {
+            // Service has a specific size requirement, check if it matches
+            if (s.sizeLabel !== petSize) return false;
+        }
+
+        // 3. Hair Type Filter - Match coatType with selected hairLength
+        if (spaDetails.hairLength && s.coatType) {
+            const hairMap: { [key: string]: string } = {
+                'curto': 'Curto',
+                'medio': 'Médio',
+                'longo': 'Longo'
+            };
+
+            const expectedCoat = hairMap[spaDetails.hairLength];
+            if (expectedCoat && s.coatType !== expectedCoat) return false;
+        }
+
+        return true;
     });
 
+    // Categorize services for SPA
+    const banhoServices = availableServices.filter(s =>
+        s.category && s.category.toLowerCase() === 'banhos'
+    );
+    const tosaServices = availableServices.filter(s =>
+        s.category && s.category.toLowerCase() === 'tosas'
+    );
+    const extraServices = availableServices.filter(s =>
+        s.category && s.category.toLowerCase() === 'adicionais'
+    );
+
+    const [selectedBanhoId, setSelectedBanhoId] = useState('');
+    const [selectedTosaId, setSelectedTosaId] = useState('');
+
+    useEffect(() => {
+        // Reset selections when pet changes to ensure compatibility with weight/porte limits
+        setSelectedBanhoId('');
+        setSelectedTosaId('');
+        setItems([]);
+    }, [selectedPetId]);
 
     const addItem = () => setItems([...items, { serviceId: '', description: '', quantity: 1 }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
@@ -161,6 +224,21 @@ export default function QuoteRequest() {
         }));
     };
 
+    const handleCalculateTransport = async () => {
+        if (!transportDetails.origin) return;
+
+        setIsCalculatingTransport(true);
+        try {
+            const res = await api.post('/maps/calculate', { address: transportDetails.origin });
+            setTransportInfo(res.data);
+        } catch (err) {
+            console.error('Erro ao calcular transporte:', err);
+            // Optionally set an error state for transport specific error
+        } finally {
+            setIsCalculatingTransport(false);
+        }
+    };
+
     const handleConfirmSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -169,9 +247,12 @@ export default function QuoteRequest() {
             return;
         }
 
-        if (quoteType !== 'TRANSPORTE' && items.some(item => !item.serviceId)) {
-            setError('Por favor, selecione o serviço para todos os itens.');
-            return;
+        if (quoteType !== 'TRANSPORTE') {
+            const hasAnySPAService = selectedBanhoId || selectedTosaId || items.some(item => item.serviceId);
+            if (!hasAnySPAService) {
+                setError('Por favor, selecione ao menos um serviço de SPA (Banho, Tosa ou Extra).');
+                return;
+            }
         }
 
         if (quoteType !== 'SPA' && !transportDetails.origin) {
@@ -189,9 +270,24 @@ export default function QuoteRequest() {
         try {
             const desiredAt = desiredDate && desiredTime ? `${desiredDate}T${desiredTime}` : undefined;
 
+            // Combine categorized items
+            const finalItems = [
+                ...(selectedBanhoId ? [{
+                    serviceId: selectedBanhoId,
+                    description: services.find(s => s.id === selectedBanhoId)?.name || 'Banho',
+                    quantity: 1
+                }] : []),
+                ...(selectedTosaId ? [{
+                    serviceId: selectedTosaId,
+                    description: services.find(s => s.id === selectedTosaId)?.name || 'Tosa',
+                    quantity: 1
+                }] : []),
+                ...items.filter(item => item.serviceId)
+            ];
+
             await api.post('/quotes', {
                 type: quoteType,
-                items: quoteType === 'TRANSPORTE' ? [] : items,
+                items: quoteType === 'TRANSPORTE' ? [] : finalItems,
                 petId: selectedPetId,
                 desiredAt,
                 // Transport Fields
@@ -205,72 +301,20 @@ export default function QuoteRequest() {
                 knotRegions: spaDetails.knotRegions.join(', '),
                 hairLength: spaDetails.hairLength,
                 hasParasites: spaDetails.hasParasites,
-                communicationPrefs // This will be saved in the user profile too via the backend if we want, but for now it's just in the quote if we add it or we can call updateMe
+                communicationPrefs
             });
 
             // Proactively update user preference
             await api.patch('/auth/me', { communicationPrefs });
 
             setSuccess(true);
-            setShowConfirmSubmit(false); // Close modal on success
+            setShowConfirmSubmit(false);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao enviar solicitação.');
         } finally {
             setIsSubmitting(false);
         }
     };
-
-    const renderTypeSelection = () => (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <button
-                type="button"
-                onClick={() => { setQuoteType('SPA'); setStep(2); }}
-                className="group relative bg-white p-10 rounded-[48px] shadow-sm hover:shadow-2xl hover:shadow-primary/10 border border-gray-100 transition-all flex flex-col items-center text-center overflow-hidden active:scale-95"
-            >
-                <div className="absolute top-0 left-0 w-full h-2 bg-primary/20 group-hover:bg-primary transition-colors" />
-                <div className="w-20 h-20 bg-primary/5 rounded-3xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-                    <Scissors size={40} />
-                </div>
-                <h3 className="text-xl font-black text-secondary mb-2">Serviços de SPA</h3>
-                <p className="text-gray-400 text-sm font-medium leading-relaxed">Banho, tosa e cuidados especiais.</p>
-                <div className="mt-8 p-2 bg-gray-50 rounded-full text-gray-400 group-hover:text-primary group-hover:bg-primary/10 transition-all">
-                    <ChevronRight size={24} />
-                </div>
-            </button>
-
-            <button
-                type="button"
-                onClick={() => { setQuoteType('TRANSPORTE'); setStep(2); }}
-                className="group relative bg-white p-10 rounded-[48px] shadow-sm hover:shadow-2xl hover:shadow-orange-500/10 border border-gray-100 transition-all flex flex-col items-center text-center overflow-hidden active:scale-95"
-            >
-                <div className="absolute top-0 left-0 w-full h-2 bg-orange-500/20 group-hover:bg-orange-500 transition-colors" />
-                <div className="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-500 mb-6 group-hover:scale-110 transition-transform">
-                    <Truck size={40} />
-                </div>
-                <h3 className="text-xl font-black text-secondary mb-2">Apenas Transporte</h3>
-                <p className="text-gray-400 text-sm font-medium leading-relaxed">Logística Leva e Traz profissional.</p>
-                <div className="mt-8 p-2 bg-gray-50 rounded-full text-gray-400 group-hover:text-orange-500 group-hover:bg-orange-50 transition-all">
-                    <ChevronRight size={24} />
-                </div>
-            </button>
-
-            <button
-                type="button"
-                onClick={() => { setQuoteType('SPA_TRANSPORTE'); setStep(2); }}
-                className="group relative bg-gradient-to-br from-secondary to-secondary/90 p-10 rounded-[48px] shadow-xl hover:shadow-secondary/20 border border-gray-800 transition-all flex flex-col items-center text-center overflow-hidden active:scale-95"
-            >
-                <div className="absolute top-0 left-0 w-full h-2 bg-primary" />
-                <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-                    <Sparkles size={40} />
-                </div>
-                <h3 className="text-xl font-black text-white mb-2">SPA + Transporte</h3>
-                <p className="text-gray-400 text-sm font-medium leading-relaxed">O combo completo com praticidade.</p>
-                <div className="mt-8 p-2 bg-white/5 rounded-full text-white/40 group-hover:text-primary group-hover:bg-white transition-all">
-                    <ChevronRight size={24} />
-                </div>
-            </button>
-        </div>
-    );
 
     if (success) {
         return (
@@ -304,9 +348,9 @@ export default function QuoteRequest() {
             <main className="flex-1 md:ml-64 p-6 md:p-10 max-w-5xl">
                 <header className="mb-10">
                     <div className="flex items-center gap-4 mb-4">
-                        {step === 2 && (
+                        {(step === 2 || step === 3) && (
                             <button
-                                onClick={() => setStep(1)}
+                                onClick={() => setStep(step === 3 ? 2 : 1)}
                                 className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
                             >
                                 <ChevronLeft size={24} />
@@ -316,282 +360,79 @@ export default function QuoteRequest() {
                     </div>
                     <h1 className="text-4xl font-extrabold text-secondary">Solicitar <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Orçamento</span></h1>
                     <p className="text-gray-500 mt-3">
-                        {step === 1 ? 'Escolha o tipo de serviço que você precisa:' : `Detalhes para ${quoteType === 'SPA' ? 'SPA' : quoteType === 'TRANSPORTE' ? 'Transporte' : 'SPA + Transporte'}`}
+                        {step === 1 ? 'Escolha o tipo de serviço:' :
+                            step === 2 ? 'Fale um pouco sobre seu Pet:' :
+                                `Detalhes para ${quoteType === 'SPA' ? 'SPA' : quoteType === 'TRANSPORTE' ? 'Transporte' : 'SPA + Transporte'}`}
                     </p>
                 </header>
 
-                {step === 1 ? renderTypeSelection() : (
+                {step === 1 ? (
+                    <QuoteTypeSelection onSelect={(type) => { setQuoteType(type); setStep(2); }} />
+                ) : step === 2 ? (
+                    <PetHairSelection
+                        pets={pets}
+                        selectedPetId={selectedPetId}
+                        onPetChange={setSelectedPetId}
+                        hairLength={spaDetails.hairLength}
+                        onHairLengthChange={(length) => setSpaDetails(p => ({ ...p, hairLength: length }))}
+                        quoteType={quoteType}
+                        onNext={() => setStep(3)}
+                    />
+                ) : (
                     <motion.form
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         onSubmit={handleConfirmSubmit}
                         className="space-y-6"
                     >
-                        <div className="bg-white rounded-[48px] p-10 shadow-sm border border-gray-50 overflow-hidden relative">
-                            {/* Pet and Date Section */}
-                            <div className="flex flex-col md:flex-row gap-4 mb-10 pb-10 border-b border-gray-100">
-                                <div className="flex-1 space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Sobre qual Pet?</label>
-                                    <select
-                                        required
-                                        value={selectedPetId}
-                                        onChange={(e) => setSelectedPetId(e.target.value)}
-                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-4 shadow-sm text-secondary font-bold appearance-none transition-all"
-                                    >
-                                        <option value="">Selecione o pet...</option>
-                                        {pets.map(pet => (
-                                            <option key={pet.id} value={pet.id}>{pet.name} ({pet.species})</option>
-                                        ))}
-                                    </select>
+                        <div className="bg-white rounded-[48px] p-10 shadow-sm border border-gray-100 overflow-hidden relative">
+                            {/* Summary header for chosen pet/hair */}
+                            <div className="mb-10 bg-gray-50 p-6 rounded-[32px] flex items-center justify-between border border-gray-100">
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Escolha Personalizada p/</p>
+                                    <h3 className="text-lg font-black text-secondary uppercase">{selectedPet?.name} <span className="text-primary italic opacity-50">• {spaDetails.hairLength}</span></h3>
                                 </div>
-                                <div className="flex-1 space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Data Pretendida</label>
-                                    <input
-                                        type="date"
-                                        value={desiredDate}
-                                        onChange={(e) => setDesiredDate(e.target.value)}
-                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-4 shadow-sm text-secondary font-bold transition-all"
-                                    />
-                                </div>
-                                <div className="flex-1 space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Horário</label>
-                                    <input
-                                        type="time"
-                                        step="900"
-                                        value={desiredTime}
-                                        onChange={(e) => setDesiredTime(e.target.value)}
-                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-4 shadow-sm text-secondary font-bold transition-all"
-                                    />
-                                </div>
+                                <button type="button" onClick={() => setStep(2)} className="text-[10px] font-black uppercase text-primary hover:underline">Trocar Pet</button>
                             </div>
 
-                            {/* SPA SECTION */}
+                            <DateTimeSelection
+                                desiredDate={desiredDate}
+                                onDateChange={setDesiredDate}
+                                desiredTime={desiredTime}
+                                onTimeChange={setDesiredTime}
+                            />
+
                             {quoteType !== 'TRANSPORTE' && (
-                                <div className="mb-12 animate-in fade-in duration-500">
-                                    <h2 className="text-xl font-black text-secondary mb-8 flex items-center gap-3">
-                                        <div className="p-2 bg-primary/10 rounded-xl text-primary"><Scissors size={20} /></div>
-                                        Seção SPA
-                                    </h2>
-
-                                    {/* Service Selection */}
-                                    <div className="space-y-4 mb-8">
-                                        {items.map((item, index) => (
-                                            <div key={index} className="flex flex-col md:flex-row gap-4 items-end bg-gray-50 p-6 rounded-[28px] border border-gray-200">
-                                                <div className="flex-1 w-full space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Serviço Desejado</label>
-                                                    <ServiceAutocomplete
-                                                        services={availableServices}
-                                                        value={item.serviceId}
-                                                        onSelect={(id) => handleServiceSelect(index, id)}
-                                                        placeholder="Ex: Banho, Tosa Higiênica..."
-                                                    />
-                                                </div>
-                                                <div className="w-full md:w-32 space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Qtd</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={item.quantity}
-                                                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
-                                                        className="w-full bg-white border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-4 shadow-sm text-secondary font-bold transition-all"
-                                                    />
-                                                </div>
-                                                {items.length > 1 && (
-                                                    <button type="button" onClick={() => removeItem(index)} className="p-4 text-red-400 hover:bg-red-50 rounded-2xl mb-1">
-                                                        <Trash2 size={24} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                        <button type="button" onClick={addItem} className="w-full py-4 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold hover:border-primary hover:text-primary transition-all text-xs uppercase">
-                                            <Plus size={16} /> Adicionar Serviço
-                                        </button>
-                                    </div>
-
-                                    {/* SPA Specific Questions */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-gray-50 p-8 rounded-[40px] border border-gray-100">
-                                        <div className="space-y-6">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Tamanho dos pelos</label>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {[
-                                                        { id: 'curto', label: '1 Dedo (Curto)' },
-                                                        { id: 'medio', label: 'Até 3 Dedos (Médio)' },
-                                                        { id: 'longo', label: 'Acima disso (Longo)' }
-                                                    ].map(opt => (
-                                                        <button
-                                                            key={opt.id}
-                                                            type="button"
-                                                            onClick={() => setSpaDetails({ ...spaDetails, hairLength: opt.id })}
-                                                            className={`p-3 text-[9px] font-black uppercase rounded-xl border-2 transition-all ${spaDetails.hairLength === opt.id ? 'bg-primary border-primary text-white' : 'bg-white border-gray-100 text-gray-400'}`}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-                                                <div className="space-y-1">
-                                                    <p className="text-xs font-black text-secondary uppercase tracking-tight">Pulgas ou Carrapatos?</p>
-                                                    <p className="text-[10px] text-gray-400">Marque se identificou algum parasita.</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSpaDetails({ ...spaDetails, hasParasites: !spaDetails.hasParasites })}
-                                                    className={`w-14 h-8 rounded-full relative transition-all ${spaDetails.hasParasites ? 'bg-red-500' : 'bg-gray-200'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${spaDetails.hasParasites ? 'left-7' : 'left-1'}`} />
-                                                </button>
-                                            </div>
-
-                                            <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-                                                <div className="space-y-1">
-                                                    <p className="text-xs font-black text-secondary uppercase tracking-tight">Tem nós e/ou embolos?</p>
-                                                    <p className="text-[10px] text-gray-400">Ajuda a definir o tempo de serviço.</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSpaDetails({ ...spaDetails, hasKnots: !spaDetails.hasKnots })}
-                                                    className={`w-14 h-8 rounded-full relative transition-all ${spaDetails.hasKnots ? 'bg-primary' : 'bg-gray-200'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${spaDetails.hasKnots ? 'left-7' : 'left-1'}`} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <AnimatePresence>
-                                            {spaDetails.hasKnots && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: 20 }}
-                                                    className="space-y-3"
-                                                >
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Em quais regiões?</label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {KNOT_REGIONS.map(region => (
-                                                            <button
-                                                                key={region}
-                                                                type="button"
-                                                                onClick={() => toggleKnotRegion(region)}
-                                                                className={`p-3 text-[10px] font-bold rounded-xl border-2 transition-all flex items-center justify-between ${spaDetails.knotRegions.includes(region) ? 'border-primary bg-primary/5 text-primary' : 'border-white bg-white text-gray-400'}`}
-                                                            >
-                                                                {region}
-                                                                {spaDetails.knotRegions.includes(region) && <CheckCircle2 size={12} />}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                    <p className="text-[9px] text-primary font-bold animate-pulse">* O preço pode variar conforme a quantidade de regiões.</p>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                </div>
+                                <SPAServicesSection
+                                    selectedPetId={selectedPetId}
+                                    banhoServices={banhoServices}
+                                    tosaServices={tosaServices}
+                                    extraServices={extraServices}
+                                    selectedBanhoId={selectedBanhoId}
+                                    setSelectedBanhoId={setSelectedBanhoId}
+                                    selectedTosaId={selectedTosaId}
+                                    setSelectedTosaId={setSelectedTosaId}
+                                    items={items}
+                                    onAddItem={addItem}
+                                    onRemoveItem={removeItem}
+                                    onUpdateItem={updateItem} // Legacy, integrated into handlers
+                                    onServiceSelect={handleServiceSelect}
+                                    spaDetails={spaDetails}
+                                    setSpaDetails={setSpaDetails}
+                                    toggleKnotRegion={toggleKnotRegion}
+                                />
                             )}
 
-                            {/* TRANSPORT SECTION */}
                             {quoteType !== 'SPA' && (
-                                <div className="animate-in fade-in duration-500">
-                                    <h2 className="text-xl font-black text-secondary mb-8 flex items-center gap-3">
-                                        <div className="p-2 bg-orange-500/10 rounded-xl text-orange-500"><Truck size={20} /></div>
-                                        Logística Leva e Traz
-                                    </h2>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-orange-50/30 p-10 rounded-[40px] border border-orange-100/50">
-                                        <div className="space-y-6">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                                    <MapPin size={14} /> Endereço de Busca (Origem)
-                                                </label>
-                                                <textarea
-                                                    required
-                                                    placeholder="Onde buscamos o pet? (Casa, trabalho, etc)"
-                                                    value={transportDetails.origin}
-                                                    onChange={(e) => setTransportDetails({ ...transportDetails, origin: e.target.value })}
-                                                    className="w-full bg-white border-2 border-transparent focus:border-orange-500/20 rounded-[24px] px-6 py-4 shadow-sm text-secondary font-medium min-h-[100px] transition-all resize-none"
-                                                />
-                                            </div>
-
-                                            {quoteType === 'TRANSPORTE' && (
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                                        <MapPin size={14} /> Destino da 'Leva' (Primeira Pernada)
-                                                    </label>
-                                                    <textarea
-                                                        required
-                                                        placeholder="Onde deixamos o pet primeiro?"
-                                                        value={transportDetails.destination}
-                                                        onChange={(e) => setTransportDetails({ ...transportDetails, destination: e.target.value })}
-                                                        className="w-full bg-white border-2 border-transparent focus:border-orange-500/20 rounded-[24px] px-6 py-4 shadow-sm text-secondary font-medium min-h-[100px] transition-all resize-none"
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {quoteType === 'SPA_TRANSPORTE' && (
-                                                <div className="p-6 bg-white rounded-3xl border border-orange-100 flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500 shadow-sm"><MapPin size={20} /></div>
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Destino do SPA</p>
-                                                        <p className="text-[11px] font-bold text-secondary">{SHOP_ADDRESS}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                                    <RefreshCcw size={14} /> Retorno (Traz)
-                                                </label>
-                                                <div className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-4">
-                                                    <p className="text-xs font-bold text-secondary">Mesmo endereço da busca?</p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setTransportDetails({ ...transportDetails, isReturnSame: !transportDetails.isReturnSame })}
-                                                        className={`w-12 h-6 rounded-full relative transition-all ${transportDetails.isReturnSame ? 'bg-orange-500' : 'bg-gray-200'}`}
-                                                    >
-                                                        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${transportDetails.isReturnSame ? 'left-6.5' : 'left-0.5'}`} />
-                                                    </button>
-                                                </div>
-                                                {!transportDetails.isReturnSame && (
-                                                    <textarea
-                                                        required
-                                                        placeholder="Informe o endereço para onde levamos o pet depois..."
-                                                        value={transportDetails.returnAddress}
-                                                        onChange={(e) => setTransportDetails({ ...transportDetails, returnAddress: e.target.value })}
-                                                        className="w-full bg-white border-2 border-transparent focus:border-orange-500/20 rounded-[24px] px-6 py-4 shadow-sm text-secondary font-medium min-h-[100px] transition-all resize-none animate-in slide-in-from-top-2"
-                                                    />
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">Quantidade de Pets</label>
-                                                <div className="flex items-center gap-4 bg-white p-2 rounded-2xl w-fit border border-orange-100">
-                                                    <button type="button" onClick={() => setTransportDetails(t => ({ ...t, petQuantity: Math.max(1, t.petQuantity - 1) }))} className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl hover:bg-orange-100 transition-colors"><Minus size={18} /></button>
-                                                    <span className="w-8 text-center font-black text-secondary">{transportDetails.petQuantity}</span>
-                                                    <button type="button" onClick={() => setTransportDetails(t => ({ ...t, petQuantity: t.petQuantity + 1 }))} className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl hover:bg-orange-100 transition-colors"><Plus size={18} /></button>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">Período</label>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {['MANHA', 'TARDE', 'NOITE'].map(p => (
-                                                        <button
-                                                            key={p}
-                                                            type="button"
-                                                            onClick={() => setTransportDetails({ ...transportDetails, period: p })}
-                                                            className={`py-3 text-[10px] font-black rounded-xl border-2 transition-all ${transportDetails.period === p ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-100 text-gray-400'}`}
-                                                        >
-                                                            {p === 'MANHA' ? 'Manhã' : p === 'TARDE' ? 'Tarde' : 'Noite'}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <TransportSection
+                                    transportDetails={transportDetails}
+                                    setTransportDetails={setTransportDetails}
+                                    onCalculate={handleCalculateTransport}
+                                    isCalculating={isCalculatingTransport}
+                                    transportInfo={transportInfo}
+                                    quoteType={quoteType}
+                                    shopAddress={SHOP_ADDRESS}
+                                />
                             )}
                         </div>
 
@@ -602,7 +443,6 @@ export default function QuoteRequest() {
                             </div>
                         )}
 
-                        {/* Communication Preference */}
                         <div id="tour-communication" className="bg-white p-8 rounded-[40px] shadow-lg border border-gray-50 mb-6 flex flex-col md:flex-row items-center justify-between gap-6">
                             <div>
                                 <h3 className="text-lg font-black text-secondary uppercase tracking-tight">Como prefere receber o orçamento?</h3>
@@ -610,8 +450,8 @@ export default function QuoteRequest() {
                             </div>
                             <div className="flex gap-3">
                                 {[
-                                    { id: 'APP', label: 'Pelo App', icon: <Sparkles size={14} /> },
-                                    { id: 'WHATSAPP', label: 'WhatsApp', icon: <Send size={14} /> }
+                                    { id: 'APP', label: 'Pelo App' },
+                                    { id: 'WHATSAPP', label: 'WhatsApp' }
                                 ].map(pref => (
                                     <button
                                         key={pref.id}
@@ -621,36 +461,40 @@ export default function QuoteRequest() {
                                         )}
                                         className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all border-2 ${communicationPrefs.includes(pref.id) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
                                     >
-                                        {pref.icon} {pref.label}
+                                        {pref.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-8 rounded-[40px] shadow-lg border border-gray-50">
-                            <button type="button" onClick={() => setStep(1)} className="font-black text-gray-400 hover:text-secondary uppercase tracking-widest text-xs">Voltar</button>
+                            <button type="button" onClick={() => setStep(2)} className="font-black text-gray-400 hover:text-secondary uppercase tracking-widest text-xs">Voltar</button>
                             <LoadingButton
                                 type="submit"
                                 isLoading={isSubmitting}
                                 loadingText="Enviando..."
                                 className="px-14 py-6 rounded-[28px] text-xl"
-                                rightIcon={<Send size={24} />}
                             >
-                                Solicitar Orçamento
+                                Solicitar Agora
                             </LoadingButton>
                         </div>
                     </motion.form>
                 )}
             </main>
 
-            <ConfirmModal
-                isOpen={showConfirmSubmit}
-                onClose={() => setShowConfirmSubmit(false)}
-                onConfirm={handleSubmit}
-                title="Enviar Solicitação?"
-                description="Confirma o envio dos dados? Nossa equipe analisará as informações e retornará com o orçamento o mais breve possível."
-                confirmText="Sim, Enviar"
-            />
+            <AnimatePresence>
+                {showConfirmSubmit && (
+                    <ConfirmModal
+                        isOpen={showConfirmSubmit}
+                        onClose={() => setShowConfirmSubmit(false)}
+                        onConfirm={handleSubmit}
+                        title="Confirmar Solicitação"
+                        message="Deseja enviar seu pedido de orçamento agora? Nossa equipe responderá o mais breve possível."
+                        confirmText="Sim, Enviar"
+                        cancelText="Ainda não"
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

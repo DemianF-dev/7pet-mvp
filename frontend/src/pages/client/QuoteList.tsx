@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
+import { useQuotes, useUpdateQuoteStatus } from '../../hooks/useQuotes';
+import toast from 'react-hot-toast';
 
 interface Quote {
     id: string;
@@ -32,44 +34,27 @@ const statusConfig: any = {
 
 export default function QuoteList() {
     const { } = useAuthStore();
-    const [quotes, setQuotes] = useState<Quote[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // React Query Hooks
+    const { data: quotes = [], isLoading, isFetching, error, refetch } = useQuotes();
+    const updateMutation = useUpdateQuoteStatus();
     const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
     const [confirmAction, setConfirmAction] = useState<{ id: string, status: 'APROVADO' | 'REJEITADO' } | null>(null);
 
-    const fetchQuotes = async (refresh = false) => {
-        if (refresh) setIsRefreshing(true);
-        else setIsLoading(true);
-        try {
-            const response = await api.get('/quotes');
-            setQuotes(response.data);
-            setError(null);
-        } catch (err: any) {
-            console.error('Erro ao buscar orçamentos:', err);
-            setError(err.message || 'Erro desconhecido');
-        } finally {
-            setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchQuotes();
-    }, []);
-
     const handleAction = async () => {
         if (!confirmAction) return;
-        try {
-            await api.patch(`/quotes/${confirmAction.id}/status`, { status: confirmAction.status });
-            fetchQuotes();
-            setSelectedQuote(null);
-            setConfirmAction(null);
-        } catch (err) {
-            console.error('Erro ao atualizar orçamento:', err);
-        }
+
+        updateMutation.mutate({
+            quoteId: confirmAction.id,
+            status: confirmAction.status
+        }, {
+            onSuccess: () => {
+                toast.success(confirmAction.status === 'APROVADO' ? 'Aprovado com sucesso!' : 'Orçamento recusado.');
+                setSelectedQuote(null);
+                setConfirmAction(null);
+            }
+        });
     };
+
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -84,12 +69,12 @@ export default function QuoteList() {
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => fetchQuotes(true)}
-                            disabled={isRefreshing}
+                            onClick={() => refetch()}
+                            disabled={isFetching}
                             className="flex items-center gap-2 px-4 py-2 bg-white text-secondary font-bold rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition-all disabled:opacity-50"
                         >
-                            <ArrowRight size={18} className={`transition-transform ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? 'rotate(90deg)' : 'none' }} />
-                            {isRefreshing ? 'Atualizando...' : 'Atualizar Lista'}
+                            <ArrowRight size={18} className={`transition-transform ${isFetching ? 'animate-spin' : ''}`} style={{ transform: isFetching ? 'rotate(90deg)' : 'none' }} />
+                            {isFetching ? 'Atualizando...' : 'Atualizar Lista'}
                         </button>
                         <button onClick={() => window.location.href = '/client/quote-request'} className="btn-primary flex items-center gap-2">
                             Nova Solicitação <ArrowRight size={18} />

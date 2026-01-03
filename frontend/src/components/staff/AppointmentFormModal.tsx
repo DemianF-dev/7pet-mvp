@@ -217,6 +217,34 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
         }
     }, [isOpen, formData.customerId, customers, selectedCustomer?.id]);
 
+    // 5. Intelligent Matching: If preFill has items without serviceIds, try to match by name
+    useEffect(() => {
+        if (!isOpen || !preFill || services.length === 0) return;
+
+        // Check for items that don't have IDs but match a service name
+        const itemsWithoutId = preFill.items?.filter(i => !i.serviceId) || [];
+        if (itemsWithoutId.length === 0) return;
+
+        const matchedIds: string[] = [];
+        itemsWithoutId.forEach(item => {
+            const match = services.find(s => s.name.toLowerCase() === item.description.toLowerCase());
+            if (match) {
+                matchedIds.push(match.id);
+            }
+        });
+
+        if (matchedIds.length > 0) {
+            console.log('[ApptModal] Auto-matched services from Quote items:', matchedIds);
+            setFormData(prev => {
+                const unique = Array.from(new Set([...prev.serviceIds, ...matchedIds]));
+                if (unique.length !== prev.serviceIds.length) {
+                    return { ...prev, serviceIds: unique };
+                }
+                return prev;
+            });
+        }
+    }, [isOpen, preFill, services]);
+
 
     // Helpers
     const formatDateForInput = (dateStr?: string) => {
@@ -358,8 +386,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                         startAt: formData.logisticStartAt || formData.startAt, // Horário da Logística
                         category: 'LOGISTICA',
                         transport: formData.transport,
-                        // Only link quote to logistics if we didn't already link it to SPA (primary)
-                        quoteId: formData.agendaSPA ? undefined : preFill?.quoteId
+                        quoteId: preFill?.quoteId
                     });
                 }
 
@@ -574,41 +601,56 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Carregando...</span>
                                         </div>
-                                    ) : (services || []).length === 0 ? (
-                                        <div className="p-8 text-center">
-                                            <span className="text-xs font-medium text-gray-400">Nenhum serviço disponível no momento.</span>
-                                        </div>
-                                    ) : (services || []).map(s => s && (
-                                        <label key={s.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${formData.serviceIds.includes(s.id) ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent hover:bg-white/80'}`}>
-                                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${formData.serviceIds.includes(s.id) ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
-                                                {formData.serviceIds.includes(s.id) && <CheckCircle size={14} className="text-white" />}
+                                    ) : (
+                                        // Filter services logic: If preFill exists, only show matched services. Else show all.
+                                        (services || [])
+                                            .filter(s => !preFill?.quoteId || formData.serviceIds.includes(s.id))
+                                            .length === 0 ? (
+                                            <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+                                                <p className="text-xs font-medium text-gray-400">
+                                                    Este agendamento está restrito aos itens do orçamento.
+                                                </p>
+                                                <p className="text-[10px] text-gray-300 mt-1">
+                                                    Para adicionar outros serviços, edite o orçamento primeiro.
+                                                </p>
                                             </div>
-                                            <input
-                                                type="checkbox"
-                                                className="hidden"
-                                                value={s.id}
-                                                checked={formData.serviceIds.includes(s.id)}
-                                                onChange={(e) => {
-                                                    const current = formData.serviceIds;
-                                                    if (e.target.checked) {
-                                                        const newServiceIds = [...current, s.id];
-                                                        const updates: any = { serviceIds: newServiceIds };
-                                                        // Auto-assign professional if not already selected and service has one
-                                                        if (!formData.performerId && s.responsibleId) {
-                                                            updates.performerId = s.responsibleId;
-                                                        }
-                                                        setFormData({ ...formData, ...updates });
-                                                    } else {
-                                                        setFormData({ ...formData, serviceIds: current.filter((id: string) => id !== s.id) });
-                                                    }
-                                                }}
-                                            />
-                                            <div className="flex-1 flex justify-between items-center text-sm">
-                                                <span className={`font-medium ${formData.serviceIds.includes(s.id) ? 'text-primary' : 'text-gray-600'}`}>{s.name}</span>
-                                                <span className="font-bold text-gray-400 text-xs">R$ {s.basePrice}</span>
-                                            </div>
-                                        </label>
-                                    ))}
+                                        ) : (services || [])
+                                            .filter(s => !preFill?.quoteId || formData.serviceIds.includes(s.id))
+                                            .map(s => s && (
+                                                <label key={s.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${formData.serviceIds.includes(s.id) ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent hover:bg-white/80'}`}>
+                                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${formData.serviceIds.includes(s.id) ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
+                                                        {formData.serviceIds.includes(s.id) && <CheckCircle size={14} className="text-white" />}
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        value={s.id}
+                                                        checked={formData.serviceIds.includes(s.id)}
+                                                        onChange={(e) => {
+                                                            // Only allow unchecked if not forced by quote (though UI hides others, unchecking is allowed but maybe we should warn?)
+                                                            // For now, allow unchecking existing ones but since we hide others, they can't add new ones.
+                                                            // This matches the user request "only pull services from quote".
+                                                            const current = formData.serviceIds;
+                                                            if (e.target.checked) {
+                                                                // logic...
+                                                                const newServiceIds = [...current, s.id];
+                                                                const updates: any = { serviceIds: newServiceIds };
+                                                                if (!formData.performerId && s.responsibleId) {
+                                                                    updates.performerId = s.responsibleId;
+                                                                }
+                                                                setFormData({ ...formData, ...updates });
+                                                            } else {
+                                                                setFormData({ ...formData, serviceIds: current.filter((id: string) => id !== s.id) });
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="flex-1 flex justify-between items-center text-sm">
+                                                        <span className={`font-medium ${formData.serviceIds.includes(s.id) ? 'text-primary' : 'text-gray-600'}`}>{s.name}</span>
+                                                        <span className="font-bold text-gray-400 text-xs">R$ {s.basePrice}</span>
+                                                    </div>
+                                                </label>
+                                            ))
+                                    )}
                                 </div>
                             </div>
 
@@ -825,6 +867,6 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     </form>
                 )}
             </motion.div>
-        </div>
+        </div >
     );
 }

@@ -3,6 +3,7 @@ import { PrismaClient, QuoteStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { auditService } from '../services/auditService';
 import { createAuditLog, detectChanges } from '../utils/auditLogger';
+import { messagingService } from '../services/messagingService';
 import { z } from 'zod';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
@@ -72,6 +73,49 @@ export const quoteController = {
                 };
             })) : [];
 
+            // Adicionar automaticamente itens de desembolo se houver nós
+            if (data.hasKnots && data.knotRegions) {
+                const knotRegions = data.knotRegions.toLowerCase().split(',').map(r => r.trim()).filter(r => r);
+
+                const KNOT_PRICES: Record<string, number> = {
+                    'orelhas': 7.50,
+                    'rostinho': 15.00,
+                    'pescoço': 15.00,
+                    'barriga': 12.50,
+                    'pata frontal esquerda': 7.50,
+                    'pata frontal direita': 7.50,
+                    'pata traseira esquerda': 7.50,
+                    'pata traseira direita': 7.50,
+                    'bumbum': 12.50,
+                    'rabo': 10.00
+                };
+
+                // Agrupa patas
+                const patas = knotRegions.filter(r => r.includes('pata'));
+                const outrasRegioes = knotRegions.filter(r => !r.includes('pata'));
+
+                if (patas.length > 0) {
+                    processedItems.push({
+                        description: `Desembolo - Patas (${patas.length}x)`,
+                        quantity: patas.length,
+                        price: 7.50,
+                        serviceId: undefined
+                    });
+                }
+
+                outrasRegioes.forEach(region => {
+                    const price = KNOT_PRICES[region];
+                    if (price) {
+                        processedItems.push({
+                            description: `Desembolo - ${region.charAt(0).toUpperCase() + region.slice(1)}`,
+                            quantity: 1,
+                            price,
+                            serviceId: undefined
+                        });
+                    }
+                });
+            }
+
             const totalAmount = processedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
             const quote = await prisma.quote.create({
@@ -122,6 +166,14 @@ export const quoteController = {
                 performedBy: user.id,
                 reason: `Orçamento criado ${user.role === 'CLIENTE' ? 'pelo cliente' : 'pela equipe'}`
             });
+
+            // Notify customer about successful solicitation
+            await messagingService.notifyUser(
+                user.id,
+                'Solicitação de Orçamento Recebida',
+                `Olá ${quote.customer.name}! Recebemos seu pedido de orçamento para ${quote.pet?.name || 'seu pet'}. Nossa equipe analisará e responderá em breve.`,
+                'QUOTE_CREATED'
+            );
 
             return res.status(201).json(quote);
         } catch (error) {
@@ -299,7 +351,9 @@ export const quoteController = {
                     await prisma.invoice.create({
                         data: {
                             customerId: quote.customerId,
-                            quoteId: id,
+                            quotes: {
+                                connect: [{ id }]
+                            },
                             amount: quote.totalAmount,
                             status: 'PENDENTE',
                             dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // Default +5 days (matching validity)
@@ -309,14 +363,12 @@ export const quoteController = {
 
 
                     if (quote.customer.user) {
-                        await prisma.notification.create({
-                            data: {
-                                userId: quote.customer.user.id,
-                                title: 'Orçamento Aprovado!',
-                                message: `Seu orçamento no valor de R$ ${quote.totalAmount.toFixed(2)} foi aprovado com sucesso. Em breve entraremos em contato para agendamento.`,
-                                type: 'INVOICE'
-                            }
-                        });
+                        await messagingService.notifyUser(
+                            quote.customer.user.id,
+                            'Orçamento Aprovado!',
+                            `Seu orçamento no valor de R$ ${quote.totalAmount.toFixed(2)} foi aprovado com sucesso. Em breve entraremos em contato para agendamento.`,
+                            'INVOICE'
+                        );
                     }
                 }
             }
@@ -402,6 +454,25 @@ export const quoteController = {
                             reason: 'Atualização completa pelo colaborador'
                         }
                     };
+
+                    // NOTIFICATION: If status becomes ENVIADO, notify the customer
+                    if (data.status === 'ENVIADO' && currentQuote.customerId) {
+                        // We need the customer's User ID to send a notification
+                        const customerData = await prisma.customer.findUnique({
+                            where: { id: currentQuote.customerId },
+                            select: { userId: true, name: true }
+                        });
+
+                        if (customerData && customerData.userId) {
+                            await messagingService.notifyUser(
+                                customerData.userId,
+                                'Orçamento Disponível para Aprovação',
+                                `Olá ${customerData.name}! Seu orçamento (OR-${String(currentQuote.seqId).padStart(4, '0')}) foi atualizado e está aguardando sua aprovação.`,
+                                'QUOTE_SENT'
+                            );
+                            console.log(`[QuoteUpdate] Notification sent to customer ${customerData.userId}`);
+                        }
+                    }
                 }
             }
 
@@ -424,15 +495,34 @@ export const quoteController = {
                 const itemsTotal = data.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
                 updateData.totalAmount = data.totalAmount ?? itemsTotal;
 
+                // VALIDATION: Ensure all serviceIds and performerIds actually exist to prevent FK errors
+                const serviceIds = data.items
+                    .map(i => i.serviceId)
+                    .filter((id): id is string => !!id);
+
+                const validServices = serviceIds.length > 0
+                    ? await prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true } })
+                    : [];
+                const validServiceIds = new Set(validServices.map(s => s.id));
+
                 updateData.items = {
                     deleteMany: {},
-                    create: data.items.map(item => ({
-                        description: item.description,
-                        quantity: item.quantity,
-                        price: item.price,
-                        serviceId: item.serviceId || null,
-                        performerId: item.performerId || null
-                    }))
+                    create: data.items.map(item => {
+                        // Fallback to null if service ID is invalid/not found
+                        let validServiceId = item.serviceId;
+                        if (validServiceId && !validServiceIds.has(validServiceId)) {
+                            console.warn(`[QuoteUpdate] Warning: Service ID ${validServiceId} not found. Setting to null.`);
+                            validServiceId = null;
+                        }
+
+                        return {
+                            description: item.description,
+                            quantity: item.quantity,
+                            price: item.price,
+                            serviceId: validServiceId || null,
+                            performerId: item.performerId || null
+                        };
+                    })
                 };
             }
 
@@ -603,11 +693,11 @@ export const quoteController = {
 
             // Log the permanent deletion
             await auditService.log({
-                userId: user.id,
+                performedBy: user.id,
                 action: 'DELETE_PERMANENT',
-                entity: 'quote',
+                entityType: 'QUOTE',
                 entityId: id,
-                details: { deletedAfterDays: 90, reason: 'Exclusão permanente após período de retenção' }
+                reason: 'Exclusão permanente após período de retenção'
             });
 
             return res.status(204).send();
@@ -682,6 +772,90 @@ export const quoteController = {
         } catch (error: any) {
             console.error('Erro ao excluir em cascata:', error);
             return res.status(400).json({ error: error.message || 'Erro ao excluir orçamento' });
+        }
+    },
+
+    /**
+     * One-Click Approval & Scheduling
+     */
+
+    /**
+     * Calculate detailed transport costs for a quote
+     */
+    async calculateTransport(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { address, destinationAddress, type } = req.body;
+
+            if (!address) {
+                return res.status(400).json({ error: 'Endereço de origem é obrigatório' });
+            }
+
+            // Verify quote exists
+            const quote = await prisma.quote.findUnique({
+                where: { id }
+            });
+
+            if (!quote) {
+                return res.status(404).json({ error: 'Orçamento não encontrado' });
+            }
+
+            console.log(`[Quote] Calculating transport for Quote ID: ${id}`);
+            console.log(`[Quote] Payload:`, { address, destinationAddress, type });
+            console.log(`[Quote] User Role:`, (req as any).user?.role);
+
+            // Calculate transport using Google Maps + settings
+            const { mapsService } = await import('../services/mapsService');
+
+            // Validate type if provided
+            const validTypes = ['ROUND_TRIP', 'PICK_UP', 'DROP_OFF'];
+            const transportType = (type && validTypes.includes(type)) ? type : 'ROUND_TRIP';
+
+            console.log(`[Quote] Calling mapsService with type: ${transportType}`);
+
+            const result = await mapsService.calculateTransportDetailed(address, destinationAddress, transportType as any);
+            console.log(`[Quote] Calculation result:`, result);
+
+            return res.status(200).json(result);
+        } catch (error: any) {
+            console.error('[Quote] Error calculating transport:', error);
+
+            // Check if it's an Axios error from Google Maps
+            if (error.response) {
+                console.error('[Quote] Upstream (Google) Error Status:', error.response.status);
+                console.error('[Quote] Upstream (Google) Error Data:', error.response.data);
+
+                if (error.response.status === 403 || error.response.status === 401) {
+                    return res.status(500).json({
+                        error: 'Erro de configuração da API de Mapas (Chave inválida ou Billing não ativado)',
+                        details: error.message
+                    });
+                }
+            }
+
+            return res.status(500).json({
+                error: 'Erro ao calcular transporte',
+                details: error.message
+            });
+        }
+    },
+
+    /**
+     * One-Click Scheduling: Approve quote and create appointment in one action
+     */
+    async approveAndSchedule(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { performerId } = req.body;
+            const user = (req as any).user;
+
+            const quoteService = await import('../services/quoteService');
+            const result = await quoteService.approveAndSchedule(id, performerId, user);
+
+            return res.status(200).json(result);
+        } catch (error: any) {
+            console.error('Erro no One-Click Scheduling:', error);
+            return res.status(400).json({ error: error.message || 'Erro ao processar agendamento automático' });
         }
     }
 };

@@ -10,12 +10,15 @@ import {
     Filter,
     RefreshCw,
     ArrowUpDown,
-    AlertCircle
+    AlertCircle,
+    Copy,
+    Trash2
 } from 'lucide-react';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import PaymentReceiptModal from '../../components/PaymentReceiptModal';
 
 interface Invoice {
@@ -23,7 +26,7 @@ interface Invoice {
     customerId: string;
     customer: { name: string; balance?: number };
     amount: number;
-    status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'MONITORAR' | 'NEGOCIADO' | 'ENCERRADO';
+    status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'MONITORAR' | 'NEGOCIADO' | 'ENCERRADO' | 'FATURAR';
     dueDate: string;
     createdAt: string;
     quoteId?: string;
@@ -56,6 +59,9 @@ export default function BillingManager() {
     // Receipt State
     const [showReceipt, setShowReceipt] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<any>(null);
+
+    // Bulk Selection
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     useEffect(() => {
         fetchInvoices();
@@ -113,11 +119,33 @@ export default function BillingManager() {
         }
     };
 
+    const handleCancelPayment = async (paymentId: string) => {
+        if (!selectedInvoice) return;
+        if (!window.confirm('Deseja realmente cancelar este recebimento? O valor será estornado e o status da fatura reavaliado.')) return;
+
+        try {
+            await api.delete(`/invoices/${selectedInvoice.id}/payments/${paymentId}`);
+            alert('Recebimento cancelado com sucesso!');
+            fetchInvoices();
+            // Re-fetch selected invoice
+            const refreshed = await api.get('/invoices');
+            const updatedInvoice = refreshed.data.find((i: any) => i.id === selectedInvoice.id);
+            setSelectedInvoice(updatedInvoice || null);
+        } catch (error) {
+            alert('Erro ao cancelar recebimento');
+        }
+    };
+
     const handleRegisterPayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedInvoice) return;
 
-        if (!window.confirm(`Confirmar o recebimento de R$ ${paymentAmount} via ${paymentMethod}?`)) return;
+        const isNegative = parseFloat(paymentAmount) < 0;
+        const confirmMsg = isNegative
+            ? `Confirmar AJUSTE NEGATIVO (Saída/Reembolso) de R$ ${Math.abs(parseFloat(paymentAmount))} via ${paymentMethod}?`
+            : `Confirmar o recebimento de R$ ${paymentAmount} via ${paymentMethod}?`;
+
+        if (!window.confirm(confirmMsg)) return;
 
         try {
             // Start - Custom logic to read checkbox manually since not in state
@@ -134,12 +162,12 @@ export default function BillingManager() {
                 settle: settle,
                 useBalance: useBalance
             });
-            alert('Pagamento registrado com sucesso!');
+            alert('Movimentação registrada com sucesso!');
 
             // Auto open receipt for the new payment
             const refreshed = await api.get('/invoices');
             const updatedInvoice = refreshed.data.find((i: any) => i.id === selectedInvoice.id);
-            if (updatedInvoice && updatedInvoice.payments.length > 0) {
+            if (updatedInvoice && updatedInvoice.payments.length > 0 && !isNegative) {
                 const lastPayment = updatedInvoice.payments[updatedInvoice.payments.length - 1];
                 setSelectedPayment(lastPayment);
                 setShowReceipt(true);
@@ -147,13 +175,104 @@ export default function BillingManager() {
 
             setPaymentAmount('');
             fetchInvoices();
-            setSelectedInvoice(null);
+            setSelectedInvoice(updatedInvoice || null);
         } catch (error) {
-            alert('Erro ao registrar pagamento');
+            alert('Erro ao registrar movimentação');
         }
     };
 
 
+
+
+
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(filteredInvoices.map(i => i.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelect = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkPayment = async () => {
+        if (selectedIds.length === 0) return;
+
+        const method = window.prompt('Informe a forma de pagamento para este lote (PIX, DINHEIRO, CARTAO_CREDITO):', 'PIX');
+        if (!method) return;
+
+        if (!window.confirm(`Deseja marcar como RECEBIDAS as ${selectedIds.length} faturas selecionadas? (Total aproximado: R$ ${filteredInvoices.filter(i => selectedIds.includes(i.id)).reduce((acc, i) => acc + i.amount, 0).toFixed(2)})`)) return;
+
+        try {
+            setIsLoading(true);
+            await api.post('/invoices/bulk-payments', {
+                ids: selectedIds,
+                method: method.toUpperCase(),
+                settle: true // Force settle for bulk
+            });
+            alert(`${selectedIds.length} pagamentos processados com sucesso!`);
+            setSelectedIds([]);
+            fetchInvoices();
+        } catch (error) {
+            console.error('Erro no pagamento em massa:', error);
+            alert('Erro ao processar pagamentos em massa');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDelete = async (invoiceId: string) => {
+        if (!window.confirm('ATENÇÃO: Deseja realmente excluir esta fatura/orçamento?\n\nNota: Só é possível excluir faturas sem pagamentos registrados.')) return;
+
+        try {
+            await api.delete(`/invoices/${invoiceId}`);
+            await fetchInvoices();
+            setSelectedInvoice(null);
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Erro ao excluir fatura');
+        }
+    };
+
+    const handleDuplicate = async (invoiceId: string) => {
+        if (!window.confirm('Deseja duplicar esta fatura/orçamento?\n\nA nova fatura terá vencimento em +30 dias.')) return;
+
+        try {
+            await api.post(`/invoices/${invoiceId}/duplicate`);
+            await fetchInvoices();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Erro ao duplicar fatura');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`ATENÇÃO: Deseja excluir ${selectedIds.length} fatura(s)?\n\nNota: Só serão excluídas faturas sem pagamentos registrados.`)) return;
+
+        try {
+            const results = await Promise.allSettled(
+                selectedIds.map(id => api.delete(`/invoices/${id}`))
+            );
+
+            const succeeded = results.filter(r => r.status === 'fulfilled').length;
+            const failed = results.filter(r => r.status === 'rejected').length;
+
+            if (failed > 0) {
+                alert(`${succeeded} fatura(s) excluída(s) com sucesso.\n${failed} fatura(s) não puderam ser excluídas (possuem pagamentos).`);
+            } else {
+                alert(`${succeeded} fatura(s) excluída(s) com sucesso!`);
+            }
+
+            await fetchInvoices();
+            setSelectedIds([]);
+        } catch (error: any) {
+            alert('Erro ao excluir faturas em massa');
+        }
+    };
 
     const handleSort = (key: string) => {
         setSortConfig(current => ({
@@ -192,13 +311,14 @@ export default function BillingManager() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'PAGO': return 'bg-green-100 text-green-700';
-            case 'PENDENTE': return 'bg-yellow-100 text-yellow-700';
-            case 'VENCIDO': return 'bg-red-100 text-red-700';
-            case 'ATRASADO': return 'bg-red-100 text-red-700'; // Mapping VENCIDO
+            case 'PENDENTE': return 'bg-yellow-100 text-yellow-700 font-black';
+            case 'VENCIDO': return 'bg-red-100 text-red-700 font-extrabold ring-1 ring-red-200';
+            case 'ATRASADO': return 'bg-red-100 text-red-700 font-extrabold ring-1 ring-red-200'; // Mapping VENCIDO
             case 'MONITORAR': return 'bg-blue-100 text-blue-700';
             case 'NEGOCIADO': return 'bg-purple-100 text-purple-700';
             case 'ENCERRADO': return 'bg-gray-200 text-gray-600';
-            case 'RECEBIDO': return 'bg-green-100 text-green-700'; // Mapping PAGO
+            case 'RECEBIDO': return 'bg-green-100 text-green-700 px-3 py-1.5';
+            case 'FATURAR': return 'bg-orange-100 text-orange-700 font-black ring-1 ring-orange-200';
             default: return 'bg-gray-100 text-gray-700';
         }
     };
@@ -214,20 +334,23 @@ export default function BillingManager() {
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="mb-10">
+                    <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-3xl font-bold text-secondary">Gestão <span className="text-primary">Financeira</span></h1>
                             <p className="text-gray-500">Controle detalhado de orçamentos e recebimentos.</p>
                         </div>
-                        <button
-                            onClick={handleRefresh}
-                            className="btn-secondary flex items-center gap-2 hover:bg-gray-100 transition-colors"
-                            disabled={isLoading}
-                        >
-                            <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
-                            <span>Atualizar Dados</span>
-                        </button>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => handleRefresh()}
+                                className="bg-primary/10 text-primary px-5 py-2.5 rounded-xl font-bold hover:bg-primary/20 transition-all flex items-center gap-2"
+                                disabled={isLoading}
+                            >
+                                <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+                                <span>Sincronizar</span>
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -257,6 +380,7 @@ export default function BillingManager() {
                                 <option value="MONITORAR">Monitorar</option>
                                 <option value="NEGOCIADO">Negociado</option>
                                 <option value="ENCERRADO">Encerrado</option>
+                                <option value="FATURAR">Faturar</option>
                             </select>
                         </div>
                         <div className="bg-white rounded-xl px-3 flex items-center shadow-sm">
@@ -278,53 +402,112 @@ export default function BillingManager() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden relative">
+                    {/* Bulk Action Bar */}
+                    <AnimatePresence>
+                        {selectedIds.length > 0 && (
+                            <motion.div
+                                initial={{ y: 50, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 50, opacity: 0 }}
+                                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-secondary text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-8 min-w-[500px]"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="bg-primary text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center">
+                                        {selectedIds.length}
+                                    </span>
+                                    <p className="text-sm font-bold">Faturas Selecionadas</p>
+                                </div>
+                                <div className="h-6 w-px bg-white/10"></div>
+                                <button
+                                    onClick={handleBulkPayment}
+                                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                >
+                                    <DollarSign size={16} /> RECEBER EM MASSA
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                >
+                                    <Trash2 size={16} /> EXCLUIR EM MASSA
+                                </button>
+                                <button
+                                    onClick={() => setSelectedIds([])}
+                                    className="text-white/50 hover:text-white text-xs font-bold"
+                                >
+                                    Cancelar
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider">
+                        <thead className="bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest">
                             <tr>
-                                <th className="px-6 py-4 font-bold">Cliente / Orçamento</th>
+                                <th className="px-6 py-4 w-12">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                                        onChange={handleSelectAll}
+                                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                </th>
+                                <th className="px-6 py-4">Cliente / Orçamento</th>
                                 <th
-                                    className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none"
+                                    className="px-6 py-4 cursor-pointer hover:text-primary transition-colors select-none"
                                     onClick={() => handleSort('dueDate')}
                                 >
-                                    <div className="flex items-center gap-1">Vencimento <ArrowUpDown size={14} /></div>
+                                    <div className="flex items-center gap-1 text-gray-400">Vencimento <ArrowUpDown size={14} /></div>
                                 </th>
                                 <th
-                                    className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none"
+                                    className="px-6 py-4 cursor-pointer hover:text-primary transition-colors select-none"
                                     onClick={() => handleSort('amount')}
                                 >
-                                    <div className="flex items-center gap-1">Valor Total <ArrowUpDown size={14} /></div>
+                                    <div className="flex items-center gap-1 text-gray-400">Valor Total <ArrowUpDown size={14} /></div>
                                 </th>
                                 <th
-                                    className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none"
+                                    className="px-6 py-4 cursor-pointer hover:text-primary transition-colors select-none"
                                     onClick={() => handleSort('paid')}
                                 >
-                                    <div className="flex items-center gap-1">Recebido <ArrowUpDown size={14} /></div>
+                                    <div className="flex items-center gap-1 text-gray-400">Recebido <ArrowUpDown size={14} /></div>
                                 </th>
-                                <th className="px-6 py-4 font-bold">Status</th>
-                                <th className="px-6 py-4 font-bold text-right">Ações</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-20 text-center">
+                                    <td colSpan={7} className="px-6 py-20 text-center">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                                     </td>
                                 </tr>
                             ) : filteredInvoices.map(invoice => {
                                 const paid = invoice.payments.reduce((acc, p) => acc + p.amount, 0);
+                                const isSelected = selectedIds.includes(invoice.id);
                                 return (
-                                    <tr key={invoice.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedInvoice(invoice)}>
+                                    <tr
+                                        key={invoice.id}
+                                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-primary/[0.02]' : ''}`}
+                                        onClick={() => setSelectedInvoice(invoice)}
+                                    >
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={(e) => toggleSelect(e as any, invoice.id)}
+                                                className="rounded border-gray-300 text-primary focus:ring-primary"
+                                            />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                                     <FileText size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-secondary">{invoice.customer.name}</p>
+                                                    <p className="font-black text-secondary uppercase text-[13px]">{invoice.customer.name}</p>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-xs text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
+                                                        <p className="text-[10px] font-bold text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
                                                         {invoice.quote?.seqId && (
                                                             <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
                                                                 OR-{String(invoice.quote.seqId).padStart(4, '0')}
@@ -339,24 +522,55 @@ export default function BillingManager() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
+                                        <td className="px-6 py-4">
+                                            <p className={`text-xs font-bold ${new Date(invoice.dueDate) < new Date() && invoice.status !== 'PAGO' ? 'text-red-500' : 'text-gray-500'}`}>
+                                                {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
+                                            </p>
                                         </td>
-                                        <td className="px-6 py-4 font-bold text-secondary">
+                                        <td className="px-6 py-4 font-black text-secondary">
                                             R$ {invoice.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-green-600">
+                                        <td className="px-6 py-4 font-bold text-green-600">
                                             R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(invoice.status)}`}>
-                                                {invoice.status}
+                                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${getStatusColor(invoice.status)}`}>
+                                                {invoice.status === 'PAGO' ? 'RECEBIDO' : invoice.status === 'VENCIDO' ? 'ATRASADO' : invoice.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-gray-400 hover:text-primary">
-                                                <MoreVertical size={20} />
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDuplicate(invoice.id);
+                                                    }}
+                                                    className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Duplicar"
+                                                >
+                                                    <Copy size={16} className="text-blue-500" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(invoice.id);
+                                                    }}
+                                                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 size={16} className="text-red-500" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedInvoice(invoice);
+                                                    }}
+                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    title="Ver Detalhes"
+                                                >
+                                                    <MoreVertical size={16} className="text-gray-400" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )
@@ -364,11 +578,11 @@ export default function BillingManager() {
                         </tbody>
                         <tfoot className="bg-gray-50 border-t border-gray-100">
                             <tr>
-                                <td colSpan={2} className="px-6 py-4 text-right font-bold text-gray-500 uppercase text-xs">Totais na Tela:</td>
-                                <td className="px-6 py-4 font-bold text-secondary text-lg">
+                                <td colSpan={3} className="px-6 py-6 text-right font-black text-gray-400 uppercase text-[10px] tracking-widest">Totais na Tela:</td>
+                                <td className="px-6 py-6 font-black text-secondary text-base">
                                     R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </td>
-                                <td className="px-6 py-4 font-bold text-green-600 text-lg">
+                                <td className="px-6 py-6 font-black text-green-600 text-base">
                                     R$ {totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </td>
                                 <td colSpan={2}></td>
@@ -393,9 +607,25 @@ export default function BillingManager() {
                                         <h2 className="text-2xl font-bold text-secondary mb-1">Detalhes Financeiros</h2>
                                         <p className="text-gray-500">Gerencie o status e pagamentos deste registro.</p>
                                     </div>
-                                    <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                        <X size={24} className="text-gray-400" />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleDuplicate(selectedInvoice.id)}
+                                            className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Duplicar Fatura"
+                                        >
+                                            <Copy size={20} className="text-blue-500" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(selectedInvoice.id)}
+                                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Excluir Fatura"
+                                        >
+                                            <Trash2 size={20} className="text-red-500" />
+                                        </button>
+                                        <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                            <X size={24} className="text-gray-400" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -408,6 +638,7 @@ export default function BillingManager() {
                                                 { label: 'MONITORAR', value: 'MONITORAR', color: 'bg-blue-100 text-blue-700 border-blue-200' },
                                                 { label: 'RECEBIDO', value: 'PAGO', color: 'bg-green-100 text-green-700 border-green-200' },
                                                 { label: 'ATRASADO', value: 'VENCIDO', color: 'bg-red-100 text-red-700 border-red-200' },
+                                                { label: 'FATURAR', value: 'FATURAR', color: 'bg-orange-100 text-orange-700 border-orange-200' },
                                                 { label: 'NEGOCIADO', value: 'NEGOCIADO', color: 'bg-purple-100 text-purple-700 border-purple-200' },
                                                 { label: 'ENCERRADO', value: 'ENCERRADO', color: 'bg-gray-100 text-gray-600 border-gray-200' },
                                             ].map((status) => (
@@ -465,16 +696,24 @@ export default function BillingManager() {
                                                                 <p className="text-xs text-gray-400">{new Date(payment.paidAt).toLocaleDateString()} - {payment.method}</p>
                                                             </div>
                                                             <div className="flex items-center gap-2">
+                                                                {payment.method !== 'SALDO_CREDITO' && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedPayment(payment);
+                                                                            setShowReceipt(true);
+                                                                        }}
+                                                                        className="text-[10px] font-bold text-primary hover:underline uppercase"
+                                                                    >
+                                                                        Ver Comprovante
+                                                                    </button>
+                                                                )}
                                                                 <button
-                                                                    onClick={() => {
-                                                                        setSelectedPayment(payment);
-                                                                        setShowReceipt(true);
-                                                                    }}
-                                                                    className="text-[10px] font-bold text-primary hover:underline uppercase"
+                                                                    onClick={() => handleCancelPayment(payment.id)}
+                                                                    className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase"
                                                                 >
-                                                                    Ver Comprovante
+                                                                    Estornar
                                                                 </button>
-                                                                <div className="bg-green-100 text-green-700 p-2 rounded-full">
+                                                                <div className={payment.amount < 0 ? "bg-red-100 text-red-700 p-2 rounded-full" : "bg-green-100 text-green-700 p-2 rounded-full"}>
                                                                     <CheckCircle size={16} />
                                                                 </div>
                                                             </div>
@@ -500,23 +739,26 @@ export default function BillingManager() {
                                                             required
                                                             value={paymentAmount}
                                                             onChange={(e) => setPaymentAmount(e.target.value)}
-                                                            className="input-field !pl-12 font-mono"
+                                                            className="input-field !pl-12 font-mono disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                                             placeholder="0,00"
+                                                            disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
                                                         />
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Forma de Pagamento</label>
                                                     <select
                                                         value={paymentMethod}
                                                         onChange={(e) => setPaymentMethod(e.target.value)}
-                                                        className="input-field"
+                                                        className="input-field disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                        disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
                                                     >
                                                         <option value="PIX">PIX</option>
                                                         <option value="DINHEIRO">Dinheiro</option>
                                                         <option value="CARTAO_CREDITO">Cartão de Crédito</option>
                                                         <option value="CARTAO_DEBITO">Cartão de Débito</option>
                                                         <option value="BOLETO">Boleto</option>
+                                                        <option value="AJUSTE">Ajuste Manual</option>
+                                                        <option value="ESTORNO_REEMBOLSO">Estorno / Reembolso</option>
                                                     </select>
                                                 </div>
                                                 <div>
@@ -525,8 +767,9 @@ export default function BillingManager() {
                                                         type="text"
                                                         value={paymentBank}
                                                         onChange={(e) => setPaymentBank(e.target.value)}
-                                                        className="input-field"
+                                                        className="input-field disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                                         placeholder="Ex: Inter, Nubank, Caixa..."
+                                                        disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
                                                     />
                                                 </div>
 
@@ -597,8 +840,13 @@ export default function BillingManager() {
                                                     </div>
                                                 )}
 
-                                                <button type="submit" className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-                                                    <DollarSign size={18} /> Confirmar Recebimento
+                                                <button
+                                                    type="submit"
+                                                    className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${parseFloat(paymentAmount) < 0 ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-primary hover:bg-primary-dark text-white'}`}
+                                                    disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
+                                                >
+                                                    <DollarSign size={18} />
+                                                    {parseFloat(paymentAmount) < 0 ? 'Confirmar Ajuste/Estorno' : 'Confirmar Recebimento'}
                                                 </button>
                                             </form>
                                         </div>

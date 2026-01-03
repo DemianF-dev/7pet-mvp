@@ -3,7 +3,7 @@ import prisma from '../lib/prisma'; // Ensure this path is correct relative to s
 interface AuditLogEntry {
     entityType: string;
     entityId: string;
-    action: 'CREATE' | 'UPDATE' | 'DELETE' | 'ROLLBACK';
+    action: 'CREATE' | 'UPDATE' | 'DELETE' | 'ROLLBACK' | 'DELETE_PERMANENT';
     performedBy: string; // userId
     previousData?: any;
     newData?: any;

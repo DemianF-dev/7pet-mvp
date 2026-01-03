@@ -1,13 +1,15 @@
 import {
     X, User, Dog, Calendar, Clock, MapPin,
     CheckCircle, Clock3, Printer, Send,
-    Edit, Trash2, Copy, RefreshCcw
+    Edit, Trash2, Copy, RefreshCcw, DollarSign
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getAppointmentStatusColor } from '../../utils/statusColors';
 import toast from 'react-hot-toast';
+import PaymentModal from './PaymentModal';
+import PaymentReceiptModal from '../PaymentReceiptModal';
 
 interface ModalProps {
     isOpen: boolean;
@@ -26,6 +28,32 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
         targetStatus: string;
         newDate: string;
     }>({ active: false, targetStatus: '', newDate: '' });
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [showReceipt, setShowReceipt] = useState(false);
+    const [lastPayment, setLastPayment] = useState<any>(null);
+    const [localAppointment, setLocalAppointment] = useState(appointment);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Sync local state when appointment prop changes
+    useEffect(() => {
+        if (appointment && isOpen) {
+            setLocalAppointment(appointment);
+            refreshData();
+        }
+    }, [appointment, isOpen]);
+
+    const refreshData = async () => {
+        if (!appointment?.id) return;
+        setIsRefreshing(true);
+        try {
+            const res = await api.get(`/appointments/${appointment.id}`);
+            setLocalAppointment(res.data);
+        } catch (err) {
+            console.error('Error refreshing appointment:', err);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     if (!isOpen || !appointment) return null;
 
@@ -37,7 +65,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
         }
         setIsDeleting(true);
         try {
-            await api.delete(`/appointments/${appointment.id}`);
+            await api.delete(`/appointments/${localAppointment.id}`);
             onSuccess();
             onClose();
         } catch (error) {
@@ -49,7 +77,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
 
     const handleModifyConfirm = () => {
         if (window.confirm('Deseja modificar este agendamento?')) {
-            onModify(appointment);
+            onModify(localAppointment);
         } else {
             onClose();
         }
@@ -57,7 +85,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
 
     const handleCopyConfirm = () => {
         if (window.confirm('Deseja copiar este agendamento?')) {
-            onCopy(appointment);
+            onCopy(localAppointment);
         } else {
             onClose();
         }
@@ -68,17 +96,17 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
     };
 
     const handleSendWhatsApp = () => {
-        const serviceNames = appointment.services && appointment.services.length > 0
-            ? appointment.services.map((s: any) => s.name).join(', ')
-            : appointment.service?.name;
+        const serviceNames = localAppointment.services && localAppointment.services.length > 0
+            ? localAppointment.services.map((s: any) => s.name).join(', ')
+            : localAppointment.service?.name;
 
-        const message = `Olá ${appointment.customer.name}! Confirmamos o agendamento de ${serviceNames} para o ${appointment.pet.name} no dia ${new Date(appointment.startAt).toLocaleDateString('pt-BR')} às ${new Date(appointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Até breve!`;
-        const url = `https://wa.me/${appointment.customer.phone || ''}?text=${encodeURIComponent(message)}`;
+        const message = `Olá ${localAppointment.customer.name}! Confirmamos o agendamento de ${serviceNames} para o ${localAppointment.pet.name} no dia ${new Date(localAppointment.startAt).toLocaleDateString('pt-BR')} às ${new Date(localAppointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Até breve!`;
+        const url = `https://wa.me/${localAppointment.customer.phone || ''}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
     };
 
     // Calculate totals
-    const servicesList = appointment.services || (appointment.service ? [appointment.service] : []);
+    const servicesList = localAppointment.services || (localAppointment.service ? [localAppointment.service] : []);
     const totalDuration = servicesList.reduce((acc: number, s: any) => acc + s.duration, 0);
     const totalPrice = servicesList.reduce((acc: number, s: any) => acc + s.basePrice, 0);
 
@@ -97,6 +125,12 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl relative z-10 overflow-hidden print:shadow-none print:rounded-none print:max-w-none print:h-screen"
             >
+                {isRefreshing && (
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center">
+                        <RefreshCcw className="animate-spin text-primary" size={32} />
+                    </div>
+                )}
+
                 {/* Actions Header */}
                 <div className="bg-gray-900 p-4 flex flex-wrap justify-between items-center gap-2 print:hidden">
                     <div className="flex gap-2">
@@ -118,12 +152,66 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                             <Send size={16} /> Enviar (WA)
                         </button>
                     </div>
+
+                    {/* Financial Receipt Status / Payment Trigger */}
+                    <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                        {(() => {
+                            const activeInvoice = localAppointment.invoice || localAppointment.quote?.invoice;
+
+                            if (activeInvoice) {
+                                if (activeInvoice.status === 'PAGO') {
+                                    return (
+                                        <div className="p-2.5 bg-green-100 text-green-700 rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+                                            <CheckCircle size={16} /> Pago
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        onClick={() => setIsPaymentModalOpen(true)}
+                                        className="p-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all flex items-center gap-2 text-xs font-black uppercase tracking-wider shadow-lg shadow-yellow-500/20"
+                                    >
+                                        <DollarSign size={16} /> Receber Pagamento
+                                    </button>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    onClick={async () => {
+                                        const useQuote = localAppointment.quoteId && window.confirm('Deseja gerar a fatura baseada no ORÇAMENTO COMPLETO? (Sim) ou apenas no valor deste agendamento? (Não)');
+
+                                        try {
+                                            const amount = useQuote ? localAppointment.quote.totalAmount : totalPrice;
+                                            const res = await api.post('/invoices', {
+                                                customerId: localAppointment.customer.id,
+                                                amount: amount,
+                                                dueDate: new Date().toISOString(),
+                                                appointmentId: useQuote ? undefined : localAppointment.id,
+                                                quoteId: localAppointment.quoteId
+                                            });
+                                            toast.success('Fatura gerada com sucesso!');
+                                            // Refresh details
+                                            const refreshed = await api.get(`/appointments/${localAppointment.id}`);
+                                            setLocalAppointment(refreshed.data);
+                                            setIsPaymentModalOpen(true);
+                                        } catch (err) {
+                                            toast.error('Erro ao gerar fatura');
+                                        }
+                                    }}
+                                    className="p-2.5 bg-primary text-white rounded-xl hover:brightness-110 transition-all flex items-center gap-2 text-xs font-black uppercase tracking-wider shadow-lg shadow-primary/20"
+                                >
+                                    <DollarSign size={16} /> Gerar e Pagar
+                                </button>
+                            );
+                        })()}
+                    </div>
                 </div>
 
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            {appointment.category === 'LOGISTICA' ? (
+                            {localAppointment.category === 'LOGISTICA' ? (
                                 <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">
                                     Transporte
                                 </span>
@@ -134,26 +222,26 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                             )}
                         </div>
                         <h2 className="text-2xl font-bold text-secondary">
-                            Detalhes do <span className={appointment.category === 'LOGISTICA' ? 'text-orange-500' : 'text-primary'}>
-                                {appointment.category === 'LOGISTICA' ? 'Transporte' : 'Agendamento'}
+                            Detalhes do <span className={localAppointment.category === 'LOGISTICA' ? 'text-orange-500' : 'text-primary'}>
+                                {localAppointment.category === 'LOGISTICA' ? 'Transporte' : 'Agendamento'}
                             </span>
                         </h2>
                         <div className="mt-2 flex items-center gap-2">
                             <select
-                                value={appointment.status}
+                                value={localAppointment.status}
                                 onChange={(e) => {
                                     const nextStatus = e.target.value;
                                     if (nextStatus === 'CANCELADO' || nextStatus === 'NO_SHOW') {
                                         setRescheduleData({ active: true, targetStatus: nextStatus, newDate: '' });
                                     } else {
                                         if (window.confirm(`Deseja alterar o status para ${nextStatus}?`)) {
-                                            api.patch(`/appointments/${appointment.id}/status`, { status: nextStatus })
+                                            api.patch(`/appointments/${localAppointment.id}/status`, { status: nextStatus })
                                                 .then(() => { onSuccess(); onClose(); })
                                                 .catch(() => toast.error('Erro ao atualizar status'));
                                         }
                                     }
                                 }}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-sm ${getAppointmentStatusColor(appointment.status)}`}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-sm ${getAppointmentStatusColor(localAppointment.status)}`}
                             >
                                 <option value="PENDENTE">Solicitado</option>
                                 <option value="CONFIRMADO">Confirmado</option>
@@ -183,7 +271,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                     <button
                                         onClick={async () => {
                                             try {
-                                                await api.patch(`/appointments/${appointment.id}/status`, { status: rescheduleData.targetStatus });
+                                                await api.patch(`/appointments/${localAppointment.id}/status`, { status: rescheduleData.targetStatus });
                                                 toast.success('Status atualizado com sucesso');
                                                 onSuccess();
                                                 onClose();
@@ -198,7 +286,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                     </button>
 
                                     <button
-                                        onClick={() => setRescheduleData({ ...rescheduleData, newDate: appointment.startAt.split('.')[0] })}
+                                        onClick={() => setRescheduleData({ ...rescheduleData, newDate: localAppointment.startAt.split('.')[0] })}
                                         className="flex flex-col items-center gap-3 p-6 bg-gray-50 hover:bg-primary/10 hover:text-primary rounded-3xl border border-gray-100 transition-all group"
                                     >
                                         <RefreshCcw size={32} className="text-gray-300 group-hover:text-primary" />
@@ -232,14 +320,14 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                                 try {
                                                     if (rescheduleData.targetStatus === 'CANCELADO') {
                                                         // Transfer: Update current
-                                                        await api.patch(`/appointments/${appointment.id}`, {
+                                                        await api.patch(`/appointments/${localAppointment.id}`, {
                                                             startAt: new Date(rescheduleData.newDate).toISOString(),
                                                             status: 'CONFIRMADO' // Reset to confirmed when transferred
                                                         });
                                                         toast.success('Agendamento transferido com sucesso');
                                                     } else {
                                                         // NO_SHOW: Copy as new, keep old as NO_SHOW
-                                                        const { id, createdAt, services, customer, pet, performer, transport, ...copyData } = appointment;
+                                                        const { id, createdAt, services, customer, pet, performer, transport, ...copyData } = localAppointment;
                                                         await api.post('/appointments', {
                                                             ...copyData,
                                                             customerId: customer.id,
@@ -256,7 +344,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                                         });
 
                                                         // Update old one to NO_SHOW
-                                                        await api.patch(`/appointments/${appointment.id}/status`, { status: 'NO_SHOW' });
+                                                        await api.patch(`/appointments/${localAppointment.id}/status`, { status: 'NO_SHOW' });
                                                         toast.success('Novo agendamento criado (No-Show registrado)');
                                                     }
                                                     onSuccess();
@@ -283,16 +371,16 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                     {/* Infos Principais */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
-                            <Calendar className={appointment.category === 'LOGISTICA' ? 'text-orange-500 mb-2' : 'text-primary mb-2'} size={20} />
+                            <Calendar className={localAppointment.category === 'LOGISTICA' ? 'text-orange-500 mb-2' : 'text-primary mb-2'} size={20} />
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Data</p>
-                            <p className="text-sm font-bold text-secondary">{new Date(appointment.startAt).toLocaleDateString('pt-BR')}</p>
+                            <p className="text-sm font-bold text-secondary">{new Date(localAppointment.startAt).toLocaleDateString('pt-BR')}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
-                            <Clock className={appointment.category === 'LOGISTICA' ? 'text-orange-500 mb-2' : 'text-primary mb-2'} size={20} />
+                            <Clock className={localAppointment.category === 'LOGISTICA' ? 'text-orange-500 mb-2' : 'text-primary mb-2'} size={20} />
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                {appointment.category === 'LOGISTICA' ? 'Horário Previsto' : 'Horário'}
+                                {localAppointment.category === 'LOGISTICA' ? 'Horário Previsto' : 'Horário'}
                             </p>
-                            <p className="text-sm font-bold text-secondary">{new Date(appointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p className="text-sm font-bold text-secondary">{new Date(localAppointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                     </div>
 
@@ -303,15 +391,15 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                 <User size={14} /> Cliente
                             </h3>
                             <div
-                                onClick={() => onOpenCustomer && onOpenCustomer(appointment.customer.id)}
+                                onClick={() => onOpenCustomer && onOpenCustomer(localAppointment.customer.id)}
                                 className={`flex items-center gap-4 bg-white p-3 border border-gray-100 rounded-3xl shadow-sm ${onOpenCustomer ? 'cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all' : ''}`}
                             >
                                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold text-xl uppercase">
-                                    {appointment.customer?.name ? appointment.customer.name[0] : '?'}
+                                    {localAppointment.customer?.name ? localAppointment.customer.name[0] : '?'}
                                 </div>
                                 <div className="overflow-hidden text-left">
-                                    <p className="font-bold text-secondary truncate">{appointment.customer?.name || 'Cliente'}</p>
-                                    <p className="text-[10px] text-gray-400 truncate">{appointment.customer?.user?.email}</p>
+                                    <p className="font-bold text-secondary truncate">{localAppointment.customer?.name || 'Cliente'}</p>
+                                    <p className="text-[10px] text-gray-400 truncate">{localAppointment.customer?.user?.email}</p>
                                 </div>
                             </div>
                         </div>
@@ -325,31 +413,31 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                     <Dog size={24} />
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="font-bold text-secondary truncate">{appointment.pet?.name}</p>
-                                    <p className="text-[10px] text-gray-400 truncate">{appointment.pet?.species} • {appointment.pet?.breed || 'SRD'}</p>
+                                    <p className="font-bold text-secondary truncate">{localAppointment.pet?.name}</p>
+                                    <p className="text-[10px] text-gray-400 truncate">{localAppointment.pet?.species} • {localAppointment.pet?.breed || 'SRD'}</p>
                                 </div>
                             </div>
                         </div>
 
-                        {appointment.performer && (
+                        {localAppointment.performer && (
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
                                     <User size={14} /> Profissional
                                 </h3>
                                 <div
                                     className="flex items-center gap-4 bg-white p-3 border border-gray-100 rounded-3xl shadow-sm overflow-hidden"
-                                    style={{ borderLeft: `4px solid ${appointment.performer.color || '#3B82F6'}` }}
+                                    style={{ borderLeft: `4px solid ${localAppointment.performer.color || '#3B82F6'}` }}
                                 >
                                     <div
                                         className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-xl uppercase shadow-sm shrink-0"
-                                        style={{ backgroundColor: appointment.performer.color || '#3B82F6' }}
+                                        style={{ backgroundColor: localAppointment.performer.color || '#3B82F6' }}
                                     >
-                                        {appointment.performer.name ? appointment.performer.name[0] : 'P'}
+                                        {localAppointment.performer.name ? localAppointment.performer.name[0] : 'P'}
                                     </div>
                                     <div className="overflow-hidden">
-                                        <p className="font-bold text-secondary truncate">{appointment.performer.name}</p>
+                                        <p className="font-bold text-secondary truncate">{localAppointment.performer.name}</p>
                                         <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg inline-block mt-1">
-                                            {appointment.performer.role}
+                                            {localAppointment.performer.role}
                                         </p>
                                     </div>
                                 </div>
@@ -360,12 +448,12 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                     {/* Serviço */}
                     <div className="space-y-4">
                         <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
-                            {appointment.category === 'LOGISTICA' ? <MapPin size={14} /> : <CheckCircle size={14} />}
-                            {appointment.category === 'LOGISTICA' ? 'Serviços de Transporte' : `Serviços (${servicesList.length})`}
+                            {localAppointment.category === 'LOGISTICA' ? <MapPin size={14} /> : <CheckCircle size={14} />}
+                            {localAppointment.category === 'LOGISTICA' ? 'Serviços de Transporte' : `Serviços (${servicesList.length})`}
                         </h3>
-                        <div className={`p-6 rounded-[32px] shadow-xl relative overflow-hidden group ${appointment.category === 'LOGISTICA' ? 'bg-orange-500 text-white shadow-orange-500/20' : 'bg-secondary text-white shadow-secondary/20'}`}>
+                        <div className={`p-6 rounded-[32px] shadow-xl relative overflow-hidden group ${localAppointment.category === 'LOGISTICA' ? 'bg-orange-500 text-white shadow-orange-500/20' : 'bg-secondary text-white shadow-secondary/20'}`}>
                             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                                {appointment.category === 'LOGISTICA' ? <MapPin size={80} /> : <Clock3 size={80} />}
+                                {localAppointment.category === 'LOGISTICA' ? <MapPin size={80} /> : <Clock3 size={80} />}
                             </div>
                             <div className="space-y-1 mb-4">
                                 {servicesList.length > 0 ? (
@@ -377,14 +465,14 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                     ))
                                 ) : (
                                     <h4 className="text-lg font-bold flex justify-between">
-                                        <span>{appointment.category === 'LOGISTICA' ? 'Leva e Traz (Ver detalhes abaixo)' : 'Serviço sob consulta'}</span>
+                                        <span>{localAppointment.category === 'LOGISTICA' ? 'Leva e Traz (Ver detalhes abaixo)' : 'Serviço sob consulta'}</span>
                                         <span className="text-sm opacity-60 font-normal">-</span>
                                     </h4>
                                 )}
                             </div>
                             <div className="pt-4 border-t border-white/10 flex justify-between items-end">
-                                <p className="text-white/60 text-xs">{totalDuration} min • Status: {appointment.status}</p>
-                                <p className={appointment.category === 'LOGISTICA' ? 'text-2xl font-black text-white' : 'text-2xl font-black text-primary'}>
+                                <p className="text-white/60 text-xs">{totalDuration} min • Status: {localAppointment.status}</p>
+                                <p className={localAppointment.category === 'LOGISTICA' ? 'text-2xl font-black text-white' : 'text-2xl font-black text-primary'}>
                                     R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </p>
                             </div>
@@ -392,7 +480,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                     </div>
 
                     {/* Transporte (Detalhes) */}
-                    {appointment.transport && (
+                    {localAppointment.transport && (
                         <div className="space-y-4">
                             <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
                                 <MapPin size={14} /> Detalhes da Logística
@@ -401,16 +489,16 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider mb-2">Origem</p>
-                                        <p className="text-sm font-bold text-secondary leading-relaxed">{appointment.transport.origin}</p>
+                                        <p className="text-sm font-bold text-secondary leading-relaxed">{localAppointment.transport.origin}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider mb-2">Destino</p>
-                                        <p className="text-sm font-bold text-secondary leading-relaxed">{appointment.transport.destination}</p>
+                                        <p className="text-sm font-bold text-secondary leading-relaxed">{localAppointment.transport.destination}</p>
                                     </div>
                                 </div>
                                 <div className="mt-4 flex gap-2">
                                     <div className="inline-block bg-white px-3 py-1 rounded-full text-[10px] font-bold text-orange-600 border border-orange-100">
-                                        Período: {appointment.transport.requestedPeriod === 'MORNING' ? 'Manhã' : appointment.transport.requestedPeriod === 'AFTERNOON' ? 'Tarde' : 'Noite'}
+                                        Período: {localAppointment.transport.requestedPeriod === 'MORNING' ? 'Manhã' : localAppointment.transport.requestedPeriod === 'AFTERNOON' ? 'Tarde' : 'Noite'}
                                     </div>
                                 </div>
                             </div>
@@ -427,6 +515,31 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                     </button>
                 </div>
             </motion.div>
+
+            {/* Sub-modals for Payment */}
+            {isPaymentModalOpen && (localAppointment.invoice || localAppointment.quote?.invoice) && (
+                <PaymentModal
+                    isOpen={isPaymentModalOpen}
+                    onClose={() => setIsPaymentModalOpen(false)}
+                    invoice={localAppointment.invoice || localAppointment.quote?.invoice}
+                    onSuccess={async (payment) => {
+                        setLastPayment(payment);
+                        setIsPaymentModalOpen(false);
+                        setShowReceipt(true);
+                        // Refresh to sync status
+                        const res = await api.get(`/appointments/${localAppointment.id}`);
+                        setLocalAppointment(res.data);
+                        onSuccess();
+                    }}
+                />
+            )}
+
+            <PaymentReceiptModal
+                isOpen={showReceipt}
+                onClose={() => setShowReceipt(false)}
+                payment={lastPayment}
+                customerName={localAppointment.customer.name}
+            />
         </div>
     );
 }

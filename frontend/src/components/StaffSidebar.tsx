@@ -16,7 +16,8 @@ import {
     X,
     Sparkles,
     Package,
-    AlertTriangle
+    AlertTriangle,
+    Settings
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -69,6 +70,7 @@ export default function StaffSidebar() {
             case 'reports': return user.role === 'GESTAO' || user.role === 'ADMIN';
             case 'management': return user.role === 'GESTAO' || user.role === 'ADMIN';
             case 'users': return user.role === 'ADMIN';
+            case 'transport-config': return user.role === 'GESTAO' || user.role === 'ADMIN';
             default: return false;
         }
     };
@@ -175,6 +177,18 @@ export default function StaffSidebar() {
                 />
             )}
 
+
+
+            {/* 9.1 Config Transporte */}
+            {checkPermission('transport-config') && (
+                <SidebarItem
+                    icon={<Settings size={20} />}
+                    label="Config. Transporte"
+                    active={location.pathname === '/staff/transport-config'}
+                    onClick={() => { navigate('/staff/transport-config'); setIsOpen(false); }}
+                />
+            )}
+
             {/* 10. Usuários */}
             {checkPermission('users') && (
                 <SidebarItem
@@ -237,7 +251,7 @@ export default function StaffSidebar() {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-80 bg-secondary z-[60] p-6 flex flex-col shadow-2xl md:hidden"
+                            className="fixed inset-y-0 left-0 w-80 bg-secondary z-[60] p-6 flex flex-col shadow-2xl md:hidden overflow-y-auto"
                         >
                             <div className="flex items-center justify-between mb-10">
                                 <div className="flex items-center gap-2">
@@ -276,7 +290,7 @@ export default function StaffSidebar() {
             </AnimatePresence>
 
             {/* Desktop Sidebar */}
-            <aside className="w-64 bg-secondary border-r border-secondary-dark hidden md:flex flex-col p-6 fixed h-full text-white">
+            <aside className="w-64 bg-secondary border-r border-secondary-dark hidden md:flex flex-col p-6 fixed h-full text-white overflow-y-auto">
                 <div className="flex items-center gap-2 mb-10 cursor-pointer" onClick={() => navigate('/staff/dashboard')}>
                     <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform" alt="Logo" />
                     <span className="font-bold text-xl">7Pet Operational</span>

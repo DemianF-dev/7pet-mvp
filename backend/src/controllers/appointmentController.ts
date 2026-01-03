@@ -2,6 +2,7 @@ import { Response } from 'express';
 import * as appointmentService from '../services/appointmentService';
 import { z } from 'zod';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
+import Logger from '../lib/logger';
 
 const appointmentSchema = z.object({
     petId: z.string().uuid(),
@@ -22,7 +23,7 @@ export const create = async (req: any, res: Response) => {
     try {
         const validatedData = appointmentSchema.parse(req.body);
         const isStaff = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(req.user.role);
-        console.log('[AppointmentController] Role check:', { role: req.user.role, isStaff });
+        Logger.info(`[AppointmentController] Role check: role=${req.user.role}, isStaff=${isStaff}`);
         const customerId = validatedData.customerId || req.user.customer?.id;
 
         if (!customerId) {

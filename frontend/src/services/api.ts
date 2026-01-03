@@ -51,8 +51,9 @@ api.interceptors.response.use(
         }
         // 500 Internal Server Error
         else if (error.response.status >= 500) {
-            toast.error('Erro interno no servidor. Tente novamente mais tarde.', {
-                duration: 4000
+            const serverMessage = error.response.data?.message || error.response.data?.error || 'Erro interno no servidor.';
+            toast.error(`${serverMessage} Tente novamente mais tarde.`, {
+                duration: 5000
             });
         }
         return Promise.reject(error);

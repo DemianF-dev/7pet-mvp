@@ -22,5 +22,7 @@ router.delete('/:id/permanent', quoteController.permanentRemove);
 // Cascading delete routes
 router.get('/:id/dependencies', quoteController.checkDependencies);
 router.post('/:id/cascade-delete', quoteController.cascadeDelete);
+router.post('/:id/calculate-transport', quoteController.calculateTransport);
+router.post('/:id/approve-and-schedule', quoteController.approveAndSchedule);
 
 export default router;

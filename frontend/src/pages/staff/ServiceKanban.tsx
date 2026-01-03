@@ -16,10 +16,10 @@ import {
     XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
 
 interface Appointment {
@@ -499,121 +499,124 @@ export default function ServiceKanban() {
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-4 md:p-8">
-                <header className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <BackButton className="ml-[-0.5rem]" />
-                        <div>
-                            <h1 className="text-2xl font-extrabold text-secondary flex items-center gap-2">
-                                Agenda de <span className="text-primary">Serviços</span>
-                            </h1>
-                            <p className="text-gray-400 text-xs font-medium">Fluxo operacional e atendimentos.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
-                        <div className="flex-1 min-w-[150px]">
-                            <input
-                                type="text"
-                                placeholder="Filtrar por Pet..."
-                                value={columnFilters.pet}
-                                onChange={(e) => setColumnFilters({ ...columnFilters, pet: e.target.value })}
-                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="flex-1 min-w-[150px]">
-                            <input
-                                type="text"
-                                placeholder="Filtrar por Tutor..."
-                                value={columnFilters.customer}
-                                onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
-                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="flex-1 min-w-[150px]">
-                            <input
-                                type="text"
-                                placeholder="Filtrar por Serviço..."
-                                value={columnFilters.service}
-                                onChange={(e) => setColumnFilters({ ...columnFilters, service: e.target.value })}
-                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="flex-1 min-w-[100px]">
-                            <input
-                                type="text"
-                                placeholder="Filtrar por Hora (HH:MM)..."
-                                value={columnFilters.time}
-                                onChange={(e) => setColumnFilters({ ...columnFilters, time: e.target.value })}
-                                className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <button
-                            onClick={() => setColumnFilters({ pet: '', customer: '', service: '', time: '' })}
-                            className="text-[10px] font-black text-primary hover:text-secondary uppercase px-2"
-                        >
-                            Limpar
-                        </button>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4">
-                        {/* Search in Agenda */}
-                        <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Filtrar agenda..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="bg-white border-none rounded-2xl pl-12 pr-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64"
-                            />
-                        </div>
-
-                        <div className="flex bg-gray-100 p-1.5 rounded-2xl">
-                            <button
-                                onClick={() => setIsTrashView(false)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isTrashView ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
-                            >
-                                <Layout size={16} /> Agenda
-                            </button>
-                            <button
-                                onClick={() => setIsTrashView(true)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isTrashView ? 'bg-red-50 text-red-500 shadow-sm' : 'text-gray-400 hover:text-red-400'}`}
-                            >
-                                <Trash2 size={16} /> Lixeira
-                            </button>
-                        </div>
-
-                        {/* View Selector (only in active view) */}
-                        {!isTrashView && (
-                            <div className="bg-gray-100 p-1.5 rounded-2xl flex items-center gap-1">
-                                {['KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
-                                    <button
-                                        key={v}
-                                        onClick={() => setView(v as ViewType)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === v ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
-                                    >
-                                        {v === 'KANBAN' ? <Layout size={16} /> : v === 'DAY' ? <List size={16} /> : <CalendarIcon size={16} />}
-                                        <span className="hidden sm:inline">{v.charAt(0) + v.slice(1).toLowerCase()}</span>
-                                    </button>
-                                ))}
+                <header className="mb-6">
+                    <Breadcrumbs />
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <BackButton className="ml-[-0.5rem]" />
+                            <div>
+                                <h1 className="text-2xl font-extrabold text-secondary flex items-center gap-2">
+                                    Agenda de <span className="text-primary">Serviços</span>
+                                </h1>
+                                <p className="text-gray-400 text-xs font-medium">Fluxo operacional e atendimentos.</p>
                             </div>
-                        )}
+                        </div>
 
-                        <button
-                            onClick={fetchAppointments}
-                            disabled={isLoading}
-                            className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
-                            title="Atualizar Agenda"
-                        >
-                            <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
-                        </button>
+                        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
+                            <div className="flex-1 min-w-[150px]">
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar por Pet..."
+                                    value={columnFilters.pet}
+                                    onChange={(e) => setColumnFilters({ ...columnFilters, pet: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-[150px]">
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar por Tutor..."
+                                    value={columnFilters.customer}
+                                    onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-[150px]">
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar por Serviço..."
+                                    value={columnFilters.service}
+                                    onChange={(e) => setColumnFilters({ ...columnFilters, service: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-[100px]">
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar por Hora (HH:MM)..."
+                                    value={columnFilters.time}
+                                    onChange={(e) => setColumnFilters({ ...columnFilters, time: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setColumnFilters({ pet: '', customer: '', service: '', time: '' })}
+                                className="text-[10px] font-black text-primary hover:text-secondary uppercase px-2"
+                            >
+                                Limpar
+                            </button>
+                        </div>
 
-                        <button
-                            onClick={handleCreateNew}
-                            className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center gap-2"
-                        >
-                            <Plus size={16} /> Novo Agendamento
-                        </button>
+                        <div className="flex flex-wrap items-center gap-4">
+                            {/* Search in Agenda */}
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar agenda..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="bg-white border-none rounded-2xl pl-12 pr-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64"
+                                />
+                            </div>
+
+                            <div className="flex bg-gray-100 p-1.5 rounded-2xl">
+                                <button
+                                    onClick={() => setIsTrashView(false)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isTrashView ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                >
+                                    <Layout size={16} /> Agenda
+                                </button>
+                                <button
+                                    onClick={() => setIsTrashView(true)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isTrashView ? 'bg-red-50 text-red-500 shadow-sm' : 'text-gray-400 hover:text-red-400'}`}
+                                >
+                                    <Trash2 size={16} /> Lixeira
+                                </button>
+                            </div>
+
+                            {/* View Selector (only in active view) */}
+                            {!isTrashView && (
+                                <div className="bg-gray-100 p-1.5 rounded-2xl flex items-center gap-1">
+                                    {['KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
+                                        <button
+                                            key={v}
+                                            onClick={() => setView(v as ViewType)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === v ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                        >
+                                            {v === 'KANBAN' ? <Layout size={16} /> : v === 'DAY' ? <List size={16} /> : <CalendarIcon size={16} />}
+                                            <span className="hidden sm:inline">{v.charAt(0) + v.slice(1).toLowerCase()}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <button
+                                onClick={fetchAppointments}
+                                disabled={isLoading}
+                                className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                                title="Atualizar Agenda"
+                            >
+                                <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+                            </button>
+
+                            <button
+                                onClick={handleCreateNew}
+                                className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center gap-2"
+                            >
+                                <Plus size={16} /> Novo Agendamento
+                            </button>
+                        </div>
                     </div>
                 </header>
 

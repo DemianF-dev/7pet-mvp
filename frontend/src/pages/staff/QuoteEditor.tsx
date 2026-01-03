@@ -14,11 +14,14 @@ import {
     History,
     CalendarDays,
     Calendar,
-    X
+    X,
+    RefreshCcw,
+    FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
 import toast from 'react-hot-toast';
 import AuditLogModal from '../../components/AuditLogModal';
@@ -26,6 +29,7 @@ import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import { useAuthStore } from '../../store/authStore';
 import { getQuoteStatusColor } from '../../utils/statusColors';
+import { useApproveAndSchedule } from '../../hooks/useQuotes';
 
 interface QuoteItem {
     id?: string;
@@ -109,11 +113,20 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [showServiceDropdown, setShowServiceDropdown] = useState<{ [key: number]: boolean }>({});
     const [staffUsers, setStaffUsers] = useState<any[]>([]);
     const { user } = useAuthStore();
+    const approveAndScheduleMutation = useApproveAndSchedule();
 
     // Appointment View/Selection State
     const [appointmentSelectionQuote, setAppointmentSelectionQuote] = useState<Quote | null>(null);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [viewAppointmentData, setViewAppointmentData] = useState<any>(null);
+
+    // Transport Calculation State
+    const [transportAddress, setTransportAddress] = useState('');
+    const [transportDestinationAddress, setTransportDestinationAddress] = useState('');
+    const [hasDifferentReturnAddress, setHasDifferentReturnAddress] = useState(false);
+    const [transportType, setTransportType] = useState<'ROUND_TRIP' | 'PICK_UP' | 'DROP_OFF'>('ROUND_TRIP');
+    const [transportCalculation, setTransportCalculation] = useState<any | null>(null);
+    const [isCalculatingTransport, setIsCalculatingTransport] = useState(false);
 
     const isModal = !!quoteId;
 
@@ -164,6 +177,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             setItems(q.items);
             setStatus(q.status);
             setNotes(q.notes || '');
+
+            // Initialize transport address if available
+            if (q.transportOrigin) {
+                setTransportAddress(q.transportOrigin);
+            }
+
             if (q.desiredAt) {
                 const date = new Date(q.desiredAt);
                 date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
@@ -183,8 +202,126 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         }
     };
 
+    const handleCalculateTransport = async () => {
+        if (!transportAddress.trim()) {
+            toast.error('Por favor, insira o endereço de origem');
+            return;
+        }
+
+        setIsCalculatingTransport(true);
+        try {
+            const response = await api.post(`/quotes/${id}/calculate-transport`, {
+                address: transportAddress,
+                destinationAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined,
+                type: transportType
+            });
+            setTransportCalculation(response.data);
+            toast.success('Transporte calculado com sucesso!');
+        } catch (error: any) {
+            console.error('Erro ao calcular transporte:', error);
+            const message = error.response?.data?.details || error.response?.data?.error || 'Erro ao calcular transporte';
+            toast.error(message);
+        } finally {
+            setIsCalculatingTransport(false);
+        }
+    };
+
+    const handleApplyTransport = () => {
+        if (!transportCalculation) return;
+
+        const description = `Transporte (Leva e Traz) - ${transportCalculation.totalDistance}`;
+        const price = transportCalculation.total;
+
+        // Check if item already exists
+        const existingIndex = items.findIndex(i => i.description.toLowerCase().includes('transporte'));
+
+        let newItems = [...items];
+        if (existingIndex >= 0) {
+            if (window.confirm('Já existe um item de transporte. Deseja atualizar o valor?')) {
+                newItems[existingIndex] = { ...newItems[existingIndex], price, description, quantity: 1 };
+            } else {
+                return;
+            }
+        } else {
+            newItems.push({ description, quantity: 1, price });
+        }
+
+        setItems(newItems);
+        toast.success('Valor do transporte aplicado aos itens!');
+    };
+
+    const handleLegChange = (leg: string, field: string, value: string) => {
+        if (!transportCalculation) return;
+
+        const newCalculation = { ...transportCalculation };
+        if (!newCalculation.breakdown[leg]) return;
+
+        // Allow editing
+        newCalculation.breakdown[leg][field] = value;
+
+        // Auto-recalculate price if distance or duration changes
+        if (field === 'distance' || field === 'duration') {
+            const settings = transportCalculation.settings;
+            if (settings) {
+                // Parse values (remove km, min, replace comma)
+                const numericVal = parseFloat(value.replace(/[^0-9,.]/g, '').replace(',', '.'));
+
+                if (!isNaN(numericVal)) {
+                    // Get rates based on leg
+                    const suffix = leg.charAt(0).toUpperCase() + leg.slice(1); // Largada, Leva...
+                    const kmPrice = settings[`kmPrice${suffix}`] || 0;
+                    const minPrice = settings[`minPrice${suffix}`] || 0;
+                    const handling = settings[`handlingTime${suffix}`] || 0;
+
+                    // We need both dist and dur to calculate. 
+                    // If we are editing distance, we use curr duration.
+                    let dist = field === 'distance' ? numericVal : parseFloat(newCalculation.breakdown[leg].distance.replace(/[^0-9,.]/g, '').replace(',', '.'));
+                    let dur = field === 'duration' ? numericVal : parseFloat(newCalculation.breakdown[leg].duration.replace(/[^0-9,.]/g, '').replace(',', '.'));
+
+                    if (!isNaN(dist) && !isNaN(dur)) {
+                        // Formula: (Dist * KmPrice) + ((Dur + Handling) * MinPrice)
+                        const newPrice = (dist * kmPrice) + ((dur + handling) * minPrice);
+                        newCalculation.breakdown[leg].price = newPrice.toFixed(2);
+                    }
+                }
+            }
+        }
+
+        recalculateTotal(newCalculation);
+        setTransportCalculation(newCalculation);
+    };
+
+    const recalculateTotal = (calc: any) => {
+        let total = 0;
+        ['largada', 'leva', 'traz', 'retorno'].forEach(leg => {
+            if (calc.breakdown[leg]) {
+                const price = typeof calc.breakdown[leg].price === 'string' ? parseFloat(calc.breakdown[leg].price) : calc.breakdown[leg].price;
+                if (!isNaN(price)) total += price;
+            }
+        });
+        calc.total = total;
+    };
+
     const handleAddItem = () => {
         setItems([...items, { description: '', quantity: 1, price: 0 }]);
+    };
+
+    const handleApproveAndSchedule = async () => {
+        if (!id) return;
+
+        // Pick primary performer if available
+        const performerId = items.find(it => it.performerId)?.performerId;
+
+        if (!window.confirm('Deseja Aprovar e Agendar este orçamento automaticamente? Isso criará agendamentos confirmados e notificará o cliente.')) return;
+
+        approveAndScheduleMutation.mutate({
+            quoteId: id,
+            performerId
+        }, {
+            onSuccess: () => {
+                navigate('/staff/quotes');
+            }
+        });
     };
 
     const handleRemoveItem = (index: number) => {
@@ -252,8 +389,20 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
         setIsSaving(true);
         try {
+            // Auto-link items to services by name if missing ID
+            const linkedItems = items.map(item => {
+                if (!item.serviceId && item.description) {
+                    const match = availableServices.find(s => s.name.toLowerCase() === item.description.toLowerCase());
+                    if (match) {
+                        console.log(`[QuoteSave] Auto-linked item "${item.description}" to Service ID ${match.id}`);
+                        return { ...item, serviceId: match.id, performerId: item.performerId || match.responsibleId || undefined };
+                    }
+                }
+                return item;
+            });
+
             await api.patch(`/quotes/${id}`, {
-                items,
+                items: linkedItems,
                 totalAmount,
                 status,
                 notes,
@@ -281,11 +430,28 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         setIsSaving(true);
         try {
             // Sanitize items for NaN and ensure correct types
-            const sanitizedItems = items.map(it => ({
-                ...it,
-                quantity: isNaN(it.quantity) ? 1 : Number(it.quantity),
-                price: isNaN(it.price) ? 0 : Number(it.price)
-            }));
+            // Sanitize items for NaN and ensure correct types
+            const sanitizedItems = items.map(it => {
+                // Auto-link logic for Send action too
+                let serviceId = it.serviceId;
+                let performerId = it.performerId;
+
+                if (!serviceId && it.description) {
+                    const match = availableServices.find(s => s.name.toLowerCase() === it.description.toLowerCase());
+                    if (match) {
+                        serviceId = match.id;
+                        performerId = performerId || match.responsibleId || undefined;
+                    }
+                }
+
+                return {
+                    ...it,
+                    serviceId,
+                    performerId,
+                    quantity: isNaN(it.quantity) ? 1 : Number(it.quantity),
+                    price: isNaN(it.price) ? 0 : Number(it.price)
+                };
+            });
 
             // Primeiro salva as alterações
             await api.patch(`/quotes/${id}`, {
@@ -327,6 +493,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             <header className="mb-10 bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
 
+                {!isModal && (
+                    <div className="mb-6">
+                        <Breadcrumbs />
+                    </div>
+                )}
                 <div className="relative z-10 flex flex-col gap-8">
                     {/* Topo: Cliente, ID e Ações Rápidas */}
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-gray-50">
@@ -387,6 +558,20 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                         </div>
 
                         <div className="flex gap-3">
+                            {(quote.status !== 'AGENDADO' && quote.status !== 'ENCERRADO' && quote.status !== 'APROVADO') && (
+                                <button
+                                    onClick={handleApproveAndSchedule}
+                                    disabled={approveAndScheduleMutation.isPending}
+                                    className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-widest disabled:opacity-50"
+                                >
+                                    {approveAndScheduleMutation.isPending ? (
+                                        <RefreshCcw size={16} className="animate-spin" />
+                                    ) : (
+                                        <CheckCircle2 size={16} />
+                                    )}
+                                    Aprovar & Agendar
+                                </button>
+                            )}
                             {quote.status === 'APROVADO' && onSchedule && (
                                 <button
                                     onClick={() => onSchedule({
@@ -680,6 +865,202 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                 </div>
                             )}
                         </div>
+
+                        {/* Transport Calculation Section */}
+                        {(quote?.type === 'SPA_TRANSPORTE' || quote?.type === 'TRANSPORTE') && (
+                            <div className="mt-10 pt-8 border-t border-gray-100">
+                                <h3 className="text-lg font-black text-secondary mb-4 flex items-center gap-2">
+                                    <div className="p-2 bg-purple-100 rounded-xl text-purple-600">
+                                        <Calculator size={20} />
+                                    </div>
+                                    Cálculo de Transporte (Leva e Traz)
+                                </h3>
+
+                                <div className="bg-purple-50 p-6 rounded-[32px] border border-purple-100">
+
+                                    {/* Transport Type Selector */}
+                                    <div className="flex flex-wrap gap-4 mb-6">
+                                        <button
+                                            onClick={() => setTransportType('ROUND_TRIP')}
+                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 ${transportType === 'ROUND_TRIP' ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white text-gray-500 border-transparent hover:bg-purple-50 hover:text-purple-600'}`}
+                                        >
+                                            Leva e Traz (Completo)
+                                        </button>
+                                        <button
+                                            onClick={() => setTransportType('PICK_UP')}
+                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 ${transportType === 'PICK_UP' ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white text-gray-500 border-transparent hover:bg-purple-50 hover:text-purple-600'}`}
+                                        >
+                                            Apenas Busca (Ida)
+                                        </button>
+                                        <button
+                                            onClick={() => setTransportType('DROP_OFF')}
+                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 ${transportType === 'DROP_OFF' ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white text-gray-500 border-transparent hover:bg-purple-50 hover:text-purple-600'}`}
+                                        >
+                                            Apenas Entrega (Volta)
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-col gap-4 mb-6">
+                                        <div className="flex gap-4">
+                                            <div className="flex-1">
+                                                <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Busca (Origem)</label>
+                                                <input
+                                                    type="text"
+                                                    value={transportAddress}
+                                                    onChange={(e) => setTransportAddress(e.target.value)}
+                                                    className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-200 transition-all text-purple-900"
+                                                    placeholder="Endereço onde o pet está..."
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 px-2">
+                                            <input
+                                                type="checkbox"
+                                                id="diffAddress"
+                                                checked={hasDifferentReturnAddress}
+                                                onChange={(e) => setHasDifferentReturnAddress(e.target.checked)}
+                                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+                                            />
+                                            <label htmlFor="diffAddress" className="text-xs font-bold text-gray-500 cursor-pointer select-none">Entrega em endereço diferente?</label>
+                                        </div>
+
+                                        {hasDifferentReturnAddress && (
+                                            <div className="flex-1 animate-in fade-in slide-in-from-top-2">
+                                                <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Entrega (Destino)</label>
+                                                <input
+                                                    type="text"
+                                                    value={transportDestinationAddress}
+                                                    onChange={(e) => setTransportDestinationAddress(e.target.value)}
+                                                    className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-200 transition-all text-purple-900"
+                                                    placeholder="Endereço para onde o pet vai..."
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-end mt-2">
+                                            <button
+                                                onClick={handleCalculateTransport}
+                                                disabled={isCalculatingTransport}
+                                                className="px-8 py-3 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-600/20 active:scale-95"
+                                            >
+                                                {isCalculatingTransport ? (
+                                                    <RefreshCcw size={18} className="animate-spin" />
+                                                ) : (
+                                                    <Calculator size={18} />
+                                                )}
+                                                {isCalculatingTransport ? 'Calculando...' : 'Calcular Transporte'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {transportCalculation && (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                            <div className="bg-white rounded-3xl border border-purple-100 overflow-hidden shadow-sm">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead className="bg-purple-50/50 text-[10px] uppercase font-black text-purple-400 tracking-widest">
+                                                        <tr>
+                                                            <th className="px-6 py-4 border-b border-purple-100">Etapa</th>
+                                                            <th className="px-6 py-4 border-b border-purple-100">Distância</th>
+                                                            <th className="px-6 py-4 border-b border-purple-100">Tempo</th>
+                                                            <th className="px-6 py-4 text-right border-b border-purple-100">Valor (R$)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50">
+                                                        {['largada', 'leva', 'traz', 'retorno'].map((leg: any) => {
+                                                            const legData = transportCalculation.breakdown[leg];
+                                                            if (!legData) return null;
+
+                                                            const labels: any = {
+                                                                largada: { title: 'Largada', sub: 'Base → Origem' },
+                                                                leva: { title: 'Leva', sub: 'Origem → Base' },
+                                                                traz: { title: 'Traz', sub: 'Base → Destino' },
+                                                                retorno: { title: 'Retorno', sub: 'Destino → Base' }
+                                                            };
+
+                                                            return (
+                                                                <tr key={leg} className="group hover:bg-purple-50/30 transition-colors">
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-bold text-gray-700">{labels[leg].title}</span>
+                                                                            <span className="text-[10px] text-gray-400">{labels[leg].sub}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={legData.distance}
+                                                                            onChange={(e) => handleLegChange(leg, 'distance', e.target.value)}
+                                                                            className="w-24 bg-gray-50 border-none rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-purple-200 transition-all"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={legData.duration}
+                                                                            onChange={(e) => handleLegChange(leg, 'duration', e.target.value)}
+                                                                            className="w-24 bg-gray-50 border-none rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-purple-200 transition-all"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            value={legData.price}
+                                                                            onChange={(e) => handleLegChange(leg, 'price', e.target.value)}
+                                                                            className="w-28 text-right bg-white border border-gray-200 rounded-lg text-sm font-black text-purple-600 focus:ring-2 focus:ring-purple-200 transition-all"
+                                                                        />
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                    <tfoot className="bg-purple-50 border-t border-purple-100">
+                                                        <tr>
+                                                            <td colSpan={3} className="px-6 py-4 text-right font-bold text-gray-500 text-xs uppercase tracking-widest">Total Estimado</td>
+                                                            <td className="px-6 py-4 text-right font-black text-xl text-purple-700">
+                                                                R$ {transportCalculation.total.toFixed(2)}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td colSpan={4} className="px-6 pb-6 text-right">
+                                                                <button
+                                                                    onClick={handleApplyTransport}
+                                                                    className="px-6 py-2 bg-green-500 text-white font-black rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ml-auto"
+                                                                >
+                                                                    <CheckCircle2 size={16} />
+                                                                    Aplicar ao Orçamento
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+
+                                            <div className="flex justify-end">
+                                                <button
+                                                    onClick={() => {
+                                                        const newItem = {
+                                                            description: `Serviço de Transporte (${transportType === 'ROUND_TRIP' ? 'Leva e Traz' : transportType === 'PICK_UP' ? 'Busca' : 'Entrega'})`,
+                                                            quantity: 1,
+                                                            price: transportCalculation.total,
+                                                            serviceId: 'transport-calculated'
+                                                        };
+                                                        setItems([...items, newItem]);
+                                                        setTransportCalculation(null); // Clear after adding
+                                                        toast.success('Transporte adicionado ao orçamento!');
+                                                    }}
+                                                    className="px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gray-900/20 flex items-center gap-2"
+                                                >
+                                                    <Plus size={20} />
+                                                    Adicionar ao Orçamento
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="mt-10 pt-8 border-t border-gray-100 flex justify-between items-center px-4">
                             <span className="text-lg font-bold text-secondary">Valor Total Calculado</span>
