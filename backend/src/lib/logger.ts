@@ -8,12 +8,6 @@ const levels = {
     debug: 4,
 };
 
-const level = () => {
-    const env = process.env.NODE_ENV || 'development';
-    const isDevelopment = env === 'development';
-    return isDevelopment ? 'debug' : 'warn';
-};
-
 const colors = {
     error: 'red',
     warn: 'yellow',
@@ -32,21 +26,18 @@ const format = winston.format.combine(
     ),
 );
 
+// Only use Console transport (Vercel doesn't allow file writes)
 const transports = [
     new winston.transports.Console(),
-    new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error',
-        format: winston.format.uncolorize(), // File content without colors
-    }),
-    new winston.transports.File({
-        filename: 'logs/all.log',
-        format: winston.format.uncolorize(),
-    }),
+    // File transports disabled for Vercel compatibility
+    // ...(process.env.NODE_ENV !== 'production' ? [
+    //     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    //     new winston.transports.File({ filename: 'logs/all.log' })
+    // ] : [])
 ];
 
 const Logger = winston.createLogger({
-    level: level(),
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     levels,
     format,
     transports,
