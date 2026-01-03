@@ -1,15 +1,19 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient({
-    log: ['error', 'warn'],
-});
+const prismaClientSingleton = () => {
+    return new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    });
+};
 
-// For local dev, you might want more logs:
-// log: ['query', 'info', 'warn', 'error'],
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+
+const globalForPrisma = globalThis as unknown as {
+    prisma: PrismaClientSingleton | undefined;
+};
+
+const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 
 export default prisma;
 
-// Cleanup on exit
-process.on('beforeExit', async () => {
-    await prisma.$disconnect();
-});
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
