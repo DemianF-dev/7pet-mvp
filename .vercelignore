@@ -1,7 +1,0 @@
-# Ignore TypeScript source files during Vercel deployment
-# Let Vercel handle TS compilation via serverless runtime
-*.ts
-!*.d.ts
-
-# But allow the API entry point
-!api/index.ts
