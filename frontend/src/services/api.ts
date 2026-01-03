@@ -4,19 +4,16 @@ import { toast } from 'react-hot-toast';
 // Validate and sanitize API URL to prevent common configuration errors
 const getApiUrl = (): string => {
     const envUrl = import.meta.env.VITE_API_URL;
-    const defaultUrl = 'http://localhost:3001';
 
-    // Critical validation: never use HTTPS with localhost (causes connection errors)
-    if (envUrl?.includes('localhost') && envUrl.startsWith('https')) {
-        console.error('[API Config] ❌ INVALID: HTTPS detected on localhost, forcing HTTP');
-        const correctedUrl = envUrl.replace('https://', 'http://');
-        console.warn('[API Config] ⚠️ Auto-corrected to:', correctedUrl);
-        return correctedUrl;
+    // Se estivermos em produção (Vercel), usamos /api por padrão se nada for definido
+    if (import.meta.env.PROD && !envUrl) {
+        return '/api';
     }
 
+    const defaultUrl = 'http://localhost:3001';
     const apiUrl = envUrl || defaultUrl;
+
     console.log('[API Config] ✅ Using API URL:', apiUrl);
-    console.log('[API Config] Environment:', import.meta.env.MODE);
     return apiUrl;
 };
 
