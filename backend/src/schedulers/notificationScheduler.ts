@@ -3,10 +3,14 @@ import prisma from '../lib/prisma';
 import { messagingService } from '../services/messagingService';
 
 export const runNotificationScheduler = () => {
-    // Don't run scheduler in test environment
-    if (process.env.NODE_ENV === 'test') return;
+    // Don't run scheduler in test or production (Vercel serverless)
+    // On Vercel, this should be triggered by a Cron Job endpoint
+    if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'production') {
+        console.log('[Scheduler] Background interval disabled for this environment.');
+        return;
+    }
 
-    // Run every minute
+    // Run every minute (only for local dev)
     setInterval(async () => {
         try {
             await checkAppointments();

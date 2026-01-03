@@ -346,7 +346,7 @@ export const quoteController = {
 
             // Auto-generate invoice if Approved
             if (status === 'APROVADO') {
-                const existingInvoice = await prisma.invoice.findUnique({ where: { quoteId: id } });
+                const existingInvoice = await prisma.invoice.findFirst({ where: { quotes: { some: { id } } } });
                 if (!existingInvoice) {
                     await prisma.invoice.create({
                         data: {
@@ -533,7 +533,7 @@ export const quoteController = {
 
             // Sync with Invoice if exists
             if (updateData.totalAmount !== undefined) {
-                const linkedInvoice = await prisma.invoice.findUnique({ where: { quoteId: id } });
+                const linkedInvoice = await prisma.invoice.findFirst({ where: { quotes: { some: { id } } } });
                 if (linkedInvoice && linkedInvoice.status !== 'PAGO' && linkedInvoice.status !== 'ENCERRADO') {
                     await prisma.invoice.update({
                         where: { id: linkedInvoice.id },

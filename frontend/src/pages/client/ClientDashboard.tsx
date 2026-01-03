@@ -72,7 +72,7 @@ export default function ClientDashboard() {
                         <h1 className="text-4xl font-extrabold text-secondary">Olá, <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">{(user?.customer?.name || user?.email || 'Visitante').split(' ')[0]}!</span></h1>
                         <p className="text-gray-500 mt-3">
                             {nextAppt
-                                ? `Você tem um agendamento para o ${nextAppt.pet.name} no dia ${new Date(nextAppt.startAt).toLocaleDateString('pt-BR')}.`
+                                ? `Você tem um agendamento para o ${nextAppt?.pet?.name || 'pet'} no dia ${nextAppt?.startAt ? new Date(nextAppt.startAt).toLocaleDateString('pt-BR') : ''}.`
                                 : 'Como podemos ajudar o seu pet hoje? Gerencie agendamentos e serviços com facilidade.'
                             }
                         </p>

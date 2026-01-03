@@ -183,7 +183,7 @@ export default function StaffDashboard() {
                                                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                                                     <motion.div
                                                         initial={{ width: 0 }}
-                                                        animate={{ width: `${(s._count / (metrics.todayAppointments || 1)) * 100}%` }}
+                                                        animate={{ width: `${(s._count / (metrics?.todayAppointments || 1)) * 100}%` }}
                                                         className="h-full bg-primary"
                                                     />
                                                 </div>
@@ -191,7 +191,7 @@ export default function StaffDashboard() {
                                         </div>
                                     ))}
                                     {(!metrics?.statusCounts || metrics.statusCounts.length === 0) && (
-                                        <p className="text-center text-gray-300 py-10">Nenhum dado para exibir.</p>
+                                        <p className="text-center text-gray-400 py-10 italic">Nenhum dado para exibir no momento.</p>
                                     )}
                                 </div>
                             </div>

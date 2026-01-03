@@ -34,7 +34,9 @@ export default function StaffLogin() {
             setAuth(user, token);
             navigate('/staff/dashboard');
         } catch (err: any) {
-            setError(err.response?.data?.error || err.message || 'Erro ao realizar login');
+            // Ensure error is always a string to prevent React Error #31
+            const errorMsg = err.response?.data?.error || err.message || 'Erro ao realizar login';
+            setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
         } finally {
             setIsLoading(false);
         }

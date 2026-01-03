@@ -109,7 +109,7 @@ router.post('/:id/payments', staffOnly, async (req, res) => {
     // Check totals
     const invoice = await prisma.invoice.findUnique({
         where: { id: req.params.id },
-        include: { payments: true, customer: { include: { user: true } } }
+        include: { payments: true, quotes: true, customer: { include: { user: true } } }
     });
 
     if (invoice) {
@@ -241,7 +241,7 @@ router.delete('/:id/payments/:paymentId', staffOnly, async (req, res) => {
         // Re-evaluate invoice status
         const invoice = await prisma.invoice.findUnique({
             where: { id },
-            include: { payments: true }
+            include: { payments: true, quotes: true }
         });
 
         if (invoice) {
@@ -361,7 +361,7 @@ router.post('/:id/duplicate', staffOnly, async (req: Request, res: Response) => 
 
         const original = await prisma.invoice.findUnique({
             where: { id },
-            include: { quote: true }
+            include: { quotes: true }
         });
 
         if (!original) {
@@ -377,7 +377,7 @@ router.post('/:id/duplicate', staffOnly, async (req: Request, res: Response) => 
             data: {
                 customerId: original.customerId,
                 amount: original.amount,
-                dueDate: new_dueDate,
+                dueDate: newDueDate,
                 quotes: original.quotes ? {
                     connect: original.quotes.map((q: any) => ({ id: q.id }))
                 } : undefined,
@@ -386,7 +386,7 @@ router.post('/:id/duplicate', staffOnly, async (req: Request, res: Response) => 
             },
             include: {
                 customer: true,
-                quote: true,
+                quotes: true,
                 payments: true
             }
         });
@@ -443,7 +443,7 @@ async function processPayment(invoiceId: string, data: any, user: any) {
 
     const invoice = await prisma.invoice.findUnique({
         where: { id: invoiceId },
-        include: { payments: true, customer: { include: { user: true } } }
+        include: { payments: true, quotes: true, customer: { include: { user: true } } }
     });
 
     if (invoice) {
@@ -508,10 +508,10 @@ router.post('/sync', staffOnly, async (req: Request, res: Response) => {
     try {
         const sortedInvoices = await prisma.invoice.findMany({
             where: {
-                quoteId: { not: null },
+                quotes: { some: {} },
                 deletedAt: null
             },
-            include: { quote: true, payments: true }
+            include: { quotes: true, payments: true }
         });
 
         let updatedCount = 0;
@@ -521,8 +521,8 @@ router.post('/sync', staffOnly, async (req: Request, res: Response) => {
             const updateData: any = {};
 
             // Sync Amount
-            if (invoice.quote && Math.abs(invoice.amount - invoice.quote.totalAmount) > 0.01) {
-                updateData.amount = invoice.quote.totalAmount;
+            if (invoice.quotes && invoice.quotes.length > 0 && Math.abs(invoice.amount - invoice.quotes[0].totalAmount) > 0.01) {
+                updateData.amount = invoice.quotes[0].totalAmount;
                 changed = true;
             }
 
@@ -540,8 +540,8 @@ router.post('/sync', staffOnly, async (req: Request, res: Response) => {
                 });
 
                 // If status became PAGO, ensure quote is closed
-                if (updateData.status === 'PAGO' && invoice.quoteId) {
-                    await prisma.quote.update({ where: { id: invoice.quoteId }, data: { status: 'ENCERRADO' as any } });
+                if (updateData.status === 'PAGO' && invoice.quotes && invoice.quotes.length > 0) {
+                    await prisma.quote.updateMany({ where: { id: { in: invoice.quotes.map(q => q.id) } }, data: { status: 'ENCERRADO' as any } });
                 }
 
                 updatedCount++;

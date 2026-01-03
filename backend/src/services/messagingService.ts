@@ -54,7 +54,9 @@ export const messagingService = {
 
         if (!user) return notification;
 
-        const prefs = user.customer?.communicationPrefs || ['APP'];
+        // Cast communicationPrefs to string array with fallback
+        const prefsRaw = user.customer?.communicationPrefs;
+        const prefs: string[] = Array.isArray(prefsRaw) ? prefsRaw : ['APP'];
         const phone = user.phone || user.customer?.phone;
 
         // 3. Trigger Active Channels

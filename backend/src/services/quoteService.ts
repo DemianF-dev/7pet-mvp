@@ -146,7 +146,9 @@ export const cascadeDelete = async (
                 where: { id: quote.invoice.id },
                 data: {
                     deletedAt: now,
-                    quoteId: null, // Unlink it from the quote
+                    quotes: {
+                        disconnect: [{ id: quote.id }] // Unlink it from the quote
+                    },
                     appointmentId: null // Unlink from appt too just in case
                 }
             });
@@ -211,12 +213,17 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         });
 
         // 2. Create Invoice
-        const existingInvoice = await tx.invoice.findUnique({ where: { quoteId: id } });
-        if (!existingInvoice) {
+        const existingInvoiceForThisQuote = await tx.invoice.findFirst({
+            where: { quotes: { some: { id: quote.id } } }
+        });
+
+        if (!existingInvoiceForThisQuote) {
             await tx.invoice.create({
                 data: {
                     customerId: quote.customerId,
-                    quoteId: id,
+                    quotes: {
+                        connect: [{ id: quote.id }]
+                    },
                     amount: quote.totalAmount,
                     status: 'PENDENTE',
                     dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
