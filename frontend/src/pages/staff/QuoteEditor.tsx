@@ -76,8 +76,6 @@ interface Quote {
     knotRegions?: string;
     hairLength?: string;
     hasParasites?: boolean;
-    hairLength?: string;
-    hasParasites?: boolean;
     appointments?: {
         id: string;
         startAt: string;

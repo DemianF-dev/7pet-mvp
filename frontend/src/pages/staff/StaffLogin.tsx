@@ -72,7 +72,7 @@ export default function StaffLogin() {
                 </button>
                 <div className="flex items-center gap-2 mb-12">
                     <img src="/logo.png" className="w-10 h-10 rounded-xl object-contain" alt="Logo" />
-                    <span className="font-bold text-xl text-secondary">Pet Shop Manager</span>
+                    <span className="font-bold text-xl text-secondary">7Pet</span>
                 </div>
 
                 <div className="space-y-8">
@@ -180,7 +180,7 @@ export default function StaffLogin() {
                 </div>
 
                 <div className="mt-20 pt-8 border-t border-gray-100">
-                    <p className="text-gray-400 text-xs">Sistema de uso interno exclusivo. © 2025 Pet Shop Manager.</p>
+                    <p className="text-gray-400 text-xs">Sistema de uso interno exclusivo. © 2025 7Pet.</p>
                 </div>
             </div>
 

@@ -10,7 +10,8 @@
         "seed": "ts-node prisma/seed.ts",
         "vercel-build": "prisma migrate deploy && prisma generate",
         "test": "jest",
-        "test:watch": "jest --watch"
+        "test:watch": "jest --watch",
+        "rls:apply": "npx tsx scripts/configure_all_rls.ts"
     },
     "dependencies": {
         "@googlemaps/google-maps-services-js": "^3.4.2",

@@ -75,6 +75,7 @@ export default function UserManager() {
     const [filterRole, setFilterRole] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<'name' | 'date' | 'id'>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [tab, setTab] = useState<'active' | 'trash'>('active');
 
     const { user: currentUser } = useAuthStore();
 
@@ -113,7 +114,7 @@ export default function UserManager() {
     const fetchUsers = async () => {
         setIsLoading(true);
         try {
-            const res = await api.get('/management/users');
+            const res = await api.get(`/management/users${tab === 'trash' ? '?trash=true' : ''}`);
             setUsers(res.data);
 
             const roleRes = await api.get('/management/roles/permissions');
@@ -137,7 +138,7 @@ export default function UserManager() {
         if (currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER') {
             fetchUsers();
         }
-    }, [currentUser]);
+    }, [currentUser, tab]);
 
     useEffect(() => {
         const current = rolePermissions.find(rp => rp.role === selectedConfigRole);
@@ -223,14 +224,46 @@ export default function UserManager() {
     };
 
     const handleDeleteUser = async () => {
-        if (!selectedUser || !window.confirm('Tem certeza que deseja excluir este usuário? Esta ação é irreversível.')) return;
+        if (!selectedUser) return;
+        const msg = tab === 'trash' ? 'Tem certeza que deseja excluir PERMANENTEMENTE este usuário?' : 'Tem certeza que deseja excluir este usuário?';
+        if (!window.confirm(msg)) return;
         try {
+            if (tab === 'trash') {
+                // For users, we don't have a permanent delete endpoint yet, so we just keep it in trash?
+                // Actually, let's just use the same delete endpoint. If the backend is modified to handle it.
+                // For now, let's just say "Restricted"
+                toast.error('Exclusão permanente não implementada.');
+                return;
+            }
             await api.delete(`/management/users/${selectedUser.id}`);
             toast.success('Usuário excluído');
             setIsModalOpen(false);
             fetchUsers();
         } catch (err) {
             alert('Erro ao excluir usuário');
+        }
+    };
+
+    const handleRestoreUser = async (user: UserData) => {
+        if (!window.confirm('Deseja restaurar este usuário?')) return;
+        try {
+            await api.post(`/management/users/${user.id}/restore`);
+            toast.success('Usuário restaurado!');
+            fetchUsers();
+        } catch (error) {
+            toast.error('Erro ao restaurar usuário');
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        if (!window.confirm(`Deseja restaurar ${selectedIds.length} usuário(s)?`)) return;
+        try {
+            await Promise.all(selectedIds.map(id => api.post(`/management/users/${id}/restore`)));
+            toast.success('Usuários restaurados!');
+            setSelectedIds([]);
+            fetchUsers();
+        } catch (error) {
+            toast.error('Erro ao restaurar usuários');
         }
     };
 
@@ -418,6 +451,22 @@ export default function UserManager() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Tabs Active/Trash */}
+                    <div className="mt-8 flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 w-fit">
+                        <button
+                            onClick={() => { setTab('active'); setSelectedIds([]); }}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                        >
+                            Ativos
+                        </button>
+                        <button
+                            onClick={() => { setTab('trash'); setSelectedIds([]); }}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                        >
+                            <Trash size={14} /> Lixeira
+                        </button>
+                    </div>
                 </header>
 
                 <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
@@ -436,7 +485,8 @@ export default function UserManager() {
                         <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar flex-1 min-w-0">
                             {[
                                 { role: 'ALL', label: 'Todos' },
-                                ...rolePermissions.map(rp => ({ role: rp.role, label: rp.label || rp.role }))
+                                { role: 'MASTER', label: 'Master' },
+                                ...rolePermissions.filter(rp => rp.role !== 'MASTER').map(rp => ({ role: rp.role, label: rp.label || rp.role }))
                             ].map(filter => (
                                 <button
                                     key={filter.role}
@@ -504,6 +554,15 @@ export default function UserManager() {
                                     >
                                         Cancelar
                                     </button>
+                                    <div className="h-6 w-px bg-white/20"></div>
+                                    {tab === 'trash' && (
+                                        <button
+                                            onClick={handleBulkRestore}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                        >
+                                            <RotateCcw size={14} /> RESTAURAR SELECIONADOS
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -582,9 +641,15 @@ export default function UserManager() {
                                                 {new Date(u.createdAt).toLocaleDateString()}
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <button onClick={() => handleOpenUser(u)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-secondary">
-                                                    <ChevronRight size={18} />
-                                                </button>
+                                                {tab === 'trash' ? (
+                                                    <button onClick={() => handleRestoreUser(u)} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all" title="Restaurar Usuário">
+                                                        <RotateCcw size={18} />
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => handleOpenUser(u)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-secondary">
+                                                        <ChevronRight size={18} />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );

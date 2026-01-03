@@ -21,6 +21,7 @@ import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
+import StaffSidebar from '../../components/StaffSidebar';
 
 interface Appointment {
     id: string;

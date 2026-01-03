@@ -221,9 +221,12 @@ export const listUsers = async (req: Request, res: Response) => {
     try {
         const currentUser = (req as any).user;
         const requesterIsSuper = isRestricted(currentUser?.email);
+        const { trash } = req.query;
 
         const users = await prisma.user.findMany({
-            where: { deletedAt: null },
+            where: {
+                deletedAt: trash === 'true' ? { not: null } : null
+            },
             include: { customer: true },
             orderBy: { createdAt: 'desc' }
         });
@@ -232,6 +235,8 @@ export const listUsers = async (req: Request, res: Response) => {
         const filteredUsers = requesterIsSuper
             ? users
             : users.filter(u => !isRestricted(u.email));
+
+        console.log(`[listUsers] Requester: ${currentUser?.email}, isSuper: ${requesterIsSuper}, Total users: ${users.length}, Filtered: ${filteredUsers.length}, Trash: ${trash}`);
 
         res.json(filteredUsers);
     } catch (error) {
@@ -458,6 +463,29 @@ export const deleteUser = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Delete user error:', error);
         res.status(500).json({ error: 'Erro ao excluir usuário' });
+    }
+};
+
+export const restoreUser = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const currentUserProfile = (req as any).user;
+
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
+            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        }
+
+        await prisma.user.update({
+            where: { id },
+            data: { deletedAt: null }
+        });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Restore user error:', error);
+        res.status(500).json({ error: 'Erro ao restaurar usuário' });
     }
 };
 

@@ -22,6 +22,7 @@ router.post('/users', managementController.createUser);
 router.get('/users/:id', managementController.getUser);
 router.put('/users/:id', managementController.updateUser); // Details + Role + Permissions
 router.delete('/users/:id', managementController.deleteUser);
+router.post('/users/:id/restore', managementController.restoreUser);
 // Legacy individual role update kept if needed, but updateUser covers it
 router.put('/users/:id/role', managementController.updateUserRole);
 

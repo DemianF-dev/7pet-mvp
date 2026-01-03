@@ -1,9 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
 import petRoutes from './routes/petRoutes';
@@ -25,8 +27,6 @@ import { errorHandler } from './middlewares/errorMiddleware';
 
 import prisma from './lib/prisma';
 import Logger from './lib/logger';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
