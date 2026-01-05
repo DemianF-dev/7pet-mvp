@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0111",
+  "version": "BETA20260105-0118",
   "stage": "BETA",
-  "timestamp": "2026-01-05T01:11:00.000Z",
-  "commit": "c10a659",
-  "buildNumber": 4,
-  "releaseNotes": "Auto-generated from commit: fix: correct VERSION.json path and LoadingButton import"
+  "timestamp": "2026-01-05T01:18:43.000Z",
+  "commit": "f8174f4",
+  "buildNumber": 5,
+  "releaseNotes": "Auto-generated from commit: fix: skip TypeScript compilation in Vercel build"
 }
