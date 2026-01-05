@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-1914",
+  "version": "BETA20260105-1936",
   "stage": "BETA",
-  "timestamp": "2026-01-05T19:14:44.000Z",
-  "commit": "8958dc3",
-  "buildNumber": 16,
-  "releaseNotes": "Auto-generated from commit: fix: change cron to daily schedule for Vercel free tier compatibility"
+  "timestamp": "2026-01-05T19:36:03.000Z",
+  "commit": "e5ab014",
+  "buildNumber": 17,
+  "releaseNotes": "Auto-generated from commit: fix: add @types/web-push for TypeScript compilation"
 }
