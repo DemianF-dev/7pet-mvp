@@ -78,7 +78,8 @@ export default function AgendaLOG() {
         try {
             const endpoint = tab === 'trash' ? '/appointments/trash' : '/appointments?category=LOGISTICA';
             const response = await api.get(endpoint);
-            const data = tab === 'trash' ? response.data.filter((a: Appointment) => a.category === 'LOGISTICA') : response.data;
+            const rawData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+            const data = tab === 'trash' ? rawData.filter((a: Appointment) => a.category === 'LOGISTICA') : rawData;
             setAppointments(data);
         } catch (err) {
             console.error('Erro ao buscar agendamentos:', err);

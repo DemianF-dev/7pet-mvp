@@ -6,7 +6,8 @@ interface User {
     seqId: number;
     email: string;
     extraEmails?: string[];
-    role: 'CLIENTE' | 'OPERACIONAL' | 'GESTAO' | 'ADMIN' | 'SPA' | 'MASTER';
+    role?: 'CLIENTE' | 'OPERACIONAL' | 'GESTAO' | 'ADMIN' | 'SPA' | 'MASTER' | string;
+    division: 'CLIENTE' | 'SPA' | 'COMERCIAL' | 'LOGISTICA' | 'GERENCIA' | 'DIRETORIA' | 'ADMIN';
     name?: string;
     firstName?: string;
     lastName?: string;
@@ -38,6 +39,7 @@ interface User {
     };
     showTutorial?: boolean;
     createdAt?: string;
+    color?: string;
     permissions?: string[];
 }
 

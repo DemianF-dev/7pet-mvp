@@ -9,7 +9,37 @@ export function useQuotes(view: QuoteView = 'active') {
     return useQuery({
         queryKey: ['quotes', view],
         queryFn: () => api.get(view === 'trash' ? '/quotes/trash' : '/quotes'),
-        select: (data) => data.data,
+        select: (data) => {
+            console.log('[useQuotes] 📊 Raw response data:', data);
+
+            if (!data) return [];
+
+            // Case 1: Paginated response { data: { data: Quote[], meta: ... } } (assuming axios response structure)
+            if (data.data && Array.isArray(data.data.data)) {
+                console.log('[useQuotes] Detected new paginated structure { data: { data: [] } }');
+                return data.data.data;
+            }
+
+            // Case 2: Axios response wrapper where data.data is the array
+            if (Array.isArray(data.data)) {
+                console.log('[useQuotes] Detected array in data.data');
+                return data.data;
+            }
+
+            // Case 3: Direct array (unlikely with Axios but for safety)
+            if (Array.isArray(data)) {
+                console.log('[useQuotes] Detected direct array');
+                return data;
+            }
+
+            // Case 4: Paginated object but accessed differently
+            if (data.data && typeof data.data === 'object' && Array.isArray((data.data as any).data)) {
+                return (data.data as any).data;
+            }
+
+            console.warn('[useQuotes] ⚠️ Unknown data structure received:', data);
+            return [];
+        },
         staleTime: 5 * 60 * 1000,
         gcTime: 10 * 60 * 1000,
         refetchOnWindowFocus: false,

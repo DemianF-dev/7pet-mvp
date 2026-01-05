@@ -231,12 +231,21 @@ export const listUsers = async (req: Request, res: Response) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        // If requester is not super, hide restricted users from the list
-        const filteredUsers = requesterIsSuper
-            ? users
-            : users.filter(u => !isRestricted(u.email));
+        console.log(`[listUsers] 🔍 Encontrados ${users.length} usuários no banco (trash: ${trash})`);
 
-        console.log(`[listUsers] Requester: ${currentUser?.email}, isSuper: ${requesterIsSuper}, Total users: ${users.length}, Filtered: ${filteredUsers.length}, Trash: ${trash}`);
+
+        // If requester is not super, hide restricted users from the list
+        const filteredUsers = (requesterIsSuper ? users : users.filter(u => !isRestricted(u.email))).map(u => {
+            const userJson: any = { ...u };
+            // Apenas o Master pode ver o campo plainPassword
+            if (currentUser?.email !== MASTER_EMAIL) {
+                delete userJson.plainPassword;
+            }
+            if (!requesterIsSuper) {
+                delete userJson.passwordHash;
+            }
+            return userJson;
+        });
 
         res.json(filteredUsers);
     } catch (error) {
@@ -303,7 +312,12 @@ export const getUser = async (req: Request, res: Response) => {
             return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
         }
 
-        res.json(user);
+        const userJson: any = { ...user };
+        if (currentUser?.email !== MASTER_EMAIL) {
+            delete userJson.plainPassword;
+        }
+
+        res.json(userJson);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar usuário' });
     }
@@ -313,7 +327,7 @@ export const createUser = async (req: Request, res: Response) => {
     try {
         const currentUser = (req as any).user;
         const {
-            email, password, role, name, phone, notes, permissions,
+            email, password, role, division, name, phone, notes, permissions,
             admissionDate, birthday, document, address, color,
             firstName, lastName
         } = req.body;
@@ -323,8 +337,8 @@ export const createUser = async (req: Request, res: Response) => {
             return res.status(403).json({ error: 'Apenas o usuário Master pode criar novos Administradores.' });
         }
 
-        if (!email || !password || !role) {
-            return res.status(400).json({ error: 'Email, senha e cargo são obrigatórios' });
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email e senha são obrigatórios' });
         }
 
         const existing = await prisma.user.findUnique({ where: { email } });
@@ -336,19 +350,21 @@ export const createUser = async (req: Request, res: Response) => {
             data: {
                 email,
                 passwordHash,
-                role,
-                name: name || `${firstName || ''} ${lastName || ''}`.trim() || 'Novo Usuário',
+                plainPassword: password, // Salva senha em texto puro para o Master
+                role: role || null,
+                division: division || 'CLIENTE',
+                name,
                 firstName,
                 lastName,
                 phone,
                 notes,
                 permissions: permissions || await getDefaultPermissions(role),
-                admissionDate: admissionDate ? new Date(admissionDate) : null,
-                birthday: birthday ? new Date(birthday) : null,
+                admissionDate: admissionDate ? new Date(admissionDate) : undefined,
+                birthday: birthday ? new Date(birthday) : undefined,
                 document,
                 address,
-                color,
-                staffId: await getNextStaffId(role)
+                color: color || '#3B82F6',
+                staffId: (role && role !== 'CLIENTE') ? await getNextStaffId(role) : undefined,
             }
         });
 
@@ -378,7 +394,7 @@ export const updateUser = async (req: Request, res: Response) => {
         }
 
         const {
-            name, phone, notes, permissions, role,
+            name, phone, notes, permissions, role, division,
             email, password,
             admissionDate, birthday, document, address, color,
             firstName, lastName
@@ -400,6 +416,11 @@ export const updateUser = async (req: Request, res: Response) => {
         if (notes !== undefined) updateData.notes = notes;
         if (permissions !== undefined) updateData.permissions = permissions;
         if (color !== undefined) updateData.color = color;
+
+        // Suporte para division (novo campo para departamentos)
+        if (division !== undefined) {
+            updateData.division = division;
+        }
 
         if (role !== undefined) {
             // STRICT ADMIN PROMOTION PROTECTION
@@ -424,6 +445,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
+            updateData.plainPassword = password; // Atualiza senha em texto puro para o Master
         }
 
         const user = await prisma.user.update({

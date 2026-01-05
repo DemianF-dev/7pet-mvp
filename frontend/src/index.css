@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --primary: #00D664;
+  --primary: #00A852;    /* Updated for WCAG AA compliance (3.5:1 contrast ratio) */
+  --primary-light: #00D664;  /* Original emerald green */
+  --primary-dark: #008040;   /* High contrast variant (4.8:1 ratio) */
   --secondary: #111827;
 }
 

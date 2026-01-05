@@ -81,6 +81,8 @@ export default function Sidebar() {
             <button
                 onClick={() => setIsOpen(true)}
                 className="md:hidden fixed top-6 right-6 z-40 p-3 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-110 active:scale-95 transition-all"
+                aria-label="Abrir menu de navegação"
+                aria-expanded={isOpen}
             >
                 <MenuIcon size={24} />
             </button>
@@ -108,7 +110,11 @@ export default function Sidebar() {
                                     <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain" alt="Logo" />
                                     <span className="font-bold text-xl text-secondary">7Pet</span>
                                 </div>
-                                <button onClick={() => setIsOpen(false)} className="p-2 text-gray-400 hover:text-secondary">
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    className="p-2 text-gray-400 hover:text-secondary"
+                                    aria-label="Fechar menu de navegação"
+                                >
                                     <X size={24} />
                                 </button>
                             </div>
@@ -127,6 +133,7 @@ export default function Sidebar() {
                                         <button
                                             onClick={() => setShowLogoutConfirm(true)}
                                             className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+                                            aria-label="Sair da conta"
                                         >
                                             Sair da conta <LogOut size={12} />
                                         </button>
@@ -181,15 +188,15 @@ export default function Sidebar() {
 }
 
 function SidebarItem({ icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick: () => void }) {
-    const id = `sidemenu-${label.toLowerCase().replace(/ /g, '-')}`;
     return (
-        <div
-            id={id}
+        <button
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'}`}
+            aria-label={`Navegar para ${label}`}
+            aria-current={active ? 'page' : undefined}
         >
             {icon}
             <span className="font-semibold">{label}</span>
-        </div>
+        </button>
     );
 }

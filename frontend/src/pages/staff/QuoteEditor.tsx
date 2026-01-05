@@ -38,6 +38,7 @@ interface QuoteItem {
     price: number;
     serviceId?: string;
     performerId?: string;
+    discount?: number; // Desconto em porcentagem (0-100)
 }
 
 interface Quote {
@@ -125,6 +126,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [transportType, setTransportType] = useState<'ROUND_TRIP' | 'PICK_UP' | 'DROP_OFF'>('ROUND_TRIP');
     const [transportCalculation, setTransportCalculation] = useState<any | null>(null);
     const [isCalculatingTransport, setIsCalculatingTransport] = useState(false);
+    const [transportDiscount, setTransportDiscount] = useState(0);
 
     const isModal = !!quoteId;
 
@@ -227,8 +229,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const handleApplyTransport = () => {
         if (!transportCalculation) return;
 
-        const description = `Transporte (Leva e Traz) - ${transportCalculation.totalDistance}`;
-        const price = transportCalculation.total;
+        const discountMultiplier = (1 - transportDiscount / 100);
+        const price = transportCalculation.total * discountMultiplier;
+        let description = `Transporte (${transportType === 'ROUND_TRIP' ? 'Leva e Traz' : transportType === 'PICK_UP' ? 'Busca' : 'Entrega'}) - ${transportCalculation.totalDistance}`;
+
+        if (transportDiscount > 0) {
+            description += ` (${transportDiscount}% Desc.)`;
+        }
 
         // Check if item already exists
         const existingIndex = items.findIndex(i => i.description.toLowerCase().includes('transporte'));
@@ -251,37 +258,38 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const handleLegChange = (leg: string, field: string, value: string) => {
         if (!transportCalculation) return;
 
-        const newCalculation = { ...transportCalculation };
+        // Deep copy to ensure React detects changes and we don't mutate state directly
+        const newCalculation = JSON.parse(JSON.stringify(transportCalculation));
         if (!newCalculation.breakdown[leg]) return;
 
-        // Allow editing
+        // Update the field with the raw input (string)
         newCalculation.breakdown[leg][field] = value;
+
+        // Parsing helper
+        const parseValue = (val: any) => {
+            if (typeof val === 'number') return val;
+            if (!val) return 0;
+            return parseFloat(val.toString().replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
+        };
 
         // Auto-recalculate price if distance or duration changes
         if (field === 'distance' || field === 'duration') {
-            const settings = transportCalculation.settings;
+            const settings = newCalculation.settings;
             if (settings) {
-                // Parse values (remove km, min, replace comma)
-                const numericVal = parseFloat(value.replace(/[^0-9,.]/g, '').replace(',', '.'));
+                // Get rates based on leg
+                const suffix = leg.charAt(0).toUpperCase() + leg.slice(1); // Largada, Leva...
+                const kmPrice = Number(settings[`kmPrice${suffix}`]) || 0;
+                const minPrice = Number(settings[`minPrice${suffix}`]) || 0;
+                const handling = Number(settings[`handlingTime${suffix}`]) || 0;
 
-                if (!isNaN(numericVal)) {
-                    // Get rates based on leg
-                    const suffix = leg.charAt(0).toUpperCase() + leg.slice(1); // Largada, Leva...
-                    const kmPrice = settings[`kmPrice${suffix}`] || 0;
-                    const minPrice = settings[`minPrice${suffix}`] || 0;
-                    const handling = settings[`handlingTime${suffix}`] || 0;
+                // We need both dist and dur to calculate.
+                const dist = parseValue(newCalculation.breakdown[leg].distance);
+                const dur = parseValue(newCalculation.breakdown[leg].duration);
 
-                    // We need both dist and dur to calculate. 
-                    // If we are editing distance, we use curr duration.
-                    let dist = field === 'distance' ? numericVal : parseFloat(newCalculation.breakdown[leg].distance.replace(/[^0-9,.]/g, '').replace(',', '.'));
-                    let dur = field === 'duration' ? numericVal : parseFloat(newCalculation.breakdown[leg].duration.replace(/[^0-9,.]/g, '').replace(',', '.'));
+                console.log(`[LegCalc] ${leg}: dist=${dist}, dur=${dur}, kmPrice=${kmPrice}, minPrice=${minPrice}, handling=${handling}`);
 
-                    if (!isNaN(dist) && !isNaN(dur)) {
-                        // Formula: (Dist * KmPrice) + ((Dur + Handling) * MinPrice)
-                        const newPrice = (dist * kmPrice) + ((dur + handling) * minPrice);
-                        newCalculation.breakdown[leg].price = newPrice.toFixed(2);
-                    }
-                }
+                const newPrice = (dist * kmPrice) + ((dur + handling) * minPrice);
+                newCalculation.breakdown[leg].price = newPrice.toFixed(2);
             }
         }
 
@@ -293,11 +301,20 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         let total = 0;
         ['largada', 'leva', 'traz', 'retorno'].forEach(leg => {
             if (calc.breakdown[leg]) {
-                const price = typeof calc.breakdown[leg].price === 'string' ? parseFloat(calc.breakdown[leg].price) : calc.breakdown[leg].price;
+                const price = typeof calc.breakdown[leg].price === 'string'
+                    ? parseFloat(calc.breakdown[leg].price)
+                    : calc.breakdown[leg].price;
                 if (!isNaN(price)) total += price;
             }
         });
         calc.total = total;
+    };
+
+    const validateDates = () => {
+        if (!desiredAt && !scheduledAt && !transportAt) {
+            return window.confirm('ATENÇÃO: Este orçamento não possui nenhuma data ou horário definidos (Previsão, Agendamento ou Transporte). Deseja prosseguir mesmo assim?');
+        }
+        return true;
     };
 
     const handleAddItem = () => {
@@ -309,6 +326,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
         // Pick primary performer if available
         const performerId = items.find(it => it.performerId)?.performerId;
+
+        if (!validateDates()) return;
 
         if (!window.confirm('Deseja Aprovar e Agendar este orçamento automaticamente? Isso criará agendamentos confirmados e notificará o cliente.')) return;
 
@@ -332,7 +351,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         setItems(newItems);
     };
 
-    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalAmount = items.reduce((sum, item) => {
+        const itemTotal = item.price * item.quantity;
+        const discountAmount = item.discount ? (itemTotal * (item.discount / 100)) : 0;
+        return sum + (itemTotal - discountAmount);
+    }, 0);
 
     const getFilteredServices = (searchTerm: string) => {
         console.log('[AUTOCOMPLETE] getFilteredServices chamado:', {
@@ -382,37 +405,84 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const ensureTransportItem = (currentItems: QuoteItem[]) => {
+        // If we have a valid transport calculation but no item for it, add/update it automatically
+        if (transportCalculation && transportCalculation.total > 0) {
+            const hasTransport = currentItems.some(i => i.description.toLowerCase().includes('transporte'));
+
+            if (!hasTransport) {
+                const discountMultiplier = (1 - transportDiscount / 100);
+                const price = transportCalculation.total * discountMultiplier;
+                let description = `Transporte (${transportType === 'ROUND_TRIP' ? 'Leva e Traz' : transportType === 'PICK_UP' ? 'Busca' : 'Entrega'}) - ${transportCalculation.totalDistance}`;
+
+                if (transportDiscount > 0) {
+                    description += ` (${transportDiscount}% Desc.)`;
+                }
+
+                if (window.confirm(`Foi detectado um cálculo de transporte de R$ ${price.toFixed(2)} que não foi adicionado à lista. Deseja incluir automaticamente?`)) {
+                    return [...currentItems, { description, quantity: 1, price, serviceId: undefined }];
+                }
+            }
+        }
+        return currentItems;
+    };
+
     const handleSave = async (silent = false) => {
-        if (!silent && !window.confirm('Deseja salvar as alterações neste orçamento?')) return;
+        if (!silent) {
+            if (!validateDates()) return;
+            if (!window.confirm('Deseja salvar as alterações neste orçamento?')) return;
+        }
 
         setIsSaving(true);
         try {
+            // Check for missing transport
+            const itemsWithTransport = ensureTransportItem(items);
+
             // Auto-link items to services by name if missing ID
-            const linkedItems = items.map(item => {
-                if (!item.serviceId && item.description) {
-                    const match = availableServices.find(s => s.name.toLowerCase() === item.description.toLowerCase());
+            const linkedItems = itemsWithTransport.map(item => {
+                let currentItem = { ...item };
+
+                // Apply discount to price and description if present
+                if (currentItem.discount && currentItem.discount > 0) {
+                    const discountFactor = (1 - currentItem.discount / 100);
+                    currentItem.price = currentItem.price * discountFactor;
+                    if (!currentItem.description.includes('% Desc.')) {
+                        currentItem.description = `${currentItem.description} (${currentItem.discount}% Desc.)`;
+                    }
+                    // Reset local discount to avoid double application if saved again
+                    currentItem.discount = 0;
+                }
+
+                if (!currentItem.serviceId && currentItem.description) {
+                    const match = availableServices.find(s => s.name.toLowerCase() === currentItem.description.toLowerCase());
                     if (match) {
-                        console.log(`[QuoteSave] Auto-linked item "${item.description}" to Service ID ${match.id}`);
-                        return { ...item, serviceId: match.id, performerId: item.performerId || match.responsibleId || undefined };
+                        console.log(`[QuoteSave] Auto-linked item "${currentItem.description}" to Service ID ${match.id}`);
+                        // Assign service ID but let backend validate
+                        currentItem.serviceId = match.id;
+                        currentItem.performerId = currentItem.performerId || match.responsibleId || undefined;
                     }
                 }
-                return item;
+
+                // Remove discount property before sending to backend to avoid schema validation errors
+                const { discount, ...cleanItem } = currentItem;
+                return cleanItem;
             });
 
             await api.patch(`/quotes/${id}`, {
                 items: linkedItems,
-                totalAmount,
+                totalAmount: linkedItems.reduce((acc, it) => acc + (it.price * it.quantity), 0),
                 status,
                 notes,
                 desiredAt: desiredAt ? new Date(desiredAt).toISOString() : undefined,
                 scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
                 transportAt: transportAt ? new Date(transportAt).toISOString() : undefined
             });
+
             if (!silent) toast.success('Orçamento salvo com sucesso!');
 
             if (onUpdate) onUpdate();
-            if (onClose && !silent) onClose(); // Only close if explicit save, maybe? Or keep open? User preference usually is "Save & Close". I'll close.
-            else fetchQuote();
+            if (onClose && !silent) onClose();
+            else fetchQuote(); // Refresh to get persisted data
 
         } catch (error) {
             console.error('Erro ao salvar:', error);
@@ -423,31 +493,48 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     };
 
     const handleSendToClient = async () => {
+        if (!validateDates()) return;
         if (!window.confirm('Isso enviará o orçamento validado para o cliente aprovar. Continuar?')) return;
 
         setIsSaving(true);
         try {
-            // Sanitize items for NaN and ensure correct types
-            // Sanitize items for NaN and ensure correct types
-            const sanitizedItems = items.map(it => {
-                // Auto-link logic for Send action too
-                let serviceId = it.serviceId;
-                let performerId = it.performerId;
+            // Check for missing transport
+            const itemsWithTransport = ensureTransportItem(items);
 
-                if (!serviceId && it.description) {
-                    const match = availableServices.find(s => s.name.toLowerCase() === it.description.toLowerCase());
+            // Sanitize items for NaN and ensure correct types
+            const sanitizedItems = itemsWithTransport.map(it => {
+                let currentItem = { ...it };
+
+                // Apply discount to price and description if present
+                if (currentItem.discount && currentItem.discount > 0) {
+                    const discountFactor = (1 - currentItem.discount / 100);
+                    currentItem.price = currentItem.price * discountFactor;
+                    if (!currentItem.description.includes('% Desc.')) {
+                        currentItem.description = `${currentItem.description} (${currentItem.discount}% Desc.)`;
+                    }
+                    currentItem.discount = 0;
+                }
+
+                let serviceId = currentItem.serviceId;
+                let performerId = currentItem.performerId;
+
+                if (!serviceId && currentItem.description) {
+                    const match = availableServices.find(s => s.name.toLowerCase() === currentItem.description.toLowerCase());
                     if (match) {
                         serviceId = match.id;
                         performerId = performerId || match.responsibleId || undefined;
                     }
                 }
 
+                // Remove discount property
+                const { discount, ...cleanItem } = currentItem;
+
                 return {
-                    ...it,
+                    ...cleanItem,
                     serviceId,
                     performerId,
-                    quantity: isNaN(it.quantity) ? 1 : Number(it.quantity),
-                    price: isNaN(it.price) ? 0 : Number(it.price)
+                    quantity: isNaN(currentItem.quantity) ? 1 : Number(currentItem.quantity),
+                    price: isNaN(currentItem.price) ? 0 : Number(currentItem.price)
                 };
             });
 
@@ -482,8 +569,6 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             </div>
         );
     }
-
-    if (!quote) return null;
 
     const content = (
         <>
@@ -749,7 +834,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                     animate={{ opacity: 1, y: 0 }}
                                     className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100 relative group"
                                 >
-                                    <div className="md:col-span-4 relative service-dropdown-container">
+                                    <div className="md:col-span-3 relative service-dropdown-container">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Descrição / Serviço</label>
                                         <input
                                             type="text"
@@ -769,8 +854,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                                     setShowServiceDropdown({ ...showServiceDropdown, [index]: true });
                                                 }
                                             }}
-                                            className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                                            placeholder="Digite para buscar serviços..."
+                                            className="w-full bg-white border-transparent rounded-2xl px-4 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                            placeholder="Buscar serviço..."
                                         />
 
                                         {/* Dropdown de Serviços */}
@@ -811,47 +896,65 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                             </div>
                                         )}
                                     </div>
-                                    <div className="md:col-span-4">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Profissional Responsável</label>
+                                    <div className="md:col-span-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Profissional</label>
                                         <select
                                             value={item.performerId || ''}
                                             onChange={(e) => handleItemChange(index, 'performerId', e.target.value)}
-                                            className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                            className="w-full bg-white border-transparent rounded-2xl px-3 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
                                         >
-                                            <option value="">Nenhum (Rotativo)</option>
+                                            <option value="">Nenhum</option>
                                             {(staffUsers || []).map(u => u && (
                                                 <option key={u.id} value={u.id}>{u.name}</option>
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="md:col-span-1">
+                                    <div className="md:col-span-1 text-center">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Qtd</label>
                                         <input
                                             type="number"
                                             value={item.quantity}
                                             onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
-                                            className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all text-center"
+                                            className="w-full bg-white border-transparent rounded-2xl px-2 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all text-center"
                                         />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Preço Unit.</label>
                                         <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs font-serif">R$</span>
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">R$</span>
                                             <input
                                                 type="number"
                                                 value={item.price}
                                                 step="0.01"
                                                 onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value))}
-                                                className="w-full bg-white border-transparent rounded-2xl pl-12 pr-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                                className="w-full bg-white border-transparent rounded-2xl pl-8 pr-2 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
                                             />
                                         </div>
                                     </div>
-                                    <div className="md:col-span-1 flex items-end justify-center pb-2">
+                                    <div className="md:col-span-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Desc (%)</label>
+                                        <input
+                                            type="number"
+                                            value={item.discount || 0}
+                                            min="0"
+                                            max="100"
+                                            onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value))}
+                                            className="w-full bg-white border-transparent rounded-2xl px-2 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all text-center"
+                                            placeholder="0%"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2 text-right">Subtotal</label>
+                                        <div className="px-3 py-1.5 text-xs font-black text-secondary bg-gray-100/50 rounded-2xl h-[34px] flex items-center justify-end">
+                                            R$ {((item.price * item.quantity) * (1 - (item.discount || 0) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-1 flex items-end justify-center pb-1">
                                         <button
                                             onClick={() => handleRemoveItem(index)}
-                                            className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                                         >
-                                            <Trash2 size={18} />
+                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </motion.div>
@@ -1015,9 +1118,28 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                                     </tbody>
                                                     <tfoot className="bg-purple-50 border-t border-purple-100">
                                                         <tr>
-                                                            <td colSpan={3} className="px-6 py-4 text-right font-bold text-gray-500 text-xs uppercase tracking-widest">Total Estimado</td>
+                                                            <td colSpan={3} className="px-6 py-4 text-right">
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="font-bold text-gray-500 text-xs uppercase tracking-widest">Total Bruto</span>
+                                                                    <span className="text-sm font-bold text-gray-400">R$ {transportCalculation.total.toFixed(2)}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-1">Desconto (%)</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={transportDiscount}
+                                                                        onChange={(e) => setTransportDiscount(parseFloat(e.target.value) || 0)}
+                                                                        className="w-20 text-right bg-white border border-gray-200 rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20"
+                                                                    />
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td colSpan={3} className="px-6 py-4 text-right font-bold text-gray-500 text-xs uppercase tracking-widest">Total com Desconto</td>
                                                             <td className="px-6 py-4 text-right font-black text-xl text-purple-700">
-                                                                R$ {transportCalculation.total.toFixed(2)}
+                                                                R$ {(transportCalculation.total * (1 - transportDiscount / 100)).toFixed(2)}
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -1035,25 +1157,6 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                                 </table>
                                             </div>
 
-                                            <div className="flex justify-end">
-                                                <button
-                                                    onClick={() => {
-                                                        const newItem = {
-                                                            description: `Serviço de Transporte (${transportType === 'ROUND_TRIP' ? 'Leva e Traz' : transportType === 'PICK_UP' ? 'Busca' : 'Entrega'})`,
-                                                            quantity: 1,
-                                                            price: transportCalculation.total,
-                                                            serviceId: 'transport-calculated'
-                                                        };
-                                                        setItems([...items, newItem]);
-                                                        setTransportCalculation(null); // Clear after adding
-                                                        toast.success('Transporte adicionado ao orçamento!');
-                                                    }}
-                                                    className="px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gray-900/20 flex items-center gap-2"
-                                                >
-                                                    <Plus size={20} />
-                                                    Adicionar ao Orçamento
-                                                </button>
-                                            </div>
                                         </div>
                                     )}
                                 </div>

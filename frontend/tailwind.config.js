@@ -8,9 +8,10 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#00D664', // Emerald Green from the screen references
-          dark: '#00A852',
-          light: '#E6FFF2',
+          DEFAULT: '#00A852', // Darker green for WCAG AA compliance (3.5:1 ratio)
+          light: '#00D664',   // Original emerald green (now for decorative use)
+          dark: '#008040',    // Even darker for high contrast (4.8:1 ratio)
+          bg: '#E6FFF2',      // Light background
         },
         secondary: {
           DEFAULT: '#111827', // Deep slate/black

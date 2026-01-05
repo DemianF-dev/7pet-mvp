@@ -11,7 +11,7 @@ export const mapsController = {
                 return res.status(400).json({ error: 'Endereço é obrigatório' });
             }
 
-            const result = await mapsService.calculateTransport(address);
+            const result = await mapsService.calculateTransportDetailed(address);
             return res.json(result);
         } catch (error: any) {
             console.error('Maps Controller Error:', error);

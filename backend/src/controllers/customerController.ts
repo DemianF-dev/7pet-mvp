@@ -136,8 +136,16 @@ export const customerController = {
 
     async list(req: Request, res: Response) {
         try {
+            //Pagination
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+            const skip = (page - 1) * limit;
+
+            const where = { deletedAt: null };
+            const total = await prisma.customer.count({ where });
+
             const customers = await prisma.customer.findMany({
-                where: { deletedAt: null }, // Only active customers
+                where,
                 include: {
                     user: {
                         select: {
@@ -154,9 +162,22 @@ export const customerController = {
                         select: { appointments: true, quotes: true }
                     }
                 },
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
             });
-            return res.json(customers);
+
+            return res.json({
+                data: customers,
+                meta: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                    hasNext: page * limit < total,
+                    hasPrev: page > 1
+                }
+            });
         } catch (error: any) {
             console.error('CRITICAL ERROR listing customers:', error);
             return res.status(500).json({

@@ -56,7 +56,7 @@ export const messagingService = {
 
         // Cast communicationPrefs to string array with fallback
         const prefsRaw = user.customer?.communicationPrefs;
-        const prefs: string[] = Array.isArray(prefsRaw) ? prefsRaw : ['APP'];
+        const prefs: string[] = Array.isArray(prefsRaw) ? (prefsRaw as string[]) : ['APP'];
         const phone = user.phone || user.customer?.phone;
 
         // 3. Trigger Active Channels
@@ -68,6 +68,19 @@ export const messagingService = {
             await this.sendEmail(user.email, title, message);
         }
 
+        // 4. Trigger Push Notifications (ALWAYS if subscription exists, or check pref)
+        try {
+            const { sendNotification } = await import('../controllers/notificationController');
+            await sendNotification(userId, {
+                title,
+                body: message,
+                data: { type, notificationId: notification.id }
+            });
+        } catch (error) {
+            console.error('[MessagingService] Erro ao disparar Push Notification:', error);
+        }
+
         return notification;
     }
 };
+

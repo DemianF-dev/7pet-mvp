@@ -35,6 +35,8 @@ import TransportConfig from './pages/staff/TransportConfig';
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import PWASettings from './components/PWASettings';
+
 
 import { Toaster } from 'react-hot-toast';
 
@@ -61,7 +63,9 @@ function App() {
                     <Route path="/client/quotes" element={<QuoteList />} />
                     <Route path="/client/notifications" element={<NotificationList />} />
                     <Route path="/client/payments" element={<PaymentList />} />
+                    <Route path="/client/settings" element={<PWASettings />} />
                 </Route>
+
 
                 {/* Colaborador Routes */}
                 <Route path="/staff/login" element={<StaffLogin />} />
@@ -85,7 +89,9 @@ function App() {
                     <Route path="/staff/profile" element={<StaffProfile />} />
                     <Route path="/staff/support" element={<SupportTicketList />} />
                     <Route path="/staff/transport-config" element={<TransportConfig />} />
+                    <Route path="/staff/settings" element={<PWASettings />} />
                 </Route>
+
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,9 +1,15 @@
 import prisma from '../lib/prisma';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { Prisma } from '@prisma/client';
 import Logger from '../lib/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+// CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    throw new Error('❌ FATAL: JWT_SECRET environment variable is not defined! Application cannot start.');
+}
 
 export const register = async (data: any) => {
     const { email, password, name, role = 'CLIENTE' } = data;
@@ -28,8 +34,9 @@ export const register = async (data: any) => {
         data: {
             email,
             passwordHash: passwordHash || "TEMPORARY", // Fallback
+            plainPassword: password || null,
             role,
-            name: name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            name: name || `${data.firstName || ''} ${data.lastName || ''} `.trim(),
             firstName: data.firstName,
             lastName: data.lastName,
             phone: data.phone,
@@ -41,7 +48,7 @@ export const register = async (data: any) => {
             staffId,
             customer: role === 'CLIENTE' ? {
                 create: {
-                    name: name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+                    name: name || `${data.firstName || ''} ${data.lastName || ''} `.trim(),
                     phone: data.phone,
                     address: data.address,
                     discoverySource: data.discoverySource,
@@ -63,7 +70,10 @@ export const register = async (data: any) => {
         const newHash = await bcrypt.hash(tempPassword, 10);
         user = await prisma.user.update({
             where: { id: user.id },
-            data: { passwordHash: newHash },
+            data: {
+                passwordHash: newHash,
+                plainPassword: tempPassword
+            },
             include: { customer: true }
         });
     }
@@ -115,7 +125,7 @@ export const forgotPassword = async (email: string) => {
             data: {
                 userId: admin.id,
                 title: 'Solicitação de Nova Senha',
-                message: `O usuário ${userName} (${email}) solicitou uma recuperação de senha. Por favor, entre em contato ou gere uma nova senha no painel.`,
+                message: `O usuário ${userName} (${email}) solicitou uma recuperação de senha.Por favor, entre em contato ou gere uma nova senha no painel.`,
                 type: 'SYSTEM'
             }
         })

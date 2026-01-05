@@ -2,7 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+// CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    throw new Error('❌ FATAL: JWT_SECRET environment variable is not defined! Application cannot start.');
+}
 
 export const authenticate = async (req: any, res: Response, next: NextFunction) => {
     try {
@@ -36,21 +41,23 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
     }
 };
 
-export const authorize = (roles: string[]) => {
+export const authorize = (divisions: string[]) => {
     return (req: any, res: Response, next: NextFunction) => {
         if (!req.user) {
             console.log('[Authz] No user attached to request');
             return res.status(403).json({ error: 'Acesso negado' });
         }
 
-        console.log(`[Authz] User Role: ${req.user.role}, Required: ${roles.join(',')}`);
+        // Use division if available, fallback to role for backward compatibility
+        const userDivision = req.user.division || req.user.role;
+        console.log(`[Authz] User Division: ${userDivision}, Required: ${divisions.join(',')}`);
 
-        // Master has access to everything
-        if (req.user.role === 'MASTER') {
+        // ADMIN has access to everything
+        if (userDivision === 'ADMIN' || userDivision === 'MASTER') {
             return next();
         }
 
-        if (!roles.includes(req.user.role)) {
+        if (!divisions.includes(userDivision)) {
             console.log('[Authz] Insufficient permissions');
             return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
         }

@@ -11,7 +11,11 @@
         "vercel-build": "prisma generate && echo 'Skipping TypeScript compilation - Vercel will use source files directly'",
         "test": "jest",
         "test:watch": "jest --watch",
-        "rls:apply": "npx tsx scripts/configure_all_rls.ts"
+        "rls:apply": "npx tsx scripts/configure_all_rls.ts",
+        "security:check": "npm audit",
+        "security:fix": "npm audit fix",
+        "security:fix:force": "npm audit fix --force",
+        "security:report": "npm audit --json > security-audit-report.json"
     },
     "dependencies": {
         "@googlemaps/google-maps-services-js": "^3.4.2",
@@ -29,6 +33,7 @@
         "helmet": "^8.1.0",
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.0.2",
+        "web-push": "^3.6.7",
         "winston": "^3.19.0",
         "zod": "^4.2.1"
     },

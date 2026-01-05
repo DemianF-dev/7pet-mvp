@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// 🔒 SECURITY: Validate critical environment variables at startup
+import { validateEnvironment } from './utils/envValidation';
+validateEnvironment();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -20,10 +24,16 @@ import productRoutes from './routes/productRoutes';
 import supportRoutes from './routes/supportRoutes';
 import mapsRoutes from './routes/mapsRoutes';
 import transportSettingsRoute from './routes/transportSettingsRoutes';
-
 import notificationRoutes from './routes/notificationRoutes';
-import { runNotificationScheduler } from './schedulers/notificationScheduler';
+import cronRoutes from './routes/cronRoutes'; // **NOVO**
+
+import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
+
+// 📊 MONITORING SYSTEM
+import { metricsMiddleware } from './middlewares/metricsMiddleware';
+import { metricsService } from './services/metricsService';
+import metricsRoutes from './routes/metricsRoutes';
 
 import prisma from './lib/prisma';
 import Logger from './lib/logger';
@@ -43,18 +53,51 @@ app.use(helmet());
 app.use(compression());
 app.use(limiter);
 
+// 📊 MONITORING - Capture all requests (must be before other middlewares)
+app.use(metricsMiddleware);
+
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
+// CORS configuration - ONLY allow specific origins (security fix)
+const allowedOrigins = [
+    'https://my7.pet',
+    'https://7pet-mvp.vercel.app',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://localhost:5174'
+];
+
+
+// Em desenvolvimento, permitir IPs locais (192.168.x.x)
+const isDev = process.env.NODE_ENV !== 'production';
+const localIpRegex = /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/;
+
 app.use(cors({
-    origin: true,
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1 || (isDev && localIpRegex.test(origin))) {
+            callback(null, true);
+        } else {
+
+            Logger.warn(`CORS blocked request from origin: ${origin}`);
+            metricsService.incrementBlockedCORS(); // 📊 Track CORS blocks
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// 📊 MONITORING Dashboard - Serve static files
+app.use(express.static('public'));
 
 // Strip /api prefix if present (Vercel monorepo routing support)
 app.use((req, res, next) => {
@@ -78,9 +121,12 @@ app.use('/notifications', notificationRoutes);
 app.use('/products', productRoutes);
 app.use('/support', supportRoutes);
 app.use('/maps', mapsRoutes);
-app.use('/settings/transport', transportSettingsRoute);
+app.use('/transport-settings', transportSettingsRoute);
+app.use('/metrics', metricsRoutes); // Metrics endpoint
+app.use('/cron', cronRoutes); // **NOVO** - Vercel Cron Jobs
 
-runNotificationScheduler();
+// Start notification scheduler (dev only, Vercel uses Cron Jobs)
+startNotificationScheduler();
 
 app.get('/', (req, res) => {
     res.send('🚀 7Pet API está Ativa!');
@@ -95,6 +141,7 @@ app.use(errorHandler);
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
         Logger.info(`🚀 Server running on port ${PORT}`);
+        Logger.info(`📊 Monitoring dashboard: http://localhost:${PORT}/dashboard.html`);
     });
 }
 

@@ -148,24 +148,28 @@ export default function QuoteManager() {
     };
 
     const handleBatchBill = async () => {
-        const hasFaturar = quotes.some(q => q.status === 'FATURAR');
-        if (!hasFaturar) {
-            toast.error('Nenhum orçamento com status FATURAR encontrado.');
-            return;
-        }
-
-        if (!window.confirm('Deseja gerar faturas individuais para todos os orçamentos com status FATURAR? Orçamentos do mesmo cliente serão agrupados em uma única fatura.')) return;
-
         try {
+            const currentQuotes = Array.isArray(quotes) ? quotes : [];
+            const hasFaturar = currentQuotes.some(q => q && q.status === 'FATURAR');
+            if (!hasFaturar) {
+                toast.error('Nenhum orçamento com status FATURAR encontrado.');
+                return;
+            }
+
+            if (!window.confirm('Deseja gerar faturas individuais para todos os orçamentos com status FATURAR? Orçamentos do mesmo cliente serão agrupados em uma única fatura.')) return;
+
             const response = await api.post('/invoices/batch');
             toast.success(response.data.message);
             queryClient.invalidateQueries({ queryKey: ['quotes'] });
         } catch (error) {
+            console.error('[QuoteManager] Error in handleBatchBill:', error);
             toast.error('Erro ao processar faturamento em lote');
         }
     };
 
     const handleSchedule = (quote: Quote) => {
+        if (!quote) return;
+
         console.log('🔍 handleSchedule: quote data received:', {
             id: quote.id,
             type: quote.type,
@@ -176,26 +180,27 @@ export default function QuoteManager() {
 
         // Determinar categoria baseada no tipo do quote
         let category: 'SPA' | 'LOGISTICA' | 'SPA_TRANSPORTE' = 'SPA';
-        if (quote.type === 'TRANSPORTE') {
+        const qType = quote.type || 'SPA';
+        if (qType === 'TRANSPORTE') {
             category = 'LOGISTICA';
-        } else if (quote.type === 'SPA_TRANSPORTE') {
-            category = 'SPA_TRANSPORTE'; // Tipo combinado
-        } else if (quote.type === 'SPA') {
-            category = 'SPA';
+        } else if (qType === 'SPA_TRANSPORTE') {
+            category = 'SPA_TRANSPORTE';
         }
+
+        const items = Array.isArray(quote.items) ? quote.items : [];
 
         const preFill = {
             customerId: quote.customerId,
-            customerName: quote.customer.name,
+            customerName: quote.customer?.name || 'Cliente',
             quoteId: quote.id,
-            items: quote.items,
+            items: items,
             petId: quote.petId,
-            serviceIds: quote.items.filter(i => i.serviceId).map(i => i.serviceId as string),
-            startAt: (quote.type === 'TRANSPORTE' ? quote.transportAt : quote.scheduledAt) || quote.desiredAt || '',
+            serviceIds: items.filter(i => i && i.serviceId).map(i => i.serviceId as string),
+            startAt: (qType === 'TRANSPORTE' ? quote.transportAt : quote.scheduledAt) || quote.desiredAt || '',
             scheduledAt: quote.scheduledAt,
             transportAt: quote.transportAt,
             desiredAt: quote.desiredAt,
-            category,  // Usar a categoria determinada
+            category,
             transportOrigin: quote.transportOrigin,
             transportDestination: quote.transportDestination,
             transportPeriod: quote.transportPeriod
@@ -207,22 +212,29 @@ export default function QuoteManager() {
         setIsAppointmentModalOpen(true);
     };
 
-    const filteredQuotes = quotes
+    const quotesArray = Array.isArray(quotes) ? quotes : [];
+    const activeCount = quotesArray.filter(q => q.status !== 'ENCERRADO').length;
+    const historyCount = quotesArray.filter(q => q.status === 'ENCERRADO').length;
+    const filteredQuotes = quotesArray
         .filter(q => {
+            if (!q || !q.customer) return false;
+
             if (view === 'active' && q.status === 'ENCERRADO') return false;
             if (view === 'history' && q.status !== 'ENCERRADO') return false;
 
-            const matchesSearch = q.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                q.id.toLowerCase().includes(searchTerm.toLowerCase());
+            const name = q.customer.name || '';
+            const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                String(q.id || '').toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesStatus = statusFilter === 'ALL' || q.status === statusFilter;
 
-            const quoteDate = new Date(q.createdAt);
+            const quoteDate = new Date(q.createdAt || Date.now());
             const matchesDate = (!dateRange.start || quoteDate >= new Date(dateRange.start)) &&
                 (!dateRange.end || quoteDate <= new Date(dateRange.end));
 
-            const matchesValue = (!valueRange.min || q.totalAmount >= valueRange.min) &&
-                (!valueRange.max || q.totalAmount <= valueRange.max);
+            const totalAmount = q.totalAmount || 0;
+            const matchesValue = (!valueRange.min || totalAmount >= valueRange.min) &&
+                (!valueRange.max || totalAmount <= valueRange.max);
 
             return matchesSearch && matchesStatus && matchesDate && matchesValue;
         });
@@ -508,16 +520,19 @@ export default function QuoteManager() {
                                     onReactivate={handleReactivate}
                                     onSchedule={handleSchedule}
                                     onViewAppointment={async (q) => {
-                                        if (q.appointments!.length === 1) {
+                                        if (!q || !q.appointments) return;
+                                        const appts = Array.isArray(q.appointments) ? q.appointments : [];
+
+                                        if (appts.length === 1) {
                                             try {
-                                                const res = await api.get(`/appointments/${q.appointments![0].id}`);
+                                                const res = await api.get(`/appointments/${appts[0].id}`);
                                                 setViewAppointmentData(res.data);
-                                                setSelectedAppointmentId(q.appointments![0].id);
+                                                setSelectedAppointmentId(appts[0].id);
                                             } catch (err) {
                                                 console.error('Erro ao buscar agendamento', err);
                                                 alert('Erro ao carregar detalhes do agendamento');
                                             }
-                                        } else {
+                                        } else if (appts.length > 1) {
                                             setAppointmentSelectionQuote(q);
                                         }
                                     }}

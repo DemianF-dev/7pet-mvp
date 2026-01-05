@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient, QuoteStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { auditService } from '../services/auditService';
+import { notificationService } from '../services/notificationService';
 import { createAuditLog, detectChanges } from '../utils/auditLogger';
 import { messagingService } from '../services/messagingService';
 import { z } from 'zod';
@@ -28,6 +29,9 @@ const quoteSchema = z.object({
     knotRegions: z.string().optional(),
     hairLength: z.string().optional(),
     hasParasites: z.boolean().optional(),
+    parasiteTypes: z.string().optional(), // 'PULGA', 'CARRAPATO', ou 'AMBOS'
+    parasiteComments: z.string().optional(),
+    wantsMedicatedBath: z.boolean().optional(),
     petQuantity: z.number().int().optional()
 });
 
@@ -96,7 +100,7 @@ export const quoteController = {
 
                 if (patas.length > 0) {
                     processedItems.push({
-                        description: `Desembolo - Patas (${patas.length}x)`,
+                        description: `Desembolo - Patas(${patas.length}x)`,
                         quantity: patas.length,
                         price: 7.50,
                         serviceId: undefined
@@ -107,12 +111,22 @@ export const quoteController = {
                     const price = KNOT_PRICES[region];
                     if (price) {
                         processedItems.push({
-                            description: `Desembolo - ${region.charAt(0).toUpperCase() + region.slice(1)}`,
+                            description: `Desembolo - ${region.charAt(0).toUpperCase() + region.slice(1)} `,
                             quantity: 1,
                             price,
                             serviceId: undefined
                         });
                     }
+                });
+            }
+
+            // Adicionar banho medicamentoso antipulgas se solicitado
+            if (data.wantsMedicatedBath) {
+                processedItems.push({
+                    description: '💊 Banho Medicamentoso Antipulgas',
+                    quantity: 1,
+                    price: 45.00,
+                    serviceId: undefined
                 });
             }
 
@@ -132,6 +146,9 @@ export const quoteController = {
                     knotRegions: data.knotRegions,
                     hairLength: data.hairLength,
                     hasParasites: data.hasParasites,
+                    parasiteTypes: data.parasiteTypes,
+                    parasiteComments: data.parasiteComments,
+                    wantsMedicatedBath: data.wantsMedicatedBath,
                     petQuantity: data.petQuantity || 1,
                     status: 'SOLICITADO',
                     totalAmount,
@@ -140,7 +157,7 @@ export const quoteController = {
                             oldStatus: 'NONE',
                             newStatus: 'SOLICITADO',
                             changedBy: user.id,
-                            reason: user.role === 'CLIENTE' ? 'Solicitação inicial pelo cliente' : `Criado por colaborador ${user.role}`
+                            reason: user.role === 'CLIENTE' ? 'Solicitação inicial pelo cliente' : `Criado por colaborador ${user.role} `
                         }
                     },
                     items: {
@@ -164,14 +181,14 @@ export const quoteController = {
                 entityId: quote.id,
                 action: 'CREATE',
                 performedBy: user.id,
-                reason: `Orçamento criado ${user.role === 'CLIENTE' ? 'pelo cliente' : 'pela equipe'}`
+                reason: `Orçamento criado ${user.role === 'CLIENTE' ? 'pelo cliente' : 'pela equipe'} `
             });
 
             // Notify customer about successful solicitation
             await messagingService.notifyUser(
                 user.id,
                 'Solicitação de Orçamento Recebida',
-                `Olá ${quote.customer.name}! Recebemos seu pedido de orçamento para ${quote.pet?.name || 'seu pet'}. Nossa equipe analisará e responderá em breve.`,
+                `Olá ${quote.customer.name} !Recebemos seu pedido de orçamento para ${quote.pet?.name || 'seu pet'}. Nossa equipe analisará e responderá em breve.`,
                 'QUOTE_CREATED'
             );
 
@@ -201,6 +218,14 @@ export const quoteController = {
                 where.customerId = clientId;
             }
 
+            // Pagination parameters
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+            const skip = (page - 1) * limit;
+
+            // Get total count for pagination metadata
+            const total = await prisma.quote.count({ where });
+
             const quotes = await prisma.quote.findMany({
                 where,
                 include: {
@@ -215,11 +240,22 @@ export const quoteController = {
                         select: { id: true, category: true, status: true, startAt: true }
                     }
                 },
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
             });
 
-
-            return res.json(quotes);
+            return res.json({
+                data: quotes,
+                meta: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                    hasNext: page * limit < total,
+                    hasPrev: page > 1
+                }
+            });
         } catch (error) {
             console.error('Erro ao listar orçamentos:', error);
             return res.status(500).json({ error: 'Internal server error' });
@@ -333,7 +369,7 @@ export const quoteController = {
                             oldStatus,
                             newStatus: status,
                             changedBy: user.id,
-                            reason: reason || (user.role === 'CLIENTE' ? 'Cliente aprovou o orçamento' : `Alterado por ${user.role}`)
+                            reason: reason || (user.role === 'CLIENTE' ? 'Cliente aprovou o orçamento' : `Alterado por ${user.role} `)
                         }
                     }
                 },
@@ -359,18 +395,24 @@ export const quoteController = {
                             dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // Default +5 days (matching validity)
                         }
                     });
-                    console.log(`[AUTO] Fatura gerada para orçamento aprovado ${id}`);
+                    console.log(`[AUTO] Fatura gerada para orçamento aprovado ${id} `);
 
 
                     if (quote.customer.user) {
-                        await messagingService.notifyUser(
+                        await notificationService.notifyQuoteResponse(
+                            id,
                             quote.customer.user.id,
-                            'Orçamento Aprovado!',
-                            `Seu orçamento no valor de R$ ${quote.totalAmount.toFixed(2)} foi aprovado com sucesso. Em breve entraremos em contato para agendamento.`,
-                            'INVOICE'
+                            `Orçamento #${quote.seqId} aprovado! Valor: R$ ${quote.totalAmount.toFixed(2)}. Prepare o pet para o SPA! 🐾`
                         );
                     }
                 }
+            } else if (status === 'ENVIADO' && oldStatus !== 'ENVIADO' && quote.customer.user) {
+                // Notificar quando staff envia o orçamento respondido (preço calculado)
+                await notificationService.notifyQuoteResponse(
+                    id,
+                    quote.customer.user.id,
+                    `Seu orçamento #${quote.seqId} foi respondido! Clique para conferir os valores. 💰`
+                );
             }
 
             // Create audit log
@@ -380,7 +422,7 @@ export const quoteController = {
                 action: 'STATUS_CHANGE',
                 performedBy: user.id,
                 changes: [{ field: 'status', oldValue: oldStatus, newValue: status }],
-                reason: reason || `${user.role === 'CLIENTE' ? 'Cliente' : 'Equipe'} alterou status para ${status}`
+                reason: reason || `${user.role === 'CLIENTE' ? 'Cliente' : 'Equipe'} alterou status para ${status} `
             });
 
             return res.json(updatedQuote);
@@ -392,7 +434,7 @@ export const quoteController = {
 
     async update(req: Request, res: Response) {
         try {
-            console.log(`[QUOTE_UPDATE] ID: ${req.params.id}, Body:`, JSON.stringify(req.body, null, 2));
+            console.log(`[QUOTE_UPDATE] ID: ${req.params.id}, Body: `, JSON.stringify(req.body, null, 2));
             const { id } = req.params;
             const data = z.object({
                 items: z.array(z.object({
@@ -467,10 +509,10 @@ export const quoteController = {
                             await messagingService.notifyUser(
                                 customerData.userId,
                                 'Orçamento Disponível para Aprovação',
-                                `Olá ${customerData.name}! Seu orçamento (OR-${String(currentQuote.seqId).padStart(4, '0')}) foi atualizado e está aguardando sua aprovação.`,
+                                `Olá ${customerData.name} !Seu orçamento(OR - ${String(currentQuote.seqId).padStart(4, '0')}) foi atualizado e está aguardando sua aprovação.`,
                                 'QUOTE_SENT'
                             );
-                            console.log(`[QuoteUpdate] Notification sent to customer ${customerData.userId}`);
+                            console.log(`[QuoteUpdate] Notification sent to customer ${customerData.userId} `);
                         }
                     }
                 }
@@ -511,7 +553,7 @@ export const quoteController = {
                         // Fallback to null if service ID is invalid/not found
                         let validServiceId = item.serviceId;
                         if (validServiceId && !validServiceIds.has(validServiceId)) {
-                            console.warn(`[QuoteUpdate] Warning: Service ID ${validServiceId} not found. Setting to null.`);
+                            console.warn(`[QuoteUpdate] Warning: Service ID ${validServiceId} not found.Setting to null.`);
                             validServiceId = null;
                         }
 
@@ -539,7 +581,7 @@ export const quoteController = {
                         where: { id: linkedInvoice.id },
                         data: { amount: updateData.totalAmount }
                     });
-                    console.log(`[SYNC] Fatura atualizada para acompanhar orçamento ${id}: ${updateData.totalAmount}`);
+                    console.log(`[SYNC] Fatura atualizada para acompanhar orçamento ${id}: ${updateData.totalAmount} `);
                 }
             }
 
@@ -610,7 +652,7 @@ export const quoteController = {
                             oldStatus: 'NONE',
                             newStatus: 'SOLICITADO',
                             changedBy: user.id,
-                            reason: `Duplicado a partir de ${original.id}`
+                            reason: `Duplicado a partir de ${original.id} `
                         }
                     }
                 },
@@ -681,7 +723,7 @@ export const quoteController = {
             if (quote.deletedAt > ninetyDaysAgo) {
                 const daysRemaining = Math.ceil((quote.deletedAt.getTime() - ninetyDaysAgo.getTime()) / (1000 * 60 * 60 * 24));
                 return res.status(400).json({
-                    error: `Proteção de dados ativa: Este orçamento só poderá ser excluído permanentemente após 90 dias na lixeira. Faltam ${daysRemaining} dias.`,
+                    error: `Proteção de dados ativa: Este orçamento só poderá ser excluído permanentemente após 90 dias na lixeira.Faltam ${daysRemaining} dias.`,
                     daysRemaining
                 });
             }
@@ -800,9 +842,9 @@ export const quoteController = {
                 return res.status(404).json({ error: 'Orçamento não encontrado' });
             }
 
-            console.log(`[Quote] Calculating transport for Quote ID: ${id}`);
-            console.log(`[Quote] Payload:`, { address, destinationAddress, type });
-            console.log(`[Quote] User Role:`, (req as any).user?.role);
+            console.log(`[Quote] Calculating transport for Quote ID: ${id} `);
+            console.log(`[Quote] Payload: `, { address, destinationAddress, type });
+            console.log(`[Quote] User Role: `, (req as any).user?.role);
 
             // Calculate transport using Google Maps + settings
             const { mapsService } = await import('../services/mapsService');
@@ -811,10 +853,10 @@ export const quoteController = {
             const validTypes = ['ROUND_TRIP', 'PICK_UP', 'DROP_OFF'];
             const transportType = (type && validTypes.includes(type)) ? type : 'ROUND_TRIP';
 
-            console.log(`[Quote] Calling mapsService with type: ${transportType}`);
+            console.log(`[Quote] Calling mapsService with type: ${transportType} `);
 
             const result = await mapsService.calculateTransportDetailed(address, destinationAddress, transportType as any);
-            console.log(`[Quote] Calculation result:`, result);
+            console.log(`[Quote] Calculation result: `, result);
 
             return res.status(200).json(result);
         } catch (error: any) {

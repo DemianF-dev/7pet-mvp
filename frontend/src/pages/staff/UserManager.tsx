@@ -27,11 +27,13 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
+import { DIVISIONS, DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../constants/divisions';
 
 interface UserData {
     id: string;
     email: string;
-    role: string;
+    division: string;  // Divisão/Departamento (determina permissões)
+    role?: string;     // Cargo livre (opcional, apenas informativo)
     name?: string;
     phone?: string;
     notes?: string;
@@ -51,6 +53,8 @@ interface UserData {
     document?: string;
     address?: string;
     color?: string;
+    seqId?: number;
+    plainPassword?: string;
 }
 
 const MODULES = [
@@ -72,12 +76,13 @@ export default function UserManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [filterRole, setFilterRole] = useState<string>('ALL');
+    const [filterDivision, setFilterDivision] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<'name' | 'date' | 'id'>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [tab, setTab] = useState<'active' | 'trash'>('active');
 
     const { user: currentUser } = useAuthStore();
+    const isMaster = currentUser?.email === 'oidemianf@gmail.com';
 
     // Edit Form State
     const [formData, setFormData] = useState({
@@ -88,6 +93,7 @@ export default function UserManager() {
         password: '',
         phone: '',
         notes: '',
+        division: 'CLIENTE',
         role: '',
         permissions: [] as string[],
         birthday: '',
@@ -164,7 +170,8 @@ export default function UserManager() {
             password: '',
             phone: user.phone || '',
             notes: user.notes || '',
-            role: user.role,
+            division: user.division || 'CLIENTE',
+            role: user.role || '',
             permissions,
             birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
             admissionDate: user.admissionDate ? new Date(user.admissionDate).toISOString().split('T')[0] : '',
@@ -185,7 +192,8 @@ export default function UserManager() {
             password: '',
             phone: '',
             notes: '',
-            role: 'OPERACIONAL',
+            division: 'COMERCIAL',
+            role: '',
             permissions: [] as string[],
             birthday: '',
             admissionDate: '',
@@ -204,6 +212,12 @@ export default function UserManager() {
                 ...formData,
                 permissions: JSON.stringify(formData.permissions)
             };
+
+            console.log('💾 Salvando usuário com divisão:', {
+                division: payload.division,
+                role: payload.role,
+                email: payload.email
+            });
 
             if (selectedUser) {
                 await api.put(`/management/users/${selectedUser.id}`, payload);
@@ -373,9 +387,9 @@ export default function UserManager() {
                 u.document?.includes(searchTerm) ||
                 u.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-            const matchesRole = filterRole === 'ALL' || u.role === filterRole;
+            const matchesDivision = filterDivision === 'ALL' || u.division === filterDivision;
 
-            return matchesSearch && matchesRole;
+            return matchesSearch && matchesDivision;
         })
         .sort((a, b) => {
             let comparison = 0;
@@ -484,15 +498,19 @@ export default function UserManager() {
 
                         <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar flex-1 min-w-0">
                             {[
-                                { role: 'ALL', label: 'Todos' },
-                                { role: 'MASTER', label: 'Master' },
-                                ...rolePermissions.filter(rp => rp.role !== 'MASTER').map(rp => ({ role: rp.role, label: rp.label || rp.role }))
+                                { division: 'ALL', label: 'Todos', color: 'bg-gray-200 text-gray-700' },
+                                { division: DIVISIONS.SPA, label: DIVISION_LABELS.SPA, color: getDivisionBgClass(DIVISIONS.SPA) + ' ' + getDivisionTextClass(DIVISIONS.SPA) },
+                                { division: DIVISIONS.COMERCIAL, label: DIVISION_LABELS.COMERCIAL, color: getDivisionBgClass(DIVISIONS.COMERCIAL) + ' ' + getDivisionTextClass(DIVISIONS.COMERCIAL) },
+                                { division: DIVISIONS.LOGISTICA, label: DIVISION_LABELS.LOGISTICA, color: getDivisionBgClass(DIVISIONS.LOGISTICA) + ' ' + getDivisionTextClass(DIVISIONS.LOGISTICA) },
+                                { division: DIVISIONS.GERENCIA, label: DIVISION_LABELS.GERENCIA, color: getDivisionBgClass(DIVISIONS.GERENCIA) + ' ' + getDivisionTextClass(DIVISIONS.GERENCIA) },
+                                { division: DIVISIONS.DIRETORIA, label: DIVISION_LABELS.DIRETORIA, color: getDivisionBgClass(DIVISIONS.DIRETORIA) + ' ' + getDivisionTextClass(DIVISIONS.DIRETORIA) },
+                                { division: DIVISIONS.ADMIN, label: DIVISION_LABELS.ADMIN, color: getDivisionBgClass(DIVISIONS.ADMIN) + ' ' + getDivisionTextClass(DIVISIONS.ADMIN) },
                             ].map(filter => (
                                 <button
-                                    key={filter.role}
-                                    onClick={() => setFilterRole(filter.role)}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterRole === filter.role
-                                        ? 'bg-secondary text-white shadow-md'
+                                    key={filter.division}
+                                    onClick={() => setFilterDivision(filter.division)}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
+                                        ? filter.color + ' shadow-md'
                                         : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
                                         }`}
                                 >
@@ -581,7 +599,10 @@ export default function UserManager() {
                                         />
                                     </th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cargo</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Divisão</th>
+                                    {isMaster && (
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</th>
+                                    )}
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cadastro</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
                                 </tr>
@@ -602,8 +623,8 @@ export default function UserManager() {
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
                                                     <div
-                                                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-sm ${u.role === 'CLIENTE' ? 'bg-slate-300' : ''}`}
-                                                        style={{ backgroundColor: u.role === 'CLIENTE' ? undefined : (u.color || '#3B82F6') }}
+                                                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
+                                                        style={u.color ? { backgroundColor: u.color, color: 'white' } : undefined}
                                                     >
                                                         {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
                                                     </div>
@@ -613,7 +634,7 @@ export default function UserManager() {
                                                                 {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
                                                             </span>
                                                             <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
-                                                                {u.role === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
+                                                                {u.division === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
                                                             </span>
                                                         </div>
                                                         <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
@@ -627,16 +648,34 @@ export default function UserManager() {
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${u.role === 'ADMIN' ? 'bg-secondary text-white' :
-                                                        u.role === 'CLIENTE' ? 'bg-gray-100 text-gray-400' : 'bg-primary/10 text-primary'
-                                                        }`}>
-                                                        {rolePermissions.find(rp => rp.role === u.role)?.label || u.role}
-                                                    </span>
-                                                    <span className="text-[9px] font-black text-gray-300 ml-1 uppercase tracking-tighter">
-                                                        ID: {u.role === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className={`w-3 h-3 rounded-full ${getDivisionBgClass(u.division || u.role || 'CLIENTE')}`}
+                                                            title={DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role}
+                                                        />
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
+                                                            {DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role || 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                    {u.role && u.division && (
+                                                        <span className="text-[9px] font-bold text-gray-400 ml-1 uppercase tracking-tight">
+                                                            Cargo: {u.role}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
+                                            {
+                                                isMaster && (
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <Lock size={12} className="text-primary" />
+                                                            <span className="text-xs font-black text-secondary select-all">
+                                                                {u.plainPassword || '---'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                )
+                                            }
                                             <td className="px-8 py-6 text-xs font-bold text-gray-400">
                                                 {new Date(u.createdAt).toLocaleDateString()}
                                             </td>
@@ -658,7 +697,7 @@ export default function UserManager() {
                         </table>
                     </div>
                 </div>
-            </main>
+            </main >
 
             <AnimatePresence>
                 {isModalOpen && (
@@ -722,26 +761,45 @@ export default function UserManager() {
                                             placeholder={selectedUser ? "Deixe em branco para manter a atual" : "••••••••"}
                                             className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 font-bold text-secondary outline-none focus:ring-2 focus:ring-primary/20"
                                         />
+                                        {isMaster && selectedUser?.plainPassword && (
+                                            <p className="mt-2 text-[10px] font-black text-primary uppercase flex items-center gap-1">
+                                                <Check size={10} /> Senha registrada: <span className="text-secondary select-all ml-1">{selectedUser.plainPassword}</span>
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase"><Briefcase size={14} /> Cargo & Atribuição</h4>
+                                    <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase"><Briefcase size={14} /> Divisão & Cargo</h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-1">
-                                            <label className="block text-[10px] font-black text-gray-400 mb-1">Nível de Acesso</label>
+                                        <div className="col-span-2">
+                                            <label className="block text-[10px] font-black text-gray-400 mb-1">Divisão / Departamento</label>
                                             <select
-                                                value={formData.role}
-                                                onChange={e => {
-                                                    const role = e.target.value;
-                                                    const def = rolePermissions.find(rp => rp.role === role);
-                                                    setFormData({ ...formData, role, permissions: def ? JSON.parse(def.permissions) : [] });
-                                                }}
-                                                className="w-full bg-gray-100 border-none rounded-xl px-4 py-3 font-bold text-secondary"
+                                                value={formData.division}
+                                                onChange={e => setFormData({ ...formData, division: e.target.value })}
+                                                className={`w-full border-none rounded-xl px-4 py-3 font-bold ${getDivisionBgClass(formData.division)} ${getDivisionTextClass(formData.division)}`}
                                             >
-                                                {rolePermissions.map(rp => <option key={rp.role} value={rp.role}>{rp.label || rp.role}</option>)}
+                                                {Object.entries(DIVISION_LABELS)
+                                                    .filter(([key]) => key !== 'CLIENTE')
+                                                    .map(([key, label]) => (
+                                                        <option key={key} value={key}>{label}</option>
+                                                    ))}
                                             </select>
+                                            <p className="text-[9px] text-gray-400 mt-1 italic">A divisão determina os acessos padrão do usuário no sistema.</p>
                                         </div>
+
+                                        <div className="col-span-2">
+                                            <label className="block text-[10px] font-black text-gray-400 mb-1">Cargo / Função (Opcional)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.role}
+                                                onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                                placeholder="Ex: Tosador, Recepcionista, Motorista..."
+                                                className="w-full bg-gray-100 border-none rounded-xl px-4 py-3 font-bold text-secondary"
+                                            />
+                                            <p className="text-[9px] text-gray-400 mt-1 italic">Campo livre para identificação do cargo específico (apenas informativo).</p>
+                                        </div>
+
                                         <div className="col-span-1">
                                             <label className="block text-[10px] font-black text-gray-400 mb-1">Cor na Agenda</label>
                                             <input type="color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} className="w-full h-11 rounded-xl cursor-pointer" />

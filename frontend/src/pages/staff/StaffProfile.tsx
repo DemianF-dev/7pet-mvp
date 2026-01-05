@@ -6,9 +6,10 @@ import { motion } from 'framer-motion';
 import {
     User, Mail, Lock, Phone, MapPin, Save,
     ShieldCheck, Calendar, FileText, ClipboardList,
-    Fingerprint, Smartphone, Check
+    Fingerprint, Smartphone, Check, Briefcase
 } from 'lucide-react';
 import BackButton from '../../components/BackButton';
+import { DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../constants/divisions';
 
 const StaffProfile: React.FC = () => {
     const { user, updateUser } = useAuthStore();
@@ -102,9 +103,9 @@ const StaffProfile: React.FC = () => {
                     </div>
                     <div>
                         <div className="text-sm font-bold text-slate-800 leading-none mb-1">{user?.name}</div>
-                        <div className="flex items-center text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg">
+                        <div className={`flex items-center text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg ${getDivisionBgClass(user?.division || 'CLIENTE')} ${getDivisionTextClass(user?.division || 'CLIENTE')}`}>
                             <ShieldCheck size={10} className="mr-1" />
-                            {user?.role}
+                            {DIVISION_LABELS[user?.division as keyof typeof DIVISION_LABELS] || user?.division}
                         </div>
                     </div>
                 </motion.div>
@@ -155,6 +156,33 @@ const StaffProfile: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="space-y-2 col-span-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Divisão / Departamento</label>
+                                <div className="relative">
+                                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" size={18} />
+                                    <div className={`w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 font-bold ${getDivisionBgClass(user?.division || 'CLIENTE')} ${getDivisionTextClass(user?.division || 'CLIENTE')}`}>
+                                        {DIVISION_LABELS[user?.division as keyof typeof DIVISION_LABELS] || user?.division}
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-400 ml-1 italic">Sua divisão determina seus acessos no sistema. Caso precise alterar, contate a Diretoria.</p>
+                            </div>
+
+                            {user?.role && (
+                                <div className="space-y-2 col-span-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Cargo / Função</label>
+                                    <div className="relative">
+                                        <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" size={18} />
+                                        <input
+                                            type="text"
+                                            value={user?.role}
+                                            disabled
+                                            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-700 cursor-not-allowed font-medium"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 ml-1 italic">Seu cargo é apenas informativo e pode ser editado pela Diretoria.</p>
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nome</label>

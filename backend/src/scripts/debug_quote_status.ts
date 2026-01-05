@@ -6,7 +6,13 @@ const prisma = new PrismaClient();
 async function main() {
     try {
         console.log('--- Checking Quote Statuses ---');
-        const result = await prisma.$queryRawUnsafe('SELECT id, status FROM Quote');
+        // ✅ SEGURO: Usando Prisma query builder ao invés de raw SQL
+        const result = await prisma.quote.findMany({
+            select: {
+                id: true,
+                status: true
+            }
+        });
         console.log(JSON.stringify(result, null, 2));
 
     } catch (error) {

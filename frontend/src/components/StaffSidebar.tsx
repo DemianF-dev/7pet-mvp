@@ -17,8 +17,10 @@ import {
     Sparkles,
     Package,
     AlertTriangle,
-    Settings
+    Settings,
+    Smartphone
 } from 'lucide-react';
+
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 
@@ -222,7 +224,16 @@ export default function StaffSidebar() {
                 active={location.pathname === '/staff/profile'}
                 onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
             />
+
+            {/* 13. Configurações PWA */}
+            <SidebarItem
+                icon={<Smartphone size={20} />}
+                label="Configurações do App"
+                active={location.pathname === '/staff/settings'}
+                onClick={() => { navigate('/staff/settings'); setIsOpen(false); }}
+            />
         </nav>
+
     );
 
     return (

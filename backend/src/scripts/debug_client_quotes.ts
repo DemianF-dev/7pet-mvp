@@ -41,9 +41,10 @@ async function main() {
         });
 
         if (response.ok) {
-            const quotes = await response.json();
-            console.log(`API returned ${quotes.length} quotes.`);
-            console.log(JSON.stringify(quotes, null, 2));
+            const result = await response.json();
+            const quotesArray = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+            console.log(`API returned ${quotesArray.length} quotes.`);
+            console.log(JSON.stringify(result, null, 2));
         } else {
             console.log(`API Error: ${response.status} ${response.statusText}`);
             const text = await response.text();

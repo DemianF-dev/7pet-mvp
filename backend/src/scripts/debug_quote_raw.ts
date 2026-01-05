@@ -5,12 +5,14 @@ const prisma = new PrismaClient();
 
 async function main() {
     try {
-        console.log('Testing Raw Query on Quote table...');
-        const result = await prisma.$queryRawUnsafe('SELECT * FROM Quote LIMIT 1');
+        console.log('Testing Query on Quote table...');
+        // ✅ SEGURO: Usando Prisma findFirst ao invés de raw SQL
+        const result = await prisma.quote.findFirst();
         console.log('Result:', result);
 
-        console.log('Testing Raw Query on Customer table...');
-        const customers = await prisma.$queryRawUnsafe('SELECT * FROM Customer LIMIT 1');
+        console.log('Testing Query on Customer table...');
+        // ✅ SEGURO: Usando Prisma findFirst ao invés de raw SQL
+        const customers = await prisma.customer.findFirst();
         console.log('Customers:', customers);
 
     } catch (error) {

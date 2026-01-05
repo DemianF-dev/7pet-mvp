@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
+import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
 
 const MASTER_EMAIL = 'oidemianf@gmail.com';
@@ -94,16 +95,11 @@ export const updateTicketStatus = async (req: Request, res: Response) => {
 
         // Notify Requester
         if (status !== currentTicket.status) {
-            await prisma.notification.create({
-                data: {
-                    userId: ticket.userId,
-                    title: 'Atualização de Chamado',
-                    message: `Seu chamado foi atualizado para: ${status}`,
-                    type: 'BUG_REPORT_UPDATE',
-                    relatedId: ticket.id,
-                    priority: 'HIGH'
-                }
-            });
+            await notificationService.notifySupportResponse(
+                ticket.id,
+                ticket.userId,
+                `O status do seu chamado técnico foi atualizado para: ${status}. Confira em Suporte.`
+            );
         }
 
         res.json(ticket);

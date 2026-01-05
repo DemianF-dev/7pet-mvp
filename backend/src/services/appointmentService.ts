@@ -15,7 +15,27 @@ export const create = async (data: {
     };
     performerId?: string;
     quoteId?: string;
+    overridePastDateCheck?: boolean; // Flag para operadores confirmarem agendamento no passado
 }, isStaff: boolean = false) => {
+    const now = new Date();
+
+    // ⚠️ VALIDAÇÃO: Data no passado
+    if (data.startAt < now) {
+        if (!isStaff) {
+            // CLIENTES: Bloqueio total
+            throw new Error('❌ Não é possível agendar para uma data/horário que já passou. Por favor, escolha uma data futura.');
+        } else if (!data.overridePastDateCheck) {
+            // STAFF: Avisar e pedir confirmação
+            const error: any = new Error(
+                `⚠️ ATENÇÃO: Você está tentando agendar para ${data.startAt.toLocaleString('pt-BR')} que já passou. Confirme se isso está correto.`
+            );
+            error.code = 'PAST_DATE_WARNING';
+            error.appointmentDate = data.startAt.toISOString();
+            throw error;
+        }
+        // Se overridePastDateCheck === true, permite continuar (staff confirmou)
+    }
+
     // Business Rule: Appointments must be at least 12h in advance
     const minLeadTime = 12 * 60 * 60 * 1000; // 12h in ms
     if (!isStaff && data.startAt.getTime() - Date.now() < minLeadTime) {
@@ -97,7 +117,10 @@ export const create = async (data: {
     return appointment;
 };
 
-export const list = async (filters: { customerId?: string; status?: AppointmentStatus }) => {
+export const list = async (
+    filters: { customerId?: string; status?: AppointmentStatus; category?: AppointmentCategory },
+    pagination?: { skip?: number; take?: number }
+) => {
     return prisma.appointment.findMany({
         where: {
             ...filters,
@@ -122,7 +145,18 @@ export const list = async (filters: { customerId?: string; status?: AppointmentS
                 include: { pets: true }
             }
         },
-        orderBy: { startAt: 'desc' }
+        orderBy: { startAt: 'desc' },
+        ...(pagination?.skip !== undefined && { skip: pagination.skip }),
+        ...(pagination?.take !== undefined && { take: pagination.take })
+    });
+};
+
+export const count = async (filters: { customerId?: string; status?: AppointmentStatus; category?: AppointmentCategory }) => {
+    return prisma.appointment.count({
+        where: {
+            ...filters,
+            deletedAt: null
+        }
     });
 };
 
@@ -210,7 +244,11 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
     const previous = await get(id);
     const updated = await prisma.appointment.update({
         where: { id },
-        data: { status }
+        data: { status },
+        include: {
+            customer: { include: { user: true } },
+            pet: true
+        }
     });
 
     if (userId) {

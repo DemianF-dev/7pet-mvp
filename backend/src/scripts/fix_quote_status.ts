@@ -6,12 +6,21 @@ const prisma = new PrismaClient();
 async function main() {
     try {
         console.log('Fixing invalid statuses...');
-        // Update 'SOLICITACAO' to 'SOLICITADO'
-        const result = await prisma.$executeRawUnsafe("UPDATE Quote SET status = 'SOLICITADO' WHERE status = 'SOLICITACAO'");
-        console.log(`Updated ${result} records.`);
+        // ✅ SEGURO: Usando Prisma updateMany ao invés de raw SQL
+        const result = await prisma.quote.updateMany({
+            where: { status: 'SOLICITACAO' as any },
+            data: { status: 'SOLICITADO' }
+        });
+        console.log(`Updated ${result.count} records.`);
 
-        // Verify
-        const check = await prisma.$queryRawUnsafe("SELECT id, status FROM Quote WHERE status = 'SOLICITACAO'");
+        // ✅ SEGURO: Verificação usando Prisma query builder
+        const check = await prisma.quote.findMany({
+            where: { status: 'SOLICITACAO' as any },
+            select: {
+                id: true,
+                status: true
+            }
+        });
         console.log('Remaining invalid records:', check);
 
     } catch (error) {

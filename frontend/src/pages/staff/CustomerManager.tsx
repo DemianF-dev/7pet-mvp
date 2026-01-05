@@ -51,7 +51,8 @@ type TabType = 'active' | 'trash';
 const fetchCustomers = async (tab: TabType): Promise<Customer[]> => {
     const endpoint = tab === 'trash' ? '/customers/trash' : '/customers';
     const response = await api.get(endpoint);
-    return response.data;
+    // Handle both paginated response { data: [...], meta: ... } and direct array
+    return Array.isArray(response.data) ? response.data : (response.data.data || []);
 };
 
 export default function CustomerManager() {

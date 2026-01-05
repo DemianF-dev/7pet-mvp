@@ -1,15 +1,18 @@
-
 import { Router } from 'express';
-import { listNotifications, markAsRead, markAllAsRead, resolveNotification } from '../controllers/notificationController';
 import { authenticate } from '../middlewares/authMiddleware';
+import * as notificationController from '../controllers/notificationController';
 
 const router = Router();
 
+// Todas as rotas requerem autenticação
 router.use(authenticate);
 
-router.get('/', listNotifications);
-router.put('/:id/read', markAsRead);
-router.put('/read-all', markAllAsRead);
-router.put('/:id/resolve', resolveNotification);
+// Gerenciar subscriptions
+router.post('/subscribe', notificationController.subscribe);
+router.post('/unsubscribe', notificationController.unsubscribe);
+router.get('/subscriptions', notificationController.listSubscriptions);
+
+// Enviar notificação de teste
+router.post('/test', notificationController.sendTestNotification);
 
 export default router;

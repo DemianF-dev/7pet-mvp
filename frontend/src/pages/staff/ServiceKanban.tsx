@@ -81,7 +81,8 @@ export default function ServiceKanban() {
     const fetchAppointments = async () => {
         try {
             const response = await api.get('/appointments');
-            setAppointments(response.data);
+            const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+            setAppointments(data);
             if (isTrashView) fetchTrash();
         } catch (err) {
             console.error('Erro ao buscar agendamentos:', err);

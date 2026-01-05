@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import * as appointmentService from '../services/appointmentService';
+import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 import Logger from '../lib/logger';
@@ -34,7 +35,8 @@ export const create = async (req: any, res: Response) => {
             ...validatedData,
             customerId,
             startAt: new Date(validatedData.startAt),
-            performerId: validatedData.performerId
+            performerId: validatedData.performerId,
+            overridePastDateCheck: req.body.overridePastDateCheck || false // **NOVO**
         };
 
         const appointment = await appointmentService.create(data, isStaff);
@@ -49,12 +51,28 @@ export const create = async (req: any, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Dados inválidos', details: error.issues });
         }
+
+        // ⚠️ TRATAMENTO ESPECIAL: Data no passado (staff)
+        if (error.code === 'PAST_DATE_WARNING') {
+            return res.status(400).json({
+                error: error.message,
+                code: 'PAST_DATE_WARNING',
+                appointmentDate: error.appointmentDate,
+                requiresConfirmation: true
+            });
+        }
+
         res.status(400).json({ error: error.message });
     }
 };
 
 export const list = async (req: any, res: Response) => {
     try {
+        // Pagination
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+        const skip = (page - 1) * limit;
+
         let filters: any = {};
 
         if (req.user.role === 'CLIENTE') {
@@ -69,8 +87,20 @@ export const list = async (req: any, res: Response) => {
             filters.status = req.query.status as AppointmentStatus;
         }
 
-        const appointments = await appointmentService.list(filters);
-        res.json(appointments);
+        const appointments = await appointmentService.list(filters, { skip, take: limit });
+        const total = await appointmentService.count(filters);
+
+        res.json({
+            data: appointments,
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+                hasNext: page * limit < total,
+                hasPrev: page > 1
+            }
+        });
     } catch (error: any) {
         res.status(400).json({ error: error.message });
     }
@@ -144,6 +174,30 @@ export const updateStatus = async (req: any, res: Response) => {
 
         const { reason } = req.body;
         const updated = await appointmentService.updateStatus(id, status as AppointmentStatus, req.user.id, reason);
+
+        // Notificar Cliente
+        if (updated.customer.user) {
+            let type: 'UPDATE' | 'CANCEL' | 'CONFIRM' = 'UPDATE';
+            let message = '';
+
+            if (status === 'CONFIRMADO') {
+                type = 'CONFIRM';
+                message = `Oba! Seu agendamento para ${updated.pet.name} foi confirmado. Te esperamos lá! 🐾`;
+            } else if (status === 'CANCELADO') {
+                type = 'CANCEL';
+                message = `O agendamento de ${updated.pet.name} foi cancelado. Se precisar, solicite um novo a qualquer momento.`;
+            } else {
+                message = `O status do agendamento de ${updated.pet.name} mudou para: ${status}.`;
+            }
+
+            await notificationService.notifyAppointmentChange(
+                updated.id,
+                updated.customer.user.id,
+                type,
+                message
+            );
+        }
+
         res.json(updated);
     } catch (error: any) {
         res.status(400).json({ error: error.message });

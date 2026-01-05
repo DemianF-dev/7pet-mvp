@@ -83,7 +83,10 @@ export default function QuoteRequest() {
         hasKnots: false,
         knotRegions: [] as string[],
         hairLength: 'curto',
-        hasParasites: false
+        hasParasites: false,
+        parasiteTypes: '', // 'PULGA', 'CARRAPATO', ou 'AMBOS'
+        parasiteComments: '',
+        wantsMedicatedBath: false
     });
 
     // Transport Details
@@ -301,6 +304,9 @@ export default function QuoteRequest() {
                 knotRegions: spaDetails.knotRegions.join(', '),
                 hairLength: spaDetails.hairLength,
                 hasParasites: spaDetails.hasParasites,
+                parasiteTypes: spaDetails.parasiteTypes,
+                parasiteComments: spaDetails.parasiteComments,
+                wantsMedicatedBath: spaDetails.wantsMedicatedBath,
                 communicationPrefs
             });
 
@@ -489,7 +495,7 @@ export default function QuoteRequest() {
                         onClose={() => setShowConfirmSubmit(false)}
                         onConfirm={handleSubmit}
                         title="Confirmar Solicitação"
-                        message="Deseja enviar seu pedido de orçamento agora? Nossa equipe responderá o mais breve possível."
+                        description="Deseja enviar seu pedido de orçamento agora? Nossa equipe responderá o mais breve possível."
                         confirmText="Sim, Enviar"
                         cancelText="Ainda não"
                     />

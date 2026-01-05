@@ -7,7 +7,7 @@ import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
 
 export default function TransportConfig() {
-    const [settings, setSettings] = useState({
+    const [settings, setSettings] = useState<{ [key: string]: number | string }>({
         // Preços por KM
         kmPriceLargada: 2.0,
         kmPriceLeva: 2.0,
@@ -35,7 +35,7 @@ export default function TransportConfig() {
 
     const fetchSettings = async () => {
         try {
-            const res = await api.get('/settings/transport');
+            const res = await api.get('/transport-settings');
             // We keep values as they come (numbers) or defaults if undefined. 
             // The inputs will handle them. 
             setSettings({
@@ -72,7 +72,7 @@ export default function TransportConfig() {
                 Object.entries(settings).map(([key, val]) => [key, val === '' ? 0 : Number(val)])
             );
 
-            await api.put('/settings/transport', payload);
+            await api.put('/transport-settings', payload);
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
@@ -329,20 +329,20 @@ export default function TransportConfig() {
                         <h3 className="text-lg font-black text-indigo-900 mb-4">💡 Exemplo de Cálculo</h3>
                         <div className="space-y-2 text-sm">
                             <p className="text-indigo-700">
-                                <span className="font-black">Largada (10km, 15min):</span> (10 × R$ {settings.kmPriceLargada.toFixed(2)}) + (15 × R$ {settings.minPriceLargada.toFixed(2)}) = <span className="font-black text-indigo-900">R$ {((10 * settings.kmPriceLargada) + (15 * settings.minPriceLargada)).toFixed(2)}</span>
+                                <span className="font-black">Largada (10km, 15min):</span> (10 × R$ {Number(settings.kmPriceLargada).toFixed(2)}) + (15 × R$ {Number(settings.minPriceLargada).toFixed(2)}) = <span className="font-black text-indigo-900">R$ {((10 * Number(settings.kmPriceLargada)) + (15 * Number(settings.minPriceLargada))).toFixed(2)}</span>
                             </p>
                             <p className="text-purple-700">
-                                <span className="font-black">Leva/Traz (5km, 8min cada):</span> 2 × [(5 × R$ {settings.kmPriceLeva.toFixed(2)}) + (8 × R$ {settings.minPriceLeva.toFixed(2)})] = <span className="font-black text-purple-900">R$ {(2 * ((5 * settings.kmPriceLeva) + (8 * settings.minPriceLeva))).toFixed(2)}</span>
+                                <span className="font-black">Leva/Traz (5km, 8min cada):</span> 2 × [(5 × R$ {Number(settings.kmPriceLeva).toFixed(2)}) + (8 × R$ {Number(settings.minPriceLeva).toFixed(2)})] = <span className="font-black text-purple-900">R$ {(2 * ((5 * Number(settings.kmPriceLeva)) + (8 * Number(settings.minPriceLeva)))).toFixed(2)}</span>
                             </p>
                             <p className="text-indigo-700">
-                                <span className="font-black">Retorno (10km, 15min):</span> (10 × R$ {settings.kmPriceRetorno.toFixed(2)}) + (15 × R$ {settings.minPriceRetorno.toFixed(2)}) = <span className="font-black text-indigo-900">R$ {((10 * settings.kmPriceRetorno) + (15 * settings.minPriceRetorno)).toFixed(2)}</span>
+                                <span className="font-black">Retorno (10km, 15min):</span> (10 × R$ {Number(settings.kmPriceRetorno).toFixed(2)}) + (15 × R$ {Number(settings.minPriceRetorno).toFixed(2)}) = <span className="font-black text-indigo-900">R$ {((10 * Number(settings.kmPriceRetorno)) + (15 * Number(settings.minPriceRetorno))).toFixed(2)}</span>
                             </p>
                             <div className="pt-3 mt-3 border-t-2 border-indigo-200">
                                 <p className="text-indigo-900 font-black text-lg">
                                     TOTAL: R$ {(
-                                        ((10 * settings.kmPriceLargada) + (15 * settings.minPriceLargada)) +
-                                        (2 * ((5 * settings.kmPriceLeva) + (8 * settings.minPriceLeva))) +
-                                        ((10 * settings.kmPriceRetorno) + (15 * settings.minPriceRetorno))
+                                        ((10 * Number(settings.kmPriceLargada)) + (15 * Number(settings.minPriceLargada))) +
+                                        (2 * ((5 * Number(settings.kmPriceLeva)) + (8 * Number(settings.minPriceLeva)))) +
+                                        ((10 * Number(settings.kmPriceRetorno)) + (15 * Number(settings.minPriceRetorno)))
                                     ).toFixed(2)}
                                 </p>
                             </div>

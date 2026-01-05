@@ -9,10 +9,10 @@ datasource db {
 }
 
 model User {
-  id                   String          @id @default(uuid())
-  email                String          @unique
+  id                   String             @id @default(uuid())
+  email                String             @unique
   passwordHash         String?
-  googleId             String?         @unique
+  googleId             String?            @unique
   name                 String?
   phone                String?
   document             String?
@@ -21,31 +21,35 @@ model User {
   admissionDate        DateTime?
   notes                String?
   permissions          String?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
   deletedAt            DateTime?
-  extraAddresses       Json?           @default("[]")
-  extraEmails          Json?           @default("[]")
-  extraPhones          Json?           @default("[]")
+  extraAddresses       Json?              @default("[]")
+  extraEmails          Json?              @default("[]")
+  extraPhones          Json?              @default("[]")
   firstName            String?
   lastName             String?
-  seqId                Int             @unique @default(autoincrement())
-  staffId              Int?            @unique
-  showTutorial         Boolean         @default(true)
-  color                String?         @default("#3B82F6")
-  role                 String          @default("CLIENTE")
-  assignedAppointments Appointment[]   @relation("AppointmentPerformer")
+  seqId                Int                @unique @default(autoincrement())
+  staffId              Int?               @unique
+  showTutorial         Boolean            @default(true)
+  color                String?            @default("#3B82F6")
+  role                 String?
+  plainPassword        String?
+  division             String             @default("CLIENTE")
+  assignedAppointments Appointment[]      @relation("AppointmentPerformer")
   authenticators       Authenticator[]
   bugReports           BugReport[]
   customer             Customer?
   notifications        Notification[]
-  performedItems       QuoteItem[]     @relation("ItemPerformer")
-  assignedServices     Service[]       @relation("ServiceResponsible")
-  
+  performedItems       QuoteItem[]        @relation("ItemPerformer")
+  assignedServices     Service[]          @relation("ServiceResponsible")
+  pushSubscriptions    PushSubscription[]
+
   @@index([email])
-  @@index([role])
+  @@index([division])
   @@index([firstName])
   @@index([lastName])
+  @@index([role], map: "idx_user_role_rls")
 }
 
 model Authenticator {
@@ -71,7 +75,6 @@ model Customer {
   requiresPrepayment       Boolean       @default(false)
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
-  deletedAt                DateTime?
   type                     String        @default("AVULSO")
   recurringFrequency       String?
   discountPercentage       Float         @default(0.0)
@@ -87,6 +90,7 @@ model Customer {
   discoverySource          String?
   recurrenceDiscount       Float?
   recurrenceFrequency      String?
+  deletedAt                DateTime?
   appointments             Appointment[]
   user                     User          @relation(fields: [userId], references: [id])
   invoices                 Invoice[]
@@ -97,6 +101,7 @@ model Customer {
   @@index([type])
   @@index([deletedAt])
   @@index([name])
+  @@index([userId], map: "idx_customer_userid")
 }
 
 model Pet {
@@ -127,6 +132,7 @@ model Pet {
   quotes           Quote[]
 
   @@index([customerId])
+  @@index([customerId], map: "idx_pet_customerid")
 }
 
 model Service {
@@ -136,19 +142,19 @@ model Service {
   basePrice     Float
   duration      Int
   category      String?
-  subcategory   String?
-  type          String?
-  coatType      String?
-  unit          String?       @default("por pet")
   species       String        @default("Canino")
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  deletedAt     DateTime?
   maxWeight     Float?
   minWeight     Float?
   sizeLabel     String?
   responsibleId String?
   seqId         Int           @unique @default(autoincrement())
+  deletedAt     DateTime?
+  subcategory   String?
+  type          String?
+  coatType      String?
+  unit          String?       @default("por pet")
   quoteItems    QuoteItem[]
   responsible   User?         @relation("ServiceResponsible", fields: [responsibleId], references: [id])
   appointments  Appointment[] @relation("AppointmentToService")
@@ -188,12 +194,12 @@ model Appointment {
   category           AppointmentCategory @default(SPA)
   seqId              Int                 @unique @default(autoincrement())
   performerId        String?
+  quoteId            String?
   customer           Customer            @relation(fields: [customerId], references: [id])
   performer          User?               @relation("AppointmentPerformer", fields: [performerId], references: [id])
   pet                Pet                 @relation(fields: [petId], references: [id])
-  invoice            Invoice?
-  quoteId            String?
   quote              Quote?              @relation(fields: [quoteId], references: [id])
+  invoice            Invoice?
   statusHistory      StatusHistory[]
   transport          TransportDetails?
   services           Service[]           @relation("AppointmentToService")
@@ -202,6 +208,7 @@ model Appointment {
   @@index([status])
   @@index([startAt])
   @@index([deletedAt])
+  @@index([customerId], map: "idx_appointment_customerid")
 }
 
 model TransportDetails {
@@ -238,17 +245,21 @@ model Quote {
   seqId                  Int              @unique @default(autoincrement())
   scheduledAt            DateTime?
   transportAt            DateTime?
-  pet                    Pet?             @relation(fields: [petId], references: [id])
   invoiceId              String?
-  invoice                Invoice?         @relation(fields: [invoiceId], references: [id])
+  parasiteComments       String?
+  parasiteTypes          String?
+  wantsMedicatedBath     Boolean          @default(false)
   appointments           Appointment[]
   customer               Customer         @relation(fields: [customerId], references: [id])
+  invoice                Invoice?         @relation(fields: [invoiceId], references: [id])
+  pet                    Pet?             @relation(fields: [petId], references: [id])
   items                  QuoteItem[]
   statusHistory          StatusHistory[]
 
   @@index([customerId])
   @@index([status])
   @@index([deletedAt])
+  @@index([customerId], map: "idx_quote_customerid")
 }
 
 model QuoteItem {
@@ -259,12 +270,14 @@ model QuoteItem {
   price       Float    @default(0)
   serviceId   String?
   performerId String?
+  discount    Float    @default(0)
   performer   User?    @relation("ItemPerformer", fields: [performerId], references: [id])
   quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   service     Service? @relation(fields: [serviceId], references: [id])
 
   @@index([quoteId])
   @@index([serviceId])
+  @@index([quoteId], map: "idx_quoteitem_quoteid")
 }
 
 model Invoice {
@@ -279,8 +292,8 @@ model Invoice {
   deletedAt     DateTime?
   appointment   Appointment?    @relation(fields: [appointmentId], references: [id])
   customer      Customer        @relation(fields: [customerId], references: [id])
-  quotes        Quote[]
   payments      PaymentRecord[]
+  quotes        Quote[]
 
   @@index([status])
   @@index([dueDate])
@@ -292,11 +305,12 @@ model PaymentRecord {
   invoiceId String
   amount    Float
   paidAt    DateTime @default(now())
-  createdAt DateTime @default(now())
   method    String?
+  createdAt DateTime @default(now())
   invoice   Invoice  @relation(fields: [invoiceId], references: [id])
 
   @@index([invoiceId])
+  @@index([invoiceId], map: "idx_payment_invoiceid")
 }
 
 model StatusHistory {
@@ -370,6 +384,23 @@ model BugReport {
   @@index([userId])
 }
 
+model TransportSettings {
+  id                  String   @id @default(uuid())
+  handlingTimeLeva    Int      @default(0)
+  handlingTimeTraz    Int      @default(0)
+  updatedAt           DateTime @updatedAt
+  kmPriceLargada      Float    @default(2.0)
+  kmPriceLeva         Float    @default(2.0)
+  kmPriceTraz         Float    @default(2.0)
+  kmPriceRetorno      Float    @default(2.0)
+  minPriceLargada     Float    @default(1.5)
+  minPriceLeva        Float    @default(1.5)
+  minPriceTraz        Float    @default(1.5)
+  minPriceRetorno     Float    @default(1.5)
+  handlingTimeLargada Int      @default(0)
+  handlingTimeRetorno Int      @default(0)
+}
+
 enum AppointmentStatus {
   PENDENTE
   CONFIRMADO
@@ -419,26 +450,24 @@ enum AppointmentCategory {
   LOGISTICA
 }
 
-model TransportSettings {
-  id                 String   @id @default(uuid())
-  
-  // Preço por KM para cada etapa
-  kmPriceLargada     Float    @default(2.0)  // R$ por km - Largada
-  kmPriceLeva        Float    @default(2.0)  // R$ por km - Leva
-  kmPriceTraz        Float    @default(2.0)  // R$ por km - Traz
-  kmPriceRetorno     Float    @default(2.0)  // R$ por km - Retorno
-  
-  // Preço por Minuto para cada etapa
-  minPriceLargada    Float    @default(1.5)  // R$ por minuto - Largada
-  minPriceLeva       Float    @default(1.5)  // R$ por minuto - Leva/Traz
-  minPriceTraz       Float    @default(1.5)  // R$ por minuto - Leva/Traz (mesmo valor)
-  minPriceRetorno    Float    @default(1.5)  // R$ por minuto - Retorno
-  
-  // Tempos de manuseio adicionais (minutos fixos somados ao tempo real)
-  handlingTimeLargada  Int    @default(0)   // Minutos adicionais - Largada
-  handlingTimeLeva     Int    @default(0)   // Minutos adicionais - Leva
-  handlingTimeTraz     Int    @default(0)   // Minutos adicionais - Traz
-  handlingTimeRetorno  Int    @default(0)   // Minutos adicionais - Retorno
-  
-  updatedAt          DateTime @updatedAt
+model Metric {
+  id        String   @id @default(uuid())
+  type      String // request, security, database, system
+  data      Json
+  timestamp DateTime @default(now())
+
+  @@index([type, timestamp])
+  @@index([timestamp])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

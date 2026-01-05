@@ -78,7 +78,8 @@ export default function AgendaSPA() {
         try {
             const endpoint = tab === 'trash' ? '/appointments/trash' : '/appointments?category=SPA';
             const response = await api.get(endpoint);
-            const data = tab === 'trash' ? response.data.filter((a: Appointment) => a.category === 'SPA') : response.data;
+            const rawData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+            const data = tab === 'trash' ? rawData.filter((a: Appointment) => a.category === 'SPA') : rawData;
             setAppointments(data);
         } catch (err) {
             console.error('Erro ao buscar agendamentos:', err);

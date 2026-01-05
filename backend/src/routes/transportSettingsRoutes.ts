@@ -6,7 +6,7 @@ import { authenticate, authorize } from '../middlewares/authMiddleware';
 const router = Router();
 
 // Only admin/staff can manage settings
-router.get('/', authenticate, authorize(['ADMIN', 'GERENTE']), transportSettingsController.get);
-router.put('/', authenticate, authorize(['ADMIN', 'GERENTE']), transportSettingsController.update);
+router.get('/', authenticate, authorize(['ADMIN', 'GERENTE', 'GESTAO', 'OPERACIONAL']), transportSettingsController.get);
+router.put('/', authenticate, authorize(['ADMIN', 'GERENTE', 'GESTAO']), transportSettingsController.update);
 
 export default router;

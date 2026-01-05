@@ -46,8 +46,22 @@ api.interceptors.response.use(
                 icon: '📡'
             });
         }
+        // 401 Unauthorized - Token might be expired or JWT_SECRET changed
+        else if (error.response.status === 401) {
+            console.warn('[API Error] 🔑 Unauthorized (401). Clearing token...');
+            localStorage.removeItem('7pet-token');
+            toast.error('Sessão expirada. Por favor, faça login novamente.', { id: 'auth-error' });
+
+            if (!window.location.pathname.includes('/login')) {
+
+                window.location.href = window.location.pathname.startsWith('/client')
+                    ? '/client/login'
+                    : '/staff/login';
+            }
+        }
         // 500 Internal Server Error
         else if (error.response.status >= 500) {
+
             console.error('[API Error] 🔴 Server Error Details:', {
                 status: error.response.status,
                 data: error.response.data,

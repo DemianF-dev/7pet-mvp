@@ -176,6 +176,60 @@ const SPAServicesSection = ({
                             <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${spaDetails.hasParasites ? 'left-7 shadow-lg' : 'left-1'}`} />
                         </button>
                     </div>
+
+                    {spaDetails.hasParasites && (
+                        <div className="p-6 bg-red-50/50 rounded-[32px] border border-red-100 animate-in zoom-in-95 duration-300 space-y-4">
+                            <label className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] block ml-1">Qual tipo de parasita?</label>
+                            <div className="flex flex-wrap gap-3">
+                                {['PULGA', 'CARRAPATO', 'AMBOS'].map(type => (
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => setSpaDetails(prev => ({ ...prev, parasiteTypes: type }))}
+                                        className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${spaDetails.parasiteTypes === type ? 'bg-red-500 text-white shadow-md' : 'bg-white text-gray-400 border border-gray-100 hover:border-red-300'}`}
+                                    >
+                                        {type === 'AMBOS' ? 'Ambos' : type.charAt(0) + type.slice(1).toLowerCase()}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Comentários (opcional)</label>
+                                <textarea
+                                    value={spaDetails.parasiteComments || ''}
+                                    onChange={(e) => setSpaDetails(prev => ({ ...prev, parasiteComments: e.target.value }))}
+                                    placeholder="Ex: Pulgas no pescoço, carrapatos nas patas..."
+                                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all text-sm resize-none"
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="p-4 bg-white rounded-2xl border border-red-200 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <span className="text-secondary font-black text-sm">💊 Banho Medicamentoso Antipulgas?</span>
+                                        <span className="text-[10px] font-bold text-gray-400">Aplicação de antipulgas após o banho</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSpaDetails(prev => ({ ...prev, wantsMedicatedBath: !prev.wantsMedicatedBath }))}
+                                        className={`w-14 h-8 rounded-full transition-all relative ${spaDetails.wantsMedicatedBath ? 'bg-green-500' : 'bg-gray-200'}`}
+                                    >
+                                        <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${spaDetails.wantsMedicatedBath ? 'left-7 shadow-lg' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                {spaDetails.wantsMedicatedBath && (
+                                    <div className="p-3 bg-green-50 rounded-xl border border-green-200">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Custo Estimado:</p>
+                                        <p className="text-lg font-black text-green-600">
+                                            R$ 45,00
+                                            <span className="text-[10px] text-gray-400 ml-2 font-bold">será adicionado ao orçamento</span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-6">

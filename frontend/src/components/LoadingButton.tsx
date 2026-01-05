@@ -42,11 +42,13 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
         <button
             className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
             disabled={isLoading || disabled}
+            aria-busy={isLoading}
+            aria-label={isLoading ? (loadingText?.toString() || 'Carregando...') : undefined}
             {...props}
         >
             {isLoading ? (
                 <>
-                    <Loader2 className="animate-spin" size={18} />
+                    <Loader2 className="animate-spin" size={18} aria-hidden="true" />
                     {loadingText || children}
                 </>
             ) : (

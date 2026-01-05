@@ -9,16 +9,21 @@ export default defineConfig({
         VitePWA({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+            devOptions: {
+                enabled: true, // Habilita PWA em desenvolvimento
+                type: 'module'
+            },
             manifest: {
-                name: '7pet',
-                short_name: '7pet',
-                description: '7Pet - Soluções para Pets',
-                theme_color: '#4B96C3', // Blue from the logo background roughly
+                name: '7Pet - Sistema de Gestão',
+                short_name: '7Pet',
+                description: '7Pet - Sistema Completo para Gestão de Pets',
+                theme_color: '#4B96C3',
                 background_color: '#ffffff',
                 display: 'standalone',
                 scope: '/',
                 start_url: '/',
                 orientation: 'portrait',
+                categories: ['business', 'productivity'],
                 icons: [
                     {
                         src: 'pwa-192x192.png',
@@ -39,19 +44,68 @@ export default defineConfig({
                 ]
             },
             workbox: {
-                // Cache API calls to support offline reading
+                // Background Sync para operações offline
+                skipWaiting: true,
+                clientsClaim: true,
+
+                // Cache strategies otimizadas
                 runtimeCaching: [
+                    // API Calls - Network First com fallback
                     {
                         urlPattern: ({ url }) => url.pathname.startsWith('/api'),
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'api-cache',
                             expiration: {
-                                maxEntries: 100, // Limit cache size
-                                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                                maxEntries: 200,
+                                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 dias
                             },
                             cacheableResponse: {
                                 statuses: [0, 200]
+                            },
+                            networkTimeoutSeconds: 10,
+                            // Background Sync para requisições falhadas
+                            backgroundSync: {
+                                name: 'api-sync-queue',
+                                options: {
+                                    maxRetentionTime: 24 * 60 // 24 horas
+                                }
+                            }
+                        }
+                    },
+                    // Imagens - Cache First
+                    {
+                        urlPattern: /\.(png|jpg|jpeg|svg|gif|webp|avif)$/i,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'images-cache',
+                            expiration: {
+                                maxEntries: 100,
+                                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+                            }
+                        }
+                    },
+                    // Fontes - Cache First
+                    {
+                        urlPattern: /\.(woff|woff2|ttf|eot)$/i,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'fonts-cache',
+                            expiration: {
+                                maxEntries: 20,
+                                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 ano
+                            }
+                        }
+                    },
+                    // Google Fonts
+                    {
+                        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'google-fonts-cache',
+                            expiration: {
+                                maxEntries: 10,
+                                maxAgeSeconds: 60 * 60 * 24 * 365
                             }
                         }
                     }

@@ -86,7 +86,7 @@ const QuoteTableRow = React.memo(({
                             onClick={(e) => { e.stopPropagation(); onViewCustomer(quote.customerId); }}
                             className="font-black text-secondary uppercase tracking-tighter text-lg hover:text-primary transition-colors text-left"
                         >
-                            {quote.customer.name}
+                            {quote.customer?.name || 'Cliente'}
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onViewDetails(quote.id); }}
@@ -97,7 +97,7 @@ const QuoteTableRow = React.memo(({
                     </div>
                     {quote.pet && (
                         <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
-                            Pet: {quote.pet.name}
+                            Pet: {quote.pet.name || 'Desconhecido'}
                         </span>
                     )}
                 </div>
@@ -108,7 +108,7 @@ const QuoteTableRow = React.memo(({
                         <span className="text-[11px] font-black text-secondary uppercase tracking-widest">
                             {quote.desiredAt ? new Date(quote.desiredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Sem data'}
                         </span>
-                        <span className="text-[9px] font-bold text-gray-400">Criado em {new Date(quote.createdAt).toLocaleDateString('pt-BR')}</span>
+                        <span className="text-[9px] font-bold text-gray-400">Criado em {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('pt-BR') : '-'}</span>
                     </div>
                     {quote.type && (
                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-[0.1em] ${quote.type === 'SPA' ? 'bg-blue-100 text-blue-600' : quote.type === 'TRANSPORTE' ? 'bg-orange-100 text-orange-600' : 'bg-purple-100 text-purple-600'}`}>
@@ -135,7 +135,7 @@ const QuoteTableRow = React.memo(({
                 )}
             </td>
             <td className="px-8 py-6 text-right font-black text-secondary text-lg">
-                R$ {quote.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {(quote.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </td>
             <td className="px-8 py-6 text-right">
                 <div className="flex justify-end gap-2">

@@ -3,6 +3,7 @@ import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle,
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import PastDateConfirmModal from '../PastDateConfirmModal';
 
 interface ModalProps {
     isOpen: boolean;
@@ -59,6 +60,10 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
 
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // ⚠️ NOVO: Estados para validação de data passada
+    const [showPastDateModal, setShowPastDateModal] = useState(false);
+    const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
 
     // 1. Fetch Basic Data on Mount/Open
     useEffect(() => {
@@ -293,9 +298,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 usersPromise
             ]);
 
-            setCustomers(custRes.data);
-            setServices(servRes.data);
-            setStaffUsers(usersRes.data.filter((u: any) => ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role)));
+            setCustomers(Array.isArray(custRes.data) ? custRes.data : (custRes.data.data || []));
+            setServices(Array.isArray(servRes.data) ? servRes.data : (servRes.data.data || []));
+            setStaffUsers(Array.isArray(usersRes.data) ? usersRes.data.filter((u: any) => ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role)) : []);
         } catch (error) {
             console.error('Erro ao buscar dados iniciais:', error);
         } finally {
@@ -310,6 +315,32 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
         // Effect #4 will handle pets, but setting immediately is also fine for responsiveness
         setPets(customer.pets || []);
         setSearchQuery('');
+    };
+
+    // ⚠️ NOVO: Handler para confirmar agendamento no passado
+    const handleConfirmPastDate = async () => {
+        setShowPastDateModal(false);
+        if (!pendingSubmitData) return;
+
+        setIsLoading(true);
+        try {
+            // Reenviar cada agendamento com flag de override
+            for (const appointmentData of pendingSubmitData) {
+                const dataWithOverride = {
+                    ...appointmentData,
+                    overridePastDateCheck: true // Flag que permite agendamento no passado
+                };
+                await api.post('/appointments', dataWithOverride);
+            }
+            onSuccess();
+            setShowSuccessState(true);
+            setPendingSubmitData(null);
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Erro ao processar agendamento');
+            setPendingSubmitData(null);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -413,6 +444,52 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
             onSuccess();
             setShowSuccessState(true);
         } catch (error: any) {
+            // ⚠️ TRATAMENTO ESPECIAL: Data no passado
+            if (error.response?.data?.code === 'PAST_DATE_WARNING') {
+                // Salvar dados para reenvio após confirmação
+                const appointmentsToCreate = [];
+
+                if (formData.agendaSPA) {
+                    const spaServiceIds = formData.serviceIds.filter(id => {
+                        const s = services.find(serv => serv.id === id);
+                        return !s?.category || s.category.toUpperCase() !== 'LOGISTICA';
+                    });
+
+                    appointmentsToCreate.push({
+                        customerId: formData.customerId,
+                        petId: formData.petId,
+                        serviceIds: spaServiceIds,
+                        performerId: formData.performerId,
+                        startAt: formData.startAt,
+                        category: 'SPA',
+                        quoteId: preFill?.quoteId
+                    });
+                }
+
+                if (formData.agendaLogistica) {
+                    const logServiceIds = formData.serviceIds.filter(id => {
+                        const s = services.find(serv => serv.id === id);
+                        return s?.category && s.category.toUpperCase() === 'LOGISTICA';
+                    });
+
+                    appointmentsToCreate.push({
+                        customerId: formData.customerId,
+                        petId: formData.petId,
+                        serviceIds: logServiceIds,
+                        performerId: formData.logisticPerformerId || formData.performerId,
+                        startAt: formData.logisticStartAt || formData.startAt,
+                        category: 'LOGISTICA',
+                        transport: formData.transport,
+                        quoteId: preFill?.quoteId
+                    });
+                }
+
+                setPendingSubmitData(appointmentsToCreate);
+                setShowPastDateModal(true);
+                setIsLoading(false);
+                return; // Não mostra erro ainda, aguarda confirmação
+            }
+
             alert(error.response?.data?.error || 'Erro ao processar agendamento');
         } finally {
             setIsLoading(false);
@@ -867,6 +944,21 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     </form>
                 )}
             </motion.div>
-        </div >
+
+            {/* ⚠️ NOVO: Modal de Confirmação de Data Passada */}
+            <PastDateConfirmModal
+                isOpen={showPastDateModal}
+                appointmentDate={
+                    pendingSubmitData && pendingSubmitData[0]?.startAt
+                        ? new Date(pendingSubmitData[0].startAt).toISOString()
+                        : new Date().toISOString()
+                }
+                onConfirm={handleConfirmPastDate}
+                onCancel={() => {
+                    setShowPastDateModal(false);
+                    setPendingSubmitData(null);
+                }}
+            />
+        </div>
     );
 }

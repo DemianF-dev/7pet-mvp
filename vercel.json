@@ -6,6 +6,12 @@
             "maxDuration": 10
         }
     },
+    "crons": [
+        {
+            "path": "/api/cron/notifications",
+            "schedule": "* * * * *"
+        }
+    ],
     "rewrites": [
         {
             "source": "/api/(.*)",

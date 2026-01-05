@@ -15,6 +15,7 @@ const BackButton: React.FC<BackButtonProps> = ({ path, label = 'Voltar', classNa
         <button
             onClick={() => path ? navigate(path) : navigate(-1)}
             className={`flex items-center gap-2 px-4 py-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all font-medium group ${className}`}
+            aria-label={`${label} para página anterior`}
         >
             <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             {label}

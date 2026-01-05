@@ -83,9 +83,9 @@ export const mapsService = {
                     destinations: [originAddress],
                     key: process.env.GOOGLE_MAPS_API_KEY,
                     language: 'pt-BR',
-                    mode: 'DRIVING',
-                    departure_time: 'now',
-                    traffic_model: 'pessimistic'
+                    mode: 'driving' as any,
+                    departure_time: 'now' as any,
+                    traffic_model: 'pessimistic' as any
                 }
             });
 
@@ -109,9 +109,9 @@ export const mapsService = {
                         destinations: [destAddr],
                         key: process.env.GOOGLE_MAPS_API_KEY,
                         language: 'pt-BR',
-                        mode: 'DRIVING',
-                        departure_time: 'now',
-                        traffic_model: 'pessimistic'
+                        mode: 'driving' as any,
+                        departure_time: 'now' as any,
+                        traffic_model: 'pessimistic' as any
                     }
                 });
 
