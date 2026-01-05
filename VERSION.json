@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0151",
+  "version": "BETA20260105-0211",
   "stage": "BETA",
-  "timestamp": "2026-01-05T01:51:36.000Z",
-  "commit": "bd23e5e",
-  "buildNumber": 8,
-  "releaseNotes": "Auto-generated from commit: fix: configure Vercel to properly build and serve frontend"
+  "timestamp": "2026-01-05T02:11:14.000Z",
+  "commit": "fd857aa",
+  "buildNumber": 9,
+  "releaseNotes": "Auto-generated from commit: chore: update backend tsconfig to suppress build errors on Vercel"
 }
