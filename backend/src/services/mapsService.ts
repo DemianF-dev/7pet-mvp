@@ -1,4 +1,4 @@
-import { Client } from "@googlemaps/google-maps-services-js";
+import { Client, TravelMode, TrafficModel } from "@googlemaps/google-maps-services-js";
 // Trigger reload for env var update
 import dotenv from 'dotenv';
 import prisma from '../lib/prisma';
@@ -83,9 +83,9 @@ export const mapsService = {
                     destinations: [originAddress],
                     key: process.env.GOOGLE_MAPS_API_KEY,
                     language: 'pt-BR',
-                    mode: 'driving' as any,
+                    mode: TravelMode.driving,
                     departure_time: 'now' as any,
-                    traffic_model: 'pessimistic' as any
+                    traffic_model: TrafficModel.pessimistic
                 }
             });
 
@@ -109,9 +109,9 @@ export const mapsService = {
                         destinations: [destAddr],
                         key: process.env.GOOGLE_MAPS_API_KEY,
                         language: 'pt-BR',
-                        mode: 'driving' as any,
+                        mode: TravelMode.driving,
                         departure_time: 'now' as any,
-                        traffic_model: 'pessimistic' as any
+                        traffic_model: TrafficModel.pessimistic
                     }
                 });
 
