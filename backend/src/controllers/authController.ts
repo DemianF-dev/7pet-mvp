@@ -42,6 +42,7 @@ const updateMeSchema = z.object({
 const loginSchema = z.object({
     email: z.string().email(),
     password: z.string(),
+    rememberMe: z.boolean().optional().default(false),
 });
 
 export const register = async (req: Request, res: Response) => {
@@ -61,13 +62,26 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const { email, password } = loginSchema.parse(req.body);
-        const result = await authService.login(email, password);
+        const { email, password, rememberMe } = loginSchema.parse(req.body);
+        const result = await authService.login(email, password, rememberMe);
         res.json(result);
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Dados inválidos', details: error.issues });
         }
+        res.status(401).json({ error: error.message });
+    }
+};
+
+export const googleLogin = async (req: Request, res: Response) => {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({ error: 'Token do Google é obrigatório' });
+        }
+        const result = await authService.loginWithGoogle(idToken);
+        res.json(result);
+    } catch (error: any) {
         res.status(401).json({ error: error.message });
     }
 };

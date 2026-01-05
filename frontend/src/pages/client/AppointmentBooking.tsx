@@ -168,8 +168,9 @@ export default function AppointmentBooking() {
                                 {services.map((service) => {
                                     const isSelected = selectedServices.some(s => s.id === service.id);
                                     return (
-                                        <div
+                                        <button
                                             key={service.id}
+                                            type="button"
                                             onClick={() => {
                                                 if (isSelected) {
                                                     setSelectedServices(selectedServices.filter(s => s.id !== service.id));
@@ -179,7 +180,7 @@ export default function AppointmentBooking() {
                                                     setSelectedServices([...others, service]);
                                                 }
                                             }}
-                                            className={`p-6 rounded-[24px] cursor-pointer transition-all border-2 ${isSelected ? 'border-primary bg-primary-light/30 ring-4 ring-primary/5' : 'border-white bg-white hover:border-gray-100 shadow-sm'}`}
+                                            className={`p-6 rounded-[24px] cursor-pointer transition-all border-2 text-left w-full ${isSelected ? 'border-primary bg-primary-light/30 ring-4 ring-primary/5' : 'border-white bg-white hover:border-gray-100 shadow-sm'}`}
                                         >
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="text-lg font-extrabold text-secondary">{service.name}</h3>
@@ -195,7 +196,7 @@ export default function AppointmentBooking() {
                                                     {service.category}
                                                 </div>
                                             </div>
-                                        </div>
+                                        </button>
                                     );
                                 })}
                             </div>
@@ -228,10 +229,11 @@ export default function AppointmentBooking() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {pets.map((pet) => (
-                                    <div
+                                    <button
                                         key={pet.id}
+                                        type="button"
                                         onClick={() => setSelectedPet(pet)}
-                                        className={`p-6 rounded-[24px] cursor-pointer transition-all border-2 flex items-center gap-4 ${selectedPet?.id === pet.id ? 'border-primary bg-primary-light/30 ring-4 ring-primary/5' : 'border-white bg-white hover:border-gray-100 shadow-sm'}`}
+                                        className={`p-6 rounded-[24px] cursor-pointer transition-all border-2 flex items-center gap-4 text-left w-full ${selectedPet?.id === pet.id ? 'border-primary bg-primary-light/30 ring-4 ring-primary/5' : 'border-white bg-white hover:border-gray-100 shadow-sm'}`}
                                     >
                                         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
                                             <Dog size={24} />
@@ -241,7 +243,7 @@ export default function AppointmentBooking() {
                                             <p className="text-sm text-gray-400">{pet.species}</p>
                                         </div>
                                         {selectedPet?.id === pet.id && <CheckCircle2 className="text-primary" size={24} />}
-                                    </div>
+                                    </button>
                                 ))}
                                 {pets.length === 0 && (
                                     <div className="col-span-2 p-10 bg-white rounded-3xl text-center border-2 border-dashed border-gray-100">

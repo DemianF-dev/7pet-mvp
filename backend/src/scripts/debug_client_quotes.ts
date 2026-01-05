@@ -41,7 +41,7 @@ async function main() {
         });
 
         if (response.ok) {
-            const result = await response.json();
+            const result = await response.json() as any;
             const quotesArray = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
             console.log(`API returned ${quotesArray.length} quotes.`);
             console.log(JSON.stringify(result, null, 2));

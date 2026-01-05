@@ -9,12 +9,31 @@ import {
     BarChart2,
     Activity,
     RefreshCw,
-    Clock
+    Clock,
+    Calendar,
+    CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    BarChart,
+    Bar
+} from 'recharts';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import Skeleton from '../../components/Skeleton';
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -43,6 +62,7 @@ interface ManagementKPIs {
         current: number;
         previous: number;
         growth: number;
+        trend: { date: string; amount: number }[];
     };
     appointments: {
         distribution: { status: string; _count: number }[];
@@ -82,12 +102,45 @@ export default function ManagementDashboard() {
         fetchKPIs();
     }, []);
 
+    const chartData = kpis?.revenue.trend.map(item => ({
+        ...item,
+        formattedDate: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    })) || [];
+
+    const pieData = kpis?.appointments.distribution.map(item => ({
+        name: item.status,
+        value: item._count
+    })) || [];
+
+    const barData = kpis?.services.slice(0, 5) || [];
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex">
                 <StaffSidebar />
-                <main className="flex-1 md:ml-64 p-10 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <main className="flex-1 md:ml-64 p-6 md:p-10">
+                    <header className="mb-10">
+                        <Skeleton variant="text" className="w-64 h-10 mb-4" />
+                        <Skeleton variant="text" className="w-96 h-4" />
+                    </header>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 h-48 flex flex-col justify-center gap-4">
+                                <Skeleton variant="rounded" className="w-12 h-12" />
+                                <Skeleton variant="text" className="w-24 h-4" />
+                                <Skeleton variant="text" className="w-32 h-8" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 h-[400px]">
+                            <Skeleton variant="rounded" className="w-full h-full" />
+                        </div>
+                        <div className="space-y-6">
+                            <Skeleton variant="rounded" className="h-[300px]" />
+                            <Skeleton variant="rounded" className="h-[200px]" />
+                        </div>
+                    </div>
                 </main>
             </div>
         );
@@ -172,44 +225,151 @@ export default function ManagementDashboard() {
                     </motion.div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Status Distribution */}
+                        {/* Revenue Trend Chart */}
                         <div className="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                            <h2 className="text-xl font-bold text-secondary mb-8 flex items-center gap-2">
-                                <Activity className="text-primary" size={20} />
-                                Status dos Atendimentos (Últimos 30 dias)
-                            </h2>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {kpis?.appointments.distribution.map((s, idx) => (
-                                    <div key={idx} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center text-center">
-                                        <span className="text-2xl font-black text-secondary mb-1">{s._count}</span>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{s.status}</span>
-                                    </div>
-                                ))}
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-xl font-bold text-secondary flex items-center gap-2">
+                                    <BarChart2 className="text-primary" size={20} />
+                                    Tendência de Receita (30 dias)
+                                </h2>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                    Total: R$ {kpis?.revenue.current.toLocaleString('pt-BR')}
+                                </span>
                             </div>
 
-                            <div className="mt-10">
-                                <h3 className="text-sm font-bold text-secondary mb-6 uppercase tracking-widest">Serviços Mais Procurados</h3>
-                                <div className="space-y-4">
-                                    {kpis?.services.map((s, idx) => (
-                                        <div key={idx} className="group">
-                                            <div className="flex justify-between text-xs font-bold mb-2">
-                                                <span className="text-secondary">{s.name}</span>
-                                                <span className="text-primary">{s.count} atendimentos</span>
-                                            </div>
-                                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${(s.count / (Math.max(...kpis.services.map(i => i.count)) || 1)) * 100}%` }}
-                                                    className="h-full bg-primary group-hover:bg-primary-dark transition-colors"
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                                        <XAxis
+                                            dataKey="formattedDate"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 10, fill: '#9CA3AF', fontWeight: 'bold' }}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 10, fill: '#9CA3AF', fontWeight: 'bold' }}
+                                            tickFormatter={(value) => `R$ ${value}`}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#FFF',
+                                                borderRadius: '16px',
+                                                border: 'none',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}
+                                            formatter={(value) => [`R$ ${value}`, 'Receita']}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="amount"
+                                            stroke="#3B82F6"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorAmount)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
 
-                        {/* Alerts & Insights */}
+                        {/* Status Distribution Pie Chart */}
+                        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                            <h2 className="text-xl font-bold text-secondary mb-8 flex items-center gap-2">
+                                <Activity className="text-primary" size={20} />
+                                Status dos Atendimentos
+                            </h2>
+                            <div className="h-[250px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#FFF',
+                                                borderRadius: '16px',
+                                                border: 'none',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                                {pieData.map((item, index) => (
+                                    <div key={index} className="flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                            <span className="text-gray-500 font-bold uppercase tracking-widest">{item.name}</span>
+                                        </div>
+                                        <span className="font-black text-secondary">{item.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Services Bar Chart */}
+                        <div className="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                            <h2 className="text-xl font-bold text-secondary mb-8 flex items-center gap-2">
+                                <CheckCircle2 className="text-primary" size={20} />
+                                Serviços Mais Populares
+                            </h2>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={barData} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F3F4F6" />
+                                        <XAxis type="number" hide />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            width={150}
+                                            tick={{ fontSize: 11, fill: '#4B5563', fontWeight: 'bold' }}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: '#F9FAFB' }}
+                                            contentStyle={{
+                                                backgroundColor: '#FFF',
+                                                borderRadius: '16px',
+                                                border: 'none',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}
+                                        />
+                                        <Bar dataKey="count" fill="#3B82F6" radius={[0, 10, 10, 0]} barSize={20} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Top Customers & Alerts */}
                         <div className="space-y-6">
                             <div className="bg-secondary p-8 rounded-[40px] text-white shadow-xl flex flex-col justify-between h-[300px]">
                                 <div>
@@ -219,7 +379,7 @@ export default function ManagementDashboard() {
                                     <h3 className="text-2xl font-black mb-2">Insight do Mês</h3>
                                     <p className="text-gray-400 text-sm leading-relaxed">
                                         Seu faturamento cresceu <span className="text-primary font-bold">{kpis?.revenue.growth?.toFixed(1) || '0.0'}%</span> em relação ao mês anterior.
-                                        O serviço de Banho & Tosa continua sendo o seu maior motor de crescimento.
+                                        Continue focando em serviços de alto valor agregado para aumentar seu Ticket Médio.
                                     </p>
                                 </div>
                                 <button className="mt-6 flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all text-sm uppercase tracking-widest">
@@ -230,37 +390,18 @@ export default function ManagementDashboard() {
                             <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
                                 <h2 className="text-lg font-black text-secondary mb-6 flex items-center gap-2 uppercase tracking-tight">
                                     <Users className="text-primary" size={20} />
-                                    Top 5 Clientes (Faturamento)
+                                    Top 5 Clientes
                                 </h2>
                                 <div className="space-y-4">
                                     {kpis?.topCustomers.map((c, idx) => (
                                         <div key={idx} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-gray-100">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-secondary">{c.name}</span>
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Acumulado</span>
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Total Gasto</span>
                                             </div>
                                             <span className="text-sm font-black text-primary">R$ {c.totalSpent.toLocaleString('pt-BR')}</span>
                                         </div>
                                     ))}
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h2 className="text-lg font-black text-secondary mb-6 flex items-center gap-2 uppercase tracking-tight">
-                                    <AlertCircle className="text-red-500" size={20} />
-                                    Alertas Críticos
-                                </h2>
-                                <div className="space-y-4">
-                                    <AlertItem
-                                        label="Clientes Bloqueados"
-                                        count={kpis?.alerts.blockedCustomers || 0}
-                                        urgent={kpis?.alerts.blockedCustomers ? kpis.alerts.blockedCustomers > 5 : false}
-                                    />
-                                    <AlertItem
-                                        label="Orçamentos de Alto Valor"
-                                        count={kpis?.alerts.highValueQuotes || 0}
-                                        urgent={kpis?.alerts.highValueQuotes ? kpis.alerts.highValueQuotes > 2 : false}
-                                    />
                                 </div>
                             </div>
                         </div>

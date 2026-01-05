@@ -140,18 +140,19 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                <motion.div
+                <section
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
                     className="flex-1 hidden md:block"
+                    aria-label="Imagem de um Golden Retriever feliz"
                 >
                     <img
                         src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=1000"
-                        alt="Happy Golden Retriever"
+                        alt="Golden Retriever feliz representando o cuidado da 7Pet"
                         className="rounded-[40px] shadow-2xl border-8 border-white"
                     />
-                </motion.div>
+                </section>
             </motion.div>
 
             <footer className="relative z-10 mt-12 text-gray-400 text-sm">

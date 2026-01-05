@@ -8,6 +8,7 @@ import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useQuotes, useUpdateQuoteStatus } from '../../hooks/useQuotes';
 import toast from 'react-hot-toast';
+import Skeleton from '../../components/Skeleton';
 
 interface Quote {
     id: string;
@@ -94,18 +95,40 @@ export default function QuoteList() {
                 )}
 
                 {isLoading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <div className="grid grid-cols-1 gap-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 flex flex-col md:flex-row md:items-center gap-6">
+                                <div className="flex items-center gap-4 flex-1">
+                                    <Skeleton variant="rounded" className="w-14 h-14" />
+                                    <div className="space-y-2">
+                                        <Skeleton variant="text" className="w-40 h-6" />
+                                        <Skeleton variant="text" className="w-60 h-4" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-8 flex-1 justify-center">
+                                    <div className="space-y-2 text-center">
+                                        <Skeleton variant="text" className="w-16 h-3 mx-auto" />
+                                        <Skeleton variant="rounded" className="w-24 h-6 mx-auto" />
+                                    </div>
+                                    <div className="space-y-2 text-center">
+                                        <Skeleton variant="text" className="w-20 h-3 mx-auto" />
+                                        <Skeleton variant="text" className="w-24 h-8 mx-auto" />
+                                    </div>
+                                </div>
+                                <Skeleton variant="rounded" className="w-12 h-12" />
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-6">
 
                         {(Array.isArray(quotes) ? quotes : []).map((quote) => (
-                            <motion.div
+                            <motion.button
                                 key={quote.id}
                                 layoutId={quote.id}
+                                type="button"
                                 onClick={() => setSelectedQuote(quote)}
-                                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 flex flex-col md:flex-row md:items-center gap-6 group hover:border-primary/40 hover:shadow-md transition-all mb-4 cursor-pointer"
+                                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 flex flex-col md:flex-row md:items-center gap-6 group hover:border-primary/40 hover:shadow-md transition-all mb-4 cursor-pointer w-full text-left"
                             >
                                 <div className="flex items-center gap-4 flex-1">
                                     <div className="w-14 h-14 bg-primary-light rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -138,14 +161,13 @@ export default function QuoteList() {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setSelectedQuote(quote); }}
-                                        className="p-3 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary-light rounded-2xl transition-all"
+                                    <div
+                                        className="p-3 bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary-light rounded-2xl transition-all"
                                     >
                                         <Eye size={20} />
-                                    </button>
+                                    </div>
                                 </div>
-                            </motion.div>
+                            </motion.button>
                         ))}
 
                         {(Array.isArray(quotes) ? quotes : []).length === 0 && (

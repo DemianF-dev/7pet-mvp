@@ -3,9 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --primary: #00A852;    /* Updated for WCAG AA compliance (3.5:1 contrast ratio) */
-  --primary-light: #00D664;  /* Original emerald green */
-  --primary-dark: #008040;   /* High contrast variant (4.8:1 ratio) */
+  --primary: #00A852;
+  /* Updated for WCAG AA compliance (3.5:1 contrast ratio) */
+  --primary-light: #00D664;
+  /* Original emerald green */
+  --primary-dark: #008040;
+  /* High contrast variant (4.8:1 ratio) */
   --secondary: #111827;
 }
 
@@ -55,6 +58,12 @@ body {
 
 .bg-gradient-primary {
   background: linear-gradient(135deg, #00D664 0%, #00b353 100%);
+}
+
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-4 ring-primary/40 border-primary transition-all;
+  }
 }
 
 .text-gradient-primary {

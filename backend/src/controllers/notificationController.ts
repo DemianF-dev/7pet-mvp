@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import prisma from '../lib/prisma';
 import webPush from 'web-push';
 
 // Configurar VAPID (será populado quando você adicionar as keys ao .env)
@@ -183,8 +183,7 @@ export const listSubscriptions = async (req: Request, res: Response) => {
             select: {
                 id: true,
                 endpoint: true,
-                createdAt: true,
-                updatedAt: true
+                createdAt: true
             },
             orderBy: { createdAt: 'desc' }
         });

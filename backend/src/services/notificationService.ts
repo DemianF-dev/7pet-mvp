@@ -200,6 +200,51 @@ export const notificationService = {
         );
 
         Logger.info(`✅ Notificação de suporte enviada para ticket ${ticketId}`);
+    },
+
+    /**
+     * 📋 NOTIFICATION 6: New Quote Alert (STAFF)
+     * Notifica a equipe de atendimento/comercial sobre um novo pedido de orçamento
+     */
+    async notifyNewQuoteToStaff(quoteId: string) {
+        try {
+            const quote = await prisma.quote.findUnique({
+                where: { id: quoteId },
+                include: {
+                    customer: true,
+                    pet: true
+                }
+            });
+
+            if (!quote) return;
+
+            // Busca todos usuários que precisam saber de um novo orçamento
+            const staff = await prisma.user.findMany({
+                where: {
+                    role: { in: ['COMERCIAL', 'GESTAO', 'ADMIN', 'MASTER'] },
+                    deletedAt: null
+                }
+            });
+
+            const clientName = quote.customer.name;
+            const petName = quote.pet?.name || 'Pet';
+            const title = `🆕 Novo Orçamento Recebido!`;
+            const message = `${clientName} solicitou um orçamento para ${petName} (OR-${String(quote.seqId).padStart(4, '0')}).`;
+
+            const promises = staff.map(user =>
+                messagingService.notifyUser(
+                    user.id,
+                    title,
+                    message,
+                    'NEW_QUOTE_STAFF_ALERT'
+                )
+            );
+
+            await Promise.all(promises);
+            Logger.info(`✅ Alerta de novo orçamento enviado para ${staff.length} colaboradores`);
+        } catch (error) {
+            Logger.error('❌ Erro ao notificar staff sobre novo orçamento:', error);
+        }
     }
 };
 

@@ -1,6 +1,6 @@
 {
     "name": "7pet-backend",
-    "version": "1.0.0",
+    "version": "0.1.0-beta",
     "description": "Backend for 7Pet MVP",
     "main": "src/index.ts",
     "scripts": {
@@ -9,13 +9,14 @@
         "start": "node dist/index.js",
         "seed": "ts-node prisma/seed.ts",
         "vercel-build": "prisma generate && echo 'Skipping TypeScript compilation - Vercel will use source files directly'",
-        "test": "jest",
+        "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "rls:apply": "npx tsx scripts/configure_all_rls.ts",
         "security:check": "npm audit",
         "security:fix": "npm audit fix",
         "security:fix:force": "npm audit fix --force",
-        "security:report": "npm audit --json > security-audit-report.json"
+        "security:report": "npm audit --json > security-audit-report.json",
+        "version:generate": "node ../scripts/generate-version.js"
     },
     "dependencies": {
         "@googlemaps/google-maps-services-js": "^3.4.2",

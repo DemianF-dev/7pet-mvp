@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar';
 import PetForm from '../../components/pets/PetForm';
 import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
+import Skeleton from '../../components/Skeleton';
 
 interface Pet {
     id: string;
@@ -129,9 +130,31 @@ export default function PetList() {
                     />
                 </div>
 
+
                 {isLoading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-50 flex flex-col gap-4">
+                                <div className="flex justify-between items-start mb-2">
+                                    <Skeleton variant="rounded" className="w-16 h-16" />
+                                    <div className="flex gap-2">
+                                        <Skeleton variant="rounded" className="w-8 h-8 opacity-20" />
+                                        <Skeleton variant="rounded" className="w-8 h-8 opacity-20" />
+                                    </div>
+                                </div>
+                                <Skeleton variant="text" className="w-2/3 h-8" />
+                                <Skeleton variant="text" className="w-1/2 h-4" />
+                                <div className="space-y-3 mt-4">
+                                    <Skeleton variant="text" className="w-full h-3" />
+                                    <Skeleton variant="text" className="w-full h-3" />
+                                    <div className="flex gap-2 mt-2">
+                                        <Skeleton variant="rounded" className="w-12 h-4" />
+                                        <Skeleton variant="rounded" className="w-12 h-4" />
+                                    </div>
+                                </div>
+                                <Skeleton variant="rounded" className="mt-6 w-full h-12" />
+                            </div>
+                        ))}
                     </div>
                 ) : filteredPets.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

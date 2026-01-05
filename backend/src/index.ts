@@ -133,8 +133,20 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok' });
+    try {
+        const VERSION = require('../VERSION.json');
+        res.json({
+            status: 'ok',
+            version: VERSION.version,
+            stage: VERSION.stage,
+            timestamp: VERSION.timestamp,
+            buildNumber: VERSION.buildNumber
+        });
+    } catch (error) {
+        res.json({ status: 'ok', version: 'unknown' });
+    }
 });
+
 
 app.use(errorHandler);
 

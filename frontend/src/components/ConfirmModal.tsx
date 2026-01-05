@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, X } from 'lucide-react';
 import { useRef } from 'react';
-import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useModalKeyboard, useModalFocusTrap } from '../hooks/useModalKeyboard';
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -28,6 +28,7 @@ export default function ConfirmModal({
 }: ConfirmModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     useModalKeyboard(isOpen, onClose);
+    useModalFocusTrap(isOpen, modalRef);
 
     return (
         <AnimatePresence>

@@ -113,18 +113,19 @@ export default function ClientDashboard() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {quickActions.map((action, idx) => (
-                            <motion.div
+                            <motion.button
                                 key={idx}
+                                type="button"
                                 id={`tour-${action.title.toLowerCase().replace(/ /g, '-')}`}
                                 whileHover={{ y: -5 }}
                                 onClick={() => navigate(action.link)}
-                                className="glass-card p-6 flex flex-col justify-between hover:border-primary/30 transition-all cursor-pointer group"
+                                className="glass-card p-6 flex flex-col justify-between hover:border-primary/30 transition-all cursor-pointer group w-full text-left"
                             >
-                                <div>
+                                <div className="w-full">
                                     <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                                         {action.icon}
                                     </div>
-                                    <div className="flex justify-between items-start">
+                                    <div className="flex justify-between items-start w-full">
                                         <h3 className="text-xl font-bold text-secondary">{action.title}</h3>
                                         {action.badge && (
                                             <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${action.title === 'Pagamentos' || action.title === 'Meus Pets' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
@@ -134,13 +135,13 @@ export default function ClientDashboard() {
                                     </div>
                                     <p className="text-gray-500 text-sm mt-1">{action.desc}</p>
                                 </div>
-                                <button
+                                <div
                                     className="mt-6 text-sm font-bold text-secondary group-hover:text-primary transition-colors flex items-center gap-2"
                                 >
                                     {action.title === 'Agendar Serviço' ? 'Agendar Agora' : action.title === 'Agendar Transporte' ? 'Solicitar Transporte' : 'Gerenciar'}
                                     <Plus size={16} />
-                                </button>
-                            </motion.div>
+                                </div>
+                            </motion.button>
                         ))}
                     </div>
                 )}

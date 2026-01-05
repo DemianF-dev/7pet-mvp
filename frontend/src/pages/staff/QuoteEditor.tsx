@@ -31,6 +31,13 @@ import { useAuthStore } from '../../store/authStore';
 import { getQuoteStatusColor } from '../../utils/statusColors';
 import { useApproveAndSchedule } from '../../hooks/useQuotes';
 
+// Modular Components
+import QuoteHeader from '../../components/staff/quote-editor/QuoteHeader';
+import QuotePricingVariables from '../../components/staff/quote-editor/QuotePricingVariables';
+import QuoteItemsSection from '../../components/staff/quote-editor/QuoteItemsSection';
+import QuoteTransportCalculator from '../../components/staff/quote-editor/QuoteTransportCalculator';
+import QuoteWorkflowSidebar from '../../components/staff/quote-editor/QuoteWorkflowSidebar';
+
 interface QuoteItem {
     id?: string;
     description: string;
@@ -572,605 +579,96 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
     const content = (
         <>
-            {/* Header Novo - Estrutura Superior */}
-            <header className="mb-10 bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-
-                {!isModal && (
-                    <div className="mb-6">
-                        <Breadcrumbs />
-                    </div>
-                )}
-                <div className="relative z-10 flex flex-col gap-8">
-                    {/* Topo: Cliente, ID e Ações Rápidas */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-gray-50">
-                        <div className="flex items-center gap-4">
-                            {!isModal && <BackButton className="" />}
-                            {isModal && (
-                                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2">
-                                    <ChevronLeft size={24} className="text-secondary" />
-                                </button>
-                            )}
-                            <div>
-                                <div className="flex items-center gap-3">
-                                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                                        OR-{String(quote.seqId || 0).padStart(4, '0')}
-                                    </span>
-                                    {quote.status === 'AGENDADO' && quote.appointments && quote.appointments.length > 0 ? (
-                                        <button
-                                            onClick={async () => {
-                                                if (quote.appointments!.length === 1) {
-                                                    try {
-                                                        const res = await api.get(`/appointments/${quote.appointments![0].id}`);
-                                                        setViewAppointmentData(res.data);
-                                                        setSelectedAppointmentId(quote.appointments![0].id);
-                                                    } catch (err) {
-                                                        console.error('Erro ao buscar agendamento', err);
-                                                        toast.error('Erro ao carregar agendamento');
-                                                    }
-                                                } else {
-                                                    setAppointmentSelectionQuote(quote);
-                                                }
-                                            }}
-                                            className={`px-4 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest hover:ring-2 hover:ring-offset-1 hover:ring-green-500 transition-all cursor-pointer ${getQuoteStatusColor(quote.status)}`}
-                                        >
-                                            {quote.status}
-                                        </button>
-                                    ) : (
-                                        <span className={`px-4 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${getQuoteStatusColor(quote.status)}`}>
-                                            {quote.status}
-                                        </span>
-                                    )}
-                                </div>
-                                <h1 className="text-3xl font-black text-secondary mt-2">
-                                    {quote.customer.name}
-                                </h1>
-                                <button
-                                    onClick={() => setCustomerModalId(quote.customerId)}
-                                    className="text-xs font-bold text-gray-400 hover:text-primary transition-colors flex items-center gap-1 mt-1"
-                                >
-                                    <User size={12} /> Ver ficha completa do cliente
-                                </button>
-                                <button
-                                    onClick={() => setShowAuditLog(true)}
-                                    className="text-xs font-bold text-gray-400 hover:text-purple-600 transition-colors flex items-center gap-1 mt-1"
-                                >
-                                    <History size={12} /> Ver histórico de alterações
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                            {(quote.status !== 'AGENDADO' && quote.status !== 'ENCERRADO' && quote.status !== 'APROVADO') && (
-                                <button
-                                    onClick={handleApproveAndSchedule}
-                                    disabled={approveAndScheduleMutation.isPending}
-                                    className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-widest disabled:opacity-50"
-                                >
-                                    {approveAndScheduleMutation.isPending ? (
-                                        <RefreshCcw size={16} className="animate-spin" />
-                                    ) : (
-                                        <CheckCircle2 size={16} />
-                                    )}
-                                    Aprovar & Agendar
-                                </button>
-                            )}
-                            {quote.status === 'APROVADO' && onSchedule && (
-                                <button
-                                    onClick={() => onSchedule({
-                                        ...quote,
-                                        items,
-                                        notes,
-                                        desiredAt,
-                                        scheduledAt,
-                                        transportAt
-                                    })}
-                                    className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white font-black rounded-2xl shadow-xl shadow-green-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-widest"
-                                >
-                                    <Calendar size={16} /> Agendar Agora
-                                </button>
-                            )}
-                            <button
-                                onClick={() => handleSave()}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 px-6 py-3 bg-white text-secondary font-bold rounded-2xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-50 text-xs uppercase tracking-widest"
-                            >
-                                <Save size={16} /> Salvar Alterações
-                            </button>
-                            <button
-                                onClick={handleSendToClient}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
-                            >
-                                <Send size={16} /> Validar & Enviar
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Grid de Detalhes Variáveis de Custo */}
-                    <div>
-                        <div className="flex items-center gap-2 mb-4 text-secondary font-black text-sm uppercase tracking-widest">
-                            <Calculator size={16} className="text-primary" />
-                            Variáveis de Precificação
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {/* Pet Básico */}
-                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 col-span-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pet</p>
-                                <div className="flex items-center gap-2">
-                                    <Dog size={16} className="text-gray-400" />
-                                    <span className="font-black text-secondary">{quote.pet?.name || 'N/A'}</span>
-                                    <span className="text-xs text-gray-400">({quote.pet?.breed || 'SRD'} - {quote.pet?.age || 'Idade N/A'})</span>
-                                </div>
-                                {quote.pet?.observations && (
-                                    <p className="text-xs text-red-400 mt-2 font-medium bg-red-50 p-2 rounded-lg border border-red-100">
-                                        ⚠️ Obs: {quote.pet.observations}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Pelagem & Nós */}
-                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-primary/20 transition-all">
-                                <div className="absolute top-0 right-0 w-8 h-8 bg-blue-50 rounded-bl-2xl -mr-1 -mt-1 group-hover:bg-blue-100 transition-colors"></div>
-                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Pelagem</p>
-                                <p className="font-bold text-secondary text-sm">{quote.hairLength || quote.pet?.coatType || 'Não inf.'}</p>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                    {quote.hasKnots ? (
-                                        <span className="inline-block px-2 py-0.5 bg-red-100 text-red-600 text-[9px] font-black rounded uppercase">Com Nós</span>
-                                    ) : (
-                                        <span className="inline-block px-2 py-0.5 bg-green-100 text-green-600 text-[9px] font-black rounded uppercase">Sem Nós</span>
-                                    )}
-                                    {quote.knotRegions && <span className="text-[9px] text-gray-400 block w-full truncate" title={quote.knotRegions}>{quote.knotRegions}</span>}
-                                </div>
-                            </div>
-
-                            {/* Peso & Porte */}
-                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm group hover:border-primary/20 transition-all">
-                                <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-2">Peso/Porte</p>
-                                <p className="font-bold text-secondary text-sm">{quote.pet?.weight ? `${quote.pet.weight} kg` : 'N/A'}</p>
-                                <p className="text-[10px] text-gray-400 mt-1">{quote.pet?.weight && quote.pet.weight < 10 ? 'Pequeno' : quote.pet?.weight && quote.pet.weight < 25 ? 'Médio' : 'Grande'}</p>
-                            </div>
-
-                            {/* Transporte */}
-                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm group hover:border-primary/20 transition-all">
-                                <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2">Transporte</p>
-                                {quote.type === 'SPA_TRANSPORTE' || quote.type === 'TRANSPORTE' ? (
-                                    <>
-                                        <p className="font-bold text-secondary text-sm">Leva e Traz</p>
-                                        <p className="text-[10px] text-purple-500 font-black mt-1 uppercase">{quote.transportPeriod || 'Período N/A'}</p>
-                                    </>
-                                ) : (
-                                    <p className="font-bold text-gray-400 text-sm">Próprio Meio</p>
-                                )}
-                            </div>
-
-                            {/* Saúde/Vermes */}
-                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm group hover:border-primary/20 transition-all">
-                                <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Saúde</p>
-                                {quote.hasParasites || (quote.pet?.healthIssues && quote.pet.healthIssues.toLowerCase().includes('pulga')) ? (
-                                    <p className="font-bold text-red-500 text-sm flex items-center gap-1"><AlertCircle size={12} /> Parasitas</p>
-                                ) : (
-                                    <p className="font-bold text-green-500 text-sm flex items-center gap-1"><CheckCircle2 size={12} /> Sem observações</p>
-                                )}
-                                <p className="text-[9px] text-gray-400 mt-1">Vacinas: Verif. Carteira</p>
-                            </div>
-
-                            {/* Temperamento */}
-                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm group hover:border-primary/20 transition-all">
-                                <p className="text-[10px] font-black text-teal-400 uppercase tracking-widest mb-2">Temperamento</p>
-                                <p className="font-bold text-secondary text-sm">{quote.pet?.temperament || 'Não inf.'}</p>
-                            </div>
-
-                            {/* Datas e Horários */}
-                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm col-span-2 md:col-span-3 lg:col-span-5 grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Preferência do Cliente */}
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <AlertCircle size={10} className="text-orange-400" />
-                                        Preferência Cliente
-                                    </p>
-                                    <input
-                                        type="datetime-local"
-                                        value={desiredAt}
-                                        onChange={(e) => setDesiredAt(e.target.value)}
-                                        className="w-full bg-gray-50 border-none rounded-xl text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
-
-                                {/* Sugestão SPA */}
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                        <CalendarDays size={10} />
-                                        Sugestão SPA (Operador)
-                                    </p>
-                                    <input
-                                        type="datetime-local"
-                                        value={scheduledAt}
-                                        onChange={(e) => setScheduledAt(e.target.value)}
-                                        className="w-full bg-primary/5 border-none rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
-
-                                {/* Sugestão Transporte */}
-                                {(quote.type === 'SPA_TRANSPORTE' || quote.type === 'TRANSPORTE') && (
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Calculator size={10} />
-                                            Sugestão Transp. (Operador)
-                                        </p>
-                                        <input
-                                            type="datetime-local"
-                                            value={transportAt}
-                                            onChange={(e) => setTransportAt(e.target.value)}
-                                            className="w-full bg-purple-50 border-none rounded-xl text-xs font-bold text-purple-700 focus:ring-2 focus:ring-purple-200"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <QuoteHeader
+                isModal={isModal}
+                quoteId={id || ''}
+                seqId={quote.seqId}
+                status={status}
+                customerName={quote.customer.name}
+                customerId={quote.customerId}
+                onClose={onClose}
+                onViewAppointment={async () => {
+                    if (quote.appointments && quote.appointments.length > 0) {
+                        if (quote.appointments.length === 1) {
+                            try {
+                                const res = await api.get(`/appointments/${quote.appointments[0].id}`);
+                                setViewAppointmentData(res.data);
+                                setSelectedAppointmentId(quote.appointments[0].id);
+                            } catch (err) {
+                                console.error('Erro ao buscar agendamento', err);
+                                toast.error('Erro ao carregar agendamento');
+                            }
+                        } else {
+                            setAppointmentSelectionQuote(quote);
+                        }
+                    }
+                }}
+                onOpenCustomer={(customerId) => setCustomerModalId(customerId)}
+                onShowAuditLog={() => setShowAuditLog(true)}
+                onApproveAndSchedule={handleApproveAndSchedule}
+                isApprovePending={approveAndScheduleMutation.isPending}
+                onSchedule={onSchedule ? () => onSchedule({
+                    ...quote,
+                    items,
+                    notes,
+                    desiredAt,
+                    scheduledAt,
+                    transportAt
+                }) : undefined}
+                onSave={handleSave}
+                onSendToClient={handleSendToClient}
+                isSaving={isSaving}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     <section className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xl font-black text-secondary">Itens e Serviços</h3>
-                            <button
-                                onClick={handleAddItem}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-bold rounded-xl hover:bg-primary/20 transition-all text-sm"
-                            >
-                                <Plus size={16} /> Adicionar Item
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {items.map((item, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100 relative group"
-                                >
-                                    <div className="md:col-span-3 relative service-dropdown-container">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Descrição / Serviço</label>
-                                        <input
-                                            type="text"
-                                            value={serviceSearch[index] !== undefined ? serviceSearch[index] : item.description}
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                console.log('[AUTOCOMPLETE] Input onChange:', value);
-                                                setServiceSearch({ ...serviceSearch, [index]: value });
-                                                handleItemChange(index, 'description', value);
-                                                const shouldShow = value.length > 0;
-                                                console.log('[AUTOCOMPLETE] Definindo dropdown visível:', shouldShow);
-                                                setShowServiceDropdown({ ...showServiceDropdown, [index]: shouldShow });
-                                            }}
-                                            onFocus={() => {
-                                                const currentValue = serviceSearch[index] !== undefined ? serviceSearch[index] : item.description;
-                                                if (currentValue && currentValue.length > 0) {
-                                                    setShowServiceDropdown({ ...showServiceDropdown, [index]: true });
-                                                }
-                                            }}
-                                            className="w-full bg-white border-transparent rounded-2xl px-4 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                                            placeholder="Buscar serviço..."
-                                        />
-
-                                        {/* Dropdown de Serviços */}
-                                        {showServiceDropdown[index] && (
-                                            <div className="absolute z-[9999] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                                                {getFilteredServices(serviceSearch[index] || item.description).length > 0 ? (
-                                                    getFilteredServices(serviceSearch[index] || item.description).map(service => (
-                                                        <button
-                                                            key={service.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                handleItemChange(index, 'description', service.name);
-                                                                handleItemChange(index, 'price', service.basePrice);
-                                                                handleItemChange(index, 'serviceId', service.id);
-                                                                handleItemChange(index, 'performerId', service.responsibleId || '');
-                                                                setServiceSearch({ ...serviceSearch, [index]: service.name });
-                                                                setShowServiceDropdown({ ...showServiceDropdown, [index]: false });
-                                                            }}
-                                                            className="w-full text-left px-4 py-3 hover:bg-primary/5 transition-colors border-b border-gray-50 last:border-0 flex justify-between items-center group"
-                                                        >
-                                                            <div className="flex-1">
-                                                                <p className="font-bold text-sm text-secondary group-hover:text-primary transition-colors">{service.name}</p>
-                                                                <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-2">
-                                                                    <span className="inline-block px-2 py-0.5 bg-gray-100 rounded-md">{service.species}</span>
-                                                                    {service.category && <span className="text-primary/60">{service.category}</span>}
-                                                                </p>
-                                                            </div>
-                                                            <span className="text-sm font-black text-primary ml-4 whitespace-nowrap">
-                                                                R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                            </span>
-                                                        </button>
-                                                    ))
-                                                ) : (
-                                                    <div className="p-4 text-center">
-                                                        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Nenhum serviço encontrado</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Profissional</label>
-                                        <select
-                                            value={item.performerId || ''}
-                                            onChange={(e) => handleItemChange(index, 'performerId', e.target.value)}
-                                            className="w-full bg-white border-transparent rounded-2xl px-3 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
-                                        >
-                                            <option value="">Nenhum</option>
-                                            {(staffUsers || []).map(u => u && (
-                                                <option key={u.id} value={u.id}>{u.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="md:col-span-1 text-center">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Qtd</label>
-                                        <input
-                                            type="number"
-                                            value={item.quantity}
-                                            onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
-                                            className="w-full bg-white border-transparent rounded-2xl px-2 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all text-center"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Preço Unit.</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">R$</span>
-                                            <input
-                                                type="number"
-                                                value={item.price}
-                                                step="0.01"
-                                                onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value))}
-                                                className="w-full bg-white border-transparent rounded-2xl pl-8 pr-2 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="md:col-span-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Desc (%)</label>
-                                        <input
-                                            type="number"
-                                            value={item.discount || 0}
-                                            min="0"
-                                            max="100"
-                                            onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value))}
-                                            className="w-full bg-white border-transparent rounded-2xl px-2 py-1.5 text-xs font-bold shadow-sm focus:ring-2 focus:ring-primary/20 transition-all text-center"
-                                            placeholder="0%"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2 text-right">Subtotal</label>
-                                        <div className="px-3 py-1.5 text-xs font-black text-secondary bg-gray-100/50 rounded-2xl h-[34px] flex items-center justify-end">
-                                            R$ {((item.price * item.quantity) * (1 - (item.discount || 0) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </div>
-                                    </div>
-                                    <div className="md:col-span-1 flex items-end justify-center pb-1">
-                                        <button
-                                            onClick={() => handleRemoveItem(index)}
-                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            ))}
-
-                            {items.length === 0 && (
-                                <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-[32px] text-gray-400 italic">
-                                    Nenhum item adicionado.
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Transport Calculation Section */}
-                        {(quote?.type === 'SPA_TRANSPORTE' || quote?.type === 'TRANSPORTE') && (
-                            <div className="mt-10 pt-8 border-t border-gray-100">
-                                <h3 className="text-lg font-black text-secondary mb-4 flex items-center gap-2">
-                                    <div className="p-2 bg-purple-100 rounded-xl text-purple-600">
-                                        <Calculator size={20} />
-                                    </div>
-                                    Cálculo de Transporte (Leva e Traz)
-                                </h3>
-
-                                <div className="bg-purple-50 p-6 rounded-[32px] border border-purple-100">
-
-                                    {/* Transport Type Selector */}
-                                    <div className="flex flex-wrap gap-4 mb-6">
-                                        <button
-                                            onClick={() => setTransportType('ROUND_TRIP')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 ${transportType === 'ROUND_TRIP' ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white text-gray-500 border-transparent hover:bg-purple-50 hover:text-purple-600'}`}
-                                        >
-                                            Leva e Traz (Completo)
-                                        </button>
-                                        <button
-                                            onClick={() => setTransportType('PICK_UP')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 ${transportType === 'PICK_UP' ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white text-gray-500 border-transparent hover:bg-purple-50 hover:text-purple-600'}`}
-                                        >
-                                            Apenas Busca (Ida)
-                                        </button>
-                                        <button
-                                            onClick={() => setTransportType('DROP_OFF')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 ${transportType === 'DROP_OFF' ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white text-gray-500 border-transparent hover:bg-purple-50 hover:text-purple-600'}`}
-                                        >
-                                            Apenas Entrega (Volta)
-                                        </button>
-                                    </div>
-
-                                    <div className="flex flex-col gap-4 mb-6">
-                                        <div className="flex gap-4">
-                                            <div className="flex-1">
-                                                <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Busca (Origem)</label>
-                                                <input
-                                                    type="text"
-                                                    value={transportAddress}
-                                                    onChange={(e) => setTransportAddress(e.target.value)}
-                                                    className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-200 transition-all text-purple-900"
-                                                    placeholder="Endereço onde o pet está..."
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 px-2">
-                                            <input
-                                                type="checkbox"
-                                                id="diffAddress"
-                                                checked={hasDifferentReturnAddress}
-                                                onChange={(e) => setHasDifferentReturnAddress(e.target.checked)}
-                                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
-                                            />
-                                            <label htmlFor="diffAddress" className="text-xs font-bold text-gray-500 cursor-pointer select-none">Entrega em endereço diferente?</label>
-                                        </div>
-
-                                        {hasDifferentReturnAddress && (
-                                            <div className="flex-1 animate-in fade-in slide-in-from-top-2">
-                                                <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Entrega (Destino)</label>
-                                                <input
-                                                    type="text"
-                                                    value={transportDestinationAddress}
-                                                    onChange={(e) => setTransportDestinationAddress(e.target.value)}
-                                                    className="w-full bg-white border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-200 transition-all text-purple-900"
-                                                    placeholder="Endereço para onde o pet vai..."
-                                                />
-                                            </div>
-                                        )}
-
-                                        <div className="flex justify-end mt-2">
-                                            <button
-                                                onClick={handleCalculateTransport}
-                                                disabled={isCalculatingTransport}
-                                                className="px-8 py-3 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-600/20 active:scale-95"
-                                            >
-                                                {isCalculatingTransport ? (
-                                                    <RefreshCcw size={18} className="animate-spin" />
-                                                ) : (
-                                                    <Calculator size={18} />
-                                                )}
-                                                {isCalculatingTransport ? 'Calculando...' : 'Calcular Transporte'}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {transportCalculation && (
-                                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                                            <div className="bg-white rounded-3xl border border-purple-100 overflow-hidden shadow-sm">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead className="bg-purple-50/50 text-[10px] uppercase font-black text-purple-400 tracking-widest">
-                                                        <tr>
-                                                            <th className="px-6 py-4 border-b border-purple-100">Etapa</th>
-                                                            <th className="px-6 py-4 border-b border-purple-100">Distância</th>
-                                                            <th className="px-6 py-4 border-b border-purple-100">Tempo</th>
-                                                            <th className="px-6 py-4 text-right border-b border-purple-100">Valor (R$)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-50">
-                                                        {['largada', 'leva', 'traz', 'retorno'].map((leg: any) => {
-                                                            const legData = transportCalculation.breakdown[leg];
-                                                            if (!legData) return null;
-
-                                                            const labels: any = {
-                                                                largada: { title: 'Largada', sub: 'Base → Origem' },
-                                                                leva: { title: 'Leva', sub: 'Origem → Base' },
-                                                                traz: { title: 'Traz', sub: 'Base → Destino' },
-                                                                retorno: { title: 'Retorno', sub: 'Destino → Base' }
-                                                            };
-
-                                                            return (
-                                                                <tr key={leg} className="group hover:bg-purple-50/30 transition-colors">
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="flex flex-col">
-                                                                            <span className="font-bold text-gray-700">{labels[leg].title}</span>
-                                                                            <span className="text-[10px] text-gray-400">{labels[leg].sub}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={legData.distance}
-                                                                            onChange={(e) => handleLegChange(leg, 'distance', e.target.value)}
-                                                                            className="w-24 bg-gray-50 border-none rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-purple-200 transition-all"
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={legData.duration}
-                                                                            onChange={(e) => handleLegChange(leg, 'duration', e.target.value)}
-                                                                            className="w-24 bg-gray-50 border-none rounded-lg text-xs font-bold text-gray-600 focus:ring-2 focus:ring-purple-200 transition-all"
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        <input
-                                                                            type="number"
-                                                                            step="0.01"
-                                                                            value={legData.price}
-                                                                            onChange={(e) => handleLegChange(leg, 'price', e.target.value)}
-                                                                            className="w-28 text-right bg-white border border-gray-200 rounded-lg text-sm font-black text-purple-600 focus:ring-2 focus:ring-purple-200 transition-all"
-                                                                        />
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                    <tfoot className="bg-purple-50 border-t border-purple-100">
-                                                        <tr>
-                                                            <td colSpan={3} className="px-6 py-4 text-right">
-                                                                <div className="flex flex-col items-end">
-                                                                    <span className="font-bold text-gray-500 text-xs uppercase tracking-widest">Total Bruto</span>
-                                                                    <span className="text-sm font-bold text-gray-400">R$ {transportCalculation.total.toFixed(2)}</span>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <div className="flex flex-col items-end">
-                                                                    <span className="font-bold text-gray-500 text-xs uppercase tracking-widest mb-1">Desconto (%)</span>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={transportDiscount}
-                                                                        onChange={(e) => setTransportDiscount(parseFloat(e.target.value) || 0)}
-                                                                        className="w-20 text-right bg-white border border-gray-200 rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20"
-                                                                    />
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td colSpan={3} className="px-6 py-4 text-right font-bold text-gray-500 text-xs uppercase tracking-widest">Total com Desconto</td>
-                                                            <td className="px-6 py-4 text-right font-black text-xl text-purple-700">
-                                                                R$ {(transportCalculation.total * (1 - transportDiscount / 100)).toFixed(2)}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td colSpan={4} className="px-6 pb-6 text-right">
-                                                                <button
-                                                                    onClick={handleApplyTransport}
-                                                                    className="px-6 py-2 bg-green-500 text-white font-black rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ml-auto"
-                                                                >
-                                                                    <CheckCircle2 size={16} />
-                                                                    Aplicar ao Orçamento
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    </tfoot>
-                                                </table>
-                                            </div>
-
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-10 pt-8 border-t border-gray-100 flex justify-between items-center px-4">
-                            <span className="text-lg font-bold text-secondary">Valor Total Calculado</span>
-                            <div className="text-right">
-                                <span className="text-3xl font-black text-primary">R$ {totalAmount.toFixed(2)}</span>
-                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mt-1">Este valor será enviado ao cliente</p>
-                            </div>
-                        </div>
+                        <QuotePricingVariables
+                            quote={quote}
+                            desiredAt={desiredAt}
+                            setDesiredAt={setDesiredAt}
+                            scheduledAt={scheduledAt}
+                            setScheduledAt={setScheduledAt}
+                            transportAt={transportAt}
+                            setTransportAt={setTransportAt}
+                        />
                     </section>
+
+                    <QuoteItemsSection
+                        items={items}
+                        onAddItem={handleAddItem}
+                        onRemoveItem={handleRemoveItem}
+                        onItemChange={handleItemChange}
+                        serviceSearch={serviceSearch}
+                        setServiceSearch={setServiceSearch}
+                        showServiceDropdown={showServiceDropdown}
+                        setShowServiceDropdown={setShowServiceDropdown}
+                        getFilteredServices={getFilteredServices}
+                        staffUsers={staffUsers}
+                        totalAmount={totalAmount}
+                    />
+
+                    {(quote?.type === 'SPA_TRANSPORTE' || quote?.type === 'TRANSPORTE') && (
+                        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
+                            <QuoteTransportCalculator
+                                transportType={transportType}
+                                setTransportType={setTransportType}
+                                transportAddress={transportAddress}
+                                setTransportAddress={setTransportAddress}
+                                hasDifferentReturnAddress={hasDifferentReturnAddress}
+                                setHasDifferentReturnAddress={setHasDifferentReturnAddress}
+                                transportDestinationAddress={transportDestinationAddress}
+                                setTransportDestinationAddress={setTransportDestinationAddress}
+                                onCalculate={handleCalculateTransport}
+                                isCalculating={isCalculatingTransport}
+                                calculation={transportCalculation}
+                                onLegChange={handleLegChange}
+                                discount={transportDiscount}
+                                setDiscount={setTransportDiscount}
+                                onApply={handleApplyTransport}
+                            />
+                        </section>
+                    )}
 
                     <section className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
                         <h3 className="text-xl font-black text-secondary mb-6">Observações Internas</h3>
@@ -1184,24 +682,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     </section>
                 </div>
 
-                {/* Sidebar Status (Right side) - Reduced content since most moved to header */}
                 <div className="space-y-8">
-                    <section className="bg-secondary text-white rounded-[40px] p-8 shadow-xl">
-                        <h3 className="text-lg font-black mb-6 uppercase tracking-widest text-primary">Status do Workflow</h3>
-
-                        <div className="space-y-3">
-                            {['SOLICITADO', 'EM_PRODUCAO', 'CALCULADO', 'ENVIADO', 'APROVADO', 'REJEITADO', 'AGENDAR', 'AGENDADO', 'ENCERRADO'].map((s) => (
-                                <button
-                                    key={s}
-                                    onClick={() => setStatus(s)}
-                                    className={`w-full py-4 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between ${status === s ? 'bg-primary text-white shadow-lg' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-                                >
-                                    {s}
-                                    {status === s && <CheckCircle2 size={16} />}
-                                </button>
-                            ))}
-                        </div>
-                    </section>
+                    <QuoteWorkflowSidebar
+                        status={status}
+                        setStatus={setStatus}
+                    />
                 </div>
             </div>
         </>

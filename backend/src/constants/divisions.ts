@@ -59,7 +59,7 @@ export const DIVISION_PERMISSIONS = {
 
 // Helper function para verificar se uma divisão tem permissão
 export function hasDivisionPermission(division: Division, module: string): boolean {
-    const permissions = DIVISION_PERMISSIONS[division] || [];
+    const permissions = (DIVISION_PERMISSIONS[division] as readonly string[]) || [];
     return permissions.includes(module);
 }
 

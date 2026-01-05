@@ -155,12 +155,47 @@ export const getKPIs = async (req: Request, res: Response) => {
             };
         }));
 
+        // Revenue Trend (Daily for last 30 days)
+        const revenueTrendRaw = await prisma.paymentRecord.groupBy({
+            by: ['paidAt'],
+            where: {
+                paidAt: { gte: last30Days }
+            },
+            _sum: { amount: true },
+            orderBy: { paidAt: 'asc' }
+        });
+
+        // Group by day manually since Prisma groupBy with dates can be tricky depending on DB
+        const trendMap: { [key: string]: number } = {};
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+            const dateStr = d.toISOString().split('T')[0];
+            trendMap[dateStr] = 0;
+        }
+
+        revenueTrendRaw.forEach(record => {
+            if (record.paidAt) {
+                const dateStr = record.paidAt.toISOString().split('T')[0];
+                if (trendMap[dateStr] !== undefined) {
+                    trendMap[dateStr] += record._sum.amount || 0;
+                }
+            }
+        });
+
+        const revenueTrend = Object.keys(trendMap)
+            .sort()
+            .map(date => ({
+                date,
+                amount: trendMap[date]
+            }));
+
         res.json({
             revenue: {
                 current: currentMonthRevenue._sum.amount || 0,
                 previous: lastMonthRevenue._sum.amount || 0,
                 growth: lastMonthRevenue._sum.amount ?
-                    ((currentMonthRevenue._sum.amount || 0) - lastMonthRevenue._sum.amount) / lastMonthRevenue._sum.amount * 100 : 0
+                    ((currentMonthRevenue._sum.amount || 0) - lastMonthRevenue._sum.amount) / lastMonthRevenue._sum.amount * 100 : 0,
+                trend: revenueTrend
             },
             appointments: {
                 distribution: appointmentsLast30Days,

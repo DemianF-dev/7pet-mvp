@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
     Calendar,
     Dog,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
+import { useModalFocusTrap } from '../hooks/useModalKeyboard';
 import ConfirmModal from './ConfirmModal';
 
 export default function Sidebar() {
@@ -22,6 +23,9 @@ export default function Sidebar() {
     const { user, logout } = useAuthStore();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const mobileAsideRef = useRef<HTMLElement>(null);
+
+    useModalFocusTrap(isOpen, mobileAsideRef);
 
     const handleLogoutConfirm = () => {
         logout();
@@ -99,11 +103,15 @@ export default function Sidebar() {
                             className="fixed inset-0 bg-secondary/60 backdrop-blur-sm z-[50] md:hidden"
                         />
                         <motion.aside
+                            ref={mobileAsideRef}
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                             className="fixed inset-y-0 right-0 w-80 bg-white z-[60] p-6 flex flex-col shadow-2xl md:hidden"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Menu Lateral"
                         >
                             <div className="flex items-center justify-between mb-10">
                                 <div className="flex items-center gap-2">
@@ -154,8 +162,17 @@ export default function Sidebar() {
 
                 {menuItems}
 
+
                 <div className="pt-6 border-t border-gray-100">
+                    {/* Versão do Sistema */}
+                    <div className="mb-4 px-2">
+                        <p className="text-[10px] text-gray-400 text-center font-mono">
+                            v0.1.0-beta
+                        </p>
+                    </div>
+
                     <div className="flex items-center gap-3 mb-6 p-2 hover:bg-gray-50 rounded-2xl transition-colors">
+
                         <img
                             src={`https://ui-avatars.com/api/?name=${user?.customer?.name || user?.email}&background=00D664&color=fff`}
                             className="w-10 h-10 rounded-full border-2 border-primary/20"
@@ -166,8 +183,9 @@ export default function Sidebar() {
                             <button
                                 onClick={() => setShowLogoutConfirm(true)}
                                 className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+                                aria-label="Sair da conta"
                             >
-                                Sair da conta <LogOut size={12} />
+                                Sair da conta <LogOut size={12} aria-hidden="true" />
                             </button>
                         </div>
                     </div>

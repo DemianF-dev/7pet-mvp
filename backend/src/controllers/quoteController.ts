@@ -192,6 +192,9 @@ export const quoteController = {
                 'QUOTE_CREATED'
             );
 
+            // Notify staff members about the new quote
+            await notificationService.notifyNewQuoteToStaff(quote.id);
+
             return res.status(201).json(quote);
         } catch (error) {
             if (error instanceof z.ZodError) {

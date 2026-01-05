@@ -1,0 +1,42 @@
+name: 7Pet CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npm run postinstall
+
+      - name: Backend - Install Dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Backend - Run Tests
+        working-directory: ./backend
+        run: npm test -- --passWithNoTests
+
+      - name: Frontend - Install Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Frontend - Build
+        working-directory: ./frontend
+        run: npm run build

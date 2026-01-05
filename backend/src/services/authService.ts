@@ -3,13 +3,18 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import Logger from '../lib/logger';
+import { OAuth2Client } from 'google-auth-library';
+import axios from 'axios';
 
 // CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
 const JWT_SECRET = process.env.JWT_SECRET;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 if (!JWT_SECRET) {
     throw new Error('❌ FATAL: JWT_SECRET environment variable is not defined! Application cannot start.');
 }
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export const register = async (data: any) => {
     const { email, password, name, role = 'CLIENTE' } = data;
@@ -83,7 +88,7 @@ export const register = async (data: any) => {
     return { user, token };
 };
 
-export const login = async (email: string, password: string) => {
+export const login = async (email: string, password: string, rememberMe: boolean = false) => {
     const user = await prisma.user.findFirst({
         where: {
             OR: [
@@ -99,10 +104,83 @@ export const login = async (email: string, password: string) => {
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) throw new Error('Credenciais inválidas');
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const expiresIn = rememberMe ? '30d' : '7d';
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn });
 
     return { user, token };
 };
+
+export const loginWithGoogle = async (token: string) => {
+    try {
+        let payload: any;
+
+        try {
+            // Try as ID Token first (safer, if provided)
+            const ticket = await googleClient.verifyIdToken({
+                idToken: token,
+                audience: GOOGLE_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        } catch (e) {
+            // Fallback: treat as Access Token and fetch profile
+            Logger.info('Token não é um ID Token válido, tentando como Access Token...');
+            const response = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            payload = response.data;
+        }
+
+
+        if (!payload || !payload.email) {
+            throw new Error('Falha ao obter dados do Google');
+        }
+
+        const { email, name, given_name, family_name, picture } = payload;
+
+        // Check if user exists
+        let user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email },
+                    { extraEmails: { array_contains: email } }
+                ]
+            },
+            include: { customer: true }
+        });
+
+        // If not, create a new client user
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    name: name || `${given_name || ''} ${family_name || ''}`.trim(),
+                    firstName: given_name,
+                    lastName: family_name,
+                    role: 'CLIENTE',
+                    passwordHash: 'GOOGLE_AUTH', // Placeholder
+                    customer: {
+                        create: {
+                            name: name || `${given_name || ''} ${family_name || ''}`.trim(),
+                        }
+                    }
+                },
+                include: { customer: true }
+            });
+            Logger.info(`Novo usuário criado via Google: ${email}`);
+        } else {
+            Logger.info(`Usuário logado via Google: ${email}`);
+        }
+
+        // Generate our own JWT
+        const tokenResult = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+
+        return { user, token: tokenResult };
+    } catch (error: any) {
+        Logger.error(`Erro no Google Login: ${error.message}`);
+        throw new Error('Falha na autenticação com o Google');
+    }
+};
+
 
 export const forgotPassword = async (email: string) => {
     const user = await prisma.user.findUnique({

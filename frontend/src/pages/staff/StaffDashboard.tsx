@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
+import Skeleton from '../../components/Skeleton';
 
 interface DashboardMetrics {
     todayAppointments: number;
@@ -123,13 +124,14 @@ export default function StaffDashboard() {
                     </button>
                 </header>
 
+
                 {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-48 bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 flex flex-col justify-center animate-pulse">
-                                <div className="w-14 h-14 bg-gray-100 rounded-2xl mb-6"></div>
-                                <div className="h-2 w-20 bg-gray-100 rounded-full mb-2"></div>
-                                <div className="h-10 w-12 bg-gray-200 rounded-xl"></div>
+                            <div key={i} className="h-48 bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 flex flex-col justify-center">
+                                <Skeleton variant="rounded" className="w-14 h-14 mb-6" />
+                                <Skeleton variant="text" className="w-20 h-2 mb-2" />
+                                <Skeleton variant="rounded" className="w-12 h-10" />
                             </div>
                         ))}
                     </div>
@@ -138,14 +140,15 @@ export default function StaffDashboard() {
                         {/* Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {cards.map((card, idx) => (
-                                <motion.div
+                                <motion.button
                                     key={idx}
+                                    type="button"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.1 }}
                                     onClick={() => navigate(card.link)}
                                     className={`bg-white p-8 rounded-[40px] shadow-sm border ${card.urgent ? 'border-red-200 bg-red-50/30' : 'border-gray-50'
-                                        } group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden`}
+                                        } group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden text-left w-full`}
                                 >
                                     <div className={`w-14 h-14 ${card.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                                         {card.icon}
@@ -161,7 +164,7 @@ export default function StaffDashboard() {
                                     <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-20 transition-opacity">
                                         {card.icon}
                                     </div>
-                                </motion.div>
+                                </motion.button>
                             ))}
                         </div>
 

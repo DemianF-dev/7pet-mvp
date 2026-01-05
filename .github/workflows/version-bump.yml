@@ -1,0 +1,58 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'VERSION.json'
+      - 'CHANGELOG.md'
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    
+    # Evitar loop infinito (não rodar se o commit for do próprio bot)
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "7Pet Version Bot"
+          git config --global user.email "bot@7pet.com"
+      
+      - name: Generate Version
+        run: |
+          node scripts/generate-version.js BETA "Auto-generated from commit: ${{ github.event.head_commit.message }}"
+      
+      - name: Commit Version Changes
+        run: |
+          git add VERSION.json
+          if git diff --staged --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "chore: auto version bump [skip ci]"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create Release Tag (Optional)
+        if: contains(github.event.head_commit.message, '[release]')
+        run: |
+          VERSION=$(node -p "require('./VERSION.json').version")
+          git tag -a "v$VERSION" -m "Release $VERSION"
+          git push origin "v$VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

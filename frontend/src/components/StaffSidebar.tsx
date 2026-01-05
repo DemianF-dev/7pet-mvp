@@ -309,8 +309,17 @@ export default function StaffSidebar() {
 
                 {menuItems}
 
+
                 <div className="pt-6 border-t border-white/10">
+                    {/* Versão do Sistema */}
+                    <div className="mb-4 px-2">
+                        <p className="text-[10px] text-white/40 text-center font-mono">
+                            v0.1.0-beta
+                        </p>
+                    </div>
+
                     <div className="flex items-center gap-3 mb-6 p-2 bg-white/5 rounded-2xl">
+
                         <img
                             src={`https://ui-avatars.com/api/?name=${user?.name || user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
                             className="w-10 h-10 rounded-full border-2 border-primary/20 cursor-pointer hover:scale-105 transition-transform"
@@ -335,12 +344,14 @@ export default function StaffSidebar() {
 
 function SidebarItem({ icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick: () => void }) {
     return (
-        <div
+        <button
+            type="button"
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left ${active ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+            aria-current={active ? 'page' : undefined}
         >
             {icon}
             <span className="text-sm">{label}</span>
-        </div>
+        </button>
     );
 }
