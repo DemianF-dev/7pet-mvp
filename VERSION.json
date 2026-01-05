@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0226",
+  "version": "BETA20260105-0234",
   "stage": "BETA",
-  "timestamp": "2026-01-05T02:26:00.000Z",
-  "commit": "70a2fdc",
-  "buildNumber": 11,
-  "releaseNotes": "Auto-generated from commit: fix: convert dynamic imports to static in serviceRoutes"
+  "timestamp": "2026-01-05T02:34:42.000Z",
+  "commit": "7c241d8",
+  "buildNumber": 12,
+  "releaseNotes": "Auto-generated from commit: fix: include VERSION.json in frontend build and fix SPA routing"
 }
