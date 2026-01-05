@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { authenticate, authorize } from '../middlewares/authMiddleware';
+import * as serviceService from '../services/serviceService';
 
 const router = Router();
 
@@ -111,7 +112,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const serviceService = await import('../services/serviceService');
         await serviceService.remove(id);
         res.status(204).send();
     } catch (error) {
@@ -122,7 +122,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
 router.post('/bulk-delete', async (req: Request, res: Response) => {
     try {
         const { ids } = req.body;
-        const serviceService = await import('../services/serviceService');
         await serviceService.bulkDelete(ids);
         res.status(204).send();
     } catch (error) {
@@ -133,7 +132,6 @@ router.post('/bulk-delete', async (req: Request, res: Response) => {
 // Trash system routes
 router.get('/trash', async (req: Request, res: Response) => {
     try {
-        const serviceService = await import('../services/serviceService');
         const trash = await serviceService.listTrash();
         res.json(trash);
     } catch (error) {
@@ -144,7 +142,6 @@ router.get('/trash', async (req: Request, res: Response) => {
 router.post('/bulk-restore', async (req: Request, res: Response) => {
     try {
         const { ids } = req.body;
-        const serviceService = await import('../services/serviceService');
         await serviceService.bulkRestore(ids);
         res.status(200).json({ message: 'Serviços restaurados com sucesso' });
     } catch (error) {
@@ -155,7 +152,6 @@ router.post('/bulk-restore', async (req: Request, res: Response) => {
 router.patch('/:id/restore', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const serviceService = await import('../services/serviceService');
         await serviceService.restore(id);
         res.status(200).json({ message: 'Serviço restaurado com sucesso' });
     } catch (error) {
@@ -166,7 +162,6 @@ router.patch('/:id/restore', async (req: Request, res: Response) => {
 router.delete('/:id/permanent', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const serviceService = await import('../services/serviceService');
         await serviceService.permanentRemove(id);
         res.status(204).send();
     } catch (error: any) {
