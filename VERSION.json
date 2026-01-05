@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0059",
+  "version": "BETA20260105-0111",
   "stage": "BETA",
-  "timestamp": "2026-01-05T00:59:57.000Z",
-  "commit": "03e2273",
-  "buildNumber": 3,
-  "releaseNotes": "Auto-generated from commit: docs: add activation checklist for versioning"
+  "timestamp": "2026-01-05T01:11:00.000Z",
+  "commit": "c10a659",
+  "buildNumber": 4,
+  "releaseNotes": "Auto-generated from commit: fix: correct VERSION.json path and LoadingButton import"
 }
