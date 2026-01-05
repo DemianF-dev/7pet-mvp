@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0337",
+  "version": "BETA20260105-0354",
   "stage": "BETA",
-  "timestamp": "2026-01-05T03:37:13.000Z",
-  "commit": "68964e7",
-  "buildNumber": 14,
-  "releaseNotes": "Auto-generated from commit: fix: add test env vars to CI workflow"
+  "timestamp": "2026-01-05T03:54:22.000Z",
+  "commit": "c080758",
+  "buildNumber": 15,
+  "releaseNotes": "Auto-generated from commit: fix: resolve all backend TS errors for Vercel deployment"
 }
