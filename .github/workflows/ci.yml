@@ -9,6 +9,10 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci_test_secret_must_be_at_least_32_chars_long_for_validation
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/7pet_test
+      NODE_ENV: test
 
     steps:
       - uses: actions/checkout@v4
