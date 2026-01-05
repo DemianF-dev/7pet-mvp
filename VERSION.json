@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-1936",
+  "version": "BETA20260105-1954",
   "stage": "BETA",
-  "timestamp": "2026-01-05T19:36:03.000Z",
-  "commit": "e5ab014",
-  "buildNumber": 17,
-  "releaseNotes": "Auto-generated from commit: fix: add @types/web-push for TypeScript compilation"
+  "timestamp": "2026-01-05T19:54:50.000Z",
+  "commit": "af9b341",
+  "buildNumber": 18,
+  "releaseNotes": "Auto-generated from commit: fix: temporarily disable web-push to allow Vercel build"
 }
