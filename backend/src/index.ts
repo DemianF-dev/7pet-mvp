@@ -134,7 +134,7 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
     try {
-        const VERSION = require('../VERSION.json');
+        const VERSION = require('../../VERSION.json');
         res.json({
             status: 'ok',
             version: VERSION.version,

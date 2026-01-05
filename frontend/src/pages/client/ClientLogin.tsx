@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, Fingerprint, Eye, EyeOff, ShieldCheck, Github } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useGoogleLogin } from '@react-oauth/google';
-import LoadingButton from '../../components/ui/LoadingButton';
+import LoadingButton from '../../components/LoadingButton';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';

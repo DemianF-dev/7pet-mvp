@@ -1,4 +1,4 @@
-# Guia Rápido - Configuração de Branch Protection
+já fiz,# Guia Rápido - Configuração de Branch Protection
 
 ## 🔒 Protegendo a Branch `main`
 
