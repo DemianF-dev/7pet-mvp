@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0304",
+  "version": "BETA20260105-0337",
   "stage": "BETA",
-  "timestamp": "2026-01-05T06:04:37.000Z",
-  "commit": "74065f1",
-  "buildNumber": 13,
-  "releaseNotes": "Build automático"
+  "timestamp": "2026-01-05T03:37:13.000Z",
+  "commit": "68964e7",
+  "buildNumber": 14,
+  "releaseNotes": "Auto-generated from commit: fix: add test env vars to CI workflow"
 }
