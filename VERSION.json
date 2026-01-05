@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0127",
+  "version": "BETA20260105-0139",
   "stage": "BETA",
-  "timestamp": "2026-01-05T01:27:03.000Z",
-  "commit": "216ac03",
-  "buildNumber": 6,
-  "releaseNotes": "Auto-generated from commit: chore: remove deprecated memory setting from vercel.json"
+  "timestamp": "2026-01-05T01:39:53.000Z",
+  "commit": "46c10d7",
+  "buildNumber": 7,
+  "releaseNotes": "Auto-generated from commit: fix: disable TypeScript compilation in backend build script"
 }
