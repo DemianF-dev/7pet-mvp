@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 
 import prisma from '../lib/prisma';
+import * as productService from '../services/productService';
 
 const productSchema = z.object({
     name: z.string().min(1, 'Nome é obrigatório'),
@@ -54,7 +55,6 @@ export const productController = {
     async delete(req: Request, res: Response) {
         const { id } = req.params;
         try {
-            const productService = await import('../services/productService');
             await productService.remove(id);
             res.status(204).send();
         } catch (error) {
@@ -65,7 +65,6 @@ export const productController = {
     async bulkDelete(req: Request, res: Response) {
         const { ids } = req.body;
         try {
-            const productService = await import('../services/productService');
             await productService.bulkDelete(ids);
             res.status(204).send();
         } catch (error) {
@@ -75,7 +74,6 @@ export const productController = {
 
     async listTrash(req: Request, res: Response) {
         try {
-            const productService = await import('../services/productService');
             const trash = await productService.listTrash();
             res.json(trash);
         } catch (error) {
@@ -86,7 +84,6 @@ export const productController = {
     async restore(req: Request, res: Response) {
         const { id } = req.params;
         try {
-            const productService = await import('../services/productService');
             await productService.restore(id);
             res.status(200).json({ message: 'Produto restaurado com sucesso' });
         } catch (error) {
@@ -97,7 +94,6 @@ export const productController = {
     async bulkRestore(req: Request, res: Response) {
         const { ids } = req.body;
         try {
-            const productService = await import('../services/productService');
             await productService.bulkRestore(ids);
             res.status(200).json({ message: 'Produtos restaurados com sucesso' });
         } catch (error) {
@@ -108,7 +104,6 @@ export const productController = {
     async permanentRemove(req: Request, res: Response) {
         const { id } = req.params;
         try {
-            const productService = await import('../services/productService');
             await productService.permanentRemove(id);
             res.status(204).send();
         } catch (error: any) {

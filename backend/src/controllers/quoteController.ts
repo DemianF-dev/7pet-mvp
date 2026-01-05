@@ -5,6 +5,8 @@ import { auditService } from '../services/auditService';
 import { notificationService } from '../services/notificationService';
 import { createAuditLog, detectChanges } from '../utils/auditLogger';
 import { messagingService } from '../services/messagingService';
+import * as quoteService from '../services/quoteService';
+import * as mapsService from '../services/mapsService';
 import { z } from 'zod';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
@@ -786,7 +788,6 @@ export const quoteController = {
                 return res.status(403).json({ error: 'Acesso negado' });
             }
 
-            const quoteService = await import('../services/quoteService');
             const dependencies = await quoteService.checkDependencies(id);
 
             return res.json(dependencies);
@@ -810,7 +811,6 @@ export const quoteController = {
                 return res.status(403).json({ error: 'Acesso negado' });
             }
 
-            const quoteService = await import('../services/quoteService');
             const result = await quoteService.cascadeDelete(id, options, user.email || user.id);
 
             return res.status(200).json(result);
@@ -850,7 +850,6 @@ export const quoteController = {
             console.log(`[Quote] User Role: `, (req as any).user?.role);
 
             // Calculate transport using Google Maps + settings
-            const { mapsService } = await import('../services/mapsService');
 
             // Validate type if provided
             const validTypes = ['ROUND_TRIP', 'PICK_UP', 'DROP_OFF'];
@@ -894,7 +893,6 @@ export const quoteController = {
             const { performerId } = req.body;
             const user = (req as any).user;
 
-            const quoteService = await import('../services/quoteService');
             const result = await quoteService.approveAndSchedule(id, performerId, user);
 
             return res.status(200).json(result);

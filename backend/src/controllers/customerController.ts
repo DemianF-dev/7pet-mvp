@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { createAuditLog, detectChanges } from '../utils/auditLogger';
+import * as customerService from '../services/customerService';
 
 const customerSchema = z.object({
     firstName: z.string().min(1, 'Primeiro nome é obrigatório').optional().nullable(),
@@ -497,7 +498,6 @@ export const customerController = {
     async delete(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const customerService = await import('../services/customerService');
             await customerService.remove(id);
             return res.status(204).send();
         } catch (error) {
@@ -509,7 +509,6 @@ export const customerController = {
     async bulkDelete(req: Request, res: Response) {
         try {
             const { ids } = req.body;
-            const customerService = await import('../services/customerService');
             await customerService.bulkDelete(ids);
             return res.status(204).send();
         } catch (error) {
@@ -520,7 +519,6 @@ export const customerController = {
 
     async listTrash(req: Request, res: Response) {
         try {
-            const customerService = await import('../services/customerService');
             const trash = await customerService.listTrash();
             return res.json(trash);
         } catch (error) {
@@ -532,7 +530,6 @@ export const customerController = {
     async restore(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const customerService = await import('../services/customerService');
             await customerService.restore(id);
             return res.status(200).json({ message: 'Cliente restaurado com sucesso' });
         } catch (error) {
@@ -544,7 +541,6 @@ export const customerController = {
     async bulkRestore(req: Request, res: Response) {
         try {
             const { ids } = req.body;
-            const customerService = await import('../services/customerService');
             await customerService.bulkRestore(ids);
             return res.status(200).json({ message: 'Clientes restaurados com sucesso' });
         } catch (error) {
@@ -556,7 +552,6 @@ export const customerController = {
     async permanentRemove(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const customerService = await import('../services/customerService');
             await customerService.permanentRemove(id);
             return res.status(204).send();
         } catch (error: any) {

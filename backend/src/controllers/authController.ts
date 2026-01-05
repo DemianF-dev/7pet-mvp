@@ -3,6 +3,7 @@ import * as authService from '../services/authService';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
+import bcrypt from 'bcryptjs';
 
 const registerSchema = z.object({
     email: z.string().email(),
@@ -125,7 +126,6 @@ export const updateMe = async (req: any, res: Response) => {
         }
 
         if (data.password) {
-            const bcrypt = await import('bcrypt');
             updateData.passwordHash = await bcrypt.hash(data.password, 10);
         }
 

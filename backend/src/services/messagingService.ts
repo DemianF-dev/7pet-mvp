@@ -1,6 +1,7 @@
 
 import axios from 'axios';
 import prisma from '../lib/prisma';
+import { sendNotification } from '../controllers/notificationController';
 
 /**
  * messagingService
@@ -56,9 +57,9 @@ export const messagingService = {
 
         // Cast communicationPrefs to string array with fallback
         const prefsRaw = user.customer?.communicationPrefs as any;
-        const prefs: string[] = Array.isArray(prefsRaw)
+        const prefs: string[] = (Array.isArray(prefsRaw)
             ? prefsRaw.filter((p: any) => typeof p === 'string')
-            : ['APP'];
+            : ['APP']) as string[];
         const phone = user.phone || user.customer?.phone;
 
         // 3. Trigger Active Channels
@@ -72,7 +73,6 @@ export const messagingService = {
 
         // 4. Trigger Push Notifications (ALWAYS if subscription exists, or check pref)
         try {
-            const { sendNotification } = await import('../controllers/notificationController');
             await sendNotification(userId, {
                 title,
                 body: message,
