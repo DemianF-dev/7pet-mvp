@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0139",
+  "version": "BETA20260105-0151",
   "stage": "BETA",
-  "timestamp": "2026-01-05T01:39:53.000Z",
-  "commit": "46c10d7",
-  "buildNumber": 7,
-  "releaseNotes": "Auto-generated from commit: fix: disable TypeScript compilation in backend build script"
+  "timestamp": "2026-01-05T01:51:36.000Z",
+  "commit": "bd23e5e",
+  "buildNumber": 8,
+  "releaseNotes": "Auto-generated from commit: fix: configure Vercel to properly build and serve frontend"
 }
