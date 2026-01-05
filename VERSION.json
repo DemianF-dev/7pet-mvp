@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-0234",
+  "version": "BETA20260105-0304",
   "stage": "BETA",
-  "timestamp": "2026-01-05T02:34:42.000Z",
-  "commit": "7c241d8",
-  "buildNumber": 12,
-  "releaseNotes": "Auto-generated from commit: fix: include VERSION.json in frontend build and fix SPA routing"
+  "timestamp": "2026-01-05T06:04:37.000Z",
+  "commit": "74065f1",
+  "buildNumber": 13,
+  "releaseNotes": "Build automático"
 }
