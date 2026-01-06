@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0239",
+  "version": "BETA20260106-0241",
   "stage": "BETA",
-  "timestamp": "2026-01-06T02:39:01.000Z",
-  "commit": "cf4d998",
-  "buildNumber": 27,
-  "releaseNotes": "Auto-generated from commit: chore: add postinstall prisma generate to backend"
+  "timestamp": "2026-01-06T02:41:47.000Z",
+  "commit": "99b43a0",
+  "buildNumber": 28,
+  "releaseNotes": "Auto-generated from commit: chore: optimize root build and prisma generation for Vercel"
 }
