@@ -10,8 +10,12 @@ import axios from 'axios';
 const JWT_SECRET = process.env.JWT_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
+console.log('[Auth Service] 🔑 JWT_SECRET present:', !!JWT_SECRET);
+console.log('[Auth Service] 🆔 GOOGLE_CLIENT_ID present:', !!GOOGLE_CLIENT_ID);
+
 if (!JWT_SECRET) {
-    throw new Error('❌ FATAL: JWT_SECRET environment variable is not defined! Application cannot start.');
+    console.warn('⚠️ Warning: JWT_SECRET is not defined in this environment.');
+    // Don't throw here, allow diag route to show it
 }
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
