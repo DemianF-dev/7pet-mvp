@@ -6,7 +6,7 @@ import { notificationService } from '../services/notificationService';
 import { createAuditLog, detectChanges } from '../utils/auditLogger';
 import { messagingService } from '../services/messagingService';
 import * as quoteService from '../services/quoteService';
-import * as mapsService from '../services/mapsService';
+import { mapsService } from '../services/mapsService';
 import { z } from 'zod';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
