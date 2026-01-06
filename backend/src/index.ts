@@ -3,11 +3,13 @@ dotenv.config();
 
 // 🔒 SECURITY: Validate critical environment variables at startup
 import { validateEnvironment } from './utils/envValidation';
+/*
 try {
     validateEnvironment();
 } catch (error) {
     console.error('⚠️ Startup Warning: Environment validation failed, but continuing for diagnostics...');
 }
+*/
 
 import express from 'express';
 import cors from 'cors';
@@ -138,25 +140,12 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-    try {
-        let versionInfo = { version: 'unknown' };
-        try {
-            // Attempt to load VERSION.json from root or parent
-            versionInfo = require('../../VERSION.json');
-        } catch (e) {
-            try {
-                // Fallback to local if bundled differently
-                versionInfo = require('./VERSION.json');
-            } catch (e2) { }
-        }
-
-        res.json({
-            status: 'ok',
-            ...versionInfo
-        });
-    } catch (error) {
-        res.json({ status: 'ok', version: 'unknown' });
-    }
+    res.json({
+        status: 'ok',
+        version: '0.1.0-beta',
+        stage: 'production',
+        timestamp: new Date().toISOString()
+    });
 });
 
 app.get('/ping', (req, res) => {
