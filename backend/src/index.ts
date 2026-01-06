@@ -47,6 +47,9 @@ import Logger from './lib/logger';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 🛡️ TRUST PROXY: Needed for Vercel/proxies to get the real client IP
+app.set('trust proxy', 1);
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
@@ -88,18 +91,21 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or Postman)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.indexOf(origin) !== -1 || (isDev && localIpRegex.test(origin))) {
+        // Standardize origin (remove trailing slash)
+        const sanitizedOrigin = origin.replace(/\/$/, "");
+
+        if (allowedOrigins.indexOf(sanitizedOrigin) !== -1 || (isDev && localIpRegex.test(sanitizedOrigin))) {
             callback(null, true);
         } else {
-
+            console.warn(`[CORS] ❌ Blocked request from: ${origin}`);
             Logger.warn(`CORS blocked request from origin: ${origin}`);
             metricsService.incrementBlockedCORS(); // 📊 Track CORS blocks
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 app.use(express.json({ limit: '10mb' }));
 
