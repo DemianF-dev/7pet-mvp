@@ -9,6 +9,7 @@
         "start": "node dist/index.js",
         "seed": "ts-node prisma/seed.ts",
         "vercel-build": "prisma generate && echo 'Skipping TypeScript compilation - Vercel will use source files directly'",
+        "postinstall": "prisma generate",
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "rls:apply": "npx tsx scripts/configure_all_rls.ts",
