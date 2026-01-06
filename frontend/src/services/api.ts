@@ -11,7 +11,13 @@ const getApiUrl = (): string => {
     }
 
     const defaultUrl = 'http://localhost:3001';
-    const apiUrl = envUrl || defaultUrl;
+    let apiUrl = envUrl || defaultUrl;
+
+    // 🚀 Robustness Fix: Ensure the URL has a protocol if it's not a relative path
+    if (apiUrl && !apiUrl.startsWith('http') && !apiUrl.startsWith('/')) {
+        console.warn(`[API Config] ⚠️ API URL is missing protocol. Prepending https:// to: ${apiUrl}`);
+        apiUrl = `https://${apiUrl}`;
+    }
 
     console.log('[API Config] ✅ Using API URL:', apiUrl);
     return apiUrl;
