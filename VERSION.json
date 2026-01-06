@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0123",
+  "version": "BETA20260106-0140",
   "stage": "BETA",
-  "timestamp": "2026-01-06T01:23:42.000Z",
-  "commit": "f5e4240",
-  "buildNumber": 23,
-  "releaseNotes": "Auto-generated from commit: chore: force backend redeploy with all fixes (405 + TypeScript)"
+  "timestamp": "2026-01-06T01:40:26.000Z",
+  "commit": "954b44b",
+  "buildNumber": 24,
+  "releaseNotes": "Auto-generated from commit: fix: ensure absolute API URL in frontend and update backend CORS origins to resolve 405 error"
 }
