@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0056",
+  "version": "BETA20260106-0123",
   "stage": "BETA",
-  "timestamp": "2026-01-06T00:56:08.000Z",
-  "commit": "bee7fc2",
-  "buildNumber": 22,
-  "releaseNotes": "Auto-generated from commit: fix: corrigir imports do mapsService para resolver erro TypeScript 2339"
+  "timestamp": "2026-01-06T01:23:42.000Z",
+  "commit": "f5e4240",
+  "buildNumber": 23,
+  "releaseNotes": "Auto-generated from commit: chore: force backend redeploy with all fixes (405 + TypeScript)"
 }
