@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-2357",
+  "version": "BETA20260106-0037",
   "stage": "BETA",
-  "timestamp": "2026-01-05T23:57:21.000Z",
-  "commit": "112c093",
-  "buildNumber": 20,
-  "releaseNotes": "Auto-generated from commit: fix: configurar monorepo deployment com frontend e backend juntos"
+  "timestamp": "2026-01-06T00:37:56.000Z",
+  "commit": "648823e",
+  "buildNumber": 21,
+  "releaseNotes": "Auto-generated from commit: fix: adicionar suporte para todos HTTP methods no Vercel backend"
 }
