@@ -60,7 +60,7 @@ const limiter = rateLimit({
 
 app.use(helmet());
 app.use(compression());
-app.use(limiter);
+// app.use(limiter); // Temporarily disable to rule out rate limiting
 
 // 📊 MONITORING - Capture all requests (must be before other middlewares)
 app.use(metricsMiddleware);
@@ -73,8 +73,9 @@ app.use((req, res, next) => {
 // CORS configuration - ONLY allow specific origins (security fix)
 const allowedOrigins = [
     'https://my7.pet',
+    'https://www.my7.pet',
     'https://7pet-mvp.vercel.app',
-    'https://7pet-backend.vercel.app', // Backend domain itself
+    'https://7pet-backend.vercel.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
@@ -112,13 +113,19 @@ app.use(express.json({ limit: '10mb' }));
 // 📊 MONITORING Dashboard - Serve static files
 app.use(express.static('public'));
 
-// Strip /api prefix if present (Vercel monorepo routing support)
+// 🛡️ TRUST PROXY: Needed for Vercel/proxies to get the real client IP
+app.set('trust proxy', 1);
+
+// 1. Strip /api prefix if present (Must be FIRST to normalize paths for all other middlewares)
 app.use((req, res, next) => {
     if (req.url.startsWith('/api')) {
         req.url = req.url.replace('/api', '');
     }
     next();
 });
+
+app.use(helmet());
+app.use(compression());
 
 app.use('/auth', authRoutes);
 app.use('/customers', customerRoutes);
