@@ -157,15 +157,24 @@ app.get('/ping', (req, res) => {
     });
 });
 
-app.get('/diag', (req, res) => {
+app.get('/diag', async (req, res) => {
     // 🛡️ Security: Only return keys, never values
     const envKeys = Object.keys(process.env).sort();
     const criticalKeys = ['DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'GOOGLE_MAPS_API_KEY', 'GOOGLE_CLIENT_ID'];
     const missingKeys = criticalKeys.filter(key => !process.env[key]);
 
+    let dbStatus = 'not_tested';
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        dbStatus = 'connected';
+    } catch (e) {
+        dbStatus = 'error: ' + (e as Error).message;
+    }
+
     res.json({
         status: 'diagnostic',
         timestamp: new Date().toISOString(),
+        database: dbStatus,
         allEnvKeys: envKeys,
         missingCriticalKeys: missingKeys,
         nodeVersion: process.version,
