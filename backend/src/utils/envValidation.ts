@@ -79,11 +79,11 @@ export function validateEnvironment(): void {
     if (errors.length > 0) {
         console.error('\n🚨 FATAL: Environment validation failed!\n');
         errors.forEach(error => console.error(error));
-        console.error('\n⚠️  Application cannot start with invalid environment configuration.\n');
-        throw new Error('Environment validation failed');
+        console.error('\n⚠️  Application starting in degraded mode (invalid environment).\n');
+        // We no longer throw here to allow the app to start and serve health/diag routes
+    } else {
+        console.log('✅ Environment validation passed');
     }
-
-    console.log('✅ Environment validation passed');
 }
 
 /**

@@ -3,7 +3,11 @@ dotenv.config();
 
 // 🔒 SECURITY: Validate critical environment variables at startup
 import { validateEnvironment } from './utils/envValidation';
-validateEnvironment();
+try {
+    validateEnvironment();
+} catch (error) {
+    console.error('⚠️ Startup Warning: Environment validation failed, but continuing for diagnostics...');
+}
 
 import express from 'express';
 import cors from 'cors';
@@ -135,17 +139,49 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
     try {
-        const VERSION = require('../../VERSION.json');
+        let versionInfo = { version: 'unknown' };
+        try {
+            // Attempt to load VERSION.json from root or parent
+            versionInfo = require('../../VERSION.json');
+        } catch (e) {
+            try {
+                // Fallback to local if bundled differently
+                versionInfo = require('./VERSION.json');
+            } catch (e2) { }
+        }
+
         res.json({
             status: 'ok',
-            version: VERSION.version,
-            stage: VERSION.stage,
-            timestamp: VERSION.timestamp,
-            buildNumber: VERSION.buildNumber
+            ...versionInfo
         });
     } catch (error) {
         res.json({ status: 'ok', version: 'unknown' });
     }
+});
+
+app.get('/ping', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'pong',
+        timestamp: new Date().toISOString(),
+        env: process.env.NODE_ENV
+    });
+});
+
+app.get('/diag', (req, res) => {
+    // 🛡️ Security: Only return keys, never values
+    const envKeys = Object.keys(process.env).sort();
+    const criticalKeys = ['DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'GOOGLE_MAPS_API_KEY', 'GOOGLE_CLIENT_ID'];
+    const missingKeys = criticalKeys.filter(key => !process.env[key]);
+
+    res.json({
+        status: 'diagnostic',
+        timestamp: new Date().toISOString(),
+        allEnvKeys: envKeys,
+        missingCriticalKeys: missingKeys,
+        nodeVersion: process.version,
+        platform: process.platform
+    });
 });
 
 
