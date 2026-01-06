@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260105-2316",
+  "version": "BETA20260105-2357",
   "stage": "BETA",
-  "timestamp": "2026-01-05T23:16:03.000Z",
-  "commit": "8212f98",
-  "buildNumber": 19,
-  "releaseNotes": "Auto-generated from commit: fix: corrigir erro 500 no login removendo query incorreta array_contains em campo Json"
+  "timestamp": "2026-01-05T23:57:21.000Z",
+  "commit": "112c093",
+  "buildNumber": 20,
+  "releaseNotes": "Auto-generated from commit: fix: configurar monorepo deployment com frontend e backend juntos"
 }
