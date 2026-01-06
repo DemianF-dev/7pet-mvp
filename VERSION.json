@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0219",
+  "version": "BETA20260106-0239",
   "stage": "BETA",
-  "timestamp": "2026-01-06T02:19:19.000Z",
-  "commit": "8f6d817",
-  "buildNumber": 26,
-  "releaseNotes": "Auto-generated from commit: fix: replace bcrypt with bcryptjs and stabilize startup"
+  "timestamp": "2026-01-06T02:39:01.000Z",
+  "commit": "cf4d998",
+  "buildNumber": 27,
+  "releaseNotes": "Auto-generated from commit: chore: add postinstall prisma generate to backend"
 }
