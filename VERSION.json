@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0241",
+  "version": "BETA20260106-0252",
   "stage": "BETA",
-  "timestamp": "2026-01-06T02:41:47.000Z",
-  "commit": "99b43a0",
-  "buildNumber": 28,
-  "releaseNotes": "Auto-generated from commit: chore: optimize root build and prisma generation for Vercel"
+  "timestamp": "2026-01-06T02:52:44.000Z",
+  "commit": "226ebcc",
+  "buildNumber": 29,
+  "releaseNotes": "Auto-generated from commit: fix: ensure API prefix removal before CORS and add www subdomain"
 }
