@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0140",
+  "version": "BETA20260106-0149",
   "stage": "BETA",
-  "timestamp": "2026-01-06T01:40:26.000Z",
-  "commit": "954b44b",
-  "buildNumber": 24,
-  "releaseNotes": "Auto-generated from commit: fix: ensure absolute API URL in frontend and update backend CORS origins to resolve 405 error"
+  "timestamp": "2026-01-06T01:49:56.000Z",
+  "commit": "91dc42f",
+  "buildNumber": 25,
+  "releaseNotes": "Auto-generated from commit: fix: make backend startup resilient and add /diag route for troubleshooting"
 }
