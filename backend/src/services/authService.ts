@@ -92,6 +92,78 @@ export const register = async (data: any) => {
     return { user, token };
 };
 
+/**
+ * Registra um novo cliente, pet e endereço de forma manual (pelo staff)
+ */
+export const registerManual = async (tx: any, data: any) => {
+    const { customer, pet } = data;
+
+    // 1. Verificar se usuário já existe pelo email
+    let user = await tx.user.findUnique({
+        where: { email: customer.email },
+        include: { customer: true }
+    });
+
+    if (!user) {
+        // Criar usuário com senha temporária (seqId)
+        user = await tx.user.create({
+            data: {
+                email: customer.email,
+                passwordHash: "TEMPORARY",
+                role: 'CLIENTE',
+                name: customer.name,
+                firstName: customer.firstName || customer.name.split(' ')[0],
+                lastName: customer.lastName || customer.name.split(' ').slice(1).join(' '),
+                phone: customer.phone,
+                address: customer.address,
+                customer: {
+                    create: {
+                        name: customer.name,
+                        phone: customer.phone,
+                        address: customer.address,
+                        discoverySource: 'BALCAO_MANUAL'
+                    }
+                }
+            },
+            include: { customer: true }
+        });
+
+        // Atualizar senha para seqId
+        const tempPassword = String((user as any).seqId);
+        const newHash = await bcrypt.hash(tempPassword, 10);
+        user = await tx.user.update({
+            where: { id: user.id },
+            data: {
+                passwordHash: newHash,
+                plainPassword: tempPassword
+            },
+            include: { customer: true }
+        });
+    }
+
+    const customerId = user!.customer!.id;
+
+    // 2. Criar Pet se fornecido
+    let createdPet = null;
+    if (pet && pet.name) {
+        createdPet = await tx.pet.create({
+            data: {
+                customerId,
+                name: pet.name,
+                species: pet.species || 'Canino',
+                breed: pet.breed,
+                weight: pet.weight ? parseFloat(pet.weight) : null,
+                coatType: pet.coatType,
+                temperament: pet.temperament,
+                age: pet.age,
+                observations: pet.observations
+            }
+        });
+    }
+
+    return { user, customer: user!.customer, pet: createdPet };
+};
+
 export const login = async (email: string, password: string, rememberMe: boolean = false) => {
     const user = await prisma.user.findUnique({
         where: { email },

@@ -900,5 +900,99 @@ export const quoteController = {
             console.error('Erro no One-Click Scheduling:', error);
             return res.status(400).json({ error: error.message || 'Erro ao processar agendamento automático' });
         }
+    },
+
+    /**
+     * Criação de orçamento manual com cadastro simultâneo de cliente e pet
+     */
+    async createManual(req: Request, res: Response) {
+        try {
+            const user = (req as any).user;
+            if (user.role === 'CLIENTE') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+
+            const { customer, pet, quote: quoteData } = req.body;
+
+            // Basic validation
+            if (!customer || !customer.email || !customer.name) {
+                return res.status(400).json({ error: 'Dados do cliente (nome e email) são obrigatórios.' });
+            }
+
+            const result = await prisma.$transaction(async (tx) => {
+                // 1. Register/Get Customer and Pet
+                const { customer: dbCustomer, pet: dbPet } = await authService.registerManual(tx as any, { customer, pet });
+
+                // 2. Process Items (fetch prices)
+                const processedItems = quoteData.items ? await Promise.all(quoteData.items.map(async (item: any) => {
+                    let price = item.price || 0;
+                    let description = item.description;
+
+                    if (item.serviceId) {
+                        const service = await tx.service.findUnique({ where: { id: item.serviceId } });
+                        if (service) {
+                            price = price || service.basePrice;
+                            description = service.name;
+                        }
+                    }
+
+                    return {
+                        description,
+                        quantity: item.quantity || 1,
+                        price,
+                        serviceId: item.serviceId
+                    };
+                })) : [];
+
+                const totalAmount = processedItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+
+                // 3. Create Quote
+                const quote = await tx.quote.create({
+                    data: {
+                        customerId: dbCustomer!.id,
+                        petId: dbPet?.id || null,
+                        type: quoteData.type || 'SPA',
+                        desiredAt: quoteData.desiredAt ? new Date(quoteData.desiredAt) : null,
+                        transportOrigin: quoteData.transportOrigin || customer.address,
+                        transportDestination: quoteData.transportDestination,
+                        transportPeriod: quoteData.transportPeriod,
+                        status: 'SOLICITADO',
+                        totalAmount,
+                        statusHistory: {
+                            create: {
+                                oldStatus: 'NONE',
+                                newStatus: 'SOLICITADO',
+                                changedBy: user.id,
+                                reason: 'Criado manualmente pelo operador'
+                            }
+                        },
+                        items: {
+                            create: processedItems
+                        }
+                    },
+                    include: {
+                        items: true,
+                        pet: { select: { name: true } },
+                        customer: { select: { name: true } }
+                    }
+                });
+
+                return quote;
+            });
+
+            // Audit Log
+            await createAuditLog({
+                entityType: 'QUOTE',
+                entityId: result.id,
+                action: 'CREATE',
+                performedBy: user.id,
+                reason: 'Orçamento manual criado com novo cadastro'
+            });
+
+            return res.status(201).json(result);
+        } catch (error: any) {
+            console.error('Erro ao criar orçamento manual:', error);
+            return res.status(500).json({ error: 'Erro interno ao processar orçamento manual', message: error.message });
+        }
     }
 };

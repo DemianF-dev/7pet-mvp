@@ -12,7 +12,7 @@ import {
 } from '../../hooks/useQuotes';
 import BackButton from '../../components/BackButton';
 import QuoteEditor from './QuoteEditor';
-import { X, Search, Filter, Edit, Trash2, Copy, CheckSquare, Square, RefreshCcw, Archive, Share2, Calendar, DollarSign } from 'lucide-react';
+import { X, Search, Filter, Edit, Trash2, Copy, CheckSquare, Square, RefreshCcw, Archive, Share2, Calendar, DollarSign, Settings, Plus } from 'lucide-react';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 import QuoteTableRow from '../../components/staff/QuoteTableRow';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import Skeleton from '../../components/Skeleton';
+import ManualQuoteModal from '../../components/modals/ManualQuoteModal';
 
 interface QuoteItem {
     id: string;
@@ -73,6 +74,7 @@ export default function QuoteManager() {
     const [preFillData, setPreFillData] = useState<any>(null);
     const [appointmentSelectionQuote, setAppointmentSelectionQuote] = useState<Quote | null>(null);
     const [selectedQuoteForDelete, setSelectedQuoteForDelete] = useState<string | null>(null);
+    const [isManualQuoteModalOpen, setIsManualQuoteModalOpen] = useState(false);
 
     // Advanced Filters
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -213,8 +215,8 @@ export default function QuoteManager() {
     };
 
     const quotesArray = Array.isArray(quotes) ? quotes : [];
-    const activeCount = quotesArray.filter(q => q.status !== 'ENCERRADO').length;
-    const historyCount = quotesArray.filter(q => q.status === 'ENCERRADO').length;
+    const activeCount = quotesArray.filter(q => q && q.status !== 'ENCERRADO').length;
+    const historyCount = quotesArray.filter(q => q && q.status === 'ENCERRADO').length;
     const filteredQuotes = quotesArray
         .filter(q => {
             if (!q || !q.customer) return false;
@@ -268,12 +270,28 @@ export default function QuoteManager() {
                         </button>
 
                         <button
+                            onClick={() => navigate('/staff/transport-config')}
+                            className="bg-white p-4 rounded-[20px] text-gray-400 hover:text-indigo-600 shadow-sm hover:shadow-lg transition-all active:scale-95"
+                            title="Configurações de Preços"
+                        >
+                            <Settings size={20} />
+                        </button>
+
+                        <button
                             onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
                             disabled={isFetching}
                             className="bg-white p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
                             title="Atualizar Lista"
                         >
                             <RefreshCcw size={20} className={isFetching ? 'animate-spin' : ''} />
+                        </button>
+
+                        <button
+                            onClick={() => setIsManualQuoteModalOpen(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold shadow-md shadow-blue-200"
+                        >
+                            <Plus size={18} />
+                            Novo Orçamento
                         </button>
 
                         <button
@@ -571,6 +589,23 @@ export default function QuoteManager() {
                         />
                     )}
                 </AnimatePresence>
+
+                {/* Manual Quote Modal */}
+                <ManualQuoteModal
+                    isOpen={isManualQuoteModalOpen}
+                    onClose={() => setIsManualQuoteModalOpen(false)}
+                    onSuccess={(newQuote) => {
+                        queryClient.invalidateQueries({ queryKey: ['quotes'] });
+                        setSelectedQuoteId(newQuote.id);
+                    }}
+                />
+
+                <CascadeDeleteModal
+                    isOpen={!!selectedQuoteForDelete}
+                    onClose={() => setSelectedQuoteForDelete(null)}
+                    quoteId={selectedQuoteForDelete || ''}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                />
 
                 {/* Appointment Selection Modal (For Multi-Apppointment Quotes) */}
                 <AnimatePresence>
