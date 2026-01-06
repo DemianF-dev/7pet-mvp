@@ -89,13 +89,8 @@ export const register = async (data: any) => {
 };
 
 export const login = async (email: string, password: string, rememberMe: boolean = false) => {
-    const user = await prisma.user.findFirst({
-        where: {
-            OR: [
-                { email },
-                { extraEmails: { array_contains: email } }
-            ]
-        },
+    const user = await prisma.user.findUnique({
+        where: { email },
         include: { customer: true }
     });
 
@@ -138,13 +133,8 @@ export const loginWithGoogle = async (token: string) => {
         const { email, name, given_name, family_name, picture } = payload;
 
         // Check if user exists
-        let user = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email },
-                    { extraEmails: { array_contains: email } }
-                ]
-            },
+        let user = await prisma.user.findUnique({
+            where: { email },
             include: { customer: true }
         });
 
