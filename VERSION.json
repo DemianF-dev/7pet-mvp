@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0149",
+  "version": "BETA20260106-0219",
   "stage": "BETA",
-  "timestamp": "2026-01-06T01:49:56.000Z",
-  "commit": "91dc42f",
-  "buildNumber": 25,
-  "releaseNotes": "Auto-generated from commit: fix: make backend startup resilient and add /diag route for troubleshooting"
+  "timestamp": "2026-01-06T02:19:19.000Z",
+  "commit": "8f6d817",
+  "buildNumber": 26,
+  "releaseNotes": "Auto-generated from commit: fix: replace bcrypt with bcryptjs and stabilize startup"
 }
