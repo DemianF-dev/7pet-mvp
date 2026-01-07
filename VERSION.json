@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0411",
+  "version": "BETA20260107-0417",
   "stage": "BETA",
-  "timestamp": "2026-01-06T04:11:23.000Z",
-  "commit": "57ae4ec",
-  "buildNumber": 30,
-  "releaseNotes": "Auto-generated from commit: feat: implementar criação de orçamento manual para staff com registro de cliente e pet"
+  "timestamp": "2026-01-07T04:17:09.000Z",
+  "commit": "4d3495a",
+  "buildNumber": 31,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
