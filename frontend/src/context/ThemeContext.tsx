@@ -33,28 +33,42 @@ export function ThemeProvider({
     useEffect(() => {
         const root = window.document.documentElement;
 
+        // Clean up previous classes strictly
         root.classList.remove('light', 'dark');
 
         if (theme === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-            const applySystemTheme = () => {
-                const systemTheme = mediaQuery.matches ? 'dark' : 'light';
+            // Function to apply the theme based on the query result
+            const applySystemTheme = (e?: MediaQueryListEvent | MediaQueryList) => {
+                // Use event matches if available, otherwise fall back to the query object
+                const matches = e ? e.matches : mediaQuery.matches;
+                const systemTheme = matches ? 'dark' : 'light';
+
                 root.classList.remove('light', 'dark');
                 root.classList.add(systemTheme);
             };
 
-            applySystemTheme();
+            // Apply initially
+            applySystemTheme(mediaQuery);
 
+            // Listener handler
+            const listener = (e: MediaQueryListEvent) => applySystemTheme(e);
+
+            // Modern browsers
             if (mediaQuery.addEventListener) {
-                mediaQuery.addEventListener('change', applySystemTheme);
-                return () => mediaQuery.removeEventListener('change', applySystemTheme);
-            } else if (mediaQuery.addListener) {
-                // Fallback for older browsers
-                mediaQuery.addListener(applySystemTheme);
-                return () => mediaQuery.removeListener(applySystemTheme);
+                mediaQuery.addEventListener('change', listener);
+                return () => mediaQuery.removeEventListener('change', listener);
+            }
+            // Legacy fallback (Safari < 14, etc.)
+            else if (mediaQuery.addListener) {
+                // @ts-ignore - Deprecated method support
+                mediaQuery.addListener(listener);
+                // @ts-ignore - Deprecated method support
+                return () => mediaQuery.removeListener(listener);
             }
         } else {
+            // Manual theme (light or dark)
             root.classList.add(theme);
         }
     }, [theme]);
