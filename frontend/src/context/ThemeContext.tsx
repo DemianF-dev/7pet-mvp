@@ -40,32 +40,28 @@ export function ThemeProvider({
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
             // Function to apply the theme based on the query result
-            const applySystemTheme = (e?: MediaQueryListEvent | MediaQueryList) => {
-                // Use event matches if available, otherwise fall back to the query object
-                const matches = e ? e.matches : mediaQuery.matches;
-                const systemTheme = matches ? 'dark' : 'light';
+            const applySystemTheme = () => {
+                const systemTheme = mediaQuery.matches ? 'dark' : 'light';
 
+                // Ensure we remove both before adding correct one
                 root.classList.remove('light', 'dark');
                 root.classList.add(systemTheme);
             };
 
             // Apply initially
-            applySystemTheme(mediaQuery);
-
-            // Listener handler
-            const listener = (e: MediaQueryListEvent) => applySystemTheme(e);
+            applySystemTheme();
 
             // Modern browsers
             if (mediaQuery.addEventListener) {
-                mediaQuery.addEventListener('change', listener);
-                return () => mediaQuery.removeEventListener('change', listener);
+                mediaQuery.addEventListener('change', applySystemTheme);
+                return () => mediaQuery.removeEventListener('change', applySystemTheme);
             }
             // Legacy fallback (Safari < 14, etc.)
             else if (mediaQuery.addListener) {
                 // @ts-ignore - Deprecated method support
-                mediaQuery.addListener(listener);
+                mediaQuery.addListener(applySystemTheme);
                 // @ts-ignore - Deprecated method support
-                return () => mediaQuery.removeListener(listener);
+                return () => mediaQuery.removeListener(applySystemTheme);
             }
         } else {
             // Manual theme (light or dark)
