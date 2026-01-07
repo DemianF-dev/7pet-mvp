@@ -50,7 +50,7 @@ export function ThemeProvider({
                 mediaQuery.addEventListener('change', applySystemTheme);
                 return () => mediaQuery.removeEventListener('change', applySystemTheme);
             } else if (mediaQuery.addListener) {
-                // Fallback
+                // Fallback for older browsers
                 mediaQuery.addListener(applySystemTheme);
                 return () => mediaQuery.removeListener(applySystemTheme);
             }
