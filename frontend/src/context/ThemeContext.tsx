@@ -46,12 +46,17 @@ export function ThemeProvider({
 
             applySystemTheme();
 
-            mediaQuery.addEventListener('change', applySystemTheme);
-
-            return () => mediaQuery.removeEventListener('change', applySystemTheme);
+            if (mediaQuery.addEventListener) {
+                mediaQuery.addEventListener('change', applySystemTheme);
+                return () => mediaQuery.removeEventListener('change', applySystemTheme);
+            } else if (mediaQuery.addListener) {
+                // Fallback
+                mediaQuery.addListener(applySystemTheme);
+                return () => mediaQuery.removeListener(applySystemTheme);
+            }
+        } else {
+            root.classList.add(theme);
         }
-
-        root.classList.add(theme);
     }, [theme]);
 
     const value = {
