@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260106-0252",
+  "version": "BETA20260106-0411",
   "stage": "BETA",
-  "timestamp": "2026-01-06T02:52:44.000Z",
-  "commit": "226ebcc",
-  "buildNumber": 29,
-  "releaseNotes": "Auto-generated from commit: fix: ensure API prefix removal before CORS and add www subdomain"
+  "timestamp": "2026-01-06T04:11:23.000Z",
+  "commit": "57ae4ec",
+  "buildNumber": 30,
+  "releaseNotes": "Auto-generated from commit: feat: implementar criação de orçamento manual para staff com registro de cliente e pet"
 }
