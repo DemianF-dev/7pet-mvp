@@ -39,25 +39,37 @@ export function ThemeProvider({
         if (theme === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-            const applySystemTheme = () => {
-                const systemTheme = mediaQuery.matches ? 'dark' : 'light';
+            // Unified handler that works with both Event and QueryList objects
+            // They both have a 'matches' property
+            const applySystemTheme = (e: { matches: boolean }) => {
                 root.classList.remove('light', 'dark');
-                root.classList.add(systemTheme);
+                if (e.matches) {
+                    root.classList.add('dark');
+                } else {
+                    root.classList.add('light');
+                }
             };
 
-            applySystemTheme();
+            // Apply initially based on current state
+            applySystemTheme(mediaQuery);
 
+            // Listener wrapper to ensure correct `this` context/argument type if needed
+            const listener = (e: MediaQueryListEvent) => applySystemTheme(e);
+
+            // Modern browsers
             if (mediaQuery.addEventListener) {
-                mediaQuery.addEventListener('change', applySystemTheme);
-                return () => mediaQuery.removeEventListener('change', applySystemTheme);
-            } else {
-                // Deprecated 'addListener' for older Safari/Browsers
+                mediaQuery.addEventListener('change', listener);
+                return () => mediaQuery.removeEventListener('change', listener);
+            }
+            // Legacy fallback (Safari < 14, etc.)
+            else if (mediaQuery.addListener) {
+                // @ts-ignore - Deprecated method support but necessary for older devices
+                mediaQuery.addListener(listener);
                 // @ts-ignore
-                mediaQuery.addListener(applySystemTheme);
-                // @ts-ignore
-                return () => mediaQuery.removeListener(applySystemTheme);
+                return () => mediaQuery.removeListener(listener);
             }
         } else {
+            // Manual theme (light or dark)
             root.classList.add(theme);
         }
     }, [theme]);
