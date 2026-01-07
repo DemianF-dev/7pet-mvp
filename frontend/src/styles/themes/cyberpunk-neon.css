@@ -1,0 +1,48 @@
+[data-theme="cyberpunk-neon"] {
+    /* Colors - Neon Ops */
+    --color-bg-primary: #050508;
+    /* Deep void black */
+    --color-bg-secondary: #0a0a12;
+    /* Slightly tinted dark */
+    --color-bg-surface: #12121f;
+    /* Dark purple-tinted char */
+
+    --color-text-primary: #e0e0ff;
+    /* Cool white */
+    --color-text-secondary: #8a8ab5;
+
+    /* Neon Accents */
+    --color-accent-primary: #00ffea;
+    /* Cyber Cyan */
+    --color-accent-secondary: #ff0055;
+    /* Neon Magenta */
+
+    --color-border: #2a2a45;
+
+    --color-success: #00ff66;
+    /* Electric Green */
+    --color-warning: #ffcc00;
+    /* Electric Amber */
+    --color-error: #ff3333;
+    /* Electric Red */
+
+    /* "Tech Outline" Shadows & Glows */
+    --shadow-sm: 0 0 5px rgba(0, 255, 234, 0.15);
+    /* Slight cyan glow */
+    --shadow-md: 0 0 10px rgba(0, 255, 234, 0.2);
+    --shadow-lg: 0 0 20px rgba(255, 0, 85, 0.15), 0 0 10px rgba(0, 255, 234, 0.1);
+
+    --focus-ring: 0 0 0 2px #00ffea, 0 0 8px rgba(0, 255, 234, 0.6);
+
+    /* Animation */
+    --transition-fast: 100ms ease-out;
+    /* Snappy */
+
+    /* Decoration override (optional usage) */
+    --radius-sm: 2px;
+    /* Sharper corners */
+    --radius-md: 4px;
+    --radius-lg: 8px;
+
+    --bg-gradient: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #050508 100%);
+}

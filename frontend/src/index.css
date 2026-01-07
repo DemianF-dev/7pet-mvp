@@ -2,31 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-/* :root variables are now handled in ./styles/tokens.css */
+/* Theme tokens are loaded via main.tsx imports */
 
 body {
-  @apply bg-bg-primary text-text-primary antialiased transition-colors duration-200;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   font-family: var(--font-family-base);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-
+/* Glass Card */
 .glass-card {
-  @apply bg-bg-surface backdrop-blur-md border border-border shadow-sm rounded-2xl;
+  background-color: var(--color-bg-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg);
 }
 
+/* Primary Button */
 .btn-primary {
-  @apply bg-primary hover:bg-primary-hover text-primary-text font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2;
+  background-color: var(--color-accent-primary);
+  color: #ffffff;
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
 }
 
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Secondary Button */
 .btn-secondary {
-  @apply bg-bg-surface hover:bg-bg-secondary text-text-secondary border border-border font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2;
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
 }
 
+.btn-secondary:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+/* Input Field */
 .input-field {
-  @apply w-full px-4 py-3 rounded-xl border border-border bg-bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
 }
 
-/* Custom Scrollbar for Premium Feel */
+.input-field:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-accent-primary);
+}
+
+/* Focus visible for all interactive elements */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -37,12 +98,52 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
+  background-color: var(--color-border);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-text-muted;
+  background-color: var(--color-text-secondary);
 }
 
+/* Gradient Background (optional usage) */
+.bg-gradient-theme {
+  background: var(--bg-gradient);
+}
 
-/* Gradients removed for debugging */
+/* Status Colors Utility Classes */
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.bg-success {
+  background-color: var(--color-success);
+}
+
+.bg-warning {
+  background-color: var(--color-warning);
+}
+
+.bg-error {
+  background-color: var(--color-error);
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

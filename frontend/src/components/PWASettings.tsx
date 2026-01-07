@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Bell, BellOff, Download, Wifi, WifiOff, Smartphone, Check, X, ArrowLeft } from 'lucide-react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { toast } from 'react-hot-toast';
-import ThemeSelector from './ThemeSelector';
+import ThemePicker from './ThemePicker';
 
 const PWASettings: React.FC = () => {
     const navigate = useNavigate();
@@ -111,7 +111,7 @@ const PWASettings: React.FC = () => {
 
                 {/* Theme Selector */}
                 <div className="bg-bg-surface rounded-3xl border border-border p-6 shadow-sm">
-                    <ThemeSelector />
+                    <ThemePicker />
                 </div>
 
                 {/* Status de Conexão */}

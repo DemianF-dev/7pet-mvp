@@ -1,0 +1,42 @@
+[data-theme="candy-pop"] {
+    /* Colors - Playful Petshop */
+    --color-bg-primary: #fff5f7;
+    /* Very light pink tint */
+    --color-bg-secondary: #fff0f5;
+    /* Lavender Blush */
+    --color-bg-surface: #ffffff;
+
+    --color-text-primary: #831843;
+    /* Pink 900 */
+    --color-text-secondary: #be185d;
+
+    /* Playful Accents */
+    --color-accent-primary: #ec4899;
+    /* Pink 500 */
+    --color-accent-secondary: #a855f7;
+    /* Purple 500 */
+
+    --color-border: #fbcfe8;
+
+    --color-success: #10b981;
+    /* Emerald */
+    --color-warning: #f59e0b;
+    /* Amber */
+    --color-error: #ef4444;
+    /* Red */
+
+    /* "Pop" shadows */
+    --shadow-sm: 0 4px 0 #fbcfe8;
+    /* Hard shadow offset */
+    --shadow-md: 0 6px 0 #f9a8d4;
+    --shadow-lg: 0 8px 0 #f472b6;
+
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    /* Very bubbly */
+
+    --focus-ring: 0 0 0 3px #f472b6;
+
+    --bg-gradient: radial-gradient(circle at top left, #fff5f7 0%, #fff0f5 100%);
+}

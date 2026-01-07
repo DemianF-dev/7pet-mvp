@@ -1,0 +1,34 @@
+[data-theme="forest-nature"] {
+    /* Colors - Organic Care */
+    --color-bg-primary: #fcfbf7;
+    /* Warm off-white, paper texture feel */
+    --color-bg-secondary: #f3f0e8;
+    /* Beige/Stone */
+    --color-bg-surface: #ffffff;
+
+    --color-text-primary: #2c3e2e;
+    /* Dark moss green */
+    --color-text-secondary: #5c7060;
+    /* Sage */
+
+    /* Nature accents */
+    --color-accent-primary: #4a7c59;
+    /* Forest Green */
+    --color-accent-secondary: #d4a373;
+    /* Wood/Clay */
+
+    --color-border: #e3dcd2;
+
+    --color-success: #4a7c59;
+    --color-warning: #d97706;
+    /* Amber */
+    --color-error: #9f463e;
+    /* Earthy Red */
+
+    /* Subtle, natural shadows */
+    --shadow-sm: 0 1px 3px rgba(44, 62, 46, 0.08);
+
+    --focus-ring: 0 0 0 3px rgba(74, 124, 89, 0.3);
+
+    --bg-gradient: linear-gradient(to bottom right, #fcfbf7 0%, #f3f0e8 100%);
+}

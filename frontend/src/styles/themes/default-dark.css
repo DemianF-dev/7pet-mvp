@@ -1,0 +1,32 @@
+[data-theme="default-dark"] {
+    /* Colors - Minimal Pro Dark */
+    --color-bg-primary: #111827;
+    /* Almost black/charcoal */
+    --color-bg-secondary: #0f131a;
+    /* Slightly darker for contrast or sidebars */
+    --color-bg-surface: #1f2937;
+    /* Graphite surface */
+
+    --color-text-primary: #f9fafb;
+    --color-text-secondary: #9ca3af;
+
+    /* Cian/Azul suave contrastante */
+    --color-accent-primary: #34d399;
+    /* Emerald 400 - good dark mode primary */
+    --color-accent-secondary: #60a5fa;
+    /* Blue 400 */
+
+    --color-border: #374151;
+
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-error: #f87171;
+
+    /* Shadows meant for dark mode (subtle depth) */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+
+    --focus-ring: 0 0 0 2px rgba(52, 211, 153, 0.4);
+
+    --bg-gradient: linear-gradient(135deg, #111827 0%, #171e2e 100%);
+}

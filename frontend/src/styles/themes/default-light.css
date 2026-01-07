@@ -1,0 +1,25 @@
+[data-theme="default-light"] {
+    /* Colors - Minimal Pro */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f8f9fa;
+    --color-bg-surface: #ffffff;
+
+    --color-text-primary: #1a202c;
+    --color-text-secondary: #4a5568;
+
+    /* Azul/Verde suave 'Pro' */
+    --color-accent-primary: #00A852;
+    --color-accent-secondary: #3182ce;
+
+    --color-border: #e2e8f0;
+
+    --color-success: #38a169;
+    --color-warning: #d69e2e;
+    --color-error: #e53e3e;
+
+    /* Overrides */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --focus-ring: 0 0 0 3px rgba(0, 168, 82, 0.4);
+
+    --bg-gradient: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+}
