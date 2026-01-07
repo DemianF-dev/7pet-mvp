@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260107-1316",
+  "version": "BETA20260107-1318",
   "stage": "BETA",
-  "timestamp": "2026-01-07T13:16:03.000Z",
-  "commit": "25ca5e7",
-  "buildNumber": 37,
+  "timestamp": "2026-01-07T13:18:13.000Z",
+  "commit": "c749ee6",
+  "buildNumber": 38,
   "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
