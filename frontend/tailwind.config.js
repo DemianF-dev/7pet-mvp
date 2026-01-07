@@ -8,26 +8,52 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Semantic Backgrounds
+        'bg-primary': 'var(--color-bg-primary)',
+        'bg-secondary': 'var(--color-bg-secondary)',
+        'bg-surface': 'var(--color-bg-surface)',
+
+        // Semantic Text
+        'text-primary': 'var(--color-text-primary)',
+        'text-secondary': 'var(--color-text-secondary)',
+        'text-muted': 'var(--color-text-muted)',
+
+        // Component Level
         primary: {
-          DEFAULT: '#00A852', // Darker green for WCAG AA compliance (3.5:1 ratio)
-          light: '#00D664',   // Original emerald green (now for decorative use)
-          dark: '#008040',    // Even darker for high contrast (4.8:1 ratio)
-          bg: '#E6FFF2',      // Light background
+          DEFAULT: 'var(--color-primary)',
+          hover: 'var(--color-primary-hover)',
+          text: 'var(--color-primary-text)',
         },
         secondary: {
-          DEFAULT: '#111827', // Deep slate/black
+          DEFAULT: 'var(--color-secondary)',
+          hover: 'var(--color-secondary-hover)',
+          text: 'var(--color-secondary-text)',
         },
+        border: 'var(--color-border)',
+
+        // Legacy/Direct mappings if needed for backward compatibility
+        // (Keeping accent as is for now or mapping it if we added it)
         accent: {
-          DEFAULT: '#FFB800', // Yellow for highlights/warner
+          DEFAULT: '#FFB800',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif', 'system-ui'],
+        sans: ['var(--font-family-base)', 'sans-serif', 'system-ui'],
+        heading: ['var(--font-family-heading)', 'sans-serif', 'system-ui'],
       },
       borderRadius: {
-        'xl': '12px',
-        '2xl': '16px',
-        '3xl': '24px',
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        '2xl': '1rem', // Fallbacks or manual
+        '3xl': '1.5rem',
+      },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--color-shadow)',
+        md: '0 4px 6px -1px var(--color-shadow), 0 2px 4px -1px var(--color-shadow)',
+        lg: '0 10px 15px -3px var(--color-shadow), 0 4px 6px -2px var(--color-shadow)',
       },
     },
   },

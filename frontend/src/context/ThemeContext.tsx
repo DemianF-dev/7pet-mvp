@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+// Define the available themes as a union type
+export type Theme =
+    | 'default-light'
+    | 'default-dark'
+    | 'cyberpunk-neon'
+    | 'ocean-calm'
+    | 'forest-nature'
+    | 'candy-pop'
+    | 'system';
 
 interface ThemeProviderProps {
     children: React.ReactNode;
@@ -10,11 +18,13 @@ interface ThemeProviderProps {
 
 interface ThemeProviderState {
     theme: Theme;
+    activeTheme: string; // The resolved theme (e.g., 'default-dark' when system is dark)
     setTheme: (theme: Theme) => void;
 }
 
 const initialState: ThemeProviderState = {
     theme: 'system',
+    activeTheme: 'default-light',
     setTheme: () => null,
 };
 
@@ -26,59 +36,75 @@ export function ThemeProvider({
     storageKey = '7pet-theme',
     ...props
 }: ThemeProviderProps) {
-    const [theme, setTheme] = useState<Theme>(
+    // 1. Initialize state from localStorage or default
+    const [theme, setThemeState] = useState<Theme>(
         () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
     );
 
+    const [activeTheme, setActiveTheme] = useState<string>('default-light');
+
     useEffect(() => {
         const root = window.document.documentElement;
-
-        // Clean up previous classes strictly
+        // Clean up legacy classes if strictly needed, though dataset overrides mostly
         root.classList.remove('light', 'dark');
+
+        let resolvedTheme = theme;
 
         if (theme === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-            // Unified handler that works with both Event and QueryList objects
-            // They both have a 'matches' property
-            const applySystemTheme = (e: { matches: boolean }) => {
-                root.classList.remove('light', 'dark');
-                if (e.matches) {
+            const resolveSystemTheme = () => {
+                const newTheme = mediaQuery.matches ? 'default-dark' : 'default-light';
+                root.setAttribute('data-theme', newTheme);
+                // Also toggle .dark class for any legacy Tailwind 'dark:' utilities
+                if (newTheme === 'default-dark') {
                     root.classList.add('dark');
+                    root.classList.remove('light');
                 } else {
+                    root.classList.remove('dark');
                     root.classList.add('light');
                 }
+                setActiveTheme(newTheme);
             };
 
-            // Apply initially based on current state
-            applySystemTheme(mediaQuery);
+            resolveSystemTheme();
 
-            // Listener wrapper to ensure correct `this` context/argument type if needed
-            const listener = (e: MediaQueryListEvent) => applySystemTheme(e);
+            const listener = () => resolveSystemTheme();
 
-            // Modern browsers
             if (mediaQuery.addEventListener) {
                 mediaQuery.addEventListener('change', listener);
                 return () => mediaQuery.removeEventListener('change', listener);
-            }
-            // Legacy fallback (Safari < 14, etc.)
-            else if (mediaQuery.addListener) {
-                // @ts-ignore - Deprecated method support but necessary for older devices
+            } else if (mediaQuery.addListener) {
+                // @ts-ignore
                 mediaQuery.addListener(listener);
                 // @ts-ignore
                 return () => mediaQuery.removeListener(listener);
             }
         } else {
-            // Manual theme (light or dark)
-            root.classList.add(theme);
+            // Manual theme selection
+            root.setAttribute('data-theme', theme);
+
+            // Set legacy classes for 'dark:' utility support
+            // We assume 'default-dark' and 'cyberpunk-neon' are "dark" themes
+            const isDarkTheme = theme === 'default-dark' || theme === 'cyberpunk-neon';
+
+            if (isDarkTheme) {
+                root.classList.add('dark');
+                root.classList.remove('light');
+            } else {
+                root.classList.remove('dark');
+                root.classList.add('light');
+            }
+            setActiveTheme(theme);
         }
     }, [theme]);
 
     const value = {
         theme,
-        setTheme: (theme: Theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+        activeTheme,
+        setTheme: (newTheme: Theme) => {
+            localStorage.setItem(storageKey, newTheme);
+            setThemeState(newTheme);
         },
     };
 

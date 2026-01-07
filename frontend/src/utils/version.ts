@@ -1,3 +1,5 @@
+import React, { useState, useEffect } from 'react';
+
 /**
  * Utilitário para gerenciar informações de versão do sistema
  */
@@ -59,10 +61,10 @@ export async function getVersionDisplay(): Promise<string> {
  * Hook React para usar informações de versão
  */
 export function useVersion() {
-    const [version, setVersion] = React.useState<VersionInfo | null>(null);
-    const [loading, setLoading] = React.useState(true);
+    const [version, setVersion] = useState<VersionInfo | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    React.useEffect(() => {
+    useEffect(() => {
         getVersion().then(v => {
             setVersion(v);
             setLoading(false);
@@ -71,6 +73,3 @@ export function useVersion() {
 
     return { version, loading };
 }
-
-// Importar React apenas se estiver em um ambiente React
-const React = typeof window !== 'undefined' ? require('react') : null;

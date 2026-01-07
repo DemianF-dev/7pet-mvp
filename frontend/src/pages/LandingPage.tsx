@@ -140,7 +140,7 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                <section
+                <motion.section
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
@@ -152,7 +152,7 @@ export default function LandingPage() {
                         alt="Golden Retriever feliz representando o cuidado da 7Pet"
                         className="rounded-[40px] shadow-2xl border-8 border-white"
                     />
-                </section>
+                </motion.section>
             </motion.div>
 
             <footer className="relative z-10 mt-12 text-gray-400 text-sm">

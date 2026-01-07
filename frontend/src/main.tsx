@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import App from './App.tsx'
+import './styles/tokens.css'
 import './index.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';

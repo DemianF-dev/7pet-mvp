@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Bell, BellOff, Download, Wifi, WifiOff, Smartphone, Check, X, ArrowLeft } from 'lucide-react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { toast } from 'react-hot-toast';
+import ThemeSelector from './ThemeSelector';
 
 const PWASettings: React.FC = () => {
     const navigate = useNavigate();
@@ -95,19 +96,23 @@ const PWASettings: React.FC = () => {
                 <div>
                     <button
                         onClick={() => navigate(-1)}
-                        className="mb-4 flex items-center gap-2 text-slate-600 hover:text-primary transition-colors font-medium"
+                        className="mb-4 flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-medium"
                     >
                         <ArrowLeft size={20} />
                         Voltar
                     </button>
-                    <h1 className="text-3xl font-extrabold text-slate-800 mb-2">
+                    <h1 className="text-3xl font-extrabold text-text-primary mb-2">
                         Configurações do <span className="text-primary">App</span>
                     </h1>
-                    <p className="text-slate-500 font-medium">
-                        Configure notificações, instalação e modo offline
+                    <p className="text-text-secondary font-medium">
+                        Personalize sua experiência, notificações e modo offline
                     </p>
                 </div>
 
+                {/* Theme Selector */}
+                <div className="bg-bg-surface rounded-3xl border border-border p-6 shadow-sm">
+                    <ThemeSelector />
+                </div>
 
                 {/* Status de Conexão */}
                 <motion.div
