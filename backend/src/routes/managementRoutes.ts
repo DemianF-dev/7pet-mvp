@@ -10,7 +10,7 @@ const router = Router();
 router.use(authenticate);
 
 // Publicly available to staff for selection (but still filtered in controller if needed)
-router.get('/users', authorize(['ADMIN', 'GESTAO', 'OPERACIONAL', 'SPA']), managementController.listUsers);
+router.get('/users', authorize(['ADMIN', 'GESTAO', 'OPERACIONAL', 'SPA', 'LOGISTICA']), managementController.listUsers);
 
 // Restricted actions
 router.use(authorize(['ADMIN']));

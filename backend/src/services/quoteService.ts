@@ -1,6 +1,8 @@
 import prisma from '../lib/prisma';
 import { QuoteDependencies, CascadeDeleteOptions } from '../types/QuoteDependencies';
 import { messagingService } from './messagingService';
+import { createAuditLog } from '../utils/auditLogger';
+import Logger from '../lib/logger';
 
 /**
  * Verifica dependências de um orçamento (appointments e invoices)
@@ -195,6 +197,12 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         throw new Error('Este orçamento já está em um status finalizado (já agendado ou encerrado).');
     }
 
+    if (!quote.petId && (quote.type === 'SPA' || quote.type === 'SPA_TRANSPORTE' || quote.type === 'TRANSPORTE')) {
+        throw new Error('Não é possível agendar: Nenhum pet foi vinculado a este orçamento.');
+    }
+
+    Logger.info(`[QuoteService] Starting approveAndSchedule for Quote ${id}. Performer: ${performerId || 'None'}`);
+
     const result = await prisma.$transaction(async (tx) => {
         // 1. Approve Quote
         await tx.quote.update({
@@ -220,7 +228,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         if (!existingInvoiceForThisQuote) {
             await tx.invoice.create({
                 data: {
-                    customerId: quote.customerId,
+                    customer: { connect: { id: quote.customerId } },
                     quotes: {
                         connect: [{ id: quote.id }]
                     },
@@ -237,50 +245,117 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         if (quote.type === 'SPA' || quote.type === 'SPA_TRANSPORTE') {
             const appt = await tx.appointment.create({
                 data: {
-                    customerId: quote.customerId,
-                    petId: quote.petId!,
+                    customer: { connect: { id: quote.customerId } },
+                    pet: { connect: { id: quote.petId! } },
                     startAt: quote.scheduledAt || quote.desiredAt || new Date(),
                     status: 'CONFIRMADO',
                     category: 'SPA',
-                    quoteId: id,
-                    performerId: performerId || undefined,
+                    quote: { connect: { id } },
+                    performer: performerId ? { connect: { id: performerId } } : undefined,
                     services: {
                         connect: quote.items.filter(i => i.serviceId).map(i => ({ id: i.serviceId! }))
                     }
                 }
             });
+            Logger.info(`[QuoteService] SPA Appointment created: ${appt.id}`);
             appointments.push(appt);
         }
 
         // 4. Create Logistics Appointment if applicable
         if (quote.type === 'TRANSPORTE' || quote.type === 'SPA_TRANSPORTE') {
-            const appt = await tx.appointment.create({
-                data: {
-                    customerId: quote.customerId,
-                    petId: quote.petId!,
-                    startAt: quote.transportAt || quote.desiredAt || new Date(),
-                    status: 'CONFIRMADO',
-                    category: 'LOGISTICA',
-                    quoteId: id,
-                    transport: {
-                        create: {
-                            origin: quote.transportOrigin || 'Endereço do Cliente',
-                            destination: quote.transportDestination || '7Pet',
-                            requestedPeriod: quote.transportPeriod || 'MANHA'
+            const isRoundTrip = quote.transportType === 'ROUND_TRIP' || (!quote.transportType && quote.type === 'SPA_TRANSPORTE');
+
+            if (isRoundTrip) {
+                // Leg 1: LEVA (Pickup)
+                const apptLeva = await tx.appointment.create({
+                    data: {
+                        customer: { connect: { id: quote.customerId } },
+                        pet: { connect: { id: quote.petId! } },
+                        startAt: quote.transportLevaAt || quote.transportAt || quote.desiredAt || new Date(),
+                        status: 'CONFIRMADO',
+                        category: 'LOGISTICA',
+                        quote: { connect: { id } },
+                        transport: {
+                            create: {
+                                origin: quote.transportOrigin || 'Endereço do Cliente',
+                                destination: quote.transportDestination || '7Pet',
+                                requestedPeriod: quote.transportPeriod || 'MANHA',
+                                type: 'LEVA'
+                            }
                         }
                     }
-                }
-            });
-            appointments.push(appt);
+                });
+                Logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id}`);
+                appointments.push(apptLeva);
+
+                // Leg 2: TRAZ (Return)
+                // Return time is usually after the service. Defaults to 4 hours later if not specified.
+                const returnTime = quote.transportTrazAt || new Date((quote.scheduledAt || quote.desiredAt || new Date()).getTime() + 4 * 60 * 60 * 1000);
+
+                const apptTraz = await tx.appointment.create({
+                    data: {
+                        customer: { connect: { id: quote.customerId } },
+                        pet: { connect: { id: quote.petId! } },
+                        startAt: returnTime,
+                        status: 'CONFIRMADO',
+                        category: 'LOGISTICA',
+                        quote: { connect: { id } },
+                        transport: {
+                            create: {
+                                origin: quote.transportDestination || '7Pet',
+                                destination: quote.transportReturnAddress || quote.transportOrigin || 'Endereço do Cliente',
+                                requestedPeriod: quote.transportPeriod || 'TARDE',
+                                type: 'TRAZ'
+                            }
+                        }
+                    }
+                });
+                Logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id}`);
+                appointments.push(apptTraz);
+            } else {
+                // One way (Single appointment)
+                const legType = quote.transportType === 'DROP_OFF' ? 'TRAZ' : 'LEVA';
+                const appt = await tx.appointment.create({
+                    data: {
+                        customer: { connect: { id: quote.customerId } },
+                        pet: { connect: { id: quote.petId! } },
+                        startAt: (legType === 'LEVA' ? (quote.transportLevaAt || quote.transportAt || quote.desiredAt) : (quote.transportTrazAt || quote.scheduledAt)) || new Date(),
+                        status: 'CONFIRMADO',
+                        category: 'LOGISTICA',
+                        quote: { connect: { id } },
+                        transport: {
+                            create: {
+                                origin: quote.transportOrigin || 'Endereço do Cliente',
+                                destination: quote.transportDestination || '7Pet',
+                                requestedPeriod: quote.transportPeriod || 'MANHA',
+                                type: legType
+                            }
+                        }
+                    }
+                });
+                Logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id}`);
+                appointments.push(appt);
+            }
         }
 
-        // 5. Final Status Update
         await tx.quote.update({
             where: { id },
             data: { status: 'AGENDADO' }
         });
 
+        // 6. Audit Log
+        await createAuditLog({
+            entityType: 'QUOTE',
+            entityId: id,
+            action: 'APPROVE',
+            performedBy: authUser?.id || 'SYSTEM',
+            reason: 'Aprovação e Agendamento via One-Click'
+        }, tx);
+
         return appointments;
+    }, {
+        maxWait: 5000,
+        timeout: 15000
     });
 
     // 6. Notifications

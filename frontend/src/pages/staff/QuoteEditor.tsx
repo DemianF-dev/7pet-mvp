@@ -113,6 +113,10 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [desiredAt, setDesiredAt] = useState('');
     const [scheduledAt, setScheduledAt] = useState('');
     const [transportAt, setTransportAt] = useState('');
+    const [transportLevaAt, setTransportLevaAt] = useState('');
+    const [transportTrazAt, setTransportTrazAt] = useState('');
+    const [petId, setPetId] = useState<string | null>(null);
+    const [customerPets, setCustomerPets] = useState<any[]>([]);
     const [showAuditLog, setShowAuditLog] = useState(false);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [serviceSearch, setServiceSearch] = useState<{ [key: number]: string }>({});
@@ -152,7 +156,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             console.log('[AUTOCOMPLETE] Serviços carregados:', servicesRes.data.length);
             setAvailableServices(servicesRes.data);
             setStaffUsers((usersRes.data || []).filter((u: any) =>
-                u && ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role)
+                u && ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role) && u.isEligible !== false
             ));
         } catch (error) {
             console.error('[AUTOCOMPLETE] Erro ao buscar serviços/usuários:', error);
@@ -181,13 +185,20 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             const response = await api.get(`/quotes/${id}`);
             const q = response.data;
             setQuote(q);
+            setPetId(q.petId);
             setItems(q.items);
             setStatus(q.status);
             setNotes(q.notes || '');
 
-            // Initialize transport address if available
             if (q.transportOrigin) {
                 setTransportAddress(q.transportOrigin);
+            }
+            if (q.transportReturnAddress) {
+                setTransportDestinationAddress(q.transportReturnAddress);
+                setHasDifferentReturnAddress(true);
+            }
+            if (q.transportType) {
+                setTransportType(q.transportType);
             }
 
             if (q.desiredAt) {
@@ -200,6 +211,22 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             }
             if (q.transportAt) {
                 setTransportAt(formatDateForInput(q.transportAt));
+            }
+            if (q.transportLevaAt) {
+                setTransportLevaAt(formatDateForInput(q.transportLevaAt));
+            }
+            if (q.transportTrazAt) {
+                setTransportTrazAt(formatDateForInput(q.transportTrazAt));
+            }
+
+            // Fetch customer pets to allow manual selection/editing
+            if (q.customerId) {
+                try {
+                    const customerRes = await api.get(`/customers/${q.customerId}`);
+                    setCustomerPets(customerRes.data.pets || []);
+                } catch (err) {
+                    console.error('Error fetching customer pets:', err);
+                }
             }
         } catch (error) {
             console.error('Erro ao buscar orçamento:', error);
@@ -255,7 +282,14 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 return;
             }
         } else {
-            newItems.push({ description, quantity: 1, price });
+            // Auto-assign first logistics person if available
+            const firstDriver = staffUsers.find((u: any) => u.division === 'LOGISTICA');
+            newItems.push({
+                description,
+                quantity: 1,
+                price,
+                performerId: firstDriver?.id
+            });
         }
 
         setItems(newItems);
@@ -333,6 +367,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
         // Pick primary performer if available
         const performerId = items.find(it => it.performerId)?.performerId;
+
+        // NEW: Strict validation of professionals
+        const missingProfessionals = items.filter(it => !it.performerId);
+        if (missingProfessionals.length > 0) {
+            toast.error(`Atenção: Selecione o Profissional para todos os itens (${missingProfessionals.length} pendentes).`);
+            return;
+        }
 
         if (!validateDates()) return;
 
@@ -482,7 +523,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 notes,
                 desiredAt: desiredAt ? new Date(desiredAt).toISOString() : undefined,
                 scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-                transportAt: transportAt ? new Date(transportAt).toISOString() : undefined
+                transportAt: transportAt ? new Date(transportAt).toISOString() : undefined,
+                transportLevaAt: transportLevaAt ? new Date(transportLevaAt).toISOString() : undefined,
+                transportTrazAt: transportTrazAt ? new Date(transportTrazAt).toISOString() : undefined,
+                transportType,
+                transportOrigin: transportAddress,
+                transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined,
+                petId
             });
 
             if (!silent) toast.success('Orçamento salvo com sucesso!');
@@ -553,7 +600,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 notes,
                 desiredAt: desiredAt ? new Date(desiredAt).toISOString() : undefined,
                 scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-                transportAt: transportAt ? new Date(transportAt).toISOString() : undefined
+                transportAt: transportAt ? new Date(transportAt).toISOString() : undefined,
+                transportLevaAt: transportLevaAt ? new Date(transportLevaAt).toISOString() : undefined,
+                transportTrazAt: transportTrazAt ? new Date(transportTrazAt).toISOString() : undefined,
+                transportType,
+                transportOrigin: transportAddress,
+                transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined
             });
             toast.success('Orçamento enviado ao cliente!');
 
@@ -571,7 +623,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
     if (isLoading) {
         return (
-            <div className={`flex items-center justify-center ${isModal ? 'h-[400px]' : 'min-h-screen bg-gray-50'}`}>
+            <div className={`flex items-center justify-center ${isModal ? 'h-[400px]' : 'min-h-screen bg-gray-50 dark:bg-black'}`}>
                 <Calculator className="animate-spin text-primary" size={48} />
             </div>
         );
@@ -613,7 +665,9 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     notes,
                     desiredAt,
                     scheduledAt,
-                    transportAt
+                    transportAt,
+                    transportLevaAt,
+                    transportTrazAt
                 }) : undefined}
                 onSave={handleSave}
                 onSendToClient={handleSendToClient}
@@ -622,7 +676,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <section className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
+                    <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
                         <QuotePricingVariables
                             quote={quote}
                             desiredAt={desiredAt}
@@ -631,6 +685,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                             setScheduledAt={setScheduledAt}
                             transportAt={transportAt}
                             setTransportAt={setTransportAt}
+                            transportLevaAt={transportLevaAt}
+                            setTransportLevaAt={setTransportLevaAt}
+                            transportTrazAt={transportTrazAt}
+                            setTransportTrazAt={setTransportTrazAt}
+                            petId={petId}
+                            customerPets={customerPets}
+                            onPetChange={(id) => setPetId(id)}
                         />
                     </section>
 
@@ -645,11 +706,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                         setShowServiceDropdown={setShowServiceDropdown}
                         getFilteredServices={getFilteredServices}
                         staffUsers={staffUsers}
+                        availableServices={availableServices}
                         totalAmount={totalAmount}
                     />
 
                     {(quote?.type === 'SPA_TRANSPORTE' || quote?.type === 'TRANSPORTE') && (
-                        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
+                        <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
                             <QuoteTransportCalculator
                                 transportType={transportType}
                                 setTransportType={setTransportType}
@@ -670,13 +732,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                         </section>
                     )}
 
-                    <section className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
-                        <h3 className="text-xl font-black text-secondary mb-6">Observações Internas</h3>
+                    <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 className="text-xl font-black text-secondary dark:text-white mb-6">Observações Internas</h3>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={4}
-                            className="w-full bg-gray-50 border-transparent rounded-3xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="w-full bg-gray-50 dark:bg-gray-900 border-transparent rounded-3xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all text-secondary dark:text-white placeholder:text-gray-400"
                             placeholder="Notas que apenas a equipe pode ver..."
                         />
                     </section>
@@ -737,7 +799,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-white rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
+                        className="bg-white dark:bg-gray-800 rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
                     >
                         <button
                             onClick={() => setAppointmentSelectionQuote(null)}
@@ -746,7 +808,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                             <X size={24} />
                         </button>
 
-                        <h2 className="text-2xl font-black text-secondary mb-2">Selecionar Agendamento</h2>
+                        <h2 className="text-2xl font-black text-secondary dark:text-white mb-2">Selecionar Agendamento</h2>
                         <p className="text-gray-400 font-medium mb-8">Esta solicitação gerou múltiplos agendamentos. Qual você deseja visualizar?</p>
 
                         <div className="grid grid-cols-1 gap-4">
@@ -784,13 +846,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                             toast.error('Erro ao carregar detalhes do agendamento');
                                         }
                                     }}
-                                    className="flex items-center gap-4 p-5 rounded-3xl border-2 border-dashed border-gray-100 hover:border-primary hover:bg-primary/5 transition-all group text-left"
+                                    className="flex items-center gap-4 p-5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-700 hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-all group text-left"
                                 >
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${appt.category === 'LOGISTICA' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
                                         <Calendar size={24} />
                                     </div>
                                     <div>
-                                        <h4 className="font-exrabold text-secondary text-lg group-hover:text-primary transition-colors font-black">
+                                        <h4 className="font-extrabold text-secondary dark:text-white text-lg group-hover:text-primary transition-colors font-black">
                                             {appt.category === 'LOGISTICA' ? 'Transporte / Logística' : 'Banho & Tosa (SPA)'}
                                         </h4>
                                         <div className="flex items-center gap-2 mt-1">
@@ -813,7 +875,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
     if (isModal) {
         return (
-            <div className="bg-gray-50 h-full overflow-y-auto px-6 py-6 rounded-[40px] shadow-none">
+            <div className="bg-gray-50 dark:bg-gray-900 h-full overflow-y-auto px-6 py-6 rounded-[40px] shadow-none">
                 {content}
                 {auditModal}
                 {customerModal}
@@ -824,7 +886,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen bg-gray-50 dark:bg-black flex">
             <StaffSidebar />
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 {content}

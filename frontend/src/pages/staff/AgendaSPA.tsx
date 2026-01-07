@@ -13,6 +13,7 @@ import {
     CheckSquare,
     Square,
     Trash2,
+    Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
@@ -37,10 +38,20 @@ interface Appointment {
     performerId?: string;
     performer?: { id: string; name: string; color?: string };
     category?: string;
+    quote?: {
+        appointments?: { id: string; category: string; transport?: { type: string } }[];
+    };
 }
 
 type ViewType = 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH';
 type TabType = 'active' | 'trash';
+
+interface Staff {
+    id: string;
+    name: string;
+    role: string;
+    color?: string;
+}
 
 const statusColumns = [
     { key: 'PENDENTE', label: 'Solicitados', color: 'bg-orange-500' },
@@ -64,6 +75,24 @@ export default function AgendaSPA() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkMode, setIsBulkMode] = useState(false);
     const [tab, setTab] = useState<TabType>('active');
+    const [performers, setPerformers] = useState<Staff[]>([]);
+    const [selectedPerformerId, setSelectedPerformerId] = useState<string>('ALL');
+
+    useEffect(() => {
+        fetchPerformers();
+    }, []);
+
+    const fetchPerformers = async () => {
+        try {
+            const response = await api.get('/management/users');
+            const allUsers = response.data || [];
+            // Filter only staff (non-clients)
+            const staffMembers = allUsers.filter((u: any) => u.role !== 'CLIENTE');
+            setPerformers(staffMembers);
+        } catch (err) {
+            console.error('Erro ao buscar colaboradores:', err);
+        }
+    };
 
     useEffect(() => {
         if (location.state?.prefill) {
@@ -171,7 +200,10 @@ export default function AgendaSPA() {
             a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (a.services && a.services.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
             (a.service && a.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        return matchesGlobal;
+
+        const matchesPerformer = selectedPerformerId === 'ALL' || a.performerId === selectedPerformerId;
+
+        return matchesGlobal && matchesPerformer;
     });
 
     const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
@@ -208,9 +240,9 @@ export default function AgendaSPA() {
         return (
             <div className="space-y-4">
                 {dayAppts.length === 0 ? (
-                    <div className="bg-white rounded-[32px] p-20 text-center border-2 border-dashed border-gray-200 shadow-inner">
-                        <Clock className="mx-auto text-gray-300 mb-4" size={48} />
-                        <p className="text-gray-500 font-black uppercase tracking-widest text-sm">Nenhum agendamento para este dia.</p>
+                    <div className="bg-white dark:bg-gray-800 rounded-[32px] p-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 shadow-inner">
+                        <Clock className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
+                        <p className="text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest text-sm">Nenhum agendamento para este dia.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
@@ -227,7 +259,7 @@ export default function AgendaSPA() {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     onClick={() => handleOpenDetails(appt)}
-                                    className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 flex items-center gap-6 hover:shadow-2xl hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] ${isSelected ? 'ring-4 ring-primary/30 bg-primary/10 border-primary/40' : 'bg-white'}`}
+                                    className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 dark:border-gray-700 flex items-center gap-6 hover:shadow-2xl hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] ${isSelected ? 'ring-4 ring-primary/30 bg-primary/10 border-primary/40' : 'bg-white dark:bg-gray-800'}`}
                                     style={!isSelected && appt.performer?.color ? {
                                         borderLeftColor: appt.performer.color,
                                         backgroundColor: `${appt.performer.color}08`
@@ -243,32 +275,37 @@ export default function AgendaSPA() {
                                     )}
 
                                     <div className="w-28 shrink-0">
-                                        <p className="text-[10px] font-black text-secondary/40 underline decoration-primary/30 decoration-2 underline-offset-4 uppercase tracking-[0.2em] mb-2">Horário</p>
-                                        <p className="text-3xl font-black text-secondary tabular-nums drop-shadow-sm leading-none">
+                                        <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 underline decoration-primary/30 decoration-2 underline-offset-4 uppercase tracking-[0.2em] mb-2">Horário</p>
+                                        <p className="text-3xl font-black text-secondary dark:text-white tabular-nums drop-shadow-sm leading-none">
                                             {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
 
                                     <div className="flex-1">
-                                        <p className="text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2">Pet & Tutor(a)</p>
+                                        <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 uppercase tracking-[0.2em] mb-2">Pet & Tutor(a)</p>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-2xl font-black text-secondary uppercase tracking-tighter bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 group-hover:border-primary/30 transition-colors">
+                                            <span className="text-2xl font-black text-secondary dark:text-white uppercase tracking-tighter bg-white dark:bg-gray-700/50 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 group-hover:border-primary/30 transition-colors">
                                                 {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
                                             </span>
-                                            <div className="h-6 w-px bg-gray-100"></div>
-                                            <span className="font-black text-gray-500 text-lg group-hover:text-secondary transition-colors">{appt.customer.name}</span>
+                                            <div className="h-6 w-px bg-gray-100 dark:bg-gray-700"></div>
+                                            <span className="font-black text-gray-500 dark:text-gray-300 text-lg group-hover:text-secondary dark:group-hover:text-white transition-colors">{appt.customer.name}</span>
+                                            {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
+                                                <span className="bg-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg shadow-orange-500/20 animate-pulse">
+                                                    COM LEVA E TRAZ
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
                                     <div className="hidden lg:block w-64">
-                                        <p className="text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2">Serviços</p>
+                                        <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 uppercase tracking-[0.2em] mb-2">Serviços</p>
                                         <div className="flex flex-wrap gap-1.5">
                                             {appt.services?.map(s => (
-                                                <span key={s.id} className="text-[10px] font-black bg-white border border-gray-100 px-3 py-1.5 rounded-xl text-secondary shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
+                                                <span key={s.id} className="text-[10px] font-black bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl text-secondary dark:text-white shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
                                                     {s.name}
                                                 </span>
                                             )) || (appt.service && (
-                                                <span className="text-[10px] font-black bg-white border border-gray-100 px-3 py-1.5 rounded-xl text-secondary shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
+                                                <span className="text-[10px] font-black bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl text-secondary dark:text-white shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
                                                     {appt.service.name}
                                                 </span>
                                             ))}
@@ -316,7 +353,7 @@ export default function AgendaSPA() {
 
                     return (
                         <div key={day.toISOString()} className="flex flex-col gap-4">
-                            <div className={`p-4 rounded-[24px] text-center border-2 transition-all shadow-sm ${isSameDay(day, new Date()) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105' : 'bg-white border-gray-100 text-secondary'}`}>
+                            <div className={`p-4 rounded-[24px] text-center border-2 transition-all shadow-sm ${isSameDay(day, new Date()) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-secondary dark:text-white'}`}>
                                 <p className={`text-[10px] font-black uppercase tracking-widest ${isSameDay(day, new Date()) ? 'text-white/80' : 'text-gray-400'}`}>
                                     {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
                                 </p>
@@ -325,8 +362,8 @@ export default function AgendaSPA() {
 
                             <div className="flex-1 space-y-3">
                                 {dayAppts.length === 0 ? (
-                                    <div className="p-8 text-center border-2 border-dashed border-gray-100 rounded-[24px]">
-                                        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Vazio</p>
+                                    <div className="p-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-[24px]">
+                                        <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">Vazio</p>
                                     </div>
                                 ) : (
                                     dayAppts.map(appt => {
@@ -338,7 +375,7 @@ export default function AgendaSPA() {
                                             <div
                                                 key={appt.id}
                                                 onClick={() => handleOpenDetails(appt)}
-                                                className={`p-4 rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${isSelected ? 'ring-4 ring-primary/20 bg-primary/5 border-primary/50' : 'bg-white border-gray-50'}`}
+                                                className={`p-4 rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${isSelected ? 'ring-4 ring-primary/20 bg-primary/5 border-primary/50' : 'bg-white dark:bg-gray-800 border-gray-50 dark:border-gray-700'}`}
                                                 style={!isSelected && appt.performer?.color ? {
                                                     borderLeftColor: appt.performer.color,
                                                     backgroundColor: `${appt.performer.color}08`
@@ -355,14 +392,17 @@ export default function AgendaSPA() {
                                                     {(isBulkMode || isSelected) && (
                                                         <button
                                                             onClick={(e) => toggleSelect(appt.id, e)}
-                                                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 border-gray-100'}`}
+                                                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
                                                         >
                                                             <CheckSquare size={16} strokeWidth={3} />
                                                         </button>
                                                     )}
                                                 </div>
-                                                <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight">
+                                                <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight flex items-center gap-2 text-secondary dark:text-white">
                                                     {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                    {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
+                                                        <span className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></span>
+                                                    )}
                                                 </p>
                                                 <p className="text-[10px] opacity-70 font-bold truncate">{appt.customer.name}</p>
                                             </div>
@@ -395,10 +435,10 @@ export default function AgendaSPA() {
         const weekHeaders = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
         return (
-            <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-                <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/30">
+            <div className="bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30">
                     {weekHeaders.map(wh => (
-                        <div key={wh} className="p-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-r border-gray-100 last:border-none">
+                        <div key={wh} className="p-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-r border-gray-100 dark:border-gray-700 last:border-none">
                             {wh}
                         </div>
                     ))}
@@ -408,15 +448,17 @@ export default function AgendaSPA() {
                     {days.map((day, idx) => {
                         const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
                         const isToday = isSameDay(day, new Date());
-                        const dayAppts = filteredAppointments.filter(a => isSameDay(new Date(a.startAt), day));
+                        const dayAppts = filteredAppointments
+                            .filter(a => isSameDay(new Date(a.startAt), day))
+                            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
                         return (
                             <div
                                 key={idx}
-                                className={`min-h-[140px] p-2 border-r border-b border-gray-100 transition-all ${!isCurrentMonth ? 'bg-gray-100/50 opacity-40' : 'bg-white'} ${isToday ? 'bg-primary/10' : ''}`}
+                                className={`min-h-[140px] p-2 border-r border-b border-gray-100 dark:border-gray-700 transition-all ${!isCurrentMonth ? 'bg-gray-100/50 dark:bg-gray-900/50 opacity-40' : 'bg-white dark:bg-gray-800'} ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}`}
                             >
                                 <div className="flex justify-end mb-2">
-                                    <span className={`text-[13px] font-black w-8 h-8 flex items-center justify-center rounded-xl shadow-sm ${isToday ? 'bg-primary text-white shadow-lg' : 'text-secondary/60 bg-gray-50'}`}>
+                                    <span className={`text-[13px] font-black w-8 h-8 flex items-center justify-center rounded-xl shadow-sm ${isToday ? 'bg-primary text-white shadow-lg' : 'text-secondary/60 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'}`}>
                                         {day.getDate()}
                                     </span>
                                 </div>
@@ -430,7 +472,7 @@ export default function AgendaSPA() {
                                             <div
                                                 key={appt.id}
                                                 onClick={() => handleOpenDetails(appt)}
-                                                className={`p-2 rounded-xl border-l-[6px] shadow-sm text-[10px] font-black uppercase truncate cursor-pointer hover:scale-[1.02] transition-all flex items-center gap-2 ${isSelected ? 'ring-2 ring-primary border-primary shadow-primary/20 bg-white' : 'bg-white border-gray-100'}`}
+                                                className={`p-2 rounded-xl border-l-[6px] shadow-sm text-[10px] font-black uppercase truncate cursor-pointer hover:scale-[1.02] transition-all flex items-center gap-2 ${isSelected ? 'ring-2 ring-primary border-primary shadow-primary/20 bg-white dark:bg-gray-700' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:text-gray-300'}`}
                                                 style={!isSelected && appt.performer?.color ? {
                                                     borderLeftColor: appt.performer.color,
                                                     backgroundColor: `${appt.performer.color}15`,
@@ -440,7 +482,12 @@ export default function AgendaSPA() {
                                                 <span className="shrink-0 tabular-nums opacity-60">
                                                     {new Date(appt.startAt).getHours()}:{new Date(appt.startAt).getMinutes().toString().padStart(2, '0')}
                                                 </span>
-                                                <span className="truncate">{appt.pet.name} {isRecurring ? '(R)' : '(A)'}</span>
+                                                <span className="truncate flex items-center gap-1">
+                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                    {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
+                                                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                                    )}
+                                                </span>
                                                 {isSelected && <CheckSquare size={12} className="ml-auto text-primary" />}
                                             </div>
                                         );
@@ -458,7 +505,7 @@ export default function AgendaSPA() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen bg-gray-50 dark:bg-black flex">
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-4 md:p-8">
@@ -471,45 +518,63 @@ export default function AgendaSPA() {
                                 CENTRAL DE AGENDAMENTOS SPA
                             </div>
                             <div className="flex items-center gap-6">
-                                <h1 className="text-4xl font-black text-secondary tracking-tight capitalize">
+                                <h1 className="text-4xl font-black text-secondary dark:text-white tracking-tight capitalize">
                                     {view === 'DAY' ? selectedDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }) :
                                         selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                                 </h1>
-                                <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
-                                    <button onClick={prevDate} className="p-2 hover:bg-gray-50 rounded-xl transition-all text-gray-400 hover:text-primary">
+                                <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                                    <button onClick={prevDate} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all text-gray-400 hover:text-primary">
                                         <ChevronLeft size={20} />
                                     </button>
-                                    <button onClick={setToday} className="px-6 py-2 text-[10px] font-black text-secondary hover:text-primary uppercase tracking-[0.2em] transition-colors">
+                                    <button onClick={setToday} className="px-6 py-2 text-[10px] font-black text-secondary dark:text-white hover:text-primary uppercase tracking-[0.2em] transition-colors">
                                         Hoje
                                     </button>
-                                    <button onClick={nextDate} className="p-2 hover:bg-gray-50 rounded-xl transition-all text-gray-400 hover:text-primary">
+                                    <button onClick={nextDate} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all text-gray-400 hover:text-primary">
                                         <ChevronRight size={20} />
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[32px] border border-white shadow-xl shadow-black/5">
-                            <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+                        {/* Performer Selector */}
+
+                        <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-2 rounded-[24px] border border-white dark:border-gray-700 shadow-xl shadow-black/5">
+                            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <Users size={16} className="text-secondary/50 dark:text-gray-400" />
+                                <select
+                                    value={selectedPerformerId}
+                                    onChange={(e) => setSelectedPerformerId(e.target.value)}
+                                    className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-secondary dark:text-white focus:ring-0 cursor-pointer min-w-[150px] outline-none dark:bg-gray-800"
+                                >
+                                    <option value="ALL">Todos da Equipe</option>
+                                    {performers.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-2 rounded-[32px] border border-white dark:border-gray-700 shadow-xl shadow-black/5">
+                            <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                                 <button
                                     onClick={() => { setTab('active'); setSelectedIds([]); }}
-                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                                 >
                                     Ativos
                                 </button>
                                 <button
                                     onClick={() => { setTab('trash'); setSelectedIds([]); }}
-                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                                 >
                                     <Trash2 size={14} /> Lixeira
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-2 bg-gray-100/50 p-2 rounded-[28px]">
+                            <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-gray-700/50 p-2 rounded-[28px]">
                                 <button
                                     onClick={fetchAppointments}
                                     disabled={isLoading}
-                                    className="p-3 bg-white text-gray-400 hover:text-primary rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                    className="p-3 bg-white dark:bg-gray-800 text-gray-400 hover:text-primary rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
                                     title="Atualizar Agenda"
                                 >
                                     <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -517,7 +582,7 @@ export default function AgendaSPA() {
 
                                 <button
                                     onClick={() => setIsBulkMode(!isBulkMode)}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
+                                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-secondary dark:hover:text-white shadow-sm'}`}
                                 >
                                     <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
                                     <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
@@ -529,7 +594,7 @@ export default function AgendaSPA() {
                                     <button
                                         key={v}
                                         onClick={() => { setView(v as ViewType); setSelectedIds([]); }}
-                                        className={`flex items-center gap-3 px-6 py-3 rounded-[22px] text-[10px] font-black transition-all ${view === v ? 'bg-white text-primary shadow-lg scale-[1.02]' : 'text-gray-400 hover:text-secondary'}`}
+                                        className={`flex items-center gap-3 px-6 py-3 rounded-[22px] text-[10px] font-black transition-all ${view === v ? 'bg-white dark:bg-gray-800 text-primary shadow-lg scale-[1.02]' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                                     >
                                         {v === 'KANBAN' ? <Layout size={14} /> : v === 'DAY' ? <List size={14} /> : <CalendarIcon size={14} />}
                                         <span className="uppercase tracking-widest">{v}</span>
@@ -555,7 +620,7 @@ export default function AgendaSPA() {
                             initial={{ opacity: 0, y: 50 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
                         >
                             <div className="flex items-center gap-4">
                                 <button
@@ -615,7 +680,7 @@ export default function AgendaSPA() {
                         placeholder="Pesquisar por tutor, pet ou serviço..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold placeholder:text-gray-300"
+                        className="w-full bg-white dark:bg-gray-800 border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold placeholder:text-gray-300 dark:placeholder:text-gray-500 text-secondary dark:text-white"
                     />
                 </div>
 
@@ -632,13 +697,13 @@ export default function AgendaSPA() {
                                         <div className="flex items-center justify-between mb-5 px-3">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-3 h-3 rounded-full ${col.color} shadow-lg shadow-current/20`}></div>
-                                                <h3 className="font-black text-secondary uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
+                                                <h3 className="font-black text-secondary dark:text-gray-300 uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
                                             </div>
-                                            <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200">
+                                            <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
                                                 {getColumnItems(col.key).length}
                                             </span>
                                         </div>
-                                        <div className="flex-1 bg-gray-50/50 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200">
+                                        <div className="flex-1 bg-gray-50/50 dark:bg-gray-800/20 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200 dark:border-gray-800">
                                             {getColumnItems(col.key).map((appt) => {
                                                 const isSelected = selectedIds.includes(appt.id);
                                                 const isCat = appt.pet.species?.toUpperCase().includes('GATO');
@@ -648,28 +713,31 @@ export default function AgendaSPA() {
                                                     <div
                                                         key={appt.id}
                                                         onClick={() => handleOpenDetails(appt)}
-                                                        className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-primary/20 bg-white border-primary/50 shadow-primary/10' : 'bg-white border-gray-100'}`}
+                                                        className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-primary/20 bg-white dark:bg-gray-700 border-primary/50 shadow-primary/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
                                                         style={!isSelected && appt.performer?.color ? {
                                                             borderLeftColor: appt.performer.color,
                                                             backgroundColor: `${appt.performer.color}08`
                                                         } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
                                                     >
                                                         <div className="flex justify-between items-start mb-4">
-                                                            <div className="bg-white px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary border border-gray-100 shadow-sm">
+                                                            <div className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary dark:text-gray-300 border border-gray-100 dark:border-gray-600 shadow-sm">
                                                                 <Clock size={12} className="text-primary" />
                                                                 {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                             </div>
                                                             {(isBulkMode || isSelected) && (
                                                                 <button
                                                                     onClick={(e) => toggleSelect(appt.id, e)}
-                                                                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 border-gray-100'}`}
+                                                                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-600 border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 dark:text-gray-400 border-gray-100 dark:border-gray-500'}`}
                                                                 >
                                                                     <CheckSquare size={16} strokeWidth={3} />
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <h4 className="font-black text-secondary text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight">
-                                                            {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                        <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center justify-between">
+                                                            <span>{appt.pet.name} {isRecurring ? '(R)' : '(A)'}</span>
+                                                            {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
+                                                                <span className="bg-orange-500 text-white text-[8px] px-2 py-0.5 rounded-full">TR</span>
+                                                            )}
                                                         </h4>
                                                         <p className="text-[11px] opacity-70 font-bold truncate mt-1">{appt.customer.name}</p>
                                                     </div>

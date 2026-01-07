@@ -35,6 +35,52 @@ const customerSchema = z.object({
 }).passthrough(); // Allow additional fields
 
 export const customerController = {
+    async search(req: Request, res: Response) {
+        try {
+            const { q } = req.query;
+            console.log(`[Customer Search] Iniciando busca com termo: "${q}"`);
+
+            if (!q || typeof q !== 'string') {
+                console.log('[Customer Search] Termo inválido ou vazio');
+                return res.json([]);
+            }
+
+            const customers = await prisma.customer.findMany({
+                where: {
+                    deletedAt: null,
+                    OR: [
+                        { name: { contains: q, mode: 'insensitive' } },
+                        { phone: { contains: q, mode: 'insensitive' } }
+                    ]
+                },
+                include: {
+                    user: {
+                        select: {
+                            email: true,
+                            phone: true,
+                            firstName: true,
+                            lastName: true,
+                            address: true,
+                        }
+                    },
+                    pets: true
+                },
+                take: 10
+            });
+
+            if (!customers) return res.json([]);
+
+            return res.json(customers);
+        } catch (error: any) {
+            console.error('CRITICAL: Erro ao buscar clientes:', error);
+            // Don't crash the server, just return an error response
+            return res.status(500).json({
+                error: 'Erro interno ao buscar clientes',
+                details: error.message
+            });
+        }
+    },
+
     async getMe(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
@@ -460,6 +506,9 @@ export const customerController = {
                 if (data.isBlocked !== undefined) {
                     customerUpdateData.isBlocked = data.isBlocked;
                 }
+                if (cleanedBody.riskLevel !== undefined) {
+                    customerUpdateData.riskLevel = cleanedBody.riskLevel;
+                }
 
                 const updated = await tx.customer.update({
                     where: { id },
@@ -585,6 +634,12 @@ export const customerController = {
                     usesOrnaments: data.usesOrnaments || false,
                     hasKnots: data.hasKnots || false,
                     hasMattedFur: data.hasMattedFur || false,
+                    // Grooming details
+                    groomingMachine: data.groomingMachine,
+                    groomingHeight: data.groomingHeight,
+                    groomingAdapter: data.groomingAdapter,
+                    groomingScissors: data.groomingScissors,
+                    groomingNotes: data.groomingNotes,
                     customerId: id
                 }
             });
@@ -593,6 +648,59 @@ export const customerController = {
         } catch (error) {
             console.error('Erro ao adicionar pet:', error);
             return res.status(500).json({ error: 'Erro interno ao criar pet' });
+        }
+    },
+
+    async updatePet(req: Request, res: Response) {
+        try {
+            const { petId } = req.params;
+            const data = req.body;
+
+            const pet = await prisma.pet.update({
+                where: { id: petId },
+                data: {
+                    name: data.name,
+                    species: data.species,
+                    breed: data.breed,
+                    weight: data.weight !== undefined ? (data.weight ? parseFloat(data.weight) : null) : undefined,
+                    observations: data.observations,
+                    coatType: data.coatType,
+                    healthIssues: data.healthIssues,
+                    allergies: data.allergies,
+                    temperament: data.temperament,
+                    age: data.age,
+                    usesPerfume: data.usesPerfume,
+                    usesOrnaments: data.usesOrnaments,
+                    hasKnots: data.hasKnots,
+                    hasMattedFur: data.hasMattedFur,
+                    // Grooming details
+                    groomingMachine: data.groomingMachine,
+                    groomingHeight: data.groomingHeight,
+                    groomingAdapter: data.groomingAdapter,
+                    groomingScissors: data.groomingScissors,
+                    groomingNotes: data.groomingNotes,
+                }
+            });
+
+            return res.json(pet);
+        } catch (error) {
+            console.error('Erro ao atualizar pet:', error);
+            return res.status(500).json({ error: 'Erro interno ao atualizar pet' });
+        }
+    },
+
+    async deletePet(req: Request, res: Response) {
+        try {
+            const { petId } = req.params;
+
+            await prisma.pet.delete({
+                where: { id: petId }
+            });
+
+            return res.status(204).send();
+        } catch (error) {
+            console.error('Erro ao excluir pet:', error);
+            return res.status(500).json({ error: 'Erro interno ao excluir pet' });
         }
     }
 };

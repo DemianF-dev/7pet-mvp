@@ -45,6 +45,7 @@ export const register = async (data: any) => {
             passwordHash: passwordHash || "TEMPORARY", // Fallback
             plainPassword: password || null,
             role,
+            division: role === 'CLIENTE' ? 'CLIENTE' : (data.division || 'OPERACIONAL'),
             name: name || `${data.firstName || ''} ${data.lastName || ''} `.trim(),
             firstName: data.firstName,
             lastName: data.lastName,
@@ -55,6 +56,7 @@ export const register = async (data: any) => {
             address: data.address,
             birthday: data.birthday ? new Date(data.birthday) : undefined,
             staffId,
+            isEligible: false,
             customer: role === 'CLIENTE' ? {
                 create: {
                     name: name || `${data.firstName || ''} ${data.lastName || ''} `.trim(),
@@ -98,70 +100,174 @@ export const register = async (data: any) => {
 export const registerManual = async (tx: any, data: any) => {
     const { customer, pet } = data;
 
-    // 1. Verificar se usuário já existe pelo email
-    let user = await tx.user.findUnique({
-        where: { email: customer.email },
-        include: { customer: true }
-    });
+    let user = null;
+
+    // 1. If ID is provided, it's an existing customer to modify/merge
+    const providedId = customer.id && customer.id !== '' ? customer.id : null;
+    const providedUserId = customer.userId && customer.userId !== '' ? customer.userId : null;
+
+    if (providedId) {
+        user = await tx.user.findFirst({
+            where: {
+                OR: [
+                    { id: providedUserId || undefined },
+                    { customer: { id: providedId } }
+                ]
+            },
+            include: { customer: true }
+        });
+
+        if (user && user.customer) {
+            // Update User
+            user = await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    name: customer.name || user.name,
+                    phone: customer.phone || user.phone,
+                    address: customer.address || user.address,
+                },
+                include: { customer: true }
+            });
+
+            // Update Customer
+            await tx.customer.update({
+                where: { id: user.customer.id },
+                data: {
+                    name: customer.name || user.customer.name,
+                    phone: customer.phone || user.customer.phone,
+                    address: customer.address || user.customer.address,
+                    type: customer.type || user.customer.type,
+                    recurrenceFrequency: customer.recurrenceFrequency || user.customer.recurrenceFrequency
+                }
+            });
+        }
+    }
 
     if (!user) {
-        // Criar usuário com senha temporária (seqId)
-        user = await tx.user.create({
-            data: {
-                email: customer.email,
-                passwordHash: "TEMPORARY",
-                role: 'CLIENTE',
-                name: customer.name,
-                firstName: customer.firstName || customer.name.split(' ')[0],
-                lastName: customer.lastName || customer.name.split(' ').slice(1).join(' '),
-                phone: customer.phone,
-                address: customer.address,
-                customer: {
-                    create: {
-                        name: customer.name,
-                        phone: customer.phone,
-                        address: customer.address,
-                        discoverySource: 'BALCAO_MANUAL'
-                    }
-                }
-            },
+        // Fallback or NEW: Verificar se usuário já existe pelo email
+        user = await tx.user.findUnique({
+            where: { email: customer.email },
             include: { customer: true }
         });
 
-        // Atualizar senha para seqId
-        const tempPassword = String((user as any).seqId);
-        const newHash = await bcrypt.hash(tempPassword, 10);
-        user = await tx.user.update({
-            where: { id: user.id },
-            data: {
-                passwordHash: newHash,
-                plainPassword: tempPassword
-            },
-            include: { customer: true }
-        });
+        if (!user) {
+            // Criar usuário com senha temporária (seqId)
+            user = await tx.user.create({
+                data: {
+                    email: customer.email,
+                    passwordHash: "TEMPORARY",
+                    role: 'CLIENTE',
+                    division: 'CLIENTE',
+                    name: customer.name,
+                    firstName: customer.firstName || customer.name.split(' ')[0],
+                    lastName: customer.lastName || customer.name.split(' ').slice(1).join(' '),
+                    phone: customer.phone,
+                    address: customer.address,
+                    isEligible: false,
+                    customer: {
+                        create: {
+                            name: customer.name,
+                            phone: customer.phone,
+                            address: customer.address,
+                            type: customer.type || 'AVULSO',
+                            recurrenceFrequency: customer.recurrenceFrequency || null,
+                            discoverySource: 'BALCAO_MANUAL'
+                        }
+                    }
+                },
+                include: { customer: true }
+            });
+
+            // Atualizar senha para seqId
+            const tempPassword = String((user as any).seqId);
+            const newHash = await bcrypt.hash(tempPassword, 10);
+            user = await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    passwordHash: newHash,
+                    plainPassword: tempPassword
+                },
+                include: { customer: true }
+            });
+        }
     }
 
     const customerId = user!.customer!.id;
 
-    // 2. Criar Pet se fornecido
-    let createdPet = null;
-    if (pet && pet.name) {
-        createdPet = await tx.pet.create({
-            data: {
-                customerId,
-                name: pet.name,
-                species: pet.species || 'Canino',
-                breed: pet.breed,
-                weight: pet.weight ? parseFloat(pet.weight) : null,
-                coatType: pet.coatType,
-                temperament: pet.temperament,
-                age: pet.age,
-                observations: pet.observations
+    // 2. Criar ou Atualizar Pet
+    let dbPet = null;
+    if (pet && (pet.id || pet.name)) {
+        if (pet.id) {
+            dbPet = await tx.pet.findUnique({ where: { id: pet.id } });
+            if (dbPet) {
+                dbPet = await tx.pet.update({
+                    where: { id: pet.id },
+                    data: {
+                        name: pet.name || dbPet.name,
+                        species: pet.species || dbPet.species,
+                        breed: pet.breed || dbPet.breed,
+                        weight: pet.weight ? parseFloat(pet.weight) : dbPet.weight,
+                        coatType: pet.coatType || dbPet.coatType,
+                        temperament: pet.temperament || dbPet.temperament,
+                        age: pet.age || dbPet.age,
+                        observations: pet.observations || dbPet.observations,
+                        hasKnots: pet.hasKnots !== undefined ? pet.hasKnots : dbPet.hasKnots,
+                        hasMattedFur: pet.hasMattedFur !== undefined ? pet.hasMattedFur : dbPet.hasMattedFur,
+                        healthIssues: pet.healthIssues || dbPet.healthIssues,
+                        allergies: pet.allergies || dbPet.allergies
+                    }
+                });
             }
-        });
+        }
+
+        if (!dbPet && pet.name) {
+            // Check if pet with same name exists for this customer
+            dbPet = await tx.pet.findFirst({
+                where: { customerId, name: pet.name }
+            });
+
+            if (dbPet) {
+                // Update existing pet
+                dbPet = await tx.pet.update({
+                    where: { id: dbPet.id },
+                    data: {
+                        species: pet.species || dbPet.species,
+                        breed: pet.breed || dbPet.breed,
+                        weight: pet.weight ? parseFloat(pet.weight) : dbPet.weight,
+                        coatType: pet.coatType || dbPet.coatType,
+                        temperament: pet.temperament || dbPet.temperament,
+                        age: pet.age || dbPet.age,
+                        observations: pet.observations || dbPet.observations,
+                        hasKnots: pet.hasKnots !== undefined ? pet.hasKnots : dbPet.hasKnots,
+                        hasMattedFur: pet.hasMattedFur !== undefined ? pet.hasMattedFur : dbPet.hasMattedFur,
+                        healthIssues: pet.healthIssues || dbPet.healthIssues,
+                        allergies: pet.allergies || dbPet.allergies
+                    }
+                });
+            } else {
+                // Create new pet
+                dbPet = await tx.pet.create({
+                    data: {
+                        customerId,
+                        name: pet.name,
+                        species: pet.species || 'Canino',
+                        breed: pet.breed,
+                        weight: pet.weight ? parseFloat(pet.weight) : null,
+                        coatType: pet.coatType,
+                        temperament: pet.temperament,
+                        age: pet.age,
+                        observations: pet.observations,
+                        hasKnots: pet.hasKnots || false,
+                        hasMattedFur: pet.hasMattedFur || false,
+                        healthIssues: pet.healthIssues,
+                        allergies: pet.allergies
+                    }
+                });
+            }
+        }
     }
 
-    return { user, customer: user!.customer, pet: createdPet };
+    return { user, customer: user!.customer, pet: dbPet };
 };
 
 export const login = async (email: string, password: string, rememberMe: boolean = false) => {
@@ -174,6 +280,11 @@ export const login = async (email: string, password: string, rememberMe: boolean
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) throw new Error('Credenciais inválidas');
+
+    // Check if client is blocked (only for CLIENTE role)
+    if (user.role === 'CLIENTE' && user.customer?.isBlocked) {
+        throw new Error('Conta bloqueada. Entre em contato com a 7Pet.');
+    }
 
     const expiresIn = rememberMe ? '30d' : '7d';
     const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn });
@@ -223,6 +334,8 @@ export const loginWithGoogle = async (token: string) => {
                     firstName: given_name,
                     lastName: family_name,
                     role: 'CLIENTE',
+                    division: 'CLIENTE',
+                    isEligible: false,
                     passwordHash: 'GOOGLE_AUTH', // Placeholder
                     customer: {
                         create: {
@@ -235,6 +348,11 @@ export const loginWithGoogle = async (token: string) => {
             Logger.info(`Novo usuário criado via Google: ${email}`);
         } else {
             Logger.info(`Usuário logado via Google: ${email}`);
+        }
+
+        // Check if client is blocked
+        if (user.role === 'CLIENTE' && user.customer?.isBlocked) {
+            throw new Error('Conta bloqueada. Entre em contato com a 7Pet.');
         }
 
         // Generate our own JWT
@@ -255,6 +373,11 @@ export const forgotPassword = async (email: string) => {
     });
 
     if (!user) throw new Error('Usuário não encontrado');
+
+    // Check if client is blocked
+    if (user.role === 'CLIENTE' && user.customer?.isBlocked) {
+        throw new Error('Conta bloqueada. Entre em contato com a 7Pet.');
+    }
 
     // Find all Admin users to notify
     const admins = await prisma.user.findMany({

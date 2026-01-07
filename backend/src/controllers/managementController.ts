@@ -381,26 +381,40 @@ export const createUser = async (req: Request, res: Response) => {
 
         const passwordHash = await bcrypt.hash(password, 10);
 
+        const actualRole = role || 'CLIENTE';
+        const actualDivision = division || 'CLIENTE';
+        const finalName = name || `${firstName || ''} ${lastName || ''}`.trim();
+
         const user = await prisma.user.create({
             data: {
                 email,
                 passwordHash,
                 plainPassword: password, // Salva senha em texto puro para o Master
-                role: role || null,
-                division: division || 'CLIENTE',
-                name,
+                role: actualRole,
+                division: actualDivision,
+                name: finalName,
                 firstName,
                 lastName,
                 phone,
                 notes,
-                permissions: permissions || await getDefaultPermissions(role),
+                permissions: permissions || await getDefaultPermissions(actualRole),
                 admissionDate: admissionDate ? new Date(admissionDate) : undefined,
                 birthday: birthday ? new Date(birthday) : undefined,
                 document,
                 address,
                 color: color || '#3B82F6',
-                staffId: (role && role !== 'CLIENTE') ? await getNextStaffId(role) : undefined,
-            }
+                isEligible: req.body.isEligible !== undefined ? req.body.isEligible : false,
+                staffId: (actualRole && actualRole !== 'CLIENTE') ? await getNextStaffId(actualRole) : undefined,
+                // Automatically create customer record if client
+                customer: (actualDivision === 'CLIENTE' || actualRole === 'CLIENTE') ? {
+                    create: {
+                        name: finalName || email,
+                        phone: phone || null,
+                        address: address || null,
+                    }
+                } : undefined
+            },
+            include: { customer: true }
         });
 
         res.status(201).json(user);
@@ -430,7 +444,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
         const {
             name, phone, notes, permissions, role, division,
-            email, password,
+            email, password, isEligible,
             admissionDate, birthday, document, address, color,
             firstName, lastName
         } = req.body;
@@ -451,6 +465,7 @@ export const updateUser = async (req: Request, res: Response) => {
         if (notes !== undefined) updateData.notes = notes;
         if (permissions !== undefined) updateData.permissions = permissions;
         if (color !== undefined) updateData.color = color;
+        if (isEligible !== undefined) updateData.isEligible = isEligible;
 
         // Suporte para division (novo campo para departamentos)
         if (division !== undefined) {
@@ -485,10 +500,33 @@ export const updateUser = async (req: Request, res: Response) => {
 
         const user = await prisma.user.update({
             where: { id },
-            data: updateData
+            data: updateData,
+            include: { customer: true }
         });
 
-        res.json(user);
+        // Update customer restrictions if provided (for CLIENTE division)
+        const customerData = req.body.customer;
+        if (customerData && user.customer) {
+            const customerUpdateData: any = {};
+            if (customerData.isBlocked !== undefined) customerUpdateData.isBlocked = customerData.isBlocked;
+            if (customerData.canRequestQuotes !== undefined) customerUpdateData.canRequestQuotes = customerData.canRequestQuotes;
+            if (customerData.riskLevel !== undefined) customerUpdateData.riskLevel = customerData.riskLevel;
+
+            if (Object.keys(customerUpdateData).length > 0) {
+                await prisma.customer.update({
+                    where: { id: user.customer.id },
+                    data: customerUpdateData
+                });
+            }
+        }
+
+        // Refetch with customer for response
+        const updatedUser = await prisma.user.findUnique({
+            where: { id },
+            include: { customer: true }
+        });
+
+        res.json(updatedUser);
     } catch (error) {
         console.error('Update user error:', error);
         res.status(500).json({ error: 'Erro ao atualizar usuário' });

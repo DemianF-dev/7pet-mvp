@@ -17,7 +17,7 @@ const appointmentSchema = z.object({
     }).optional(),
     customerId: z.string().uuid().optional(),
     quoteId: z.string().uuid().optional(),
-    performerId: z.string().uuid().optional()
+    performerId: z.string().uuid().nullable().optional()
 });
 
 export const create = async (req: any, res: Response) => {
@@ -75,8 +75,15 @@ export const list = async (req: any, res: Response) => {
 
         let filters: any = {};
 
+        // Security / Privacy Logic
+        const userDivision = req.user.division || req.user.role || '';
+        const isManagement = ['ADMIN', 'MASTER', 'GESTAO', 'COMERCIAL', 'DIRETORIA', 'ATENDIMENTO'].includes(userDivision.toUpperCase());
+
         if (req.user.role === 'CLIENTE') {
-            filters.customerId = req.user.customer.id;
+            filters.customerId = req.user.customer?.id;
+        } else if (!isManagement) {
+            // Staff members (SPA, LOGISTICA, etc.) only see their assigned appointments
+            filters.performerId = req.user.id;
         }
 
         if (req.query.category) {
@@ -121,16 +128,22 @@ export const get = async (req: any, res: Response) => {
     }
 };
 
+// Schema for updates (all fields optional)
+const appointmentUpdateSchema = appointmentSchema.partial();
+
 export const update = async (req: any, res: Response) => {
     try {
-        const validatedData = appointmentSchema.parse(req.body);
+        const validatedData = appointmentUpdateSchema.parse(req.body);
         const { id } = req.params;
 
-        const data = {
+        const data: any = {
             ...validatedData,
-            startAt: new Date(validatedData.startAt),
             performerId: validatedData.performerId
         };
+
+        if (validatedData.startAt) {
+            data.startAt = new Date(validatedData.startAt);
+        }
 
         const updated = await appointmentService.update(id, data, req.user.id);
         res.json(updated);

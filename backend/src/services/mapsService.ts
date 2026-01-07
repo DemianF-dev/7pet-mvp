@@ -196,6 +196,8 @@ export const mapsService = {
                 total,
                 totalDistance: `${totalKm.toFixed(1)} km`,
                 totalDuration: `${totalMin} min`,
+                totalKm,
+                totalMin,
                 settings
             };
 

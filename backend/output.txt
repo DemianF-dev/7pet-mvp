@@ -1,0 +1,21 @@
+[Auth Service] 🔑 JWT_SECRET present: true
+[Auth Service] 🆔 GOOGLE_CLIENT_ID present: true
+2026-01-06 17:36:38:3638 [32minfo[39m: [32m[Notif Scheduler] Started (runs every 60s in dev)[39m
+2026-01-06 17:36:38:3638 [32minfo[39m: [32m[Notif Scheduler] Running scheduled checks...[39m
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (C:\Users\oidem\.gemini\antigravity\scratch\7pet-mvp\backend\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\Users\oidem\.gemini\antigravity\scratch\7pet-mvp\backend\src\index.ts:202:9)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Module.m._compile (C:\Users\oidem\AppData\Local\npm-cache\_npx\1bf7c3c15bf47d04\node_modules\ts-node\src\index.ts:1618:23)
+    at node:internal/modules/cjs/loader:1893:10
+    at Object.require.extensions.<computed> [as .ts] (C:\Users\oidem\AppData\Local\npm-cache\_npx\1bf7c3c15bf47d04\node_modules\ts-node\src\index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1481:32) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}

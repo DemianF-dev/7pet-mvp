@@ -36,6 +36,7 @@ model User {
   role                 String?
   plainPassword        String?
   division             String             @default("CLIENTE")
+  isEligible           Boolean            @default(false)
   assignedAppointments Appointment[]      @relation("AppointmentPerformer")
   authenticators       Authenticator[]
   bugReports           BugReport[]
@@ -72,6 +73,7 @@ model Customer {
   address                  String?
   noShowCount              Int           @default(0)
   isBlocked                Boolean       @default(false)
+  canRequestQuotes         Boolean       @default(true)
   requiresPrepayment       Boolean       @default(false)
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
@@ -91,6 +93,7 @@ model Customer {
   recurrenceDiscount       Float?
   recurrenceFrequency      String?
   deletedAt                DateTime?
+  riskLevel                String?       @default("Nivel 1") // Nivel 1, Nivel 2, Nivel 3
   appointments             Appointment[]
   user                     User          @relation(fields: [userId], references: [id])
   invoices                 Invoice[]
@@ -127,6 +130,14 @@ model Pet {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   usedToGrooming   Boolean       @default(true)
+  
+  // Detalhes de Tosa
+  groomingMachine  String?       // Máquina utilizada (ex: "Andis", "Oster")
+  groomingHeight   String?       // Altura do corte (ex: "3mm", "7mm")
+  groomingAdapter  String?       // Adaptador utilizado
+  groomingScissors String?       // Tipo de tesoura
+  groomingNotes    String?       // Observações sobre a tosa
+  
   appointments     Appointment[]
   customer         Customer      @relation(fields: [customerId], references: [id])
   quotes           Quote[]
@@ -134,6 +145,7 @@ model Pet {
   @@index([customerId])
   @@index([customerId], map: "idx_pet_customerid")
 }
+
 
 model Service {
   id            String        @id @default(uuid())
@@ -219,6 +231,7 @@ model TransportDetails {
   requestedPeriod TransportPeriod
   confirmedTime   DateTime?
   status          String          @default("SOLICITADO")
+  type            String? // LEVA or TRAZ
   appointment     Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 }
 
@@ -241,10 +254,13 @@ model Quote {
   hasParasites           Boolean          @default(false)
   knotRegions            String?
   petQuantity            Int              @default(1)
+  transportType          TransportType?
   transportReturnAddress String?
   seqId                  Int              @unique @default(autoincrement())
   scheduledAt            DateTime?
   transportAt            DateTime?
+  transportLevaAt        DateTime?
+  transportTrazAt        DateTime?
   invoiceId              String?
   parasiteComments       String?
   parasiteTypes          String?
@@ -443,6 +459,12 @@ enum QuoteType {
   SPA
   TRANSPORTE
   SPA_TRANSPORTE
+}
+
+enum TransportType {
+  PICK_UP
+  DROP_OFF
+  ROUND_TRIP
 }
 
 enum AppointmentCategory {

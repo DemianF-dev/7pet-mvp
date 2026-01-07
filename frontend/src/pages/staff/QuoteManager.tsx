@@ -244,7 +244,7 @@ export default function QuoteManager() {
     const getStatusColor = (status: string) => getQuoteStatusColor(status);
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen flex">
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
@@ -256,7 +256,7 @@ export default function QuoteManager() {
                             <div className="h-[2px] w-6 bg-primary"></div>
                             RECEPÇÃO & VENDAS
                         </div>
-                        <h1 className="text-4xl font-black text-secondary tracking-tight">Orçamentos</h1>
+                        <h1 className="text-4xl font-black text-secondary dark:text-white tracking-tight">Orçamentos</h1>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
@@ -271,7 +271,7 @@ export default function QuoteManager() {
 
                         <button
                             onClick={() => navigate('/staff/transport-config')}
-                            className="bg-white p-4 rounded-[20px] text-gray-400 hover:text-indigo-600 shadow-sm hover:shadow-lg transition-all active:scale-95"
+                            className="bg-white dark:bg-gray-800 p-4 rounded-[20px] text-gray-400 hover:text-indigo-600 shadow-sm hover:shadow-lg transition-all active:scale-95 border border-gray-100 dark:border-gray-700"
                             title="Configurações de Preços"
                         >
                             <Settings size={20} />
@@ -280,7 +280,7 @@ export default function QuoteManager() {
                         <button
                             onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
                             disabled={isFetching}
-                            className="bg-white p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                            className="bg-white dark:bg-gray-800 p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 border border-gray-100 dark:border-gray-700"
                             title="Atualizar Lista"
                         >
                             <RefreshCcw size={20} className={isFetching ? 'animate-spin' : ''} />
@@ -296,28 +296,28 @@ export default function QuoteManager() {
 
                         <button
                             onClick={() => setIsBulkMode(!isBulkMode)}
-                            className={`flex items-center gap-2 px-6 py-6 rounded-[32px] text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
+                            className={`flex items-center gap-2 px-6 py-6 rounded-[32px] text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-secondary dark:hover:text-white shadow-sm border border-gray-100 dark:border-gray-700'}`}
                         >
                             <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
                             <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
                         </button>
 
-                        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                             <button
                                 onClick={() => { setView('active'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                             >
                                 Ativos
                             </button>
                             <button
                                 onClick={() => { setView('history'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                             >
                                 <Archive size={14} className="inline mr-2" /> Histórico
                             </button>
                             <button
                                 onClick={() => { setView('trash'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                             >
                                 <Trash2 size={14} className="inline mr-2" /> Lixeira
                             </button>
@@ -331,7 +331,7 @@ export default function QuoteManager() {
                             initial={{ opacity: 0, y: 50 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
                         >
                             <div className="flex items-center gap-4">
                                 <button
@@ -373,18 +373,18 @@ export default function QuoteManager() {
                             placeholder="Buscar por cliente ou ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold"
+                            className="w-full bg-white dark:bg-gray-800 border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold text-secondary dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600"
                         />
                     </div>
 
-                    <div className="flex bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="flex items-center px-6 border-r border-gray-100 bg-gray-50/50">
+                    <div className="flex bg-white dark:bg-gray-800 rounded-[32px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="flex items-center px-6 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
                             <Filter size={18} className="text-gray-400" />
                         </div>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-transparent border-none py-4 px-6 text-xs font-black uppercase tracking-widest text-secondary focus:ring-0 min-w-[200px] appearance-none cursor-pointer"
+                            className="bg-transparent border-none py-4 px-6 text-xs font-black uppercase tracking-widest text-secondary dark:text-gray-300 focus:ring-0 min-w-[200px] appearance-none cursor-pointer dark:bg-gray-800"
                         >
                             <option value="ALL">Todos os Status</option>
                             {statuses.map(s => (
@@ -393,7 +393,7 @@ export default function QuoteManager() {
                         </select>
                         <button
                             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                            className={`px-6 py-4 border-l border-gray-100 transition-all ${showAdvancedFilters ? 'bg-primary text-white' : 'hover:bg-gray-50 text-gray-400'}`}
+                            className={`px-6 py-4 border-l border-gray-100 dark:border-gray-700 transition-all ${showAdvancedFilters ? 'bg-primary text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-400'}`}
                         >
                             <Filter size={18} />
                         </button>
@@ -408,14 +408,14 @@ export default function QuoteManager() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden mb-8"
                         >
-                            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-white dark:bg-gray-800 rounded-[32px] p-8 shadow-sm border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Inicial</label>
                                     <input
                                         type="date"
                                         value={dateRange.start}
                                         onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -424,7 +424,7 @@ export default function QuoteManager() {
                                         type="date"
                                         value={dateRange.end}
                                         onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -434,7 +434,7 @@ export default function QuoteManager() {
                                         placeholder="R$ 0,00"
                                         value={valueRange.min || ''}
                                         onChange={(e) => setValueRange({ ...valueRange, min: parseFloat(e.target.value) || 0 })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white placeholder:text-gray-400"
                                     />
                                 </div>
                                 <div className="space-y-2 flex flex-col justify-end">
@@ -445,7 +445,7 @@ export default function QuoteManager() {
                                             setSearchTerm('');
                                             setStatusFilter('ALL');
                                         }}
-                                        className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                                        className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
                                     >
                                         Limpar Filtros
                                     </button>
@@ -455,9 +455,9 @@ export default function QuoteManager() {
                     )}
                 </AnimatePresence>
 
-                <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                        <thead className="bg-gray-50 dark:bg-gray-700/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                             <tr>
                                 <th className="px-8 py-6 w-12">
                                     {(isBulkMode || selectedIds.length > 0) && (
@@ -476,7 +476,7 @@ export default function QuoteManager() {
                                 <th className="px-8 py-6 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                             {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i}>
@@ -514,9 +514,9 @@ export default function QuoteManager() {
                             ) : (filteredQuotes || []).length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-8 py-32 text-center">
-                                        <div className="bg-gray-50 rounded-[40px] p-20 border-2 border-dashed border-gray-100">
-                                            <Archive className="mx-auto text-gray-200 mb-4" size={64} />
-                                            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhum orçamento encontrado nesta visualização.</p>
+                                        <div className="bg-gray-50 dark:bg-gray-900 rounded-[40px] p-20 border-2 border-dashed border-gray-100 dark:border-gray-700">
+                                            <Archive className="mx-auto text-gray-200 dark:text-gray-700 mb-4" size={64} />
+                                            <p className="text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest text-xs">Nenhum orçamento encontrado nesta visualização.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -615,7 +615,7 @@ export default function QuoteManager() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
+                                className="bg-white dark:bg-gray-800 rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
                             >
                                 <button
                                     onClick={() => setAppointmentSelectionQuote(null)}
@@ -624,7 +624,7 @@ export default function QuoteManager() {
                                     <X size={24} />
                                 </button>
 
-                                <h2 className="text-2xl font-black text-secondary mb-2">Selecionar Agendamento</h2>
+                                <h2 className="text-2xl font-black text-secondary dark:text-white mb-2">Selecionar Agendamento</h2>
                                 <p className="text-gray-400 font-medium mb-8">Esta solicitação gerou múltiplos agendamentos. Qual você deseja visualizar?</p>
 
                                 <div className="grid grid-cols-1 gap-4">
@@ -668,7 +668,7 @@ export default function QuoteManager() {
                                                 <Calendar size={24} />
                                             </div>
                                             <div>
-                                                <h4 className="font-exrabold text-secondary text-lg group-hover:text-primary transition-colors font-black">
+                                                <h4 className="font-extrabold text-secondary dark:text-white text-lg group-hover:text-primary transition-colors font-black">
                                                     {appt.category === 'LOGISTICA' ? 'Transporte / Logística' : 'Banho & Tosa (SPA)'}
                                                 </h4>
                                                 <div className="flex items-center gap-2 mt-1">

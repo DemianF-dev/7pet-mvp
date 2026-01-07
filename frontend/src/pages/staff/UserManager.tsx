@@ -18,7 +18,8 @@ import {
     Briefcase,
     Phone,
     FileText,
-    RotateCcw
+    RotateCcw,
+    Unlock
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -28,6 +29,7 @@ import api from '../../services/api';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import { DIVISIONS, DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../constants/divisions';
+import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
 
 interface UserData {
     id: string;
@@ -40,6 +42,7 @@ interface UserData {
     permissions?: string; // JSON string from DB
     createdAt: string;
     customer?: {
+        id: string;
         name: string;
     };
     firstName?: string;
@@ -55,6 +58,7 @@ interface UserData {
     color?: string;
     seqId?: number;
     plainPassword?: string;
+    isEligible?: boolean;
 }
 
 const MODULES = [
@@ -100,7 +104,9 @@ export default function UserManager() {
         admissionDate: '',
         document: '',
         address: '',
-        color: '#3B82F6'
+        color: '#3B82F6',
+        isEligible: false,
+        isCustomRole: false
     });
 
     const [rolePermissions, setRolePermissions] = useState<{ role: string, label?: string, permissions: string }[]>([]);
@@ -116,6 +122,25 @@ export default function UserManager() {
 
     // Bulk Selection
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+    // Password Visibility
+    const [visiblePasswordIds, setVisiblePasswordIds] = useState<string[]>([]);
+    const [showModalPassword, setShowModalPassword] = useState(false);
+
+    // Customer Detail Modal (Popup)
+    const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
+    const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
+
+    const handleOpenCustomerDetail = (cid: string) => {
+        setViewCustomerId(cid);
+        setIsCustomerModalVisible(true);
+    };
+
+    const togglePasswordVisibility = (id: string) => {
+        setVisiblePasswordIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -141,7 +166,9 @@ export default function UserManager() {
     };
 
     useEffect(() => {
-        if (currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER') {
+        const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER' ||
+            currentUser?.division === 'DIRETORIA' || currentUser?.division === 'ADMIN';
+        if (isStaff) {
             fetchUsers();
         }
     }, [currentUser, tab]);
@@ -177,9 +204,12 @@ export default function UserManager() {
             admissionDate: user.admissionDate ? new Date(user.admissionDate).toISOString().split('T')[0] : '',
             document: user.document || '',
             address: user.address || '',
-            color: user.color || '#3B82F6'
+            color: user.color || '#3B82F6',
+            isEligible: user.isEligible !== undefined ? user.isEligible : false,
+            isCustomRole: user.role ? !['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER', 'OPERACIONAL', 'SPA'].includes(user.role.toUpperCase()) : false
         });
         setIsModalOpen(true);
+        setShowModalPassword(false);
     };
 
     const handleAddNewUser = () => {
@@ -192,14 +222,16 @@ export default function UserManager() {
             password: '',
             phone: '',
             notes: '',
-            division: 'COMERCIAL',
-            role: '',
+            division: 'CLIENTE',
+            role: 'CLIENTE',
             permissions: [] as string[],
             birthday: '',
             admissionDate: '',
             document: '',
             address: '',
-            color: '#3B82F6'
+            color: '#3B82F6',
+            isEligible: false,
+            isCustomRole: false
         });
         setIsModalOpen(true);
     };
@@ -210,8 +242,21 @@ export default function UserManager() {
         try {
             const payload = {
                 ...formData,
+                isEligible: formData.division === 'CLIENTE' ? false : formData.isEligible,
                 permissions: JSON.stringify(formData.permissions)
             };
+
+            // Se for um cargo customizado, criar a entrada de permissões para que apareça no seletor no futuro
+            if ((formData as any).isCustomRole && formData.role) {
+                try {
+                    await api.put(`/management/roles/${formData.role.toUpperCase()}/permissions`, {
+                        label: formData.role,
+                        permissions: JSON.stringify(formData.permissions)
+                    });
+                } catch (e) {
+                    console.error("Erro ao registrar novo cargo:", e);
+                }
+            }
 
             console.log('💾 Salvando usuário com divisão:', {
                 division: payload.division,
@@ -407,7 +452,7 @@ export default function UserManager() {
             return sortOrder === 'desc' ? -comparison : comparison;
         });
 
-    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'MASTER') {
+    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'MASTER' && currentUser?.division !== 'DIRETORIA' && currentUser?.division !== 'ADMIN') {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-center">
                 <motion.div
@@ -599,7 +644,8 @@ export default function UserManager() {
                                         />
                                     </th>
                                     <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Divisão</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Departamento</th>
                                     {isMaster && (
                                         <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</th>
                                     )}
@@ -646,6 +692,16 @@ export default function UserManager() {
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td className="px-8 py-6 text-center">
+                                                {u.division !== 'CLIENTE' ? (
+                                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${u.isEligible !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                        {u.isEligible !== false ? 'Disponível' : 'Bloqueado'}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">-</span>
+                                                )}
+                                            </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col gap-1">
                                                     <div className="flex items-center gap-2">
@@ -667,10 +723,19 @@ export default function UserManager() {
                                             {
                                                 isMaster && (
                                                     <td className="px-8 py-6">
-                                                        <div className="flex items-center gap-2">
-                                                            <Lock size={12} className="text-primary" />
-                                                            <span className="text-xs font-black text-secondary select-all">
-                                                                {u.plainPassword || '---'}
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    togglePasswordVisibility(u.id);
+                                                                }}
+                                                                className={`p-1.5 rounded-lg transition-all ${visiblePasswordIds.includes(u.id) ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400 hover:text-secondary'}`}
+                                                                title={visiblePasswordIds.includes(u.id) ? "Ocultar Senha" : "Ver Senha"}
+                                                            >
+                                                                {visiblePasswordIds.includes(u.id) ? <Unlock size={14} /> : <Lock size={14} />}
+                                                            </button>
+                                                            <span className={`text-[11px] font-black tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
+                                                                {visiblePasswordIds.includes(u.id) ? (u.plainPassword || 'SEM SENHA') : '••••••••'}
                                                             </span>
                                                         </div>
                                                     </td>
@@ -680,15 +745,31 @@ export default function UserManager() {
                                                 {new Date(u.createdAt).toLocaleDateString()}
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                {tab === 'trash' ? (
-                                                    <button onClick={() => handleRestoreUser(u)} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all" title="Restaurar Usuário">
-                                                        <RotateCcw size={18} />
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => handleOpenUser(u)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-secondary">
-                                                        <ChevronRight size={18} />
-                                                    </button>
-                                                )}
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {tab === 'trash' ? (
+                                                        <button onClick={() => handleRestoreUser(u)} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all" title="Restaurar Usuário">
+                                                            <RotateCcw size={18} />
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            {u.customer?.id && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleOpenCustomerDetail(u.customer!.id);
+                                                                    }}
+                                                                    className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition-all flex items-center justify-center"
+                                                                    title="Ver Perfil de Cliente Completo (Popup)"
+                                                                >
+                                                                    <User size={18} />
+                                                                </button>
+                                                            )}
+                                                            <button onClick={() => handleOpenUser(u)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-all">
+                                                                <ChevronRight size={18} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -762,9 +843,25 @@ export default function UserManager() {
                                             className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3 font-bold text-secondary outline-none focus:ring-2 focus:ring-primary/20"
                                         />
                                         {isMaster && selectedUser?.plainPassword && (
-                                            <p className="mt-2 text-[10px] font-black text-primary uppercase flex items-center gap-1">
-                                                <Check size={10} /> Senha registrada: <span className="text-secondary select-all ml-1">{selectedUser.plainPassword}</span>
-                                            </p>
+                                            <div className="mt-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Shield size={14} className="text-primary" />
+                                                        <span className="text-[10px] font-black text-secondary uppercase tracking-tight">Senha Atual Registrada</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setShowModalPassword(!showModalPassword)}
+                                                        className={`p-1.5 rounded-lg transition-all ${showModalPassword ? 'bg-primary text-white' : 'bg-white border border-gray-100 text-gray-400 shadow-sm'}`}
+                                                    >
+                                                        {showModalPassword ? <Unlock size={14} /> : <Lock size={14} />}
+                                                    </button>
+                                                </div>
+                                                <div className="mt-2 flex items-center justify-center p-3 bg-white rounded-xl border border-gray-100 shadow-inner">
+                                                    <span className={`text-sm font-black tracking-widest ${showModalPassword ? 'text-secondary font-mono select-all' : 'text-gray-200'}`}>
+                                                        {showModalPassword ? selectedUser.plainPassword : '••••••••'}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -776,11 +873,19 @@ export default function UserManager() {
                                             <label className="block text-[10px] font-black text-gray-400 mb-1">Divisão / Departamento</label>
                                             <select
                                                 value={formData.division}
-                                                onChange={e => setFormData({ ...formData, division: e.target.value })}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    const isCliente = val === 'CLIENTE';
+                                                    setFormData({
+                                                        ...formData,
+                                                        division: val,
+                                                        role: isCliente ? 'CLIENTE' : (formData.role === 'CLIENTE' ? 'OPERACIONAL' : formData.role),
+                                                        permissions: isCliente ? [] : formData.permissions
+                                                    });
+                                                }}
                                                 className={`w-full border-none rounded-xl px-4 py-3 font-bold ${getDivisionBgClass(formData.division)} ${getDivisionTextClass(formData.division)}`}
                                             >
                                                 {Object.entries(DIVISION_LABELS)
-                                                    .filter(([key]) => key !== 'CLIENTE')
                                                     .map(([key, label]) => (
                                                         <option key={key} value={key}>{label}</option>
                                                     ))}
@@ -789,23 +894,210 @@ export default function UserManager() {
                                         </div>
 
                                         <div className="col-span-2">
-                                            <label className="block text-[10px] font-black text-gray-400 mb-1">Cargo / Função (Opcional)</label>
-                                            <input
-                                                type="text"
-                                                value={formData.role}
-                                                onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                                placeholder="Ex: Tosador, Recepcionista, Motorista..."
-                                                className="w-full bg-gray-100 border-none rounded-xl px-4 py-3 font-bold text-secondary"
-                                            />
-                                            <p className="text-[9px] text-gray-400 mt-1 italic">Campo livre para identificação do cargo específico (apenas informativo).</p>
+                                            <label className="block text-[10px] font-black text-gray-400 mb-1">Cargo / Função</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={(formData as any).isCustomRole ? 'CUSTOM' : formData.role || 'OPERACIONAL'}
+                                                    onChange={async (e) => {
+                                                        const val = e.target.value;
+                                                        if (val === 'CUSTOM') {
+                                                            setFormData({ ...formData, role: '', isCustomRole: true } as any);
+                                                        } else {
+                                                            const isCliente = val === 'CLIENTE';
+                                                            const newPermissions = isCliente ? [] : JSON.parse(rolePermissions.find(rp => rp.role === val)?.permissions || '[]');
+
+                                                            setFormData({
+                                                                ...formData,
+                                                                role: val,
+                                                                division: isCliente ? 'CLIENTE' : (formData.division === 'CLIENTE' ? 'COMERCIAL' : formData.division),
+                                                                isCustomRole: false,
+                                                                permissions: newPermissions
+                                                            } as any);
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 font-bold text-secondary"
+                                                >
+                                                    <option value="CLIENTE">Perfil: Cliente (Predefinido)</option>
+                                                    {rolePermissions
+                                                        .filter(rp => rp.role !== 'CLIENTE')
+                                                        .map(rp => (
+                                                            <option key={rp.role} value={rp.role}>
+                                                                {rp.label || rp.role}
+                                                            </option>
+                                                        ))
+                                                    }
+                                                    <option value="CUSTOM">+ Digitar novo cargo...</option>
+                                                </select>
+                                            </div>
+
+                                            {(formData as any).isCustomRole && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    className="mt-3"
+                                                >
+                                                    <input
+                                                        type="text"
+                                                        value={formData.role}
+                                                        onChange={e => setFormData({ ...formData, role: e.target.value.toUpperCase() })}
+                                                        placeholder="Digite o nome do novo cargo..."
+                                                        className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 font-bold text-secondary"
+                                                        autoFocus
+                                                    />
+                                                    <p className="text-[9px] text-primary font-bold mt-1 uppercase italic">Este cargo será salvo e poderá ser usado em outros perfis.</p>
+                                                </motion.div>
+                                            )}
+
+                                            {/* (Link removido daqui e movido para a seção de status abaixo para melhor organização) */}
                                         </div>
 
-                                        <div className="col-span-1">
-                                            <label className="block text-[10px] font-black text-gray-400 mb-1">Cor na Agenda</label>
-                                            <input type="color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} className="w-full h-11 rounded-xl cursor-pointer" />
-                                        </div>
                                     </div>
                                 </div>
+
+                                {formData.division !== 'CLIENTE' && (
+                                    <div className="pt-4 border-t border-gray-50 mt-4">
+                                        <label className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl cursor-pointer hover:bg-primary/10 transition-colors border border-primary/10">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isEligible}
+                                                onChange={e => setFormData({ ...formData, isEligible: e.target.checked })}
+                                                className="w-5 h-5 rounded-lg text-primary focus:ring-primary transition-all"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-sm font-black text-secondary uppercase tracking-tight">Elegível para Execução</div>
+                                                <div className="text-[10px] font-bold text-gray-400">Define se este profissional aparece nas listas de seleção para serviços e logística.</div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.isEligible ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                {formData.isEligible ? 'ATIVO' : 'INATIVO'}
+                                            </div>
+                                        </label>
+                                    </div>
+                                )}
+
+                                {/* STATUS E ACESSO DO CLIENTE */}
+                                {formData.division === 'CLIENTE' && (
+                                    <div className="pt-4 border-t border-gray-50 mt-4 space-y-3">
+                                        <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
+                                            <Shield size={14} /> Status e Acesso do Cliente
+                                        </h4>
+
+                                        {/* Classificação de Nível (Discreto) */}
+                                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-tight">Nível de Classificação</div>
+                                                <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shadow-sm ${(formData as any).customer?.riskLevel === 'Nivel 3' ? 'bg-red-500 text-white shadow-red-100' :
+                                                        (formData as any).customer?.riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
+                                                            'bg-green-500 text-white shadow-green-100'
+                                                    }`}>
+                                                    {(formData as any).customer?.riskLevel || 'Nivel 1'}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {['Nivel 1', 'Nivel 2', 'Nivel 3'].map(lvl => (
+                                                    <button
+                                                        key={lvl}
+                                                        onClick={() => setFormData({
+                                                            ...formData,
+                                                            customer: {
+                                                                ...((formData as any).customer || {}),
+                                                                riskLevel: lvl
+                                                            }
+                                                        } as any)}
+                                                        className={`py-2 rounded-xl text-[10px] font-black transition-all border ${((formData as any).customer?.riskLevel || 'Nivel 1') === lvl
+                                                                ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
+                                                                    lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
+                                                                        'bg-green-600 border-green-600 text-white shadow-md')
+                                                                : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                                                            }`}
+                                                    >
+                                                        {lvl}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[9px] font-bold text-gray-400 italic leading-tight">
+                                                {(formData as any).customer?.riskLevel === 'Nivel 3' ? '⚠️ CRÍTICO: Problemas graves ou comportamento indesejado.' :
+                                                    (formData as any).customer?.riskLevel === 'Nivel 2' ? '🔶 ATENÇÃO: Requer cuidados ou possui histórico de pendências.' :
+                                                        '✅ NORMAL: Cliente exemplar sem restrições registradas.'}
+                                            </p>
+                                        </div>
+
+                                        {/* Status Geral: Disponível (Tudo OK) */}
+                                        {!((formData as any).customer?.isBlocked) && ((formData as any).customer?.canRequestQuotes !== false) && (
+                                            <div className="flex items-center gap-3 p-4 bg-green-50 rounded-2xl border border-green-200">
+                                                <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white">
+                                                    <Check size={20} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-black text-green-700 uppercase tracking-tight">Disponível (Tudo OK)</div>
+                                                    <div className="text-[10px] font-bold text-green-600/70">O cliente possui acesso total ao sistema e orçamentos.</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Bloquear Orçamentos */}
+                                        <label className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl cursor-pointer hover:bg-amber-100 transition-colors border border-amber-200">
+                                            <input
+                                                type="checkbox"
+                                                checked={!((formData as any).customer?.canRequestQuotes ?? true)}
+                                                onChange={e => setFormData({
+                                                    ...formData,
+                                                    customer: {
+                                                        ...((formData as any).customer || {}),
+                                                        canRequestQuotes: !e.target.checked
+                                                    }
+                                                } as any)}
+                                                className="w-5 h-5 rounded-lg text-amber-500 focus:ring-amber-500 transition-all transition-all"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-sm font-black text-amber-700 uppercase tracking-tight">Bloquear Orçamentos</div>
+                                                <div className="text-[10px] font-bold text-amber-600/70">Inadimplência ou restrição. Impede novos pedidos.</div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${!((formData as any).customer?.canRequestQuotes ?? true) ? 'bg-amber-200 text-amber-700' : 'bg-green-100 text-green-600'}`}>
+                                                {!((formData as any).customer?.canRequestQuotes ?? true) ? 'BLOQUEADO' : 'LIBERADO'}
+                                            </div>
+                                        </label>
+
+                                        {/* Bloquear Acesso Total */}
+                                        <label className="flex items-center gap-3 p-4 bg-red-50 rounded-2xl cursor-pointer hover:bg-red-100 transition-colors border border-red-200">
+                                            <input
+                                                type="checkbox"
+                                                checked={(formData as any).customer?.isBlocked ?? false}
+                                                onChange={e => setFormData({
+                                                    ...formData,
+                                                    customer: {
+                                                        ...((formData as any).customer || {}),
+                                                        isBlocked: e.target.checked
+                                                    }
+                                                } as any)}
+                                                className="w-5 h-5 rounded-lg text-red-500 focus:ring-red-500 transition-all transition-all"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-sm font-black text-red-700 uppercase tracking-tight">Bloquear Acesso ao Sistema</div>
+                                                <div className="text-[10px] font-bold text-red-600/70">Impede login e recuperação de senha. Histórico mantido.</div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${(formData as any).customer?.isBlocked ? 'bg-red-200 text-red-700' : 'bg-green-100 text-green-600'}`}>
+                                                {(formData as any).customer?.isBlocked ? 'BLOQUEADO' : 'ATIVO'}
+                                            </div>
+                                        </label>
+
+                                        {/* Link para perfil completo (Se existir ID) */}
+                                        {(formData as any).customer?.id && (
+                                            <button
+                                                onClick={() => handleOpenCustomerDetail((formData as any).customer.id)}
+                                                className="w-full flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 hover:bg-blue-50 transition-all group mt-2 text-left"
+                                            >
+                                                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-500">
+                                                    <Briefcase size={16} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-xs font-black text-blue-700 uppercase">Ver Perfil Completo do Cliente</div>
+                                                    <div className="text-[9px] font-bold text-blue-400 italic">Ver pets, histórico de orçamentos e faturamento.</div>
+                                                </div>
+                                                <ChevronRight size={16} className="text-blue-300 group-hover:translate-x-1 transition-transform" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="space-y-4">
                                     <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase"><Lock size={14} /> Permissões Específicas</h4>
@@ -948,6 +1240,13 @@ export default function UserManager() {
                     )
                 }
             </AnimatePresence >
+            {/* MODAL DE DETALHES DO CLIENTE (POPUP SINGLE PAGE) */}
+            <CustomerDetailsModal
+                isOpen={isCustomerModalVisible}
+                onClose={() => setIsCustomerModalVisible(false)}
+                customerId={viewCustomerId}
+                onUpdate={fetchUsers}
+            />
         </div >
     );
 }

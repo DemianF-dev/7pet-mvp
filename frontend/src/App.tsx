@@ -39,10 +39,11 @@ import PWASettings from './components/PWASettings';
 
 
 import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
     return (
-        <>
+        <ThemeProvider defaultTheme="system" storageKey="7pet-theme">
             <Toaster position="top-right" reverseOrder={false} />
             <FeedbackWidget />
             <PWAInstallPrompt />
@@ -95,8 +96,9 @@ function App() {
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-        </>
+        </ThemeProvider>
     );
 }
 

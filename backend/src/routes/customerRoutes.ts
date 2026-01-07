@@ -12,6 +12,7 @@ router.post('/request-recurrence', customerController.requestRecurrence);
 // Restrict these routes to staff only
 const staffOnly = authorize(['OPERACIONAL', 'GESTAO', 'ADMIN']);
 
+router.get('/search', staffOnly, customerController.search);
 router.get('/', staffOnly, customerController.list);
 router.get('/:id', staffOnly, customerController.get);
 router.post('/', staffOnly, customerController.create);
@@ -23,8 +24,8 @@ router.get('/trash', staffOnly, customerController.listTrash);
 router.post('/bulk-restore', staffOnly, customerController.bulkRestore);
 router.patch('/:id/restore', staffOnly, customerController.restore);
 router.delete('/:id/permanent', staffOnly, customerController.permanentRemove);
-router.post('/:id/pets', staffOnly, customerController.createPet)
-
-    ;
+router.post('/:id/pets', staffOnly, customerController.createPet);
+router.patch('/pets/:petId', staffOnly, customerController.updatePet);
+router.delete('/pets/:petId', staffOnly, customerController.deletePet);
 
 export default router;

@@ -51,8 +51,8 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
     isSaving,
 }) => {
     return (
-        <header className="mb-10 bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+        <header className="mb-10 bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 dark:bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
 
             {!isModal && (
                 <div className="mb-6">
@@ -60,12 +60,12 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
                 </div>
             )}
             <div className="relative z-10 flex flex-col gap-8">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-gray-50">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-gray-50 dark:border-gray-700">
                     <div className="flex items-center gap-4">
                         {!isModal && <BackButton className="" />}
                         {isModal && (
-                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2">
-                                <ChevronLeft size={24} className="text-secondary" />
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors mr-2">
+                                <ChevronLeft size={24} className="text-secondary dark:text-white" />
                             </button>
                         )}
                         <div>
@@ -80,19 +80,19 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
                                     {status}
                                 </button>
                             </div>
-                            <h1 className="text-3xl font-black text-secondary mt-2">
+                            <h1 className="text-3xl font-black text-secondary dark:text-white mt-2">
                                 {customerName}
                             </h1>
                             <div className="flex flex-col gap-1 mt-1">
                                 <button
                                     onClick={() => onOpenCustomer(customerId)}
-                                    className="text-xs font-bold text-gray-400 hover:text-primary transition-colors flex items-center gap-1"
+                                    className="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
                                 >
                                     <User size={12} /> Ver ficha completa do cliente
                                 </button>
                                 <button
                                     onClick={onShowAuditLog}
-                                    className="text-xs font-bold text-gray-400 hover:text-purple-600 transition-colors flex items-center gap-1"
+                                    className="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-purple-600 transition-colors flex items-center gap-1"
                                 >
                                     <History size={12} /> Ver histórico de alterações
                                 </button>
@@ -126,7 +126,7 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
                         <button
                             onClick={onSave}
                             disabled={isSaving}
-                            className="flex items-center gap-2 px-6 py-3 bg-white text-secondary font-bold rounded-2xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-50 text-xs uppercase tracking-widest"
+                            className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-secondary dark:text-white font-bold rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95 disabled:opacity-50 text-xs uppercase tracking-widest"
                         >
                             <Save size={16} /> Salvar Alterações
                         </button>

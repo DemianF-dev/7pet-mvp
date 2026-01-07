@@ -746,23 +746,25 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                             <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
                                             <div className={`font-bold text-sm ${!formData.performerId ? 'text-primary' : 'text-gray-400'}`}>Ninguém fixo</div>
                                         </button>
-                                        {(staffUsers || []).map(u => u && (
-                                            <button
-                                                key={u.id}
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, performerId: u.id })}
-                                                className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.performerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-primary/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                                style={formData.performerId === u.id ? { borderLeft: `6px solid ${u.color || '#3B82F6'}` } : {}}
-                                            >
-                                                <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
-                                                <div className={`font-bold text-sm truncate ${formData.performerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
-                                                {formData.performerId === u.id && (
-                                                    <div className="absolute top-2 right-2 text-primary">
-                                                        <CheckCircle size={14} />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
+                                        {(staffUsers || [])
+                                            .filter(u => u.isEligible !== false && u.division === 'SPA')
+                                            .map(u => u && (
+                                                <button
+                                                    key={u.id}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, performerId: u.id })}
+                                                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.performerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-primary/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                                    style={formData.performerId === u.id ? { borderLeft: `6px solid ${u.color || '#3B82F6'}` } : {}}
+                                                >
+                                                    <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
+                                                    <div className={`font-bold text-sm truncate ${formData.performerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
+                                                    {formData.performerId === u.id && (
+                                                        <div className="absolute top-2 right-2 text-primary">
+                                                            <CheckCircle size={14} />
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
                                     </div>
                                 </div>
                             )}
@@ -782,23 +784,25 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                             <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
                                             <div className={`font-bold text-sm ${!formData.logisticPerformerId ? 'text-orange-600' : 'text-gray-400'}`}>Ninguém fixo</div>
                                         </button>
-                                        {(staffUsers || []).map(u => u && (
-                                            <button
-                                                key={u.id}
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, logisticPerformerId: u.id })}
-                                                className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.logisticPerformerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-orange-500/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                                style={formData.logisticPerformerId === u.id ? { borderLeft: `6px solid ${u.color || '#F97316'}` } : {}}
-                                            >
-                                                <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
-                                                <div className={`font-bold text-sm truncate ${formData.logisticPerformerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
-                                                {formData.logisticPerformerId === u.id && (
-                                                    <div className="absolute top-2 right-2 text-orange-500">
-                                                        <CheckCircle size={14} />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
+                                        {(staffUsers || [])
+                                            .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
+                                            .map(u => u && (
+                                                <button
+                                                    key={u.id}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, logisticPerformerId: u.id })}
+                                                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.logisticPerformerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-orange-500/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                                    style={formData.logisticPerformerId === u.id ? { borderLeft: `6px solid ${u.color || '#F97316'}` } : {}}
+                                                >
+                                                    <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
+                                                    <div className={`font-bold text-sm truncate ${formData.logisticPerformerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
+                                                    {formData.logisticPerformerId === u.id && (
+                                                        <div className="absolute top-2 right-2 text-orange-500">
+                                                            <CheckCircle size={14} />
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
                                     </div>
                                 </div>
                             )}

@@ -23,6 +23,7 @@ import {
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
+import ThemeToggle from './ThemeToggle';
 
 export default function StaffSidebar() {
     const navigate = useNavigate();
@@ -99,25 +100,21 @@ export default function StaffSidebar() {
                 />
             )}
 
-            {/* 3. Agenda SPA */}
-            {checkPermission('agenda-spa') && (
-                <SidebarItem
-                    icon={<Sparkles size={20} />}
-                    label="Agenda SPA"
-                    active={location.pathname === '/staff/agenda-spa'}
-                    onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
-                />
-            )}
+            {/* 3. Agenda SPA - Always visible to all staff */}
+            <SidebarItem
+                icon={<Sparkles size={20} />}
+                label="Agenda SPA"
+                active={location.pathname === '/staff/agenda-spa'}
+                onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
+            />
 
-            {/* 4. Agenda LOG */}
-            {checkPermission('agenda-log') && (
-                <SidebarItem
-                    icon={<Truck size={20} />}
-                    label="Agenda LOG"
-                    active={location.pathname === '/staff/agenda-log'}
-                    onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
-                />
-            )}
+            {/* 4. Agenda LOG - Always visible to all staff */}
+            <SidebarItem
+                icon={<Truck size={20} />}
+                label="Agenda LOG"
+                active={location.pathname === '/staff/agenda-log'}
+                onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
+            />
 
             {/* 5. Clientes */}
             {checkPermission('customers') && (
@@ -277,6 +274,9 @@ export default function StaffSidebar() {
                             {menuItems}
 
                             <div className="pt-6 border-t border-white/10 mt-auto">
+                                <div className="mb-4">
+                                    <ThemeToggle />
+                                </div>
                                 <div className="flex items-center gap-3 mb-2 p-2">
                                     <img
                                         src={`https://ui-avatars.com/api/?name=${user?.name || user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
@@ -311,9 +311,9 @@ export default function StaffSidebar() {
 
 
                 <div className="pt-6 border-t border-white/10">
-                    {/* Versão do Sistema */}
                     <div className="mb-4 px-2">
-                        <p className="text-[10px] text-white/40 text-center font-mono">
+                        <ThemeToggle />
+                        <p className="text-[10px] text-white/40 text-center font-mono mt-2">
                             v0.1.0-beta
                         </p>
                     </div>

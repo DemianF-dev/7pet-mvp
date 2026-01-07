@@ -136,6 +136,10 @@ export const list = async (
             },
             quote: {
                 include: {
+                    appointments: {
+                        where: { deletedAt: null },
+                        select: { id: true, category: true, transport: { select: { type: true } } }
+                    },
                     invoice: {
                         select: { id: true, status: true, amount: true }
                     }

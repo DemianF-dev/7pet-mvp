@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { useModalFocusTrap } from '../hooks/useModalKeyboard';
 import ConfirmModal from './ConfirmModal';
+import ThemeToggle from './ThemeToggle';
 
 export default function Sidebar() {
     const navigate = useNavigate();
@@ -130,6 +131,9 @@ export default function Sidebar() {
                             {menuItems}
 
                             <div className="pt-6 border-t border-gray-100 mt-auto">
+                                <div className="mb-4">
+                                    <ThemeToggle />
+                                </div>
                                 <div className="flex items-center gap-3 mb-2 p-2 bg-gray-50 rounded-2xl">
                                     <img
                                         src={`https://ui-avatars.com/api/?name=${user?.customer?.name || user?.email}&background=00D664&color=fff`}
@@ -166,7 +170,8 @@ export default function Sidebar() {
                 <div className="pt-6 border-t border-gray-100">
                     {/* Versão do Sistema */}
                     <div className="mb-4 px-2">
-                        <p className="text-[10px] text-gray-400 text-center font-mono">
+                        <ThemeToggle />
+                        <p className="text-[10px] text-gray-400 text-center font-mono mt-2">
                             v0.1.0-beta
                         </p>
                     </div>

@@ -7,6 +7,7 @@ import { createAuditLog, detectChanges } from '../utils/auditLogger';
 import { messagingService } from '../services/messagingService';
 import * as quoteService from '../services/quoteService';
 import { mapsService } from '../services/mapsService';
+import * as authService from '../services/authService';
 import { z } from 'zod';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
@@ -33,8 +34,9 @@ const quoteSchema = z.object({
     hasParasites: z.boolean().optional(),
     parasiteTypes: z.string().optional(), // 'PULGA', 'CARRAPATO', ou 'AMBOS'
     parasiteComments: z.string().optional(),
-    wantsMedicatedBath: z.boolean().optional(),
-    petQuantity: z.number().int().optional()
+    petQuantity: z.number().int().optional(),
+    transportLevaAt: z.string().optional(),
+    transportTrazAt: z.string().optional()
 });
 
 export const quoteController = {
@@ -52,6 +54,13 @@ export const quoteController = {
                 customerId = req.body.customerId;
                 if (!customerId) {
                     return res.status(400).json({ error: 'ID do cliente é obrigatório para criação por colaboradores.' });
+                }
+            }
+
+            // Check if client can request quotes (only for CLIENTE role self-service)
+            if (user.role === 'CLIENTE' && user.customer) {
+                if (user.customer.canRequestQuotes === false) {
+                    return res.status(403).json({ error: 'Sua conta está com restrição para solicitar novos orçamentos. Entre em contato com a 7Pet.' });
                 }
             }
 
@@ -152,6 +161,8 @@ export const quoteController = {
                     parasiteComments: data.parasiteComments,
                     wantsMedicatedBath: data.wantsMedicatedBath,
                     petQuantity: data.petQuantity || 1,
+                    transportLevaAt: data.transportLevaAt ? new Date(data.transportLevaAt) : null,
+                    transportTrazAt: data.transportTrazAt ? new Date(data.transportTrazAt) : null,
                     status: 'SOLICITADO',
                     totalAmount,
                     statusHistory: {
@@ -463,7 +474,10 @@ export const quoteController = {
                 petQuantity: z.number().int().optional(),
                 desiredAt: z.string().optional(),
                 scheduledAt: z.string().optional(),
-                transportAt: z.string().optional()
+                transportAt: z.string().optional(),
+                transportLevaAt: z.string().optional(),
+                transportTrazAt: z.string().optional(),
+                petId: z.string().optional()
             }).parse(req.body);
 
             const user = (req as any).user;
@@ -486,6 +500,12 @@ export const quoteController = {
 
             if (data.transportAt) {
                 updateData.transportAt = new Date(data.transportAt);
+            }
+            if (data.transportLevaAt) {
+                updateData.transportLevaAt = new Date(data.transportLevaAt);
+            }
+            if (data.transportTrazAt) {
+                updateData.transportTrazAt = new Date(data.transportTrazAt);
             }
 
             if (data.status) {
@@ -533,6 +553,7 @@ export const quoteController = {
             if (data.hairLength !== undefined) updateData.hairLength = data.hairLength;
             if (data.hasParasites !== undefined) updateData.hasParasites = data.hasParasites;
             if (data.petQuantity !== undefined) updateData.petQuantity = data.petQuantity;
+            if (data.petId !== undefined) updateData.petId = data.petId;
 
             if (data.items) {
                 // Determine status logic: if items are priced > 0 and status is SOLICITADO, maybe move to CALCULADO?
@@ -944,7 +965,98 @@ export const quoteController = {
                     };
                 })) : [];
 
+                // Lógica de adição automática de itens (Knots/Nós e Banho Medicamentoso)
+                if (quoteData.hasKnots && quoteData.knotRegions) {
+                    const knotRegions = quoteData.knotRegions.toLowerCase().split(',').map((r: string) => r.trim()).filter((r: string) => r);
+
+                    const KNOT_PRICES: Record<string, number> = {
+                        'orelhas': 7.50,
+                        'rostinho': 15.00,
+                        'pescoço': 15.00,
+                        'barriga': 12.50,
+                        'pata frontal esquerda': 7.50,
+                        'pata frontal direita': 7.50,
+                        'pata traseira esquerda': 7.50,
+                        'pata traseira direita': 7.50,
+                        'bumbum': 12.50,
+                        'rabo': 10.00
+                    };
+
+                    const patas = knotRegions.filter(r => r.includes('pata'));
+                    const outrasRegioes = knotRegions.filter(r => !r.includes('pata'));
+
+                    if (patas.length > 0) {
+                        processedItems.push({
+                            description: `Desembolo - Patas (${patas.length}x)`,
+                            quantity: patas.length,
+                            price: 7.50,
+                            serviceId: undefined
+                        });
+                    }
+
+                    outrasRegioes.forEach(region => {
+                        const price = KNOT_PRICES[region];
+                        if (price) {
+                            processedItems.push({
+                                description: `Desembolo - ${region.charAt(0).toUpperCase() + region.slice(1)}`,
+                                quantity: 1,
+                                price,
+                                serviceId: undefined
+                            });
+                        }
+                    });
+                }
+
+                if (quoteData.wantsMedicatedBath) {
+                    processedItems.push({
+                        description: '💊 Banho Medicamentoso Antipulgas',
+                        quantity: 1,
+                        price: 45.00,
+                        serviceId: undefined
+                    });
+                }
+
+                // 2.5 Apply Recurrence Discounts to SPA services
+                const recurrenceFrequency = quoteData.recurrenceFrequency || customer.recurrenceFrequency;
+                let discountRate = 0;
+                if (recurrenceFrequency === 'MENSAL') discountRate = 0.05;
+                else if (recurrenceFrequency === 'QUINZENAL') discountRate = 0.07;
+                else if (recurrenceFrequency === 'SEMANAL') discountRate = 0.10;
+
+                if (discountRate > 0) {
+                    for (const item of processedItems) {
+                        // Assume items with a serviceId are SPA services unless they are transport
+                        if (item.serviceId) {
+                            const service = await tx.service.findUnique({ where: { id: item.serviceId } });
+                            // Check if category implies SPA (adjust based on your actual categories)
+                            if (service && service.category !== 'TRANSPORTE') {
+                                item.price = item.price * (1 - discountRate);
+                                item.description += ` (${(discountRate * 100).toFixed(0)}% desc reg.)`;
+                            }
+                        }
+                    }
+                }
+
                 const totalAmount = processedItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+
+                // Debug logging
+                console.log('[createManual] Creating quote with:', {
+                    customerId: dbCustomer!.id,
+                    petId: dbPet?.id || null,
+                    type: quoteData.type,
+                    totalAmount,
+                    itemsCount: processedItems.length
+                });
+
+                // Sanitize items - ensure serviceId is null not undefined
+                const sanitizedItems = processedItems.map((item: any) => ({
+                    description: item.description || 'Item sem descrição',
+                    quantity: item.quantity || 1,
+                    price: item.price || 0,
+                    serviceId: item.serviceId || null
+                }));
+
+                console.log('[createManual] Sanitized items:', sanitizedItems);
 
                 // 3. Create Quote
                 const quote = await tx.quote.create({
@@ -954,8 +1066,19 @@ export const quoteController = {
                         type: quoteData.type || 'SPA',
                         desiredAt: quoteData.desiredAt ? new Date(quoteData.desiredAt) : null,
                         transportOrigin: quoteData.transportOrigin || customer.address,
-                        transportDestination: quoteData.transportDestination,
+                        transportDestination: quoteData.transportDestination || "7Pet",
+                        transportReturnAddress: quoteData.transportReturnAddress,
                         transportPeriod: quoteData.transportPeriod,
+                        petQuantity: quoteData.petQuantity || 1,
+                        hairLength: quoteData.hairLength,
+                        hasKnots: quoteData.hasKnots || false,
+                        knotRegions: quoteData.knotRegions,
+                        hasParasites: quoteData.hasParasites || false,
+                        parasiteTypes: quoteData.parasiteTypes,
+                        parasiteComments: quoteData.parasiteComments,
+                        wantsMedicatedBath: quoteData.wantsMedicatedBath || false,
+                        transportLevaAt: quoteData.transportLevaAt ? new Date(quoteData.transportLevaAt) : null,
+                        transportTrazAt: quoteData.transportTrazAt ? new Date(quoteData.transportTrazAt) : null,
                         status: 'SOLICITADO',
                         totalAmount,
                         statusHistory: {
@@ -967,7 +1090,7 @@ export const quoteController = {
                             }
                         },
                         items: {
-                            create: processedItems
+                            create: sanitizedItems
                         }
                     },
                     include: {

@@ -12,7 +12,10 @@ export const mapsController = {
             }
 
             const result = await mapsService.calculateTransportDetailed(address);
-            return res.json(result);
+            return res.json({
+                ...result,
+                estimatedPrice: result.total // Compatibilidade com frontend
+            });
         } catch (error: any) {
             console.error('Maps Controller Error:', error);
             return res.status(500).json({
