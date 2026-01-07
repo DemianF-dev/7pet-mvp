@@ -39,33 +39,31 @@ export function ThemeProvider({
         if (theme === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-            const listener = (e: MediaQueryListEvent) => {
+            // Use a closure to handle the change, avoiding type issues between
+            // MediaQueryListEvent and MediaQueryList
+            const applySystemTheme = () => {
                 root.classList.remove('light', 'dark');
-                if (e.matches) {
+                if (mediaQuery.matches) {
                     root.classList.add('dark');
                 } else {
                     root.classList.add('light');
                 }
             };
 
-            // Initial application
-            if (mediaQuery.matches) {
-                root.classList.add('dark');
-            } else {
-                root.classList.add('light');
-            }
+            // Apply initially
+            applySystemTheme();
 
             // Modern browsers
             if (mediaQuery.addEventListener) {
-                mediaQuery.addEventListener('change', listener);
-                return () => mediaQuery.removeEventListener('change', listener);
+                mediaQuery.addEventListener('change', applySystemTheme);
+                return () => mediaQuery.removeEventListener('change', applySystemTheme);
             }
             // Legacy fallback (Safari < 14, etc.)
             else if (mediaQuery.addListener) {
                 // @ts-ignore - Deprecated method support
-                mediaQuery.addListener(listener);
+                mediaQuery.addListener(applySystemTheme);
                 // @ts-ignore - Deprecated method support
-                return () => mediaQuery.removeListener(listener);
+                return () => mediaQuery.removeListener(applySystemTheme);
             }
         } else {
             // Manual theme (light or dark)
