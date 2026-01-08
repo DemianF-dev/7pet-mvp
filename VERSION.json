@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260107-1607",
+  "version": "BETA20260108-0300",
   "stage": "BETA",
-  "timestamp": "2026-01-07T16:07:36.000Z",
-  "commit": "c8e079e",
-  "buildNumber": 42,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-08T03:00:34.000Z",
+  "commit": "84a2b8a",
+  "buildNumber": 43,
+  "releaseNotes": "Auto-generated from commit: feat: implement internal feed and real-time chat (Bitrix24-style) + premium polish"
 }
