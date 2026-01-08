@@ -15,6 +15,7 @@ import './styles/themes/ocean-calm.css'
 import './styles/themes/forest-nature.css'
 import './styles/themes/candy-pop.css'
 import './index.css'
+import { SocketProvider } from './context/SocketContext'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -41,7 +42,9 @@ createRoot(document.getElementById('root')!).render(
                 persistOptions={{ persister }}
             >
                 <BrowserRouter>
-                    <App />
+                    <SocketProvider>
+                        <App />
+                    </SocketProvider>
                 </BrowserRouter>
             </PersistQueryClientProvider>
         </GoogleOAuthProvider>

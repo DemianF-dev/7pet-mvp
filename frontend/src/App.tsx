@@ -1,4 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './components/ui/PageTransition';
 import LandingPage from './pages/LandingPage';
 import ClientEntry from './pages/client/ClientEntry';
 import ClientLogin from './pages/client/ClientLogin';
@@ -36,68 +38,77 @@ import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWASettings from './components/PWASettings';
+import FeedPage from './pages/staff/FeedPage';
+import ChatDrawer from './components/chat/ChatDrawer';
 
 
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
+    const location = useLocation();
+
     return (
         <ThemeProvider defaultTheme="system" storageKey="7pet-theme">
             <Toaster position="top-right" reverseOrder={false} />
             <FeedbackWidget />
             <PWAInstallPrompt />
-            <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/client" element={<ClientEntry />} />
-                <Route path="/client/login" element={<ClientLogin />} />
-                <Route path="/client/register" element={<ClientRegister />} />
+            <AnimatePresence mode="wait">
+                <Routes location={location} key={location.pathname}>
 
-                {/* Cliente Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['CLIENTE', 'MASTER']} redirectTo="/client/login" />}>
-                    <Route path="/client/dashboard" element={<ClientDashboard />} />
-                    <Route path="/client/pets" element={<PetList />} />
-                    <Route path="/client/profile" element={<ClientProfile />} />
-                    <Route path="/client/schedule" element={<AppointmentBooking />} />
-                    <Route path="/client/appointments" element={<AppointmentList />} />
-                    <Route path="/client/quote-request" element={<QuoteRequest />} />
-                    <Route path="/client/quotes" element={<QuoteList />} />
-                    <Route path="/client/notifications" element={<NotificationList />} />
-                    <Route path="/client/payments" element={<PaymentList />} />
-                    <Route path="/client/settings" element={<PWASettings />} />
-                </Route>
+                    <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+                    <Route path="/client" element={<PageTransition><ClientEntry /></PageTransition>} />
+                    <Route path="/client/login" element={<PageTransition><ClientLogin /></PageTransition>} />
+                    <Route path="/client/register" element={<PageTransition><ClientRegister /></PageTransition>} />
 
-
-                {/* Colaborador Routes */}
-                <Route path="/staff/login" element={<StaffLogin />} />
-                <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA']} redirectTo="/staff/login" />}>
-                    <Route path="/staff/dashboard" element={<StaffDashboard />} />
-                    <Route path="/staff/kanban" element={<ServiceKanban />} />
-                    <Route path="/staff/agenda-spa" element={<AgendaSPA />} />
-                    <Route path="/staff/agenda-log" element={<AgendaLOG />} />
-                    <Route path="/staff/transport" element={<TransportManager />} />
-                    <Route path="/staff/quotes" element={<QuoteManager />} />
-                    <Route path="/staff/quotes/:id" element={<QuoteEditor />} />
-                    <Route path="/staff/customers" element={<CustomerManager />} />
-                    <Route path="/staff/customers/:id" element={<CustomerDetail />} />
-                    <Route path="/staff/services" element={<ServiceManager />} />
-                    <Route path="/staff/products" element={<ProductManager />} />
-                    <Route path="/staff/billing" element={<BillingManager />} />
-                    <Route path="/staff/management" element={<ManagementDashboard />} />
-                    <Route path="/staff/reports" element={<FinancialReports />} />
-                    <Route path="/staff/users" element={<UserManager />} />
-                    <Route path="/staff/notifications" element={<StaffNotificationList />} />
-                    <Route path="/staff/profile" element={<StaffProfile />} />
-                    <Route path="/staff/support" element={<SupportTicketList />} />
-                    <Route path="/staff/transport-config" element={<TransportConfig />} />
-                    <Route path="/staff/settings" element={<PWASettings />} />
-                </Route>
+                    {/* Cliente Routes */}
+                    <Route element={<ProtectedRoute allowedRoles={['CLIENTE', 'MASTER']} redirectTo="/client/login" />}>
+                        <Route path="/client/dashboard" element={<PageTransition><ClientDashboard /></PageTransition>} />
+                        <Route path="/client/pets" element={<PageTransition><PetList /></PageTransition>} />
+                        <Route path="/client/profile" element={<PageTransition><ClientProfile /></PageTransition>} />
+                        <Route path="/client/schedule" element={<PageTransition><AppointmentBooking /></PageTransition>} />
+                        <Route path="/client/appointments" element={<PageTransition><AppointmentList /></PageTransition>} />
+                        <Route path="/client/quote-request" element={<PageTransition><QuoteRequest /></PageTransition>} />
+                        <Route path="/client/quotes" element={<PageTransition><QuoteList /></PageTransition>} />
+                        <Route path="/client/notifications" element={<PageTransition><NotificationList /></PageTransition>} />
+                        <Route path="/client/payments" element={<PageTransition><PaymentList /></PageTransition>} />
+                        <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                    </Route>
 
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    {/* Colaborador Routes */}
+                    <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
+                    <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA']} redirectTo="/staff/login" />}>
+                        <Route path="/staff/dashboard" element={<PageTransition><StaffDashboard /></PageTransition>} />
+                        <Route path="/staff/kanban" element={<PageTransition><ServiceKanban /></PageTransition>} />
+                        <Route path="/staff/agenda-spa" element={<PageTransition><AgendaSPA /></PageTransition>} />
+                        <Route path="/staff/agenda-log" element={<PageTransition><AgendaLOG /></PageTransition>} />
+                        <Route path="/staff/transport" element={<PageTransition><TransportManager /></PageTransition>} />
+                        <Route path="/staff/quotes" element={<PageTransition><QuoteManager /></PageTransition>} />
+                        <Route path="/staff/quotes/:id" element={<PageTransition><QuoteEditor /></PageTransition>} />
+                        <Route path="/staff/customers" element={<PageTransition><CustomerManager /></PageTransition>} />
+                        <Route path="/staff/customers/:id" element={<PageTransition><CustomerDetail /></PageTransition>} />
+                        <Route path="/staff/services" element={<PageTransition><ServiceManager /></PageTransition>} />
+                        <Route path="/staff/products" element={<PageTransition><ProductManager /></PageTransition>} />
+                        <Route path="/staff/billing" element={<PageTransition><BillingManager /></PageTransition>} />
+                        <Route path="/staff/management" element={<PageTransition><ManagementDashboard /></PageTransition>} />
+                        <Route path="/staff/reports" element={<PageTransition><FinancialReports /></PageTransition>} />
+                        <Route path="/staff/users" element={<PageTransition><UserManager /></PageTransition>} />
+                        <Route path="/staff/notifications" element={<PageTransition><StaffNotificationList /></PageTransition>} />
+                        <Route path="/staff/profile" element={<PageTransition><StaffProfile /></PageTransition>} />
+                        <Route path="/staff/support" element={<PageTransition><SupportTicketList /></PageTransition>} />
+                        <Route path="/staff/transport-config" element={<PageTransition><TransportConfig /></PageTransition>} />
+                        <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                        <Route path="/staff/feed" element={<PageTransition><FeedPage /></PageTransition>} />
+                    </Route>
+
+
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </AnimatePresence>
+            <ChatDrawer />
         </ThemeProvider>
     );
 }

@@ -46,6 +46,13 @@ model User {
   assignedServices     Service[]          @relation("ServiceResponsible")
   pushSubscriptions    PushSubscription[]
 
+  // Feed & Chat
+  posts                Post[]
+  comments             Comment[]
+  reactions            Reaction[]
+  sentMessages         Message[]          @relation("MessageSender")
+  conversations        Participant[]
+
   @@index([email])
   @@index([division])
   @@index([firstName])
@@ -492,4 +499,95 @@ model PushSubscription {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// --- Feed Models ---
+model Post {
+  id        String     @id @default(uuid())
+  content   String
+  authorId  String
+  attachments Json?    @default("[]")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+  
+  author    User       @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  reactions Reaction[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  type      String   // LIKE, LOVE, etc.
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, postId])
+}
+
+// --- Chat Models ---
+model Conversation {
+  id        String        @id @default(uuid())
+  type      String        @default("DIRECT") // DIRECT, GROUP
+  name      String?       // For group chats
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  lastMessageAt DateTime? // Optimization for sorting
+  
+  messages     Message[]
+  participants Participant[]
+}
+
+model Participant {
+  id             String       @id @default(uuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+
+  user           User         @relation(fields: [userId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String
+  senderId       String
+  conversationId String
+  createdAt      DateTime     @default(now())
+  readBy         Json?        @default("[]")
+  
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
 }

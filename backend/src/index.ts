@@ -12,6 +12,8 @@ try {
 */
 
 import express from 'express';
+import { createServer } from 'http';
+import { socketService } from './services/socketService';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -31,7 +33,9 @@ import supportRoutes from './routes/supportRoutes';
 import mapsRoutes from './routes/mapsRoutes';
 import transportSettingsRoute from './routes/transportSettingsRoutes';
 import notificationRoutes from './routes/notificationRoutes';
-import cronRoutes from './routes/cronRoutes'; // **NOVO**
+import cronRoutes from './routes/cronRoutes';
+import feedRoutes from './routes/feedRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -45,7 +49,11 @@ import prisma from './lib/prisma';
 import Logger from './lib/logger';
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize Socket.io
+socketService.initialize(httpServer);
 
 // 🛡️ TRUST PROXY: Needed for Vercel/proxies to get the real client IP
 app.set('trust proxy', 1);
@@ -143,7 +151,9 @@ app.use('/support', supportRoutes);
 app.use('/maps', mapsRoutes);
 app.use('/transport-settings', transportSettingsRoute);
 app.use('/metrics', metricsRoutes); // Metrics endpoint
-app.use('/cron', cronRoutes); // **NOVO** - Vercel Cron Jobs
+app.use('/cron', cronRoutes);
+app.use('/feed', feedRoutes);
+app.use('/chat', chatRoutes);
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 startNotificationScheduler();
@@ -199,7 +209,7 @@ app.get('/diag', async (req, res) => {
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
         Logger.info(`🚀 Server running on port ${PORT}`);
         Logger.info(`📊 Monitoring dashboard: http://localhost:${PORT}/dashboard.html`);
     });

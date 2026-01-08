@@ -17,6 +17,7 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import Skeleton from '../../components/Skeleton';
+import { SpotlightCard } from '../../components/ui/SpotlightCard';
 
 interface DashboardMetrics {
     todayAppointments: number;
@@ -140,31 +141,35 @@ export default function StaffDashboard() {
                         {/* Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {cards.map((card, idx) => (
-                                <motion.button
+                                <motion.div
                                     key={idx}
-                                    type="button"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.1 }}
-                                    onClick={() => navigate(card.link)}
-                                    className={`bg-white dark:bg-gray-800 p-8 rounded-[40px] shadow-sm border ${card.urgent ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10' : 'border-gray-50 dark:border-gray-700'
-                                        } group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden text-left w-full`}
+                                    className="h-full"
                                 >
-                                    <div className={`w-14 h-14 ${card.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                                        {card.icon}
-                                    </div>
-                                    <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-1">{card.label}</p>
-                                    <h3 className={`text-4xl font-black ${card.urgent ? 'text-red-600 dark:text-red-400' : 'text-secondary dark:text-white'
-                                        }`}>{card.value}</h3>
-                                    {card.urgent && (
-                                        <div className="absolute top-4 right-4">
-                                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                                    <SpotlightCard
+                                        onClick={() => navigate(card.link)}
+                                        className={`bg-white dark:bg-gray-800 p-8 rounded-[40px] shadow-sm border ${card.urgent ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10' : 'border-gray-50 dark:border-gray-700'
+                                            } group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden text-left w-full h-full`}
+                                        spotlightColor="rgba(var(--color-primary-rgb), 0.1)"
+                                    >
+                                        <div className={`w-14 h-14 ${card.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                                            {card.icon}
                                         </div>
-                                    )}
-                                    <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-20 transition-opacity">
-                                        {card.icon}
-                                    </div>
-                                </motion.button>
+                                        <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-1">{card.label}</p>
+                                        <h3 className={`text-4xl font-black ${card.urgent ? 'text-red-600 dark:text-red-400' : 'text-secondary dark:text-white'
+                                            }`}>{card.value}</h3>
+                                        {card.urgent && (
+                                            <div className="absolute top-4 right-4">
+                                                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                                            </div>
+                                        )}
+                                        <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-20 transition-opacity">
+                                            {card.icon}
+                                        </div>
+                                    </SpotlightCard>
+                                </motion.div>
                             ))}
                         </div>
 

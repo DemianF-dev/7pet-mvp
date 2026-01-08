@@ -58,8 +58,11 @@ const themes: ThemeOption[] = [
     },
 ];
 
+import { useHaptic } from '../hooks/useHaptic';
+
 export function ThemePicker() {
     const { theme, setTheme } = useTheme();
+    const { trigger } = useHaptic();
 
     return (
         <div className="space-y-3">
@@ -75,8 +78,11 @@ export function ThemePicker() {
                     return (
                         <button
                             key={t.id}
-                            onClick={() => setTheme(t.id as any)}
-                            className="relative p-3 rounded-lg border transition-all duration-200 text-left"
+                            onClick={() => {
+                                setTheme(t.id as any);
+                                trigger('light');
+                            }}
+                            className="relative p-3 rounded-lg border transition-all duration-200 text-left active:scale-95"
                             style={{
                                 backgroundColor: isActive ? 'var(--color-accent-primary)' : 'var(--color-bg-surface)',
                                 borderColor: isActive ? 'var(--color-accent-primary)' : 'var(--color-border)',
