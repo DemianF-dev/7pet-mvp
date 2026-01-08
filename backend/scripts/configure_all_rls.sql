@@ -286,8 +286,179 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON "RolePermission" TO authenticated;
 -- Note: RLS policies will enforce the actual permissions above
 
 -- ============================================================================
+-- 7. PUSH SUBSCRIPTION (User-owned)
+-- ============================================================================
+
+ALTER TABLE "PushSubscription" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "push_subscription_all_own" ON "PushSubscription";
+CREATE POLICY "push_subscription_all_own"
+ON "PushSubscription" FOR ALL TO authenticated
+USING ("PushSubscription"."userId" = auth.uid()::text)
+WITH CHECK ("PushSubscription"."userId" = auth.uid()::text);
+
+-- ============================================================================
+-- 8. METRIC (Staff read-only, system writes via service role)
+-- ============================================================================
+
+ALTER TABLE "Metric" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "metric_read_staff" ON "Metric";
+CREATE POLICY "metric_read_staff"
+ON "Metric" FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM "User"
+    WHERE "User".id = auth.uid()::text
+    AND "User".role IN ('ADMIN', 'GERENCIAL')
+  )
+);
+
+-- ============================================================================
+-- 9. FEED - POST (Staff can see, author can manage)
+-- ============================================================================
+
+ALTER TABLE "Post" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "post_read_staff" ON "Post";
+CREATE POLICY "post_read_staff"
+ON "Post" FOR SELECT TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "post_manage_own" ON "Post";
+CREATE POLICY "post_manage_own"
+ON "Post" FOR ALL TO authenticated
+USING ("Post"."authorId" = auth.uid()::text)
+WITH CHECK ("Post"."authorId" = auth.uid()::text);
+
+-- ============================================================================
+-- 10. FEED - COMMENT
+-- ============================================================================
+
+ALTER TABLE "Comment" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "comment_read_staff" ON "Comment";
+CREATE POLICY "comment_read_staff"
+ON "Comment" FOR SELECT TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "comment_manage_own" ON "Comment";
+CREATE POLICY "comment_manage_own"
+ON "Comment" FOR ALL TO authenticated
+USING ("Comment"."authorId" = auth.uid()::text)
+WITH CHECK ("Comment"."authorId" = auth.uid()::text);
+
+-- ============================================================================
+-- 11. FEED - REACTION
+-- ============================================================================
+
+ALTER TABLE "Reaction" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "reaction_read_staff" ON "Reaction";
+CREATE POLICY "reaction_read_staff"
+ON "Reaction" FOR SELECT TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "reaction_manage_own" ON "Reaction";
+CREATE POLICY "reaction_manage_own"
+ON "Reaction" FOR ALL TO authenticated
+USING ("Reaction"."authorId" = auth.uid()::text)
+WITH CHECK ("Reaction"."authorId" = auth.uid()::text);
+
+-- ============================================================================
+-- 12. CHAT - CONVERSATION (Participants only)
+-- ============================================================================
+
+ALTER TABLE "Conversation" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "conversation_select_participants" ON "Conversation";
+CREATE POLICY "conversation_select_participants"
+ON "Conversation" FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM "Participant"
+    WHERE "Participant"."conversationId" = "Conversation".id
+    AND "Participant"."userId" = auth.uid()::text
+  )
+);
+
+-- ============================================================================
+-- 13. CHAT - PARTICIPANT
+-- ============================================================================
+
+ALTER TABLE "Participant" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "participant_select_related" ON "Participant";
+CREATE POLICY "participant_select_related"
+ON "Participant" FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM "Participant" AS p
+    WHERE p."conversationId" = "Participant"."conversationId"
+    AND p."userId" = auth.uid()::text
+  )
+  OR EXISTS (
+    SELECT 1 FROM "User"
+    WHERE "User".id = auth.uid()::text
+    AND "User".role = 'ADMIN'
+  )
+);
+
+-- ============================================================================
+-- 14. CHAT - MESSAGE
+-- ============================================================================
+
+ALTER TABLE "Message" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "message_select_participants" ON "Message";
+CREATE POLICY "message_select_participants"
+ON "Message" FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM "Participant"
+    WHERE "Participant"."conversationId" = "Message"."conversationId"
+    AND "Participant"."userId" = auth.uid()::text
+  )
+);
+
+DROP POLICY IF EXISTS "message_insert_participants" ON "Message";
+CREATE POLICY "message_insert_participants"
+ON "Message" FOR INSERT TO authenticated
+WITH CHECK (
+  "Message"."senderId" = auth.uid()::text
+  AND EXISTS (
+    SELECT 1 FROM "Participant"
+    WHERE "Participant"."conversationId" = "Message"."conversationId"
+    AND "Participant"."userId" = auth.uid()::text
+  )
+);
+
+-- ============================================================================
+-- GRANT STATEMENTS 
+-- ============================================================================
+
+REVOKE ALL ON "PushSubscription" FROM PUBLIC;
+REVOKE ALL ON "Metric" FROM PUBLIC;
+REVOKE ALL ON "Post" FROM PUBLIC;
+REVOKE ALL ON "Comment" FROM PUBLIC;
+REVOKE ALL ON "Reaction" FROM PUBLIC;
+REVOKE ALL ON "Conversation" FROM PUBLIC;
+REVOKE ALL ON "Participant" FROM PUBLIC;
+REVOKE ALL ON "Message" FROM PUBLIC;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON "PushSubscription" TO authenticated;
+GRANT SELECT ON "Metric" TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Post" TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Comment" TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Reaction" TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Conversation" TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Participant" TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Message" TO authenticated;
+
+-- ============================================================================
 -- PERFORMANCE INDEXES
 -- ============================================================================
+
 
 CREATE INDEX IF NOT EXISTS "idx_user_id_rls" ON "User"(id);
 CREATE INDEX IF NOT EXISTS "idx_user_role_rls" ON "User"(role);
