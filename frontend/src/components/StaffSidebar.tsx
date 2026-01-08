@@ -2,6 +2,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
     LayoutDashboard,
+    MessageCircle,
+    MessageSquare,
     Truck,
     Quote,
     Users,
@@ -89,6 +91,22 @@ export default function StaffSidebar() {
                     onClick={() => { navigate('/staff/dashboard'); setIsOpen(false); }}
                 />
             )}
+
+            {/* 1.1 Bate-papo */}
+            <SidebarItem
+                icon={<MessageCircle size={20} />}
+                label="Bate-papo"
+                active={location.pathname === '/staff/chat'}
+                onClick={() => { navigate('/staff/chat'); setIsOpen(false); }}
+            />
+
+            {/* 1.2 Mural */}
+            <SidebarItem
+                icon={<MessageSquare size={20} />}
+                label="Mural"
+                active={location.pathname === '/staff/feed'}
+                onClick={() => { navigate('/staff/feed'); setIsOpen(false); }}
+            />
 
             {/* 2. Orçamentos */}
             {checkPermission('quotes') && (

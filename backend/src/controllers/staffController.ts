@@ -145,5 +145,71 @@ export const staffController = {
             console.error('Error listing transports:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
+    },
+
+    async getFeedWidgets(req: Request, res: Response) {
+        try {
+            const userId = req.user.id;
+            const today = new Date();
+
+            // 1. Next Appointments (Events)
+            const nextAppointments = await prisma.appointment.findMany({
+                where: {
+                    performerId: userId,
+                    startAt: { gte: today },
+                    status: { notIn: ['CANCELADO', 'CONCLUIDO'] },
+                    deletedAt: null
+                },
+                orderBy: { startAt: 'asc' },
+                take: 5,
+                select: {
+                    id: true,
+                    startAt: true,
+                    endAt: true,
+                    pet: { select: { name: true } },
+                    customer: { select: { name: true } },
+                    service: { select: { name: true } } // Assuming relation exists, checking schema later if fail
+                }
+            });
+
+            // 2. My Tasks (Status Counts)
+            const statusCounts = await prisma.appointment.groupBy({
+                by: ['status'],
+                where: {
+                    performerId: userId,
+                    deletedAt: null,
+                    // Active statuses only? Bitrix shows "Em andamento", "Auxiliando", etc.
+                    // We'll return all and filter on frontend
+                },
+                _count: true
+            });
+
+            // 3. Popular Posts (Mock logic for now as Relation Count Sort can be tricky depending on Prisma version)
+            // We'll fetch recent posts and sort by reaction count in memory for MVP simplicity
+            const recentPosts = await prisma.post.findMany({
+                where: { deletedAt: null },
+                orderBy: { createdAt: 'desc' },
+                take: 20,
+                include: {
+                    author: { select: { name: true, photo: true } },
+                    reactions: true,
+                    _count: { select: { comments: true } }
+                }
+            });
+
+            const popularPosts = recentPosts
+                .sort((a, b) => b.reactions.length - a.reactions.length)
+                .slice(0, 3);
+
+            return res.json({
+                nextAppointments,
+                myTasks: statusCounts.map(s => ({ status: s.status, count: s._count })),
+                popularPosts
+            });
+
+        } catch (error) {
+            console.error('Error fetching feed widgets:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
     }
 };

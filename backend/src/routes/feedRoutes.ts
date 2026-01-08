@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middlewares/authMiddleware';
+import { authenticate } from '../middlewares/authMiddleware';
 import * as FeedController from '../controllers/feedController';
 
 const router = Router();
 
 // Protect all feed routes
-router.use(authenticateToken);
+router.use(authenticate);
 
 router.get('/', FeedController.getFeed);
 router.post('/', FeedController.createPost);

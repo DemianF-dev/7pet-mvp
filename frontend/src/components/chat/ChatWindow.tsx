@@ -1,0 +1,149 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useSocket } from '../../context/SocketContext';
+import api from '../../services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone } from 'lucide-react'; // Added icons for Bitrix style
+import { useAuthStore } from '../../store/authStore';
+
+import { Message } from '../../types/chat';
+
+interface ChatWindowProps {
+    conversationId: string;
+    onBack?: () => void;
+    className?: string;
+}
+
+export default function ChatWindow({ conversationId, onBack, className = '' }: ChatWindowProps) {
+    const { socket } = useSocket();
+    const { user } = useAuthStore();
+    const queryClient = useQueryClient();
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [msg, setMsg] = useState('');
+
+    const { data: messages = [] } = useQuery({
+        queryKey: ['messages', conversationId],
+        queryFn: async () => {
+            const res = await api.get(`/chat/${conversationId}/messages`);
+            return res.data as Message[];
+        }
+    });
+
+    // Listen for new messages
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.emit('join_chat', conversationId);
+
+        const handleMsg = (message: Message) => {
+            if (message.conversationId !== conversationId) return;
+            queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
+                if (old?.find(m => m.id === message.id)) return old;
+                return [...(old || []), message];
+            });
+            // Force scroll to bottom
+            setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
+        };
+
+        socket.on('chat:new_message', handleMsg);
+
+        return () => {
+            socket.off('chat:new_message', handleMsg);
+            socket.emit('leave_chat', conversationId);
+        }
+    }, [conversationId, socket, queryClient]);
+
+    // Scroll on load
+    useEffect(() => {
+        if (messages.length) {
+            setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }), 50);
+        }
+    }, [messages.length, conversationId]);
+
+    const sendMutation = useMutation({
+        mutationFn: async () => {
+            return api.post(`/chat/${conversationId}/messages`, { content: msg });
+        },
+        onSuccess: () => {
+            setMsg('');
+            setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
+        }
+    });
+
+    return (
+        <div className={`flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900/50 ${className}`}>
+            {/* Toolbar */}
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between z-10 shadow-sm">
+                <div className="flex items-center gap-3">
+                    {onBack && (
+                        <button onClick={onBack} className="md:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 hover:text-gray-800 dark:text-gray-400 transition-colors">
+                            <ChevronDown className="rotate-90" size={20} />
+                        </button>
+                    )}
+                    <div className="flex flex-col">
+                        <span className="font-bold text-gray-800 dark:text-gray-100">Bate-papo</span>
+                        <span className="text-xs text-green-500 flex items-center gap-1">● Online</span>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 text-gray-400">
+                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"><Phone size={18} /></button>
+                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"><MoreVertical size={18} /></button>
+                </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
+                {messages.map(m => {
+                    const isMe = m.senderId === user?.id;
+                    return (
+                        <div key={m.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                <div
+                                    className={`rounded-2xl p-3 px-5 text-sm shadow-sm break-words relative group ${isMe
+                                        ? 'bg-blue-600 text-white rounded-br-none'
+                                        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-gray-700'
+                                        }`}
+                                >
+                                    {m.content}
+                                    <span className={`text-[10px] absolute bottom-1 right-2 opacity-0 group-hover:opacity-60 transition-opacity ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>
+                                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                                {!isMe && <span className="text-[10px] text-gray-400 mt-1 ml-1">{m.sender.name}</span>}
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* Input Area (Bitrix style) */}
+            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-2 border border-transparent focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
+                    <textarea
+                        className="w-full text-sm bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[40px] text-gray-800 dark:text-gray-200 placeholder-gray-400"
+                        placeholder="Digite sua mensagem (Ctrl+Enter para enviar)..."
+                        value={msg}
+                        onChange={e => setMsg(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                if (msg.trim()) sendMutation.mutate();
+                            }
+                        }}
+                    />
+                    <div className="flex justify-between items-center mt-2 px-1">
+                        <div className="flex gap-2 text-gray-400">
+                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"><Paperclip size={18} /></button>
+                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"><Smile size={18} /></button>
+                        </div>
+                        <button
+                            disabled={!msg.trim() || sendMutation.isPending}
+                            onClick={() => sendMutation.mutate()}
+                            className="p-2 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wide"
+                        >
+                            Enviar <Send size={14} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

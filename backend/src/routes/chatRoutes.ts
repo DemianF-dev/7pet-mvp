@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middlewares/authMiddleware';
+import { authenticate } from '../middlewares/authMiddleware';
 import * as ChatController from '../controllers/chatController';
 
 const router = Router();
 
 // Protect all chat routes
-router.use(authenticateToken);
+router.use(authenticate);
 
 router.get('/conversations', ChatController.getConversations);
 router.post('/conversations', ChatController.createConversation);

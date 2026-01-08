@@ -8,6 +8,7 @@ router.use(authenticate);
 router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN']));
 
 router.get('/metrics', staffController.getDashboardMetrics);
+router.get('/widgets', staffController.getFeedWidgets);
 router.get('/transports', staffController.listTransports);
 
 export default router;

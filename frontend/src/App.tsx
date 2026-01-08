@@ -39,6 +39,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWASettings from './components/PWASettings';
 import FeedPage from './pages/staff/FeedPage';
+import ChatPage from './pages/staff/ChatPage';
 import ChatDrawer from './components/chat/ChatDrawer';
 
 
@@ -99,6 +100,7 @@ function App() {
                         <Route path="/staff/support" element={<PageTransition><SupportTicketList /></PageTransition>} />
                         <Route path="/staff/transport-config" element={<PageTransition><TransportConfig /></PageTransition>} />
                         <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                        <Route path="/staff/chat" element={<PageTransition><ChatPage /></PageTransition>} />
                         <Route path="/staff/feed" element={<PageTransition><FeedPage /></PageTransition>} />
                     </Route>
 
@@ -108,7 +110,7 @@ function App() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </AnimatePresence>
-            <ChatDrawer />
+
         </ThemeProvider>
     );
 }
