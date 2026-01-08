@@ -92,6 +92,18 @@ ALTER TABLE "Message" ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "msg_select" ON "Message" FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM "Participant" WHERE "Participant"."conversationId" = "Message"."conversationId" AND "Participant"."userId" = auth.uid()::text));
 CREATE POLICY "msg_insert" ON "Message" FOR INSERT TO authenticated WITH CHECK ("Message"."senderId" = auth.uid()::text AND EXISTS (SELECT 1 FROM "Participant" WHERE "Participant"."conversationId" = "Message"."conversationId" AND "Participant"."userId" = auth.uid()::text));
 
+-- 11. NOTIFICATION
+ALTER TABLE "Notification" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "notif_select" ON "Notification" FOR SELECT TO authenticated USING ("userId" = auth.uid()::text);
+CREATE POLICY "notif_insert" ON "Notification" FOR INSERT TO authenticated WITH CHECK ("userId" = auth.uid()::text OR EXISTS (SELECT 1 FROM "User" WHERE "User".id = auth.uid()::text AND "User".role IN ('ADMIN', 'GERENCIAL', 'OPERADOR', 'OPERACIONAL', 'FINANCEIRO', 'MASTER')));
+CREATE POLICY "notif_update" ON "Notification" FOR UPDATE TO authenticated USING ("userId" = auth.uid()::text) WITH CHECK ("userId" = auth.uid()::text);
+CREATE POLICY "notif_delete" ON "Notification" FOR DELETE TO authenticated USING ("userId" = auth.uid()::text);
+
+-- 12. STATUS HISTORY
+ALTER TABLE "StatusHistory" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "status_history_read" ON "StatusHistory" FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM "User" WHERE "User".id = auth.uid()::text AND "User".role IN ('ADMIN', 'GERENCIAL', 'OPERADOR', 'OPERACIONAL', 'FINANCEIRO', 'MASTER')));
+CREATE POLICY "status_history_write" ON "StatusHistory" FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM "User" WHERE "User".id = auth.uid()::text AND "User".role IN ('ADMIN', 'GERENCIAL', 'OPERADOR', 'OPERACIONAL', 'FINANCEIRO', 'SPA', 'MASTER')));
+
 -- Criar índices para performance
 CREATE INDEX IF NOT EXISTS "idx_user_id_rls" ON "User"(id);
 CREATE INDEX IF NOT EXISTS "idx_user_role_rls" ON "User"(role);

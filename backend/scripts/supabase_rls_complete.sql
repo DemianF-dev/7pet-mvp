@@ -501,7 +501,14 @@ USING ("Notification"."userId" = (SELECT auth.uid())::text);
 
 CREATE POLICY "notification_insert" ON "Notification"
 FOR INSERT TO authenticated
-WITH CHECK (true);
+WITH CHECK (
+  "Notification"."userId" = (SELECT auth.uid())::text
+  OR EXISTS (
+    SELECT 1 FROM "User"
+    WHERE "User".id = (SELECT auth.uid())::text
+    AND "User".role IN ('ADMIN', 'GERENCIAL', 'OPERADOR', 'OPERACIONAL', 'FINANCEIRO', 'MASTER')
+  )
+);
 
 CREATE POLICY "notification_update" ON "Notification"
 FOR UPDATE TO authenticated
@@ -528,7 +535,13 @@ USING (
 
 CREATE POLICY "status_history_insert" ON "StatusHistory"
 FOR INSERT TO authenticated
-WITH CHECK (true);
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM "User"
+    WHERE "User".id = (SELECT auth.uid())::text
+    AND "User".role IN ('ADMIN', 'GERENCIAL', 'OPERADOR', 'OPERACIONAL', 'FINANCEIRO', 'SPA', 'MASTER')
+  )
+);
 
 -- ============================================================================
 -- 12. TRANSPORT DETAILS - Segue regras do Appointment
