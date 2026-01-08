@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260108-0313",
+  "version": "BETA20260108-0318",
   "stage": "BETA",
-  "timestamp": "2026-01-08T03:13:09.000Z",
-  "commit": "a0ac9cb",
-  "buildNumber": 44,
-  "releaseNotes": "Auto-generated from commit: security: enable RLS on PushSubscription, Metric and Collaboration tables"
+  "timestamp": "2026-01-08T03:18:32.000Z",
+  "commit": "93409f5",
+  "buildNumber": 45,
+  "releaseNotes": "Auto-generated from commit: security: tighten RLS policies for Notification and StatusHistory"
 }
