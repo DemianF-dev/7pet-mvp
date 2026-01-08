@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260108-0300",
+  "version": "BETA20260108-0313",
   "stage": "BETA",
-  "timestamp": "2026-01-08T03:00:34.000Z",
-  "commit": "84a2b8a",
-  "buildNumber": 43,
-  "releaseNotes": "Auto-generated from commit: feat: implement internal feed and real-time chat (Bitrix24-style) + premium polish"
+  "timestamp": "2026-01-08T03:13:09.000Z",
+  "commit": "a0ac9cb",
+  "buildNumber": 44,
+  "releaseNotes": "Auto-generated from commit: security: enable RLS on PushSubscription, Metric and Collaboration tables"
 }
