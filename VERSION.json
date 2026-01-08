@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260108-0437",
+  "version": "BETA20260108-1939",
   "stage": "BETA",
-  "timestamp": "2026-01-08T04:37:51.000Z",
-  "commit": "06f871e",
-  "buildNumber": 46,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-08T19:39:20.000Z",
+  "commit": "3c7afc1",
+  "buildNumber": 47,
+  "releaseNotes": "Auto-generated from commit: feat: Complete chat system overhaul - WhatsApp-style real-time messaging\n\n- Fixed socket delivery: notifyChat + notifyUser for dual-channel messaging\n- Added Web Audio API beep for notification sounds (no file dependency)\n- Fixed localStorage key bug in NotificationContext (7pet-auth-storage)\n- Complete ClientChatPage redesign with fixed height layout and modern UI\n- Added extensive socket logging for debugging\n- Chat now works reliably between client and staff with instant notifications"
 }
