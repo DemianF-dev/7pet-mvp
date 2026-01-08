@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import React, { Suspense } from 'react';
 import {
     User,
     Calendar,
@@ -17,8 +18,11 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
-import ClientTutorial from '../../components/client/ClientTutorial';
 import Skeleton from '../../components/Skeleton';
+import { SpotlightCard } from '../../components/ui/SpotlightCard';
+
+// Lazy load ClientTutorial to improve initial load time
+const ClientTutorial = React.lazy(() => import('../../components/client/ClientTutorial').catch(() => ({ default: () => null })));
 
 interface DashboardData {
     petCount: number;
@@ -35,14 +39,18 @@ export default function ClientDashboard() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, error } = useQuery({
         queryKey: ['client-dashboard'],
         queryFn: fetchClientDashboardData,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+        gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+        retry: 1, // Only retry once on failure
+        refetchOnWindowFocus: false, // Don't refetch on window focus to improve performance
     });
 
     const quickActions = [
         { title: 'Meus Dados', icon: <User className="text-secondary" />, desc: 'Editar perfil e preferências', color: 'bg-gray-100', link: '/client/profile' },
+        { title: 'Fale com a Equipe', icon: <MessageCircle className="text-blue-500" />, desc: 'Tire dúvidas e suporte', color: 'bg-blue-50', link: '/client/chat', badge: 'Novo' },
         { title: 'Agendar Serviço', icon: <Calendar className="text-primary" />, desc: 'Banho, tosa e spa', color: 'bg-primary-light', link: '/client/schedule' },
         { title: 'Agendar Transporte', icon: <MapPin className="text-blue-500" />, desc: 'Táxi Dog (Busca e Leva)', color: 'bg-blue-50', link: '/client/schedule' },
         { title: 'Meus Pets', icon: <Dog className="text-orange-500" />, desc: 'Gerencie seus melhores amigos', color: 'bg-orange-50', link: '/client/pets', badge: data?.petCount ? `${data.petCount} Cadastrados` : 'Nenhum' },
@@ -61,10 +69,35 @@ export default function ClientDashboard() {
         window.open('https://g.page/r/CcoLpnRsAxgLEBM/review', '_blank');
     };
 
+    // Show error state if data fails to load
+    if (error && !isLoading) {
+        console.error('Dashboard error:', error);
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+                    <h2 className="text-2xl font-bold text-red-600 mb-4">Erro ao carregar o dashboard</h2>
+                    <p className="text-gray-700 mb-6">Não foi possível carregar as informações do seu painel. Por favor, tente novamente mais tarde.</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                        Recarregar Página
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 flex">
             <Sidebar />
-            <ClientTutorial />
+            <Suspense fallback={
+                <div className="w-full flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+            }>
+                <ClientTutorial />
+            </Suspense>
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
@@ -115,9 +148,9 @@ export default function ClientDashboard() {
                         {quickActions.map((action, idx) => (
                             <motion.div
                                 key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.1 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
                                 whileHover={{ y: -5 }}
                                 className="h-full"
                             >

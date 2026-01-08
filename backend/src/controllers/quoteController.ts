@@ -198,15 +198,51 @@ export const quoteController = {
             });
 
             // Notify customer about successful solicitation
-            await messagingService.notifyUser(
-                user.id,
-                'Solicitação de Orçamento Recebida',
-                `Olá ${quote.customer.name} !Recebemos seu pedido de orçamento para ${quote.pet?.name || 'seu pet'}. Nossa equipe analisará e responderá em breve.`,
-                'QUOTE_CREATED'
-            );
+            // Load customer user ID
+            const customerData = await prisma.customer.findUnique({
+                where: { id: customerId },
+                select: { userId: true, name: true }
+            });
 
-            // Notify staff members about the new quote
-            await notificationService.notifyNewQuoteToStaff(quote.id);
+            if (customerData && customerData.userId) {
+                // Import dynamically
+                const { createNotification } = require('./notificationController');
+
+                await createNotification(customerData.userId, {
+                    title: 'Solicitação de Orçamento Recebida',
+                    body: `Olá ${customerData.name}! Recebemos seu pedido para ${data.petId ? 'o pet' : 'seu pet'}. Fique atento às notificações!`,
+                    type: 'quote',
+                    referenceId: quote.id,
+                    data: { quoteId: quote.id }
+                });
+            }
+
+            // Notify staff members (Admins and Finance)
+            // Ideally we should find who has role ADMIN or division FINANCEIRO
+            const staffToNotify = await prisma.user.findMany({
+                where: {
+                    OR: [
+                        { role: 'ADMIN' },
+                        { division: 'FINANCEIRO' },
+                        { division: 'ATENDIMENTO' }
+                    ],
+                    active: true
+                },
+                select: { id: true }
+            });
+
+            if (staffToNotify.length > 0) {
+                const { createNotification } = require('./notificationController');
+                for (const staff of staffToNotify) {
+                    await createNotification(staff.id, {
+                        title: 'Novo Orçamento Solicitado',
+                        body: `Cliente ${customerData?.name || 'Desconhecido'} solicitou um orçamento.`,
+                        type: 'quote',
+                        referenceId: quote.id,
+                        data: { quoteId: quote.id, url: '/staff/quotes' }
+                    });
+                }
+            }
 
             return res.status(201).json(quote);
         } catch (error) {
@@ -415,19 +451,31 @@ export const quoteController = {
 
 
                     if (quote.customer.user) {
-                        await notificationService.notifyQuoteResponse(
-                            id,
+                        const { createNotification } = require('./notificationController');
+                        await createNotification(
                             quote.customer.user.id,
-                            `Orçamento #${quote.seqId} aprovado! Valor: R$ ${quote.totalAmount.toFixed(2)}. Prepare o pet para o SPA! 🐾`
+                            {
+                                title: 'Orçamento Aprovado! 🎉',
+                                body: `Orçamento #${quote.seqId} aprovado com sucesso! Valor: R$ ${quote.totalAmount.toFixed(2)}. Prepare seu pet!`,
+                                type: 'quote',
+                                referenceId: quote.id,
+                                data: { quoteId: quote.id }
+                            }
                         );
                     }
                 }
             } else if (status === 'ENVIADO' && oldStatus !== 'ENVIADO' && quote.customer.user) {
                 // Notificar quando staff envia o orçamento respondido (preço calculado)
-                await notificationService.notifyQuoteResponse(
-                    id,
+                const { createNotification } = require('./notificationController');
+                await createNotification(
                     quote.customer.user.id,
-                    `Seu orçamento #${quote.seqId} foi respondido! Clique para conferir os valores. 💰`
+                    {
+                        title: 'Orçamento Respondido 💰',
+                        body: `Seu orçamento #${quote.seqId} já tem valores disponíveis! Toque para conferir e aprovar.`,
+                        type: 'quote',
+                        referenceId: quote.id,
+                        data: { quoteId: quote.id }
+                    }
                 );
             }
 

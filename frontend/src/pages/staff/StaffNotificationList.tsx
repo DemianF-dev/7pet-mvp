@@ -1,11 +1,12 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { Bell, CheckCircle, Clock, Trash2, MessageSquare } from 'lucide-react';
+import { Bell, CheckCircle, Clock, Trash2, MessageSquare, Settings, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
+import { useNotification } from '../../context/NotificationContext';
 
 interface Notification {
     id: string;
@@ -21,11 +22,37 @@ interface Notification {
 }
 
 export default function StaffNotificationList() {
-    useAuthStore(); // Just to ensure store is initialized if needed, or remove completely if not used. 
-    // Actually, checking the file, useAuthStore() hook might be used just to protect the route or get state later, but here it's unused.
-    // Let's just remove the destructuring.
+    const { requestPermission, permission, playSound } = useNotification();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const testSound = () => {
+        playSound();
+    };
+
+    const testToast = () => {
+        toast.custom(
+            (t) => (
+                <div
+                    onClick={() => toast.dismiss(t.id)}
+                    className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer overflow-hidden`}
+                >
+                    <div className="w-2 bg-blue-500" />
+                    <div className="flex-1 p-4">
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl">🔔</span>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-gray-900">Teste de Notificação</p>
+                                <p className="text-sm text-gray-500">Se você está vendo isso, o sistema visual está funcionando!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ),
+            { duration: 4000, position: 'top-right' }
+        );
+        testSound();
+    };
 
     const fetchNotifications = async () => {
         try {
@@ -41,6 +68,8 @@ export default function StaffNotificationList() {
     useEffect(() => {
         fetchNotifications();
     }, []);
+
+    // ... rest of logic for markAsAllRead, resolveRequest ...
 
     const markAsRead = async (id: string) => {
         try {
@@ -122,6 +151,52 @@ export default function StaffNotificationList() {
                         )}
                     </div>
                 </header>
+
+                {/* Control Panel */}
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 mb-8 shadow-sm">
+                    <h3 className="font-bold text-secondary flex items-center gap-2 mb-4">
+                        <Settings size={18} /> Configurações de Alerta
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                        {permission !== 'granted' && (
+                            <button
+                                onClick={requestPermission}
+                                className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                            >
+                                <Bell size={16} /> Ativar Notificações no Navegador
+                            </button>
+                        )}
+                        <button
+                            onClick={testToast}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
+                        >
+                            <Volume2 size={16} /> Testar Som e Popup
+                        </button>
+
+                        <button
+                            onClick={async () => {
+                                const toastId = toast.loading('Enviando teste via Socket...');
+                                try {
+                                    await api.post('/notifications/test', {});
+                                    toast.success('Comando enviado! Aguarde o popup e som...', { id: toastId });
+                                } catch (e) {
+                                    toast.error('Erro ao chamar API de teste', { id: toastId });
+                                    console.error(e);
+                                }
+                            }}
+                            className="px-4 py-2 bg-indigo-50 text-indigo-600 text-sm font-bold rounded-lg hover:bg-indigo-100 transition flex items-center gap-2"
+                        >
+                            <span className="text-lg">📡</span> Testar Conexão Real
+                        </button>
+
+                        <div className="ml-auto flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                            STATUS SOM:
+                            <span className={permission === 'granted' ? 'text-green-500 font-bold' : 'text-orange-500 font-bold'}>
+                                {permission === 'granted' ? 'ATIVO' : 'PENDENTE'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
                 {isLoading ? (
                     <div className="flex justify-center p-20">

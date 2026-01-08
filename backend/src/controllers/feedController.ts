@@ -32,7 +32,7 @@ export const createPost = async (req: Request, res: Response) => {
     try {
         const { content, attachments } = req.body;
         // @ts-ignore
-        const authorId = req.user?.userId;
+        const authorId = req.user?.id;
 
         const post = await prisma.post.create({
             data: {
@@ -60,7 +60,7 @@ export const addComment = async (req: Request, res: Response) => {
         const { id } = req.params; // postId
         const { content } = req.body;
         // @ts-ignore
-        const authorId = req.user?.userId;
+        const authorId = req.user?.id;
 
         const comment = await prisma.comment.create({
             data: {
@@ -86,7 +86,7 @@ export const toggleReaction = async (req: Request, res: Response) => {
         const { id } = req.params; // postId
         const { type } = req.body; // e.g. 'LIKE'
         // @ts-ignore
-        const authorId = req.user?.userId;
+        const authorId = req.user?.id;
 
         // Check if exists
         const existing = await prisma.reaction.findUnique({

@@ -26,11 +26,13 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import ThemeToggle from './ThemeToggle';
+import { useNotification } from '../context/NotificationContext';
 
 export default function StaffSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout } = useAuthStore();
+    const { unreadCount } = useNotification();
     const [isOpen, setIsOpen] = useState(false);
 
     const handleLogout = () => {
@@ -230,6 +232,7 @@ export default function StaffSidebar() {
                 label="Notificações"
                 active={location.pathname === '/staff/notifications'}
                 onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
+                badge={unreadCount}
             />
 
             {/* 12. Meu Perfil */}
@@ -360,16 +363,21 @@ export default function StaffSidebar() {
     );
 }
 
-function SidebarItem({ icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick: () => void }) {
+function SidebarItem({ icon, label, active = false, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left ${active ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
             aria-current={active ? 'page' : undefined}
         >
             {icon}
-            <span className="text-sm">{label}</span>
+            <span className="text-sm flex-1">{label}</span>
+            {badge !== undefined && badge > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                    {badge > 99 ? '99+' : badge}
+                </span>
+            )}
         </button>
     );
 }

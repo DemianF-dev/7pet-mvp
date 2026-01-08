@@ -91,26 +91,70 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
-                {messages.map(m => {
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollRef}>
+                {messages.map((m, index) => {
                     const isMe = m.senderId === user?.id;
+                    const msgDate = new Date(m.createdAt);
+                    const prevMsg = messages[index - 1];
+                    const prevDate = prevMsg ? new Date(prevMsg.createdAt) : null;
+
+                    // Check if we need a day separator
+                    const showDaySeparator = !prevDate ||
+                        msgDate.toDateString() !== prevDate.toDateString();
+
+                    // Format date for separator
+                    const formatDateSeparator = (date: Date) => {
+                        const today = new Date();
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+
+                        if (date.toDateString() === today.toDateString()) {
+                            return 'Hoje';
+                        } else if (date.toDateString() === yesterday.toDateString()) {
+                            return 'Ontem';
+                        } else {
+                            return date.toLocaleDateString('pt-BR', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long'
+                            });
+                        }
+                    };
+
+                    // Format time
+                    const formatTime = (date: Date) => {
+                        return date.toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    };
+
                     return (
-                        <div key={m.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                <div
-                                    className={`rounded-2xl p-3 px-5 text-sm shadow-sm break-words relative group ${isMe
-                                        ? 'bg-blue-600 text-white rounded-br-none'
-                                        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-gray-700'
-                                        }`}
-                                >
-                                    {m.content}
-                                    <span className={`text-[10px] absolute bottom-1 right-2 opacity-0 group-hover:opacity-60 transition-opacity ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>
-                                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <React.Fragment key={m.id}>
+                            {showDaySeparator && (
+                                <div className="flex justify-center my-4">
+                                    <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-1 rounded-full text-xs font-medium shadow-sm">
+                                        {formatDateSeparator(msgDate)}
                                     </span>
                                 </div>
-                                {!isMe && <span className="text-[10px] text-gray-400 mt-1 ml-1">{m.sender.name}</span>}
+                            )}
+                            <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                    <div
+                                        className={`rounded-2xl p-3 px-4 text-sm shadow-sm break-words ${isMe
+                                            ? 'bg-blue-600 text-white rounded-br-none'
+                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-gray-700'
+                                            }`}
+                                    >
+                                        <p className="mb-1">{m.content}</p>
+                                        <span className={`text-[10px] block text-right ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
+                                            {formatTime(msgDate)}
+                                        </span>
+                                    </div>
+                                    {!isMe && <span className="text-[10px] text-gray-400 mt-1 ml-1">{m.sender?.name}</span>}
+                                </div>
                             </div>
-                        </div>
+                        </React.Fragment>
                     )
                 })}
             </div>

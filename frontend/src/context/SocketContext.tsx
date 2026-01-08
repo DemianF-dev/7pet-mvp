@@ -23,31 +23,44 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
-        const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        // Delay socket connection to not block initial render
+        const connectTimeout = setTimeout(() => {
+            const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-        // Ensure we connect to base URL, socket.io handles /socket.io path
-        const newSocket = io(socketUrl, {
-            query: { userId: user.id },
-            auth: { token },
-            transports: ['websocket'],
-            autoConnect: true,
-            reconnection: true
-        });
+            // Ensure we connect to base URL, socket.io handles /socket.io path
+            const newSocket = io(socketUrl, {
+                query: { userId: user.id },
+                auth: { token },
+                transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+                autoConnect: true,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 3, // Limit reconnection attempts
+                timeout: 10000, // Connection timeout
+            });
 
-        newSocket.on('connect', () => {
-            console.log('🔌 Socket connected');
-            setIsConnected(true);
-        });
+            newSocket.on('connect', () => {
+                console.log('🔌 Socket connected');
+                setIsConnected(true);
+            });
 
-        newSocket.on('disconnect', () => {
-            console.log('🔌 Socket disconnected');
-            setIsConnected(false);
-        });
+            newSocket.on('disconnect', () => {
+                console.log('🔌 Socket disconnected');
+                setIsConnected(false);
+            });
 
-        setSocket(newSocket);
+            newSocket.on('connect_error', (error) => {
+                console.log('Socket connection error (non-critical):', error.message);
+            });
+
+            setSocket(newSocket);
+        }, 1000); // Wait 1 second before connecting
 
         return () => {
-            newSocket.disconnect();
+            clearTimeout(connectTimeout);
+            if (socket) {
+                socket.disconnect();
+            }
         };
     }, [user?.id, token]);
 

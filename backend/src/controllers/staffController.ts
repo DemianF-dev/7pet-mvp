@@ -191,7 +191,7 @@ export const staffController = {
                 orderBy: { createdAt: 'desc' },
                 take: 20,
                 include: {
-                    author: { select: { name: true, photo: true } },
+                    author: { select: { name: true } },
                     reactions: true,
                     _count: { select: { comments: true } }
                 }

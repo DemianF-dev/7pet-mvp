@@ -50,7 +50,10 @@ export default function LandingPage() {
                             Área do Cliente
                         </button>
                         <button
-                            onClick={() => navigate('/staff/login')}
+                            onClick={() => {
+                                console.log('Navegando para /staff/login');
+                                navigate('/staff/login');
+                            }}
                             className="btn-secondary"
                         >
                             <ShieldCheck size={20} />

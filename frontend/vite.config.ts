@@ -45,6 +45,10 @@ export default defineConfig({
             },
             workbox: {
                 // Background Sync para operações offline
+                cleanupOutdatedCaches: true,
+                navigateFallback: 'index.html',
+                navigateFallbackAllowlist: [/^\/client/, /^\/staff/, /^\/$/], // Allow SPA routes
+                navigateFallbackDenylist: [/^\/api/], // Don't fallback for API routes
                 skipWaiting: true,
                 clientsClaim: true,
 

@@ -37,6 +37,8 @@ model User {
   plainPassword        String?
   division             String             @default("CLIENTE")
   isEligible           Boolean            @default(false)
+  active               Boolean            @default(true) // Helper for quick disable
+  isSupportAgent       Boolean            @default(false) // Defines if user appears in Client Support list
   assignedAppointments Appointment[]      @relation("AppointmentPerformer")
   authenticators       Authenticator[]
   bugReports           BugReport[]

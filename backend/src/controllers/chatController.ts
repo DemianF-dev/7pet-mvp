@@ -6,7 +6,7 @@ import { socketService } from '../services/socketService';
 export const getConversations = async (req: Request, res: Response) => {
     try {
         // @ts-ignore
-        const userId = req.user?.userId;
+        const userId = req.user?.id;
 
         const conversations = await prisma.conversation.findMany({
             where: {
@@ -57,7 +57,7 @@ export const sendMessage = async (req: Request, res: Response) => {
         const { id } = req.params; // conversationId
         const { content } = req.body;
         // @ts-ignore
-        const senderId = req.user?.userId;
+        const senderId = req.user?.id;
 
         const message = await prisma.message.create({
             data: {
@@ -76,7 +76,48 @@ export const sendMessage = async (req: Request, res: Response) => {
             data: { lastMessageAt: new Date() }
         });
 
+        // 1. Broadcast to chat room (for users with ChatWindow open)
+        Logger.info(`📨 Sending chat:new_message to chat room: chat:${id}`);
         socketService.notifyChat(id, 'chat:new_message', message);
+
+        // 2. Fetch conversation participants
+        const conversation = await prisma.conversation.findUnique({
+            where: { id },
+            include: { participants: true }
+        });
+
+        if (conversation) {
+            const otherParticipants = conversation.participants.filter(p => p.userId !== senderId);
+            const senderName = message.sender.name || 'Alguém';
+
+            Logger.info(`📨 Notifying ${otherParticipants.length} other participants`);
+
+            // 3. Send chat:new_message to each participant's personal room 
+            // (ensures delivery even if they're not in the chat room)
+            for (const p of otherParticipants) {
+                Logger.info(`📨 Sending chat:new_message to user room: user:${p.userId}`);
+                socketService.notifyUser(p.userId, 'chat:new_message', message);
+            }
+
+            // 4. Create persistent notifications for history/badges
+            for (const p of otherParticipants) {
+                try {
+                    const { createNotification } = require('./notificationController');
+                    await createNotification(p.userId, {
+                        title: `Nova mensagem de ${senderName}`,
+                        body: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+                        type: 'chat',
+                        referenceId: id,
+                        icon: message.sender.color || undefined,
+                        data: { url: `/staff/chat`, chatId: id }
+                    });
+                    Logger.info(`📨 Created notification for user: ${p.userId}`);
+                } catch (notifError) {
+                    Logger.error('Failed to create notification for chat', notifError);
+                }
+            }
+        }
+
         res.status(201).json(message);
     } catch (error) {
         Logger.error('Error sending message', error);
@@ -88,7 +129,7 @@ export const createConversation = async (req: Request, res: Response) => {
     try {
         const { participantIds, type, name } = req.body;
         // @ts-ignore
-        const creatorId = req.user?.userId;
+        const creatorId = req.user?.id;
 
         // Ensure creator is included
         const allParticipants = Array.from(new Set([...(participantIds || []), creatorId]));
@@ -121,5 +162,58 @@ export const createConversation = async (req: Request, res: Response) => {
     } catch (error) {
         Logger.error('Error creating conversation', error);
         res.status(500).json({ error: 'Failed to start chat' });
+    }
+};
+
+export const getSupportAgents = async (req: Request, res: Response) => {
+    try {
+        const agents = await prisma.user.findMany({
+            where: {
+                isSupportAgent: true,
+                active: true
+            },
+            select: {
+                id: true,
+                name: true,
+                role: true,
+                email: true,
+                division: true
+            }
+        });
+        res.json(agents);
+    } catch (error) {
+        Logger.error('Error fetching support agents', error);
+        res.status(500).json({ error: 'Failed to fetch agents' });
+    }
+};
+
+export const searchUsers = async (req: Request, res: Response) => {
+    try {
+        const { query } = req.query;
+        const whereClause: any = { active: true };
+
+        if (query && typeof query === 'string') {
+            whereClause.OR = [
+                { name: { contains: query, mode: 'insensitive' } },
+                { email: { contains: query, mode: 'insensitive' } }
+            ];
+        }
+
+        const users = await prisma.user.findMany({
+            where: whereClause,
+            take: 50,
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                division: true
+            }
+        });
+        res.json(users);
+    } catch (error) {
+        Logger.error('Error searching users', error);
+        res.status(500).json({ error: 'Failed to search users' });
     }
 };

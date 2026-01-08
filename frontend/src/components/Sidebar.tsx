@@ -17,6 +17,7 @@ import { useAuthStore } from '../store/authStore';
 import { useModalFocusTrap } from '../hooks/useModalKeyboard';
 import ConfirmModal from './ConfirmModal';
 import ThemeToggle from './ThemeToggle';
+import { useNotification } from '../context/NotificationContext';
 
 export default function Sidebar() {
     const navigate = useNavigate();
@@ -25,6 +26,7 @@ export default function Sidebar() {
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const mobileAsideRef = useRef<HTMLElement>(null);
+    const { unreadCount } = useNotification();
 
     useModalFocusTrap(isOpen, mobileAsideRef);
 
@@ -76,6 +78,7 @@ export default function Sidebar() {
                 label="Notificações"
                 active={location.pathname === '/client/notifications'}
                 onClick={() => { navigate('/client/notifications'); setIsOpen(false); }}
+                badge={unreadCount}
             />
         </nav>
     );
@@ -210,16 +213,21 @@ export default function Sidebar() {
     );
 }
 
-function SidebarItem({ icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick: () => void }) {
+function SidebarItem({ icon, label, active = false, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'}`}
             aria-label={`Navegar para ${label}`}
             aria-current={active ? 'page' : undefined}
         >
             {icon}
-            <span className="font-semibold">{label}</span>
+            <span className="font-semibold flex-1">{label}</span>
+            {badge !== undefined && badge > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                    {badge > 99 ? '99+' : badge}
+                </span>
+            )}
         </button>
     );
 }

@@ -59,6 +59,8 @@ interface UserData {
     seqId?: number;
     plainPassword?: string;
     isEligible?: boolean;
+    isSupportAgent?: boolean;
+    active?: boolean;
 }
 
 const MODULES = [
@@ -106,6 +108,8 @@ export default function UserManager() {
         address: '',
         color: '#3B82F6',
         isEligible: false,
+        isSupportAgent: false,
+        active: true,
         isCustomRole: false
     });
 
@@ -206,6 +210,8 @@ export default function UserManager() {
             address: user.address || '',
             color: user.color || '#3B82F6',
             isEligible: user.isEligible !== undefined ? user.isEligible : false,
+            isSupportAgent: user.isSupportAgent !== undefined ? user.isSupportAgent : false,
+            active: user.active !== undefined ? user.active : true,
             isCustomRole: user.role ? !['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER', 'OPERACIONAL', 'SPA'].includes(user.role.toUpperCase()) : false
         });
         setIsModalOpen(true);
@@ -231,6 +237,8 @@ export default function UserManager() {
             address: '',
             color: '#3B82F6',
             isEligible: false,
+            isSupportAgent: false,
+            active: true,
             isCustomRole: false
         });
         setIsModalOpen(true);
@@ -971,6 +979,22 @@ export default function UserManager() {
                                                 {formData.isEligible ? 'ATIVO' : 'INATIVO'}
                                             </div>
                                         </label>
+
+                                        <label className="flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors border border-blue-100 mt-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isSupportAgent}
+                                                onChange={e => setFormData({ ...formData, isSupportAgent: e.target.checked })}
+                                                className="w-5 h-5 rounded-lg text-blue-500 focus:ring-blue-500 transition-all"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-sm font-black text-secondary uppercase tracking-tight">Agente de Suporte</div>
+                                                <div className="text-[10px] font-bold text-gray-400">Permite que clientes iniciem conversas de suporte com este colaborador.</div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.isSupportAgent ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                {formData.isSupportAgent ? 'HABILITADO' : 'DESABILITADO'}
+                                            </div>
+                                        </label>
                                     </div>
                                 )}
 
@@ -986,8 +1010,8 @@ export default function UserManager() {
                                             <div className="flex items-center justify-between">
                                                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-tight">Nível de Classificação</div>
                                                 <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shadow-sm ${(formData as any).customer?.riskLevel === 'Nivel 3' ? 'bg-red-500 text-white shadow-red-100' :
-                                                        (formData as any).customer?.riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
-                                                            'bg-green-500 text-white shadow-green-100'
+                                                    (formData as any).customer?.riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
+                                                        'bg-green-500 text-white shadow-green-100'
                                                     }`}>
                                                     {(formData as any).customer?.riskLevel || 'Nivel 1'}
                                                 </div>
@@ -1004,10 +1028,10 @@ export default function UserManager() {
                                                             }
                                                         } as any)}
                                                         className={`py-2 rounded-xl text-[10px] font-black transition-all border ${((formData as any).customer?.riskLevel || 'Nivel 1') === lvl
-                                                                ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
-                                                                    lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
-                                                                        'bg-green-600 border-green-600 text-white shadow-md')
-                                                                : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                                                            ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
+                                                                lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
+                                                                    'bg-green-600 border-green-600 text-white shadow-md')
+                                                            : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
                                                             }`}
                                                     >
                                                         {lvl}
@@ -1132,8 +1156,9 @@ export default function UserManager() {
                             </div>
                         </motion.div>
                     </>
-                )}
-            </AnimatePresence>
+                )
+                }
+            </AnimatePresence >
 
             {/* Modal de Configuração de Cargos (Top-Left) */}
             <AnimatePresence>
@@ -1241,7 +1266,7 @@ export default function UserManager() {
                 }
             </AnimatePresence >
             {/* MODAL DE DETALHES DO CLIENTE (POPUP SINGLE PAGE) */}
-            <CustomerDetailsModal
+            < CustomerDetailsModal
                 isOpen={isCustomerModalVisible}
                 onClose={() => setIsCustomerModalVisible(false)}
                 customerId={viewCustomerId}

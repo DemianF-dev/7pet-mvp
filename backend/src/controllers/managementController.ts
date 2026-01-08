@@ -364,7 +364,8 @@ export const createUser = async (req: Request, res: Response) => {
         const {
             email, password, role, division, name, phone, notes, permissions,
             admissionDate, birthday, document, address, color,
-            firstName, lastName
+            firstName, lastName,
+            isSupportAgent, active
         } = req.body;
 
         // STRICT ADMIN CREATION PROTECTION
@@ -404,6 +405,8 @@ export const createUser = async (req: Request, res: Response) => {
                 address,
                 color: color || '#3B82F6',
                 isEligible: req.body.isEligible !== undefined ? req.body.isEligible : false,
+                isSupportAgent: isSupportAgent !== undefined ? isSupportAgent : false,
+                active: active !== undefined ? active : true,
                 staffId: (actualRole && actualRole !== 'CLIENTE') ? await getNextStaffId(actualRole) : undefined,
                 // Automatically create customer record if client
                 customer: (actualDivision === 'CLIENTE' || actualRole === 'CLIENTE') ? {
@@ -446,7 +449,8 @@ export const updateUser = async (req: Request, res: Response) => {
             name, phone, notes, permissions, role, division,
             email, password, isEligible,
             admissionDate, birthday, document, address, color,
-            firstName, lastName
+            firstName, lastName,
+            isSupportAgent, active
         } = req.body;
 
         const updateData: any = {};
@@ -466,6 +470,8 @@ export const updateUser = async (req: Request, res: Response) => {
         if (permissions !== undefined) updateData.permissions = permissions;
         if (color !== undefined) updateData.color = color;
         if (isEligible !== undefined) updateData.isEligible = isEligible;
+        if (isSupportAgent !== undefined) updateData.isSupportAgent = isSupportAgent;
+        if (active !== undefined) updateData.active = active;
 
         // Suporte para division (novo campo para departamentos)
         if (division !== undefined) {

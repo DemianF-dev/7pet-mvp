@@ -54,14 +54,17 @@ class SocketService {
 
     // Helpers
     notifyUser(userId: string, event: string, data: any) {
+        Logger.info(`🔔 Socket: Emitting ${event} to user:${userId}`);
         this.io?.to(`user:${userId}`).emit(event, data);
     }
 
     notifyChat(conversationId: string, event: string, data: any) {
+        Logger.info(`🔔 Socket: Emitting ${event} to chat:${conversationId}`);
         this.io?.to(`chat:${conversationId}`).emit(event, data);
     }
 
     emit(event: string, data: any) {
+        Logger.info(`🔔 Socket: Broadcasting ${event} to all`);
         this.io?.emit(event, data);
     }
 }
