@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260108-0318",
+  "version": "BETA20260108-0437",
   "stage": "BETA",
-  "timestamp": "2026-01-08T03:18:32.000Z",
-  "commit": "93409f5",
-  "buildNumber": 45,
-  "releaseNotes": "Auto-generated from commit: security: tighten RLS policies for Notification and StatusHistory"
+  "timestamp": "2026-01-08T04:37:51.000Z",
+  "commit": "06f871e",
+  "buildNumber": 46,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
