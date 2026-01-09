@@ -8,8 +8,11 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import App from './App.tsx'
 // Theme System - Base tokens + all themes
 import './styles/tokens.base.css'
+import './styles/apple-tokens.css'  // Apple HIG tokens
 import './styles/themes/default-light.css'
 import './styles/themes/default-dark.css'
+import './styles/themes/apple-light.css'   // Apple Light Theme
+import './styles/themes/apple-dark.css'    // Apple Dark Theme
 import './styles/themes/cyberpunk-neon.css'
 import './styles/themes/ocean-calm.css'
 import './styles/themes/forest-nature.css'

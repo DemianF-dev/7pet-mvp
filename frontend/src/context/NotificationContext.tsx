@@ -82,7 +82,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             const res = await api.get('/notifications');
             setNotifications(res.data || []);
         } catch (err) {
-            console.log('Notifications not available');
+            // Silent in production
         }
     }, []);
 
@@ -117,7 +117,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             // Auto close after 5 seconds
             setTimeout(() => browserNotification.close(), 5000);
         } catch (e) {
-            console.log('Browser notification failed');
+            // Silent fail in production
         }
     }, [permission]);
 
@@ -136,7 +136,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (!socket) return;
 
         const handleNewNotification = (notification: Notification) => {
-            console.log('🔔 Nova Notificação:', notification);
+            if (import.meta.env.DEV) console.log('🔔 Nova Notificação:', notification);
 
             // Add to list
             setNotifications(prev => [notification, ...prev]);
@@ -183,7 +183,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (!socket) return;
 
         const handleChatMessage = (message: any) => {
-            console.log('💬 Chat message received:', message);
+            if (import.meta.env.DEV) console.log('💬 Chat message received:', message);
 
             // Get current user ID from localStorage (zustand persist uses this key)
             const storedUser = localStorage.getItem('7pet-auth-storage');

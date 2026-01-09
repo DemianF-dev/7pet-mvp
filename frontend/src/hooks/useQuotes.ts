@@ -10,25 +10,25 @@ export function useQuotes(view: QuoteView = 'active') {
         queryKey: ['quotes', view],
         queryFn: () => api.get(view === 'trash' ? '/quotes/trash' : '/quotes'),
         select: (data) => {
-            console.log('[useQuotes] 📊 Raw response data:', data);
+            if (import.meta.env.DEV) console.log('[useQuotes] 📊 Raw response data:', data);
 
             if (!data) return [];
 
             // Case 1: Paginated response { data: { data: Quote[], meta: ... } } (assuming axios response structure)
             if (data.data && Array.isArray(data.data.data)) {
-                console.log('[useQuotes] Detected new paginated structure { data: { data: [] } }');
+                if (import.meta.env.DEV) console.log('[useQuotes] Detected new paginated structure { data: { data: [] } }');
                 return data.data.data;
             }
 
             // Case 2: Axios response wrapper where data.data is the array
             if (Array.isArray(data.data)) {
-                console.log('[useQuotes] Detected array in data.data');
+                if (import.meta.env.DEV) console.log('[useQuotes] Detected array in data.data');
                 return data.data;
             }
 
             // Case 3: Direct array (unlikely with Axios but for safety)
             if (Array.isArray(data)) {
-                console.log('[useQuotes] Detected direct array');
+                if (import.meta.env.DEV) console.log('[useQuotes] Detected direct array');
                 return data;
             }
 

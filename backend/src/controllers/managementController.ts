@@ -46,126 +46,158 @@ const getDefaultPermissions = async (role: string) => {
 
 export const getKPIs = async (req: Request, res: Response) => {
     try {
-        // Run business rules first
+        // Run business rules first (this must be sequential)
         await appointmentService.processNoShows();
 
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-        const currentMonthRevenue = await prisma.paymentRecord.aggregate({
-            where: { paidAt: { gte: firstDayOfMonth } },
-            _sum: { amount: true }
-        });
-
-        const lastMonthRevenue = await prisma.paymentRecord.aggregate({
-            where: {
-                paidAt: {
-                    gte: lastMonth,
-                    lt: firstDayOfMonth
-                }
-            },
-            _sum: { amount: true }
-        });
-
-        const appointmentsLast30Days = await prisma.appointment.groupBy({
-            by: ['status'],
-            where: {
-                startAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) }
-            },
-            _count: true
-        });
-
-        const servicePopularity = await prisma.service.findMany({
-            include: {
-                _count: {
-                    select: { appointments: true }
-                }
-            },
-            orderBy: {
-                appointments: { _count: 'desc' }
-            },
-            take: 5
-        });
-
-        const newCustomersThisMonth = await prisma.customer.count({
-            where: {
-                createdAt: { gte: firstDayOfMonth }
-            }
-        });
-
-        const blockedActiveCustomers = await prisma.customer.count({
-            where: { isBlocked: true }
-        });
-
-        const pendingHighValueQuotes = await prisma.quote.count({
-            where: {
-                status: 'SOLICITADO',
-                totalAmount: { gt: 500 }
-            }
-        });
-
         const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const completedAppointmentsCount = await prisma.appointment.count({
-            where: {
-                status: 'FINALIZADO',
-                startAt: { gte: last30Days }
-            }
-        });
-        const revenueLast30Days = await prisma.paymentRecord.aggregate({
-            where: { paidAt: { gte: last30Days } },
-            _sum: { amount: true }
-        });
+
+        // ⚡ PERFORMANCE: Execute ALL database queries in parallel
+        const [
+            currentMonthRevenue,
+            lastMonthRevenue,
+            appointmentsLast30Days,
+            servicePopularity,
+            newCustomersThisMonth,
+            blockedActiveCustomers,
+            pendingHighValueQuotes,
+            completedAppointmentsCount,
+            revenueLast30Days,
+            allRelevantAppointments,
+            noShowsCount,
+            pendingInvoices,
+            topCustomersRaw,
+            revenueTrendRaw
+        ] = await Promise.all([
+            // Current month revenue
+            prisma.paymentRecord.aggregate({
+                where: { paidAt: { gte: firstDayOfMonth } },
+                _sum: { amount: true }
+            }),
+            // Last month revenue
+            prisma.paymentRecord.aggregate({
+                where: {
+                    paidAt: {
+                        gte: lastMonth,
+                        lt: firstDayOfMonth
+                    }
+                },
+                _sum: { amount: true }
+            }),
+            // Appointments last 30 days grouped by status
+            prisma.appointment.groupBy({
+                by: ['status'],
+                where: {
+                    startAt: { gte: last30Days }
+                },
+                _count: true
+            }),
+            // Service popularity (top 5)
+            prisma.service.findMany({
+                include: {
+                    _count: {
+                        select: { appointments: true }
+                    }
+                },
+                orderBy: {
+                    appointments: { _count: 'desc' }
+                },
+                take: 5
+            }),
+            // New customers this month
+            prisma.customer.count({
+                where: {
+                    createdAt: { gte: firstDayOfMonth }
+                }
+            }),
+            // Blocked customers count
+            prisma.customer.count({
+                where: { isBlocked: true }
+            }),
+            // Pending high value quotes
+            prisma.quote.count({
+                where: {
+                    status: 'SOLICITADO',
+                    totalAmount: { gt: 500 }
+                }
+            }),
+            // Completed appointments for ticket medio
+            prisma.appointment.count({
+                where: {
+                    status: 'FINALIZADO',
+                    startAt: { gte: last30Days }
+                }
+            }),
+            // Revenue last 30 days for ticket medio
+            prisma.paymentRecord.aggregate({
+                where: { paidAt: { gte: last30Days } },
+                _sum: { amount: true }
+            }),
+            // All relevant appointments for no-show rate
+            prisma.appointment.count({
+                where: {
+                    startAt: { gte: last30Days },
+                    status: { notIn: ['CANCELADO'] }
+                }
+            }),
+            // No-shows count
+            prisma.appointment.count({
+                where: {
+                    startAt: { gte: last30Days },
+                    status: 'NO_SHOW'
+                }
+            }),
+            // Pending invoices balance
+            prisma.invoice.aggregate({
+                where: { status: 'PENDENTE' },
+                _sum: { amount: true }
+            }),
+            // Top customers by invoice amount
+            prisma.invoice.groupBy({
+                by: ['customerId'],
+                where: { status: 'PAGO' },
+                _sum: { amount: true },
+                orderBy: { _sum: { amount: 'desc' } },
+                take: 5
+            }),
+            // Revenue trend for last 30 days
+            prisma.paymentRecord.groupBy({
+                by: ['paidAt'],
+                where: {
+                    paidAt: { gte: last30Days }
+                },
+                _sum: { amount: true },
+                orderBy: { paidAt: 'asc' }
+            })
+        ]);
+
+        // Calculate derived metrics
         const ticketMedio = completedAppointmentsCount > 0
             ? (revenueLast30Days._sum.amount || 0) / completedAppointmentsCount
             : 0;
 
-        const allRelevantAppointments = await prisma.appointment.count({
-            where: {
-                startAt: { gte: last30Days },
-                status: { notIn: ['CANCELADO'] }
-            }
-        });
-        const noShowsCount = await prisma.appointment.count({
-            where: {
-                startAt: { gte: last30Days },
-                status: 'NO_SHOW'
-            }
-        });
-        const noShowRate = allRelevantAppointments > 0 ? (noShowsCount / allRelevantAppointments) * 100 : 0;
+        const noShowRate = allRelevantAppointments > 0
+            ? (noShowsCount / allRelevantAppointments) * 100
+            : 0;
 
-        const pendingInvoices = await prisma.invoice.aggregate({
-            where: { status: 'PENDENTE' },
-            _sum: { amount: true }
-        });
+        // Fetch top customer names (small parallel batch)
+        const topCustomerIds = topCustomersRaw.map(c => c.customerId);
+        const topCustomerData = topCustomerIds.length > 0
+            ? await prisma.customer.findMany({
+                where: { id: { in: topCustomerIds } },
+                select: { id: true, name: true }
+            })
+            : [];
 
-        const topCustomersRaw = await prisma.invoice.groupBy({
-            by: ['customerId'],
-            where: { status: 'PAGO' },
-            _sum: { amount: true },
-            orderBy: { _sum: { amount: 'desc' } },
-            take: 5
-        });
-
-        const topCustomersDetails = await Promise.all(topCustomersRaw.map(async (c) => {
-            const customer = await prisma.customer.findUnique({ where: { id: c.customerId } });
-            return {
-                name: customer?.name || 'Cliente Desconhecido',
-                totalSpent: c._sum.amount || 0
-            };
+        const customerNameMap = new Map(topCustomerData.map(c => [c.id, c.name]));
+        const topCustomersDetails = topCustomersRaw.map(c => ({
+            name: customerNameMap.get(c.customerId) || 'Cliente Desconhecido',
+            totalSpent: c._sum.amount || 0
         }));
 
-        // Revenue Trend (Daily for last 30 days)
-        const revenueTrendRaw = await prisma.paymentRecord.groupBy({
-            by: ['paidAt'],
-            where: {
-                paidAt: { gte: last30Days }
-            },
-            _sum: { amount: true },
-            orderBy: { paidAt: 'asc' }
-        });
-
-        // Group by day manually since Prisma groupBy with dates can be tricky depending on DB
+        // Build revenue trend map
         const trendMap: { [key: string]: number } = {};
         for (let i = 0; i < 30; i++) {
             const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);

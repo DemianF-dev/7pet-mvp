@@ -33,7 +33,15 @@ import api from '../../services/api';
 import BackButton from '../../components/BackButton';
 import Skeleton from '../../components/Skeleton';
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+// Use CSS variable-based colors from design system
+const COLORS = [
+    'var(--color-accent-primary)',
+    'var(--color-success)',
+    'var(--color-warning)',
+    'var(--color-error)',
+    'var(--color-indigo)',
+    'var(--color-pink)'
+];
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -116,7 +124,7 @@ export default function ManagementDashboard() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex">
+            <div className="min-h-screen flex" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
                 <StaffSidebar />
                 <main className="flex-1 md:ml-64 p-6 md:p-10">
                     <header className="mb-10">
@@ -125,7 +133,11 @@ export default function ManagementDashboard() {
                     </header>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 h-48 flex flex-col justify-center gap-4">
+                            <div
+                                key={i}
+                                className="p-8 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)] h-48 flex flex-col justify-center gap-4"
+                                style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
+                            >
                                 <Skeleton variant="rounded" className="w-12 h-12" />
                                 <Skeleton variant="text" className="w-24 h-4" />
                                 <Skeleton variant="text" className="w-32 h-8" />
@@ -133,7 +145,10 @@ export default function ManagementDashboard() {
                         ))}
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 h-[400px]">
+                        <div
+                            className="lg:col-span-2 p-8 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)] h-[400px]"
+                            style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
+                        >
                             <Skeleton variant="rounded" className="w-full h-full" />
                         </div>
                         <div className="space-y-6">
@@ -147,7 +162,7 @@ export default function ManagementDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen flex" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
             <StaffSidebar />
 
             <main className="flex-1 md:ml-64 p-6 md:p-10">
@@ -417,30 +432,69 @@ function KPICard({ title, value, growth, icon, bg, isCurrency, isPercent }: any)
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 flex flex-col gap-4 relative overflow-hidden group hover:border-primary/20 transition-all"
+            className="p-6 rounded-[var(--radius-2xl)] shadow-[var(--shadow-card)] flex flex-col gap-4 relative overflow-hidden group transition-all duration-[var(--duration-normal)]"
+            style={{
+                backgroundColor: 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border)',
+            }}
+            whileHover={{
+                scale: 1.02,
+                boxShadow: 'var(--shadow-lg)',
+            }}
         >
-            <div className={`w-12 h-12 ${bg} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
+            <div
+                className={`w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-[var(--duration-fast)]`}
+                style={{ backgroundColor: bg ? undefined : 'var(--color-fill-secondary)' }}
+            >
                 {icon}
             </div>
             <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{title}</p>
-                <h3 className="text-3xl font-black text-secondary">
+                <p
+                    className="text-[var(--font-size-caption2)] font-[var(--font-weight-semibold)] uppercase tracking-widest mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                >
+                    {title}
+                </p>
+                <h3
+                    className="text-[var(--font-size-title1)] font-[var(--font-weight-bold)]"
+                    style={{ color: 'var(--color-text-primary)' }}
+                >
                     {isCurrency && 'R$ '}
                     {value.toLocaleString('pt-BR')}
                     {isPercent && '%'}
                 </h3>
             </div>
-            <div className="flex items-center gap-1">
-                {growth >= 0 ? (
-                    <div className="bg-green-100 text-green-600 p-1 rounded-full"><ArrowUpRight size={12} /></div>
-                ) : (
-                    <div className="bg-red-100 text-red-600 p-1 rounded-full"><ArrowDownRight size={12} /></div>
-                )}
-                <span className={`text-xs font-black ${growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {Math.abs(growth)}%
-                </span>
-                <span className="text-[10px] text-gray-400 font-bold ml-1">vs mês ant.</span>
-            </div>
+            {growth !== undefined && (
+                <div className="flex items-center gap-1">
+                    {growth >= 0 ? (
+                        <div
+                            className="p-1 rounded-full"
+                            style={{ backgroundColor: 'var(--color-success)', opacity: 0.1 }}
+                        >
+                            <ArrowUpRight size={12} style={{ color: 'var(--color-success)' }} />
+                        </div>
+                    ) : (
+                        <div
+                            className="p-1 rounded-full"
+                            style={{ backgroundColor: 'var(--color-error)', opacity: 0.1 }}
+                        >
+                            <ArrowDownRight size={12} style={{ color: 'var(--color-error)' }} />
+                        </div>
+                    )}
+                    <span
+                        className="text-[var(--font-size-caption1)] font-[var(--font-weight-bold)]"
+                        style={{ color: growth >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}
+                    >
+                        {Math.abs(growth)}%
+                    </span>
+                    <span
+                        className="text-[var(--font-size-caption2)] font-[var(--font-weight-medium)] ml-1"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                        vs mês ant.
+                    </span>
+                </div>
+            )}
         </motion.div>
     );
 }

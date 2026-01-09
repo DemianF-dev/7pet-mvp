@@ -44,9 +44,9 @@ export const createNotification = async (userId: string, payload: {
                 title: payload.title,
                 message: payload.body,
                 type: payload.type,
-                referenceId: payload.referenceId,
+                relatedId: payload.referenceId,
                 read: false,
-                data: payload.data ? JSON.stringify(payload.data) : undefined
+                metadata: payload.data ? payload.data : undefined
             }
         });
 
@@ -199,12 +199,10 @@ export const list = async (req: Request, res: Response) => {
             skip: (page - 1) * limit
         });
 
-        // Parse 'data' JSON if needed, or Prisma handles it if it's Json type? 
-        // Prisma Json is object safely. If string in DB, might need parsing but schema says data is String?
-        // Check schema later. Assuming String for now based on createNotification usage (JSON.stringify)
+        // metadata is Json type in Prisma, no parsing needed
         const parsed = notifications.map(n => ({
             ...n,
-            data: n.data ? JSON.parse(n.data as string) : null
+            data: n.metadata // Return metadata as data for frontend compatibility
         }));
 
         res.json(parsed);

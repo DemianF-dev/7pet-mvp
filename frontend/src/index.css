@@ -13,10 +13,43 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glass Card */
+/* =========================================
+   GLASSMORPHISM / LIQUID GLASS SURFACES
+   ========================================= */
+
+/* Standard Glass Surface */
+.glass-surface {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-xl);
+}
+
+/* Elevated Glass (for modals, popovers) */
+.glass-elevated {
+  background: var(--glass-bg-elevated, rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(var(--glass-blur-heavy, 40px)) saturate(var(--glass-saturate, 180%));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy, 40px)) saturate(var(--glass-saturate, 180%));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
+  box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-2xl);
+}
+
+/* Glass Card (backwards compatible) */
 .glass-card {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card, var(--shadow-sm));
+  border-radius: var(--radius-lg);
+}
+
+/* Subtle Surface (no blur, just transparency) */
+.surface-subtle {
   background-color: var(--color-bg-surface);
-  backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   border-radius: var(--radius-lg);

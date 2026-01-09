@@ -1,0 +1,92 @@
+/**
+ * Apple Light Theme
+ * Based on Apple Human Interface Guidelines
+ */
+
+[data-theme="apple-light"] {
+    /* =========================================
+       BACKGROUNDS
+       ========================================= */
+    --color-bg-primary: #FFFFFF;
+    --color-bg-secondary: #F2F2F7;
+    --color-bg-tertiary: #FFFFFF;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-elevated: #FFFFFF;
+
+    /* =========================================
+       TEXT
+       ========================================= */
+    --color-text-primary: #000000;
+    --color-text-secondary: rgba(60, 60, 67, 0.6);
+    --color-text-tertiary: rgba(60, 60, 67, 0.3);
+    --color-text-quaternary: rgba(60, 60, 67, 0.18);
+
+    /* =========================================
+       SYSTEM COLORS (Apple iOS/macOS)
+       ========================================= */
+    /* Blue - Primary actions, links */
+    --color-accent-primary: #007AFF;
+    --color-accent-secondary: #5856D6;
+    /* Indigo */
+
+    /* Semantic Colors */
+    --color-success: #34C759;
+    --color-warning: #FF9500;
+    --color-error: #FF3B30;
+    --color-info: #5AC8FA;
+
+    /* Additional System Colors */
+    --color-teal: #5AC8FA;
+    --color-indigo: #5856D6;
+    --color-purple: #AF52DE;
+    --color-pink: #FF2D55;
+    --color-orange: #FF9500;
+    --color-yellow: #FFCC00;
+    --color-mint: #00C7BE;
+    --color-cyan: #32ADE6;
+
+    /* =========================================
+       BORDERS & SEPARATORS
+       ========================================= */
+    --color-border: rgba(60, 60, 67, 0.12);
+    --color-border-opaque: #C6C6C8;
+    --color-separator: rgba(60, 60, 67, 0.29);
+    --color-separator-opaque: #C6C6C8;
+
+    /* =========================================
+       FILLS (for thin materials)
+       ========================================= */
+    --color-fill-primary: rgba(120, 120, 128, 0.2);
+    --color-fill-secondary: rgba(120, 120, 128, 0.16);
+    --color-fill-tertiary: rgba(118, 118, 128, 0.12);
+    --color-fill-quaternary: rgba(116, 116, 128, 0.08);
+
+    /* =========================================
+       GLASSMORPHISM
+       ========================================= */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-elevated: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+    /* =========================================
+       SHADOWS (Light Mode Specific)
+       ========================================= */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+    /* =========================================
+       FOCUS & ACCESSIBILITY
+       ========================================= */
+    --focus-ring: 0 0 0 3px rgba(0, 122, 255, 0.4);
+    --focus-ring-error: 0 0 0 3px rgba(255, 59, 48, 0.4);
+
+    /* =========================================
+       GRADIENTS
+       ========================================= */
+    --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 100%);
+    --bg-gradient-subtle: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
+}

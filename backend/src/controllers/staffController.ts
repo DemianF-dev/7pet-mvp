@@ -149,7 +149,7 @@ export const staffController = {
 
     async getFeedWidgets(req: Request, res: Response) {
         try {
-            const userId = req.user.id;
+            const userId = (req as any).user.id;
             const today = new Date();
 
             // 1. Next Appointments (Events)
@@ -157,7 +157,7 @@ export const staffController = {
                 where: {
                     performerId: userId,
                     startAt: { gte: today },
-                    status: { notIn: ['CANCELADO', 'CONCLUIDO'] },
+                    status: { notIn: ['CANCELADO', 'FINALIZADO'] },
                     deletedAt: null
                 },
                 orderBy: { startAt: 'asc' },
@@ -165,10 +165,10 @@ export const staffController = {
                 select: {
                     id: true,
                     startAt: true,
-                    endAt: true,
+                    status: true,
                     pet: { select: { name: true } },
                     customer: { select: { name: true } },
-                    service: { select: { name: true } } // Assuming relation exists, checking schema later if fail
+                    services: { select: { name: true } }
                 }
             });
 

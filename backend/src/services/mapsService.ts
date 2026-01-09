@@ -23,6 +23,8 @@ interface DetailedTransportResult {
         retorno?: LegCalculation;
     };
     total: number;
+    totalKm?: number;
+    totalMin?: number;
     totalDistance: string;
     totalDuration: string;
     settings: any;

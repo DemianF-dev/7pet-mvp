@@ -34,6 +34,7 @@ const quoteSchema = z.object({
     hasParasites: z.boolean().optional(),
     parasiteTypes: z.string().optional(), // 'PULGA', 'CARRAPATO', ou 'AMBOS'
     parasiteComments: z.string().optional(),
+    wantsMedicatedBath: z.boolean().optional(), // Added missing field
     petQuantity: z.number().int().optional(),
     transportLevaAt: z.string().optional(),
     transportTrazAt: z.string().optional()
@@ -680,16 +681,37 @@ export const quoteController = {
             const user = (req as any).user;
             if (user.role === 'CLIENTE') return res.status(403).json({ error: 'Acesso negado' });
 
+            // Pagination parameters
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+            const skip = (page - 1) * limit;
+
+            // Get total count for pagination metadata
+            const total = await prisma.quote.count({ where: { NOT: { deletedAt: null } } });
+
             const quotes = await prisma.quote.findMany({
                 where: { NOT: { deletedAt: null } },
                 include: {
                     customer: { select: { name: true } },
+                    pet: { select: { name: true } },
                     items: true
                 },
-                orderBy: { deletedAt: 'desc' }
+                orderBy: { deletedAt: 'desc' },
+                skip,
+                take: limit
             });
 
-            return res.json(quotes);
+            return res.json({
+                data: quotes,
+                meta: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                    hasNext: page * limit < total,
+                    hasPrev: page > 1
+                }
+            });
         } catch (error) {
             console.error('Erro ao listar lixeira de orçamentos:', error);
             return res.status(500).json({ error: 'Internal server error' });

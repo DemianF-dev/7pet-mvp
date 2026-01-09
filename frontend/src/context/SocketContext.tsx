@@ -40,17 +40,17 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             newSocket.on('connect', () => {
-                console.log('🔌 Socket connected');
+                if (import.meta.env.DEV) console.log('🔌 Socket connected');
                 setIsConnected(true);
             });
 
             newSocket.on('disconnect', () => {
-                console.log('🔌 Socket disconnected');
+                if (import.meta.env.DEV) console.log('🔌 Socket disconnected');
                 setIsConnected(false);
             });
 
             newSocket.on('connect_error', (error) => {
-                console.log('Socket connection error (non-critical):', error.message);
+                if (import.meta.env.DEV) console.log('Socket connection error (non-critical):', error.message);
             });
 
             setSocket(newSocket);

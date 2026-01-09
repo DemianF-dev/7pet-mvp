@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 import prisma from '../lib/prisma';
-import { sendNotification } from '../controllers/notificationController';
+import { createNotification } from '../controllers/notificationController';
 
 /**
  * messagingService
@@ -73,10 +73,11 @@ export const messagingService = {
 
         // 4. Trigger Push Notifications (ALWAYS if subscription exists, or check pref)
         try {
-            await sendNotification(userId, {
+            await createNotification(userId, {
                 title,
                 body: message,
-                data: { type, notificationId: notification.id }
+                type: type,
+                data: { notificationId: notification.id }
             });
         } catch (error) {
             console.error('[MessagingService] Erro ao disparar Push Notification:', error);

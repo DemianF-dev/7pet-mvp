@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Check, Sun, Moon, Zap, Waves, TreePine, Candy, Monitor } from 'lucide-react';
+import { Check, Sun, Moon, Zap, Waves, TreePine, Candy, Monitor, Apple } from 'lucide-react';
 
 interface ThemeOption {
     id: string;
@@ -19,6 +19,18 @@ const themes: ThemeOption[] = [
         label: 'Sistema',
         icon: <Monitor size={18} />,
         previewColors: { bg: '#f3f4f6', accent: '#3b82f6', text: '#1f2937' },
+    },
+    {
+        id: 'apple-light',
+        label: 'Apple Light',
+        icon: <Apple size={18} />,
+        previewColors: { bg: '#FFFFFF', accent: '#007AFF', text: '#000000' },
+    },
+    {
+        id: 'apple-dark',
+        label: 'Apple Dark',
+        icon: <Apple size={18} />,
+        previewColors: { bg: '#000000', accent: '#0A84FF', text: '#FFFFFF' },
     },
     {
         id: 'default-light',
