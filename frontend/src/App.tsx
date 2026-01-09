@@ -106,7 +106,7 @@ function App() {
             <PWAInstallPrompt />
 
             <NotificationProvider>
-                <AnimatePresence mode="wait" initial={false}>
+                <AnimatePresence mode="sync" initial={false}>
                     <Routes location={location} key={location.pathname}>
                         <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
                         <Route path="/client" element={<ClientEntry />} />

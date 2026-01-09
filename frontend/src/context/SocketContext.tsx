@@ -27,8 +27,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         const connectTimeout = setTimeout(() => {
             const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+            // In production (Vercel serverless), WebSocket connections don't persist
+            // Only attempt connection if we have explicit socket URL or in dev
+            if (import.meta.env.PROD && !import.meta.env.VITE_SOCKET_URL) {
+                if (import.meta.env.DEV) console.log('🔌 Socket disabled in serverless production');
+                return;
+            }
+
             // Ensure we connect to base URL, socket.io handles /socket.io path
-            const newSocket = io(socketUrl, {
+            const newSocket = io(import.meta.env.VITE_SOCKET_URL || socketUrl, {
                 query: { userId: user.id },
                 auth: { token },
                 transports: ['websocket', 'polling'], // Fallback to polling if websocket fails

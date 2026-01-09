@@ -6,7 +6,10 @@ import * as serviceService from '../services/serviceService';
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
-    const services = await prisma.service.findMany();
+    const services = await prisma.service.findMany({
+        where: { deletedAt: null },
+        orderBy: { name: 'asc' }
+    });
     res.json(services);
 });
 
