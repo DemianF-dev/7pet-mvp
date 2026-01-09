@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260109-1504",
+  "version": "BETA20260109-1559",
   "stage": "BETA",
-  "timestamp": "2026-01-09T15:04:10.000Z",
-  "commit": "0c74d7c",
-  "buildNumber": 49,
-  "releaseNotes": "Auto-generated from commit: fix: Vercel serverless deployment and middleware cleanup"
+  "timestamp": "2026-01-09T15:59:52.000Z",
+  "commit": "a88bbd7",
+  "buildNumber": 50,
+  "releaseNotes": "Auto-generated from commit: fix: navigation blocking, services filter, and socket production issues"
 }
