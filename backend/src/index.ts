@@ -121,9 +121,6 @@ app.use(express.json({ limit: '10mb' }));
 // 📊 MONITORING Dashboard - Serve static files
 app.use(express.static('public'));
 
-// 🛡️ TRUST PROXY: Needed for Vercel/proxies to get the real client IP
-app.set('trust proxy', 1);
-
 // 1. Strip /api prefix if present (Must be FIRST to normalize paths for all other middlewares)
 app.use((req, res, next) => {
     if (req.url.startsWith('/api')) {
@@ -132,8 +129,10 @@ app.use((req, res, next) => {
     next();
 });
 
+// Middleware setup
 app.use(helmet());
 app.use(compression());
+app.use(express.json({ limit: '10mb' }));
 
 app.use('/auth', authRoutes);
 app.use('/customers', customerRoutes);
@@ -208,7 +207,7 @@ app.get('/diag', async (req, res) => {
 
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     httpServer.listen(PORT, () => {
         Logger.info(`🚀 Server running on port ${PORT}`);
         Logger.info(`📊 Monitoring dashboard: http://localhost:${PORT}/dashboard.html`);
