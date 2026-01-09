@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260109-1431",
+  "version": "BETA20260109-1504",
   "stage": "BETA",
-  "timestamp": "2026-01-09T14:31:09.000Z",
-  "commit": "d0417bb",
-  "buildNumber": 48,
-  "releaseNotes": "Auto-generated from commit: feat: performance optimizations, comprehensive code review, and bug fixes"
+  "timestamp": "2026-01-09T15:04:10.000Z",
+  "commit": "0c74d7c",
+  "buildNumber": 49,
+  "releaseNotes": "Auto-generated from commit: fix: Vercel serverless deployment and middleware cleanup"
 }
