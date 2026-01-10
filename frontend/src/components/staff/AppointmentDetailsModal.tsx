@@ -43,6 +43,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
     const [isEditingPerformer, setIsEditingPerformer] = useState(false);
     const [performers, setPerformers] = useState<Staff[]>([]);
     const [selectedPerformerId, setSelectedPerformerId] = useState('');
+    const [cancellationReason, setCancellationReason] = useState('');
 
     // Sync local state when appointment prop changes
     useEffect(() => {
@@ -321,31 +322,60 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                             </div>
 
                             {!rescheduleData.newDate ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={async () => {
-                                            try {
-                                                await api.patch(`/appointments/${localAppointment.id}/status`, { status: rescheduleData.targetStatus });
-                                                toast.success('Status atualizado com sucesso');
-                                                onSuccess();
-                                                onClose();
-                                            } catch (err) {
-                                                toast.error('Erro ao atualizar status');
-                                            }
-                                        }}
-                                        className="flex flex-col items-center gap-3 p-6 bg-gray-50 hover:bg-red-50 hover:text-red-600 dark:bg-gray-700 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-3xl border border-gray-100 dark:border-gray-600 transition-all group"
-                                    >
-                                        <X size={32} className="text-gray-300 group-hover:text-red-500" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Apenas {rescheduleData.targetStatus === 'CANCELADO' ? 'Cancelar' : 'Marcar No-Show'}</span>
-                                    </button>
+                                <div className="space-y-4">
+                                    {/* Campo de Justificativa Obrigatória */}
+                                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-200 dark:border-red-500/30">
+                                        <label className="block text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-[0.2em] mb-2">
+                                            ⚠️ Justificativa Obrigatória
+                                        </label>
+                                        <textarea
+                                            value={cancellationReason}
+                                            onChange={(e) => setCancellationReason(e.target.value)}
+                                            placeholder={rescheduleData.targetStatus === 'CANCELADO'
+                                                ? 'Por que este agendamento está sendo cancelado?'
+                                                : 'Por que o cliente não compareceu?'}
+                                            className="w-full bg-white dark:bg-gray-700 border border-red-200 dark:border-red-500/30 rounded-xl p-3 text-sm text-secondary dark:text-white focus:ring-2 focus:ring-red-500/20 resize-none"
+                                            rows={3}
+                                        />
+                                    </div>
 
-                                    <button
-                                        onClick={() => setRescheduleData({ ...rescheduleData, newDate: localAppointment.startAt.split('.')[0] })}
-                                        className="flex flex-col items-center gap-3 p-6 bg-gray-50 hover:bg-primary/10 hover:text-primary dark:bg-gray-700 dark:hover:bg-primary/20 rounded-3xl border border-gray-100 dark:border-gray-600 transition-all group"
-                                    >
-                                        <RefreshCcw size={32} className="text-gray-300 group-hover:text-primary" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Reagendar para Outra Data</span>
-                                    </button>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            onClick={async () => {
+                                                if (!cancellationReason.trim()) {
+                                                    toast.error('Justificativa obrigatória para ' + (rescheduleData.targetStatus === 'CANCELADO' ? 'cancelamento' : 'no-show'));
+                                                    return;
+                                                }
+                                                try {
+                                                    await api.patch(`/appointments/${localAppointment.id}/status`, {
+                                                        status: rescheduleData.targetStatus,
+                                                        reason: cancellationReason.trim()
+                                                    });
+                                                    toast.success('Status atualizado com sucesso');
+                                                    setCancellationReason('');
+                                                    onSuccess();
+                                                    onClose();
+                                                } catch (err) {
+                                                    toast.error('Erro ao atualizar status');
+                                                }
+                                            }}
+                                            disabled={!cancellationReason.trim()}
+                                            className={`flex flex-col items-center gap-3 p-6 rounded-3xl border transition-all group ${cancellationReason.trim()
+                                                ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 dark:border-red-500/30'
+                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700'}`}
+                                        >
+                                            <X size={32} className={cancellationReason.trim() ? 'text-red-500' : 'text-gray-300'} />
+                                            <span className="text-xs font-black uppercase tracking-widest">Confirmar {rescheduleData.targetStatus === 'CANCELADO' ? 'Cancelamento' : 'No-Show'}</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => setRescheduleData({ ...rescheduleData, newDate: localAppointment.startAt.split('.')[0] })}
+                                            className="flex flex-col items-center gap-3 p-6 bg-gray-50 hover:bg-primary/10 hover:text-primary dark:bg-gray-700 dark:hover:bg-primary/20 rounded-3xl border border-gray-100 dark:border-gray-600 transition-all group"
+                                        >
+                                            <RefreshCcw size={32} className="text-gray-300 group-hover:text-primary" />
+                                            <span className="text-xs font-black uppercase tracking-widest">Reagendar para Outra Data</span>
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-4">

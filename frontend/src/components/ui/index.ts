@@ -27,4 +27,4 @@ export type { BadgeProps, TagProps, StatusDotProps, BadgeVariant, BadgeSize } fr
 export { default as PageTransition } from './PageTransition';
 
 // Spotlight Card (existing)
-export { default as SpotlightCard } from './SpotlightCard';
+export { SpotlightCard } from './SpotlightCard';

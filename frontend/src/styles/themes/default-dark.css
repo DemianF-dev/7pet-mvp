@@ -1,32 +1,66 @@
+/**
+ * Default Dark Theme - Premium Edition
+ * Deep, comfortable dark with emerald accent
+ */
+
 [data-theme="default-dark"] {
-    /* Colors - Minimal Pro Dark */
-    --color-bg-primary: #111827;
-    /* Almost black/charcoal */
-    --color-bg-secondary: #0f131a;
-    /* Slightly darker for contrast or sidebars */
-    --color-bg-surface: #1f2937;
-    /* Graphite surface */
+    /* Backgrounds - Layered darkness */
+    --color-bg-primary: #0D1117;
+    --color-bg-secondary: #161B22;
+    --color-bg-tertiary: #21262D;
+    --color-bg-surface: #161B22;
+    --color-bg-elevated: #21262D;
 
-    --color-text-primary: #f9fafb;
-    --color-text-secondary: #9ca3af;
+    /* Text - Soft white */
+    --color-text-primary: #F0F6FC;
+    --color-text-secondary: #8B949E;
+    --color-text-tertiary: #6E7681;
+    --color-text-quaternary: #484F58;
 
-    /* Cian/Azul suave contrastante */
-    --color-accent-primary: #34d399;
-    /* Emerald 400 - good dark mode primary */
-    --color-accent-secondary: #60a5fa;
-    /* Blue 400 */
+    /* Accent - Vibrant emerald */
+    --color-accent-primary: #3FB950;
+    --color-accent-secondary: #58A6FF;
 
-    --color-border: #374151;
+    /* Borders */
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-opaque: #30363D;
+    --color-separator: rgba(255, 255, 255, 0.1);
 
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-error: #f87171;
+    /* Fills */
+    --color-fill-primary: rgba(255, 255, 255, 0.1);
+    --color-fill-secondary: rgba(255, 255, 255, 0.06);
+    --color-fill-tertiary: rgba(255, 255, 255, 0.04);
+    --color-fill-quaternary: rgba(255, 255, 255, 0.02);
 
-    /* Shadows meant for dark mode (subtle depth) */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    /* Semantic - Softer for dark */
+    --color-success: #3FB950;
+    --color-warning: #D29922;
+    --color-error: #F97583;
+    /* Soft coral, not harsh red */
+    --color-info: #58A6FF;
 
-    --focus-ring: 0 0 0 2px rgba(52, 211, 153, 0.4);
+    /* Glass */
+    --glass-blur: 20px;
+    --glass-saturate: 180%;
+    --glass-bg: rgba(22, 27, 34, 0.8);
+    --glass-bg-elevated: rgba(33, 38, 45, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 
-    --bg-gradient: linear-gradient(135deg, #111827 0%, #171e2e 100%);
+    /* Shadows */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+
+    /* Focus */
+    --focus-ring: 0 0 0 4px rgba(63, 185, 80, 0.3);
+    --focus-ring-error: 0 0 0 4px rgba(249, 117, 131, 0.3);
+
+    /* Gradients */
+    --bg-gradient: linear-gradient(180deg, #161B22 0%, #0D1117 100%);
+    --bg-gradient-subtle: linear-gradient(180deg, #21262D 0%, #161B22 100%);
+    --bg-gradient-accent: linear-gradient(135deg, #3FB950 0%, #2EA043 100%);
 }

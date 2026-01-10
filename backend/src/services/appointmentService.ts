@@ -362,8 +362,8 @@ export const processNoShows = async () => {
             where: { id: appt.customerId },
             data: {
                 noShowCount: newNoShowCount,
-                isBlocked: newNoShowCount >= 3,
-                requiresPrepayment: newNoShowCount >= 3
+                isBlocked: newNoShowCount >= 2,
+                requiresPrepayment: newNoShowCount >= 2
             }
         });
     }

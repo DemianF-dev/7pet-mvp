@@ -1,92 +1,113 @@
 /**
- * Apple Light Theme
- * Based on Apple Human Interface Guidelines
+ * Apple Light Theme - Premium Edition
+ * Soft, harmonious colors with excellent readability
+ * Inspired by Apple Human Interface Guidelines + Liquid Glass aesthetic
  */
 
 [data-theme="apple-light"] {
-    /* =========================================
-       BACKGROUNDS
+   /* =========================================
+       BACKGROUNDS - Warm, soft tones
        ========================================= */
-    --color-bg-primary: #FFFFFF;
-    --color-bg-secondary: #F2F2F7;
-    --color-bg-tertiary: #FFFFFF;
-    --color-bg-surface: #FFFFFF;
-    --color-bg-elevated: #FFFFFF;
+   --color-bg-primary: #FAFAFA;
+   /* Warm off-white, easier on eyes */
+   --color-bg-secondary: #F5F5F7;
+   /* Light warm gray */
+   --color-bg-tertiary: #EFEFF4;
+   /* Subtle depth */
+   --color-bg-surface: #FFFFFF;
+   /* Pure white for cards */
+   --color-bg-elevated: #FFFFFF;
+   /* Elevated surfaces */
 
-    /* =========================================
-       TEXT
+   /* =========================================
+       TEXT - High contrast, comfortable reading
        ========================================= */
-    --color-text-primary: #000000;
-    --color-text-secondary: rgba(60, 60, 67, 0.6);
-    --color-text-tertiary: rgba(60, 60, 67, 0.3);
-    --color-text-quaternary: rgba(60, 60, 67, 0.18);
+   --color-text-primary: #1D1D1F;
+   /* Near-black, not pure black */
+   --color-text-secondary: #6E6E73;
+   /* Medium gray, very readable */
+   --color-text-tertiary: #8E8E93;
+   /* Lighter but still visible */
+   --color-text-quaternary: #AEAEB2;
+   /* Placeholder text */
 
-    /* =========================================
-       SYSTEM COLORS (Apple iOS/macOS)
+   /* =========================================
+       ACCENT COLORS - Vibrant but not harsh
        ========================================= */
-    /* Blue - Primary actions, links */
-    --color-accent-primary: #007AFF;
-    --color-accent-secondary: #5856D6;
-    /* Indigo */
+   --color-accent-primary: #0071E3;
+   /* Apple Blue - slightly deeper */
+   --color-accent-secondary: #5E5CE6;
+   /* Purple/Indigo */
 
-    /* Semantic Colors */
-    --color-success: #34C759;
-    --color-warning: #FF9500;
-    --color-error: #FF3B30;
-    --color-info: #5AC8FA;
+   /* Semantic Colors - Softer variants */
+   --color-success: #28CD41;
+   /* Bright green */
+   --color-warning: #FF9F0A;
+   /* Warm orange */
+   --color-error: #FF453A;
+   /* Softer red */
+   --color-info: #64D2FF;
+   /* Light cyan */
 
-    /* Additional System Colors */
-    --color-teal: #5AC8FA;
-    --color-indigo: #5856D6;
-    --color-purple: #AF52DE;
-    --color-pink: #FF2D55;
-    --color-orange: #FF9500;
-    --color-yellow: #FFCC00;
-    --color-mint: #00C7BE;
-    --color-cyan: #32ADE6;
+   /* Extended Palette */
+   --color-teal: #5AC8FA;
+   --color-indigo: #5E5CE6;
+   --color-purple: #BF5AF2;
+   --color-pink: #FF375F;
+   --color-orange: #FF9F0A;
+   --color-yellow: #FFD60A;
+   --color-mint: #66D4CF;
+   --color-cyan: #5AC8FA;
 
-    /* =========================================
-       BORDERS & SEPARATORS
+   /* =========================================
+       BORDERS - Subtle, refined
        ========================================= */
-    --color-border: rgba(60, 60, 67, 0.12);
-    --color-border-opaque: #C6C6C8;
-    --color-separator: rgba(60, 60, 67, 0.29);
-    --color-separator-opaque: #C6C6C8;
+   --color-border: rgba(0, 0, 0, 0.08);
+   /* Very subtle */
+   --color-border-opaque: #E5E5EA;
+   /* Visible when needed */
+   --color-separator: rgba(0, 0, 0, 0.1);
+   --color-separator-opaque: #D1D1D6;
 
-    /* =========================================
-       FILLS (for thin materials)
+   /* =========================================
+       FILLS - For interactive states
        ========================================= */
-    --color-fill-primary: rgba(120, 120, 128, 0.2);
-    --color-fill-secondary: rgba(120, 120, 128, 0.16);
-    --color-fill-tertiary: rgba(118, 118, 128, 0.12);
-    --color-fill-quaternary: rgba(116, 116, 128, 0.08);
+   --color-fill-primary: rgba(0, 0, 0, 0.06);
+   --color-fill-secondary: rgba(0, 0, 0, 0.04);
+   --color-fill-tertiary: rgba(0, 0, 0, 0.03);
+   --color-fill-quaternary: rgba(0, 0, 0, 0.02);
 
-    /* =========================================
-       GLASSMORPHISM
+   /* =========================================
+       GLASSMORPHISM - Liquid Glass Effect
        ========================================= */
-    --glass-bg: rgba(255, 255, 255, 0.72);
-    --glass-bg-elevated: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.5);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+   --glass-blur: 24px;
+   --glass-blur-heavy: 40px;
+   --glass-saturate: 180%;
+   --glass-bg: rgba(255, 255, 255, 0.75);
+   --glass-bg-elevated: rgba(255, 255, 255, 0.88);
+   --glass-border: rgba(255, 255, 255, 0.6);
+   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 
-    /* =========================================
-       SHADOWS (Light Mode Specific)
+   /* =========================================
+       SHADOWS - Ultra soft, layered
        ========================================= */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1);
+   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04);
 
-    /* =========================================
+   /* =========================================
        FOCUS & ACCESSIBILITY
        ========================================= */
-    --focus-ring: 0 0 0 3px rgba(0, 122, 255, 0.4);
-    --focus-ring-error: 0 0 0 3px rgba(255, 59, 48, 0.4);
+   --focus-ring: 0 0 0 4px rgba(0, 113, 227, 0.3);
+   --focus-ring-error: 0 0 0 4px rgba(255, 69, 58, 0.3);
 
-    /* =========================================
-       GRADIENTS
+   /* =========================================
+       GRADIENTS - Subtle, premium
        ========================================= */
-    --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 100%);
-    --bg-gradient-subtle: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
+   --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 100%);
+   --bg-gradient-subtle: linear-gradient(180deg, #FAFAFA 0%, #F5F5F7 100%);
+   --bg-gradient-accent: linear-gradient(135deg, #0071E3 0%, #5E5CE6 100%);
 }

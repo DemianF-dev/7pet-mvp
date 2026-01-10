@@ -1,25 +1,65 @@
+/**
+ * Default Light Theme - Premium Edition
+ * Soft, professional look with green accent
+ */
+
 [data-theme="default-light"] {
-    /* Colors - Minimal Pro */
-    --color-bg-primary: #ffffff;
-    --color-bg-secondary: #f8f9fa;
-    --color-bg-surface: #ffffff;
+    /* Backgrounds - Warm, soft */
+    --color-bg-primary: #FAFAFA;
+    --color-bg-secondary: #F4F6F8;
+    --color-bg-tertiary: #EBEEF2;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-elevated: #FFFFFF;
 
-    --color-text-primary: #1a202c;
-    --color-text-secondary: #4a5568;
+    /* Text - High contrast, comfortable */
+    --color-text-primary: #1A1D21;
+    --color-text-secondary: #5E6C7A;
+    --color-text-tertiary: #8A98A6;
+    --color-text-quaternary: #B0BDC9;
 
-    /* Azul/Verde suave 'Pro' */
-    --color-accent-primary: #00A852;
-    --color-accent-secondary: #3182ce;
+    /* Accent - Professional green/teal */
+    --color-accent-primary: #00A86B;
+    --color-accent-secondary: #3B82F6;
 
-    --color-border: #e2e8f0;
+    /* Borders */
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-opaque: #E2E8F0;
+    --color-separator: rgba(0, 0, 0, 0.1);
 
-    --color-success: #38a169;
-    --color-warning: #d69e2e;
-    --color-error: #e53e3e;
+    /* Fills */
+    --color-fill-primary: rgba(0, 0, 0, 0.06);
+    --color-fill-secondary: rgba(0, 0, 0, 0.04);
+    --color-fill-tertiary: rgba(0, 0, 0, 0.03);
+    --color-fill-quaternary: rgba(0, 0, 0, 0.02);
 
-    /* Overrides */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --focus-ring: 0 0 0 3px rgba(0, 168, 82, 0.4);
+    /* Semantic */
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+    --color-info: #3B82F6;
 
-    --bg-gradient: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+    /* Glass */
+    --glass-blur: 20px;
+    --glass-saturate: 180%;
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-bg-elevated: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+
+    /* Shadows */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04);
+
+    /* Focus */
+    --focus-ring: 0 0 0 4px rgba(0, 168, 107, 0.3);
+    --focus-ring-error: 0 0 0 4px rgba(239, 68, 68, 0.3);
+
+    /* Gradients */
+    --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #F4F6F8 100%);
+    --bg-gradient-subtle: linear-gradient(180deg, #FAFAFA 0%, #F4F6F8 100%);
+    --bg-gradient-accent: linear-gradient(135deg, #00A86B 0%, #10B981 100%);
 }

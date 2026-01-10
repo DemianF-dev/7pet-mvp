@@ -68,7 +68,7 @@ const limiter = rateLimit({
 
 app.use(helmet());
 app.use(compression());
-// app.use(limiter); // Temporarily disable to rule out rate limiting
+app.use(limiter); // 🛡️ Rate limiting enabled for security
 
 // 📊 MONITORING - Capture all requests (must be before other middlewares)
 app.use(metricsMiddleware);
@@ -129,10 +129,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Middleware setup
-app.use(helmet());
-app.use(compression());
-app.use(express.json({ limit: '10mb' }));
+// NOTE: helmet(), compression(), and express.json() are already applied above (lines 69-70, 119)
 
 app.use('/auth', authRoutes);
 app.use('/customers', customerRoutes);
