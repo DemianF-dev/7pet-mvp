@@ -702,5 +702,160 @@ export const customerController = {
             console.error('Erro ao excluir pet:', error);
             return res.status(500).json({ error: 'Erro interno ao excluir pet' });
         }
+    },
+
+    // ========== FINANCIAL TRANSACTIONS ==========
+    async createTransaction(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { type, amount, description, category, relatedQuoteId, relatedInvoiceId, notes } = req.body;
+            const createdBy = (req as any).user.id;
+
+            if (!type || !amount || !description) {
+                return res.status(400).json({ error: 'Tipo, valor e descrição são obrigatórios' });
+            }
+
+            const financialService = await import('../services/financialService');
+            const transaction = await financialService.createTransaction({
+                customerId: id,
+                type,
+                amount: parseFloat(amount),
+                description,
+                category,
+                relatedQuoteId,
+                relatedInvoiceId,
+                createdBy,
+                notes
+            });
+
+            return res.status(201).json(transaction);
+        } catch (error) {
+            console.error('Erro ao criar transação:', error);
+            return res.status(500).json({ error: 'Erro ao criar transação financeira' });
+        }
+    },
+
+    async listTransactions(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { type, category, skip, take } = req.query;
+
+            const financialService = await import('../services/financialService');
+            const result = await financialService.getTransactionHistory(id, {
+                type: type as any,
+                category: category as string,
+                skip: skip ? parseInt(skip as string) : undefined,
+                take: take ? parseInt(take as string) : undefined
+            });
+
+            return res.json(result);
+        } catch (error) {
+            console.error('Erro ao listar transações:', error);
+            return res.status(500).json({ error: 'Erro ao listar transações' });
+        }
+    },
+
+    async syncBalance(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            const financialService = await import('../services/financialService');
+            const newBalance = await financialService.syncBalance(id);
+
+            return res.json({ balance: newBalance });
+        } catch (error) {
+            console.error('Erro ao sincronizar saldo:', error);
+            return res.status(500).json({ error: 'Erro ao sincronizar saldo' });
+        }
+    },
+
+    // ========== CUSTOMER ALERTS ==========
+    async createAlert(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { type, title, message } = req.body;
+            const createdBy = (req as any).user.id;
+
+            if (!type || !title || !message) {
+                return res.status(400).json({ error: 'Tipo, título e mensagem são obrigatórios' });
+            }
+
+            const alert = await prisma.customerAlert.create({
+                data: {
+                    customerId: id,
+                    type,
+                    title,
+                    message,
+                    createdBy
+                }
+            });
+
+            return res.status(201).json(alert);
+        } catch (error) {
+            console.error('Erro ao criar alerta:', error);
+            return res.status(500).json({ error: 'Erro ao criar alerta' });
+        }
+    },
+
+    async listAlerts(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { active } = req.query;
+
+            const where: any = { customerId: id };
+            if (active !== undefined) {
+                where.isActive = active === 'true';
+            }
+
+            const alerts = await prisma.customerAlert.findMany({
+                where,
+                orderBy: [
+                    { isActive: 'desc' },
+                    { createdAt: 'desc' }
+                ]
+            });
+
+            return res.json(alerts);
+        } catch (error) {
+            console.error('Erro ao listar alertas:', error);
+            return res.status(500).json({ error: 'Erro ao listar alertas' });
+        }
+    },
+
+    async resolveAlert(req: Request, res: Response) {
+        try {
+            const { alertId } = req.params;
+            const resolvedBy = (req as any).user.id;
+
+            const alert = await prisma.customerAlert.update({
+                where: { id: alertId },
+                data: {
+                    isActive: false,
+                    resolvedAt: new Date(),
+                    resolvedBy
+                }
+            });
+
+            return res.json(alert);
+        } catch (error) {
+            console.error('Erro ao resolver alerta:', error);
+            return res.status(500).json({ error: 'Erro ao resolver alerta' });
+        }
+    },
+
+    async deleteAlert(req: Request, res: Response) {
+        try {
+            const { alertId } = req.params;
+
+            await prisma.customerAlert.delete({
+                where: { id: alertId }
+            });
+
+            return res.status(204).send();
+        } catch (error) {
+            console.error('Erro ao excluir alerta:', error);
+            return res.status(500).json({ error: 'Erro ao excluir alerta' });
+        }
     }
 };
+

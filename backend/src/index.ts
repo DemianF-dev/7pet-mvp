@@ -33,9 +33,11 @@ import supportRoutes from './routes/supportRoutes';
 import mapsRoutes from './routes/mapsRoutes';
 import transportSettingsRoute from './routes/transportSettingsRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import notificationSettingsRoutes from './routes/notificationSettingsRoutes';
 import cronRoutes from './routes/cronRoutes';
 import feedRoutes from './routes/feedRoutes';
 import chatRoutes from './routes/chatRoutes';
+import hrRoutes from './routes/hrRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -60,7 +62,7 @@ app.set('trust proxy', 1);
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: process.env.NODE_ENV === 'production' ? 300 : 1000, // Higher limit in dev
     standardHeaders: true,
     legacyHeaders: false,
     message: 'Muitas requisições deste IP, tente novamente mais tarde.'
@@ -142,6 +144,7 @@ app.use('/staff', staffRoutes);
 app.use('/management', managementRoutes);
 app.use('/invoices', invoiceRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/notification-settings', notificationSettingsRoutes);
 app.use('/products', productRoutes);
 app.use('/support', supportRoutes);
 app.use('/maps', mapsRoutes);
@@ -150,6 +153,7 @@ app.use('/metrics', metricsRoutes); // Metrics endpoint
 app.use('/cron', cronRoutes);
 app.use('/feed', feedRoutes);
 app.use('/chat', chatRoutes);
+app.use('/hr', hrRoutes);
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 startNotificationScheduler();

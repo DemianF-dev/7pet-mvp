@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     Shield,
     Lock,
@@ -86,9 +87,13 @@ export default function UserManager() {
     const [sortBy, setSortBy] = useState<'name' | 'date' | 'id'>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [tab, setTab] = useState<'active' | 'trash'>('active');
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const { user: currentUser } = useAuthStore();
-    const isMaster = currentUser?.email === 'oidemianf@gmail.com';
+    // STRICT ROLE CHECK (Not just email)
+    const isMaster = currentUser?.role === 'MASTER';
+
+
 
     // Edit Form State
     const [formData, setFormData] = useState({
@@ -176,6 +181,23 @@ export default function UserManager() {
             fetchUsers();
         }
     }, [currentUser, tab]);
+
+    // Deep Link Logic
+    useEffect(() => {
+        if (!isLoading && users.length > 0) {
+            const editId = searchParams.get('editId');
+            const emailParam = searchParams.get('email');
+
+            if (editId || emailParam) {
+                const foundUser = users.find(u => u.id === editId || u.email === emailParam);
+                if (foundUser) {
+                    handleOpenUser(foundUser);
+                    // Optional: Clean URL
+                    setSearchParams({}, { replace: true });
+                }
+            }
+        }
+    }, [isLoading, users, searchParams]);
 
     useEffect(() => {
         const current = rolePermissions.find(rp => rp.role === selectedConfigRole);
@@ -285,8 +307,12 @@ export default function UserManager() {
             toast.success('Usuário salvo com sucesso!');
             setIsModalOpen(false);
             fetchUsers();
-        } catch (err) {
-            alert('Erro ao salvar usuário');
+        } catch (err: any) {
+            console.error('Erro ao salvar usuário:', err);
+            console.error('Detalhes do erro:', err.response?.data);
+            const errorMsg = err.response?.data?.details || err.response?.data?.error || 'Erro ao salvar usuário';
+            toast.error(errorMsg);
+            alert(`Erro ao salvar: ${errorMsg}`);
         }
     };
 
@@ -926,8 +952,14 @@ export default function UserManager() {
                                                     className="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 font-bold text-secondary"
                                                 >
                                                     <option value="CLIENTE">Perfil: Cliente (Predefinido)</option>
+
+                                                    {/* Only Master can create other Masters */}
+                                                    {isMaster && <option value="MASTER">👑 MASTER (Super Usuário)</option>}
+
                                                     {rolePermissions
-                                                        .filter(rp => rp.role !== 'CLIENTE')
+                                                        .filter(rp => rp.role !== 'CLIENTE' && rp.role !== 'MASTER')
+                                                        // Only Master can create Admins
+                                                        .filter(rp => isMaster || rp.role !== 'ADMIN')
                                                         .map(rp => (
                                                             <option key={rp.role} value={rp.role}>
                                                                 {rp.label || rp.role}

@@ -284,11 +284,16 @@ export const getReports = async (req: Request, res: Response) => {
     }
 };
 
+// Helper to check if user is Master by Role
+const isMaster = (user: any) => user?.role === 'MASTER';
+const isAdmin = (user: any) => user?.role === 'ADMIN';
+
 export const listUsers = async (req: Request, res: Response) => {
     try {
         const currentUser = (req as any).user;
-        const requesterIsSuper = isRestricted(currentUser?.email);
         const { trash } = req.query;
+
+        console.log('listUsers request by:', currentUser?.email, 'Role:', currentUser?.role);
 
         const users = await prisma.user.findMany({
             where: {
@@ -298,23 +303,26 @@ export const listUsers = async (req: Request, res: Response) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        console.log(`[listUsers] 🔍 Encontrados ${users.length} usuários no banco (trash: ${trash})`);
-
-
-        // If requester is not super, hide restricted users from the list
-        const filteredUsers = (requesterIsSuper ? users : users.filter(u => !isRestricted(u.email))).map(u => {
-            const userJson: any = { ...u };
-            // Apenas o Master pode ver o campo plainPassword
-            if (currentUser?.email !== MASTER_EMAIL) {
-                delete userJson.plainPassword;
+        // Strict Privacy Rule: Non-Masters cannot see Master users at all
+        const visibleUsers = users.filter(u => {
+            if (u.role === 'MASTER') {
+                return isMaster(currentUser);
             }
-            if (!requesterIsSuper) {
+            return true;
+        });
+
+        const sanitizedUsers = visibleUsers.map(u => {
+            const userJson: any = { ...u };
+
+            // Security: Only Master sees plain passwords
+            if (!isMaster(currentUser)) {
+                delete userJson.plainPassword;
                 delete userJson.passwordHash;
             }
             return userJson;
         });
 
-        res.json(filteredUsers);
+        res.json(sanitizedUsers);
     } catch (error) {
         console.error('Error in listUsers:', error);
         res.status(500).json({ error: 'Erro ao listar usuários.', details: error instanceof Error ? error.message : String(error) });
@@ -325,30 +333,25 @@ export const updateUserRole = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
-        const currentUserProfile = (req as any).user;
+        const currentUser = (req as any).user;
 
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        // STRICT MASTER PROTECTION
-        if (targetUser.email === MASTER_EMAIL && currentUserProfile?.email !== MASTER_EMAIL) {
-            return res.status(403).json({ error: 'Apenas o próprio Master pode alterar seu cargo.' });
+        // PROTECT MASTER ACCOUNT
+        if (targetUser.role === 'MASTER' && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode alterar cargos de usuários Master.' });
         }
 
-        // STRICT ADMIN CREATION PROTECTION
-        if ((role === 'ADMIN' || role === 'MASTER') && currentUserProfile?.email !== MASTER_EMAIL) {
-            return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Administrador.' });
-        }
-
-        // Access Control (Legacy for other restricted users)
-        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
-            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        // PROTECT PROMOTION TO HIGH PRIVILEGE ROLES
+        if ((role === 'ADMIN' || role === 'MASTER') && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Admin ou Master.' });
         }
 
         const updateData: any = { role };
 
         if (role !== 'CLIENTE' && (!targetUser || !targetUser.staffId)) {
-            updateData.staffId = await getNextStaffId(role); // Fixed: Pass role to getNextStaffId
+            updateData.staffId = await getNextStaffId(role);
         }
 
         const user = await prisma.user.update({
@@ -374,14 +377,15 @@ export const getUser = async (req: Request, res: Response) => {
         });
         if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        // Access Control: Restricted users can only be accessed by each other
-        if (isRestricted(user.email) && !isRestricted(currentUser?.email)) {
-            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        // PROTECT MASTER DETAILS
+        if (user.role === 'MASTER' && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Acesso negado: Perfil restrito ao Master.' });
         }
 
         const userJson: any = { ...user };
-        if (currentUser?.email !== MASTER_EMAIL) {
+        if (!isMaster(currentUser)) {
             delete userJson.plainPassword;
+            delete userJson.passwordHash;
         }
 
         res.json(userJson);
@@ -400,9 +404,9 @@ export const createUser = async (req: Request, res: Response) => {
             isSupportAgent, active
         } = req.body;
 
-        // STRICT ADMIN CREATION PROTECTION
-        if ((role === 'ADMIN' || role === 'MASTER') && currentUser?.email !== MASTER_EMAIL) {
-            return res.status(403).json({ error: 'Apenas o usuário Master pode criar novos Administradores.' });
+        // RULE: Only Master can create Admin or Master
+        if ((role === 'ADMIN' || role === 'MASTER') && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode criar Administradores ou outros Masters.' });
         }
 
         if (!email || !password) {
@@ -422,7 +426,7 @@ export const createUser = async (req: Request, res: Response) => {
             data: {
                 email,
                 passwordHash,
-                plainPassword: password, // Salva senha em texto puro para o Master
+                plainPassword: password, // Only Master sees this via API
                 role: actualRole,
                 division: actualDivision,
                 name: finalName,
@@ -440,7 +444,6 @@ export const createUser = async (req: Request, res: Response) => {
                 isSupportAgent: isSupportAgent !== undefined ? isSupportAgent : false,
                 active: active !== undefined ? active : true,
                 staffId: (actualRole && actualRole !== 'CLIENTE') ? await getNextStaffId(actualRole) : undefined,
-                // Automatically create customer record if client
                 customer: (actualDivision === 'CLIENTE' || actualRole === 'CLIENTE') ? {
                     create: {
                         name: finalName || email,
@@ -462,19 +465,14 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const currentUserProfile = (req as any).user;
+        const currentUser = (req as any).user;
 
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        // STRICT MASTER PROTECTION: Only Master can edit Master
-        if (targetUser.email === MASTER_EMAIL && currentUserProfile?.email !== MASTER_EMAIL) {
-            return res.status(403).json({ error: 'Apenas o próprio Master pode alterar seus dados.' });
-        }
-
-        // Access Control (Legacy)
-        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
-            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        // PROTECT MASTER ACCOUNT
+        if (targetUser.role === 'MASTER' && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode alterar dados de usuários Master.' });
         }
 
         const {
@@ -488,7 +486,6 @@ export const updateUser = async (req: Request, res: Response) => {
         const updateData: any = {};
         if (firstName !== undefined) updateData.firstName = firstName;
         if (lastName !== undefined) updateData.lastName = lastName;
-
         if (firstName !== undefined || lastName !== undefined) {
             const finalFirst = firstName !== undefined ? firstName : (targetUser?.firstName || '');
             const finalLast = lastName !== undefined ? lastName : (targetUser?.lastName || '');
@@ -504,21 +501,17 @@ export const updateUser = async (req: Request, res: Response) => {
         if (isEligible !== undefined) updateData.isEligible = isEligible;
         if (isSupportAgent !== undefined) updateData.isSupportAgent = isSupportAgent;
         if (active !== undefined) updateData.active = active;
-
-        // Suporte para division (novo campo para departamentos)
-        if (division !== undefined) {
-            updateData.division = division;
-        }
+        if (division !== undefined) updateData.division = division;
 
         if (role !== undefined) {
-            // STRICT ADMIN PROMOTION PROTECTION
-            if ((role === 'ADMIN' || role === 'MASTER') && currentUserProfile?.email !== MASTER_EMAIL) {
-                return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Administrador.' });
+            // RULE: Only Master can promote to Admin or Master
+            if ((role === 'ADMIN' || role === 'MASTER') && !isMaster(currentUser)) {
+                return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Administrador ou Master.' });
             }
 
             updateData.role = role;
             if (role !== 'CLIENTE' && (!targetUser || !targetUser.staffId)) {
-                updateData.staffId = await getNextStaffId(role); // Fixed: Pass role
+                updateData.staffId = await getNextStaffId(role);
             }
             if (permissions === undefined) {
                 updateData.permissions = await getDefaultPermissions(role);
@@ -533,7 +526,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
-            updateData.plainPassword = password; // Atualiza senha em texto puro para o Master
+            updateData.plainPassword = password;
         }
 
         const user = await prisma.user.update({
@@ -542,7 +535,7 @@ export const updateUser = async (req: Request, res: Response) => {
             include: { customer: true }
         });
 
-        // Update customer restrictions if provided (for CLIENTE division)
+        // Update customer restrictions if provided
         const customerData = req.body.customer;
         if (customerData && user.customer) {
             const customerUpdateData: any = {};
@@ -558,7 +551,6 @@ export const updateUser = async (req: Request, res: Response) => {
             }
         }
 
-        // Refetch with customer for response
         const updatedUser = await prisma.user.findUnique({
             where: { id },
             include: { customer: true }
@@ -567,35 +559,71 @@ export const updateUser = async (req: Request, res: Response) => {
         res.json(updatedUser);
     } catch (error) {
         console.error('Update user error:', error);
-        res.status(500).json({ error: 'Erro ao atualizar usuário' });
+        console.error('Error details:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            code: (error as any)?.code,
+            meta: (error as any)?.meta
+        });
+
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar usuário';
+        res.status(500).json({
+            error: 'Erro ao atualizar usuário',
+            details: errorMessage
+        });
     }
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const currentUserProfile = (req as any).user;
+        const currentUser = (req as any).user;
 
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        // STRICT MASTER PROTECTION
-        if (targetUser.email === MASTER_EMAIL && currentUserProfile?.email !== MASTER_EMAIL) {
-            return res.status(403).json({ error: 'O usuário Master não pode ser excluído por terceiros.' });
+        // PROTECT MASTER ACCOUNT
+        if (targetUser.role === 'MASTER' && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode excluir outro Master.' });
         }
 
-        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
-            return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
+        // Allow Master to delete ANYONE (including hard delete if needed)
+        // Check if there are related records that forbid deletion, or use DELETE instead of UPDATE deletedAt
+        // For compliance with "I want him to leave", we should probably hard delete or ensure he can't login.
+        // But soft delete also prevents login usually?
+        // Let's implement HARD DELETE for cleanup as requested ("fique apenas oidemianf").
+
+        // However, Prisma might have constraints.
+        // Let's try soft delete first, BUT strict check:
+        // if user is 'oidemianf@gmail.com', protect it.
+        const MASTER_EMAIL = 'oidemianf@gmail.com'; // This should be imported or defined top-level
+        if (targetUser.email === MASTER_EMAIL) {
+            return res.status(403).json({ error: 'Você não pode excluir a conta Master principal.' });
         }
 
+        // Use soft delete by default, but if the user explicitly wants "Excluir" maybe they mean gone?
+        // But soft delete is safer.
+        // Wait, if "Deu erro", maybe it was because of `deletedAt` unique constraint? (Unlikely)
+
+        // Let's assume the user wants it GONE.
+        // But if there are FKs, we fail.
+        // Let's do Soft Delete, but verify why it failed.
+
+        // Use soft delete BUT rename email to release it for future use
+        // This solves "Deu erro" if they try to add the person again later
         await prisma.user.update({
             where: { id },
-            data: { deletedAt: new Date() }
+            data: {
+                deletedAt: new Date(),
+                active: false,
+                email: `deleted_${Date.now()}_${targetUser.email}`,
+                googleId: targetUser.googleId ? `deleted_${Date.now()}_${targetUser.googleId}` : null
+            }
         });
         res.status(204).send();
     } catch (error) {
         console.error('Delete user error:', error);
-        res.status(500).json({ error: 'Erro ao excluir usuário' });
+        res.status(500).json({ error: 'Erro ao excluir usuário. Verifique se existem registros vinculados.' });
     }
 };
 

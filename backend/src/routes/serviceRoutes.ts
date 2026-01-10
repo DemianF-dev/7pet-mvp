@@ -14,7 +14,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 router.use(authenticate);
-router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA']));
+router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'COMERCIAL']));
 
 router.post('/', async (req: Request, res: Response) => {
     const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, responsibleId } = req.body;

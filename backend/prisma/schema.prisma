@@ -54,6 +54,12 @@ model User {
   reactions            Reaction[]
   sentMessages         Message[]          @relation("MessageSender")
   conversations        Participant[]
+  
+  // Notification Preferences
+  notificationPreferences UserNotificationPreference[]
+  
+  // HR / Staff Profile
+  staffProfile         StaffProfile?
 
   @@index([email])
   @@index([division])
@@ -108,12 +114,56 @@ model Customer {
   invoices                 Invoice[]
   pets                     Pet[]
   quotes                   Quote[]
+  financialTransactions    FinancialTransaction[]
+  alerts                   CustomerAlert[]
 
   @@index([userId])
   @@index([type])
   @@index([deletedAt])
   @@index([name])
   @@index([userId], map: "idx_customer_userid")
+}
+
+// Financial Transactions for Customer Balance Tracking
+model FinancialTransaction {
+  id               String    @id @default(uuid())
+  customerId       String
+  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type             String    // 'DEBIT' | 'CREDIT'
+  amount           Float
+  description      String
+  category         String?   // 'QUOTE' | 'PAYMENT' | 'ADJUSTMENT' | 'DISCOUNT' | 'PENALTY'
+  relatedQuoteId   String?
+  relatedQuote     Quote?    @relation(fields: [relatedQuoteId], references: [id])
+  relatedInvoiceId String?
+  relatedInvoice   Invoice?  @relation(fields: [relatedInvoiceId], references: [id])
+  createdBy        String    // User ID who created
+  createdAt        DateTime  @default(now())
+  notes            String?
+  
+  @@index([customerId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([category])
+}
+
+// Customer Alerts for Staff Visibility
+model CustomerAlert {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type        String    // 'WARNING' | 'CRITICAL' | 'INFO'
+  title       String
+  message     String
+  isActive    Boolean   @default(true)
+  resolvedAt  DateTime?
+  resolvedBy  String?   // User ID
+  createdBy   String    // User ID
+  createdAt   DateTime  @default(now())
+  
+  @@index([customerId])
+  @@index([isActive])
+  @@index([type])
 }
 
 model Pet {
@@ -179,6 +229,9 @@ model Service {
   quoteItems    QuoteItem[]
   responsible   User?         @relation("ServiceResponsible", fields: [responsibleId], references: [id])
   appointments  Appointment[] @relation("AppointmentToService")
+  
+  // HR - Produção
+  serviceExecutions ServiceExecution[]
 
   @@index([deletedAt])
   @@index([responsibleId])
@@ -224,6 +277,10 @@ model Appointment {
   statusHistory      StatusHistory[]
   transport          TransportDetails?
   services           Service[]           @relation("AppointmentToService")
+  
+  // HR - Produção
+  serviceExecutions  ServiceExecution[]
+  transportLegExecutions TransportLegExecution[]
 
   @@index([customerId])
   @@index([status])
@@ -280,6 +337,7 @@ model Quote {
   pet                    Pet?             @relation(fields: [petId], references: [id])
   items                  QuoteItem[]
   statusHistory          StatusHistory[]
+  financialTransactions  FinancialTransaction[]
 
   @@index([customerId])
   @@index([status])
@@ -319,6 +377,7 @@ model Invoice {
   customer      Customer        @relation(fields: [customerId], references: [id])
   payments      PaymentRecord[]
   quotes        Quote[]
+  financialTransactions FinancialTransaction[]
 
   @@index([status])
   @@index([dueDate])
@@ -593,3 +652,228 @@ model Message {
   @@index([conversationId])
   @@index([createdAt])
 }
+
+// --- Notification Control System ---
+model NotificationSettings {
+  id               String   @id @default(uuid())
+  notificationType String   // APPOINTMENT_REMINDER, QUOTE_UPDATE, CHAT_MESSAGE, DAILY_REVIEW
+  enabled          Boolean  @default(true)
+  frequency        String   @default("IMMEDIATE") // IMMEDIATE, HOURLY, DAILY, DISABLED
+  allowedRoles     Json?    @default("[]") // Array of roles that can receive this type
+  minInterval      Int      @default(0) // Minimum interval in minutes between notifications
+  updatedAt        DateTime @updatedAt
+  updatedBy        String?  // User ID who last updated
+
+  @@unique([notificationType])
+  @@index([notificationType])
+}
+
+model UserNotificationPreference {
+  id               String   @id @default(uuid())
+  userId           String
+  notificationType String   // APPOINTMENT_REMINDER, QUOTE_UPDATE, CHAT_MESSAGE, DAILY_REVIEW
+  enabled          Boolean  @default(true)
+  channels         Json?    @default("[\"IN_APP\", \"PUSH\"]") // IN_APP, PUSH, EMAIL
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationType])
+  @@index([userId])
+  @@index([notificationType])
+}
+
+// =========================================
+// HR / FINANCEIRO DE PRESTADORES
+// =========================================
+
+// Staff Profile - Perfil do colaborador/prestador
+model StaffProfile {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department            String   // 'spa' | 'transport' | 'atendimento' | 'gestao'
+  payModel              String   // 'daily' | 'per_leg' | 'fixed'
+  dailyRate             Float?   // Valor da diária
+  perLegRate            Float?   // Valor por pernada
+  payPeriodPreference   String   @default("monthly") // 'weekly' | 'biweekly' | 'monthly' | 'custom'
+  isActive              Boolean  @default(true)
+  
+  // Detailed Pay breakdown (Daily Model)
+  transportVoucher    Float?   @default(0) // VT
+  mealVoucher         Float?   @default(0) // VR
+  otherBenefits       Float?   @default(0) // Auxilio
+  
+  // Employment Details (PF/PJ)
+  employmentType      String?  @default("PF") // 'PF' | 'PJ' | 'CLT'
+  documentType        String?  // 'CPF' | 'CNPJ'
+  documentNumber      String?
+  companyName         String?  // For PJ
+  pixKey              String?
+  bankName            String?
+  bankAgency          String?
+  bankAccount         String?
+  notes               String?
+  
+  // Personal & Bio
+  hiringDate          DateTime?
+  birthday            DateTime?
+  address             String?
+  
+  // Emergency Contact
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  emergencyContactRelation String?
+  
+  // Driver Details (CNH)
+  cnhNumber           String?
+  cnhCategory         String?
+  cnhExpiry           DateTime?
+  cnhEar              Boolean  @default(false) // Exerce Atividade Remunerada
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  attendanceRecords     AttendanceRecord[]
+  serviceExecutions     ServiceExecution[]
+  transportLegExecutions TransportLegExecution[]
+  payAdjustments        PayAdjustment[]
+  payStatements         PayStatement[]
+
+  @@index([department])
+  @@index([isActive])
+}
+
+// Attendance Record - Controle de ponto
+model AttendanceRecord {
+  id           String    @id @default(uuid())
+  staffId      String
+  staff        StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  date         DateTime  @db.Date
+  checkInAt    DateTime?
+  checkOutAt   DateTime?
+  status       String    @default("incomplete") // 'ok' | 'incomplete' | 'adjusted' | 'absent'
+  notes        String?
+  createdById  String
+  updatedById  String?
+  updateReason String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([staffId, date])
+  @@index([staffId])
+  @@index([date])
+  @@index([status])
+}
+
+// Service Execution - Produção SPA (serviços executados)
+model ServiceExecution {
+  id            String   @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  staffId       String
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  serviceId     String?
+  service       Service? @relation(fields: [serviceId], references: [id])
+  executedAt    DateTime @default(now())
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([appointmentId])
+  @@index([staffId])
+  @@index([executedAt])
+}
+
+// Transport Leg Execution - Produção Transporte (pernadas)
+model TransportLegExecution {
+  id            String   @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  staffId       String
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  legType       String   // 'pickup' | 'dropoff'
+  completedAt   DateTime @default(now())
+  legValue      Float?   // Se null, usa staff.perLegRate
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@unique([appointmentId, staffId, legType])
+  @@index([appointmentId])
+  @@index([staffId])
+  @@index([completedAt])
+}
+
+// Pay Period - Período de fechamento
+model PayPeriod {
+  id          String    @id @default(uuid())
+  startDate   DateTime  @db.Date
+  endDate     DateTime  @db.Date
+  type        String    // 'weekly' | 'biweekly' | 'monthly' | 'custom'
+  status      String    @default("draft") // 'draft' | 'closed'
+  createdById String
+  closedById  String?
+  closedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  adjustments   PayAdjustment[]
+  statements    PayStatement[]
+
+  @@index([startDate, endDate])
+  @@index([status])
+}
+
+// Pay Adjustment - Ajustes (adiantamento/bônus/desconto/benefício)
+model PayAdjustment {
+  id          String   @id @default(uuid())
+  payPeriodId String
+  payPeriod   PayPeriod @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
+  staffId     String
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  type        String   // 'advance' | 'bonus' | 'discount' | 'benefit' | 'correction'
+  amount      Float    // Sempre positivo
+  direction   String   // 'add' | 'subtract'
+  reason      String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([payPeriodId])
+  @@index([staffId])
+}
+
+// Pay Statement - Resumo/recibo por colaborador
+model PayStatement {
+  id              String   @id @default(uuid())
+  payPeriodId     String
+  payPeriod       PayPeriod @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
+  staffId         String
+  staff           StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  baseTotal       Float    @default(0)
+  adjustmentsTotal Float   @default(0)
+  totalDue        Float    @default(0)
+  detailsJson     Json?    // Resumo: dias, diárias, pernadas, lista de ids
+  generatedAt     DateTime @default(now())
+
+  @@unique([payPeriodId, staffId])
+  @@index([payPeriodId])
+  @@index([staffId])
+}
+
+// HR Audit Log - Log de auditoria para ações críticas
+model HrAuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String
+  action      String   // 'attendance.update', 'pay_period.close', etc
+  entityType  String
+  entityId    String
+  metaJson    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+

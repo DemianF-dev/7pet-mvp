@@ -11,6 +11,8 @@ import StaffSidebar from '../../components/StaffSidebar';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
+import CustomerFinancialSection from '../../components/staff/CustomerFinancialSection';
+import CustomerAlertsSection from '../../components/staff/CustomerAlertsSection';
 
 interface Guardian {
     name: string;
@@ -267,12 +269,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
                     {/* Banner de Status */}
                     <div className={`md:col-span-8 flex items-center gap-4 p-5 rounded-[32px] border shadow-sm transition-all ${isBlocked ? 'bg-red-50 border-red-200 text-red-700' :
-                            !canRequestQuotes ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                                'bg-green-50 border-green-200 text-green-700'
+                        !canRequestQuotes ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                            'bg-green-50 border-green-200 text-green-700'
                         }`}>
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isBlocked ? 'bg-red-500 text-white' :
-                                !canRequestQuotes ? 'bg-amber-500 text-white' :
-                                    'bg-green-500 text-white shadow-lg shadow-green-200'
+                            !canRequestQuotes ? 'bg-amber-500 text-white' :
+                                'bg-green-500 text-white shadow-lg shadow-green-200'
                             }`}>
                             {isBlocked ? <X size={24} /> : !canRequestQuotes ? <Info size={24} /> : <Check size={24} />}
                         </div>
@@ -298,8 +300,8 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight">Classificação Staff</span>
                             </div>
                             <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shadow-sm ${riskLevel === 'Nivel 3' ? 'bg-red-500 text-white shadow-red-100' :
-                                    riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
-                                        'bg-green-500 text-white shadow-green-100'
+                                riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
+                                    'bg-green-500 text-white shadow-green-100'
                                 }`}>
                                 {riskLevel}
                             </span>
@@ -310,10 +312,10 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                     key={lvl}
                                     onClick={() => setRiskLevel(lvl)}
                                     className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all border ${riskLevel === lvl
-                                            ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
-                                                lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
-                                                    'bg-green-600 border-green-600 text-white shadow-md')
-                                            : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                                        ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
+                                            lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
+                                                'bg-green-600 border-green-600 text-white shadow-md')
+                                        : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
                                         }`}
                                 >
                                     NV {lvl.split(' ')[1]}
@@ -323,6 +325,9 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     </div>
                 </div>
             )}
+
+            {/* CUSTOMER ALERTS - Show active alerts banner */}
+            {id !== 'new' && <CustomerAlertsSection customerId={id} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
@@ -702,6 +707,9 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                 </div>
 
                 <div className="space-y-8">
+                    {/* FINANCIAL SECTION */}
+                    {id !== 'new' && <CustomerFinancialSection customerId={id} />}
+
                     {/* PREFERENCES */}
                     <section className="bg-secondary p-8 rounded-[40px] text-white shadow-xl">
                         <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">

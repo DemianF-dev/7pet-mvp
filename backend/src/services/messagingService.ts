@@ -2,6 +2,7 @@
 import axios from 'axios';
 import prisma from '../lib/prisma';
 import { createNotification } from '../controllers/notificationController';
+import { notificationSettingsService } from './notificationSettingsService';
 
 /**
  * messagingService
@@ -37,15 +38,16 @@ export const messagingService = {
      * Routes a notification to active channels based on user preferences
      */
     async notifyUser(userId: string, title: string, message: string, type: string) {
-        // 1. Create in-app notification (Existing logic)
-        const notification = await prisma.notification.create({
-            data: {
-                userId,
-                title,
-                message,
-                type
-            }
-        });
+        // 0. Check Notification Settings & Permissions
+        const canReceive = await notificationSettingsService.canUserReceiveNotification(userId, type);
+        if (!canReceive) {
+            console.log(`[MessagingService] Notification blocked by settings for user ${userId}, type ${type}`);
+            return null;
+        }
+
+        // 1. Create in-app notification (Delegated to createNotification to avoid duplication)
+        // Historic bug fix: Removed redundant prisma.notification.create call here
+
 
         // 2. Fetch user/customer preferences
         const user = await prisma.user.findUnique({
@@ -83,7 +85,12 @@ export const messagingService = {
             console.error('[MessagingService] Erro ao disparar Push Notification:', error);
         }
 
-        return notification;
+        return createNotification(userId, {
+            title,
+            body: message,
+            type: type,
+            data: { generatedBy: 'messagingService' }
+        });
     }
 };
 

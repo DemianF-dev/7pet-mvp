@@ -1,4 +1,5 @@
 
+
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -6,6 +7,7 @@ import { useSocket } from './context/SocketContext';
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/ui/PageTransition';
 import PageLoader from './components/PageLoader';
+import { useServiceWorkerUpdate } from './hooks/useServiceWorkerUpdate';
 
 // ⚡ STATIC IMPORTS - Critical path pages that need to load immediately
 import LandingPage from './pages/LandingPage';
@@ -47,6 +49,10 @@ const SupportTicketList = lazy(() => import('./pages/staff/SupportTicketList'));
 const TransportConfig = lazy(() => import('./pages/staff/TransportConfig'));
 const FeedPage = lazy(() => import('./pages/staff/FeedPage'));
 const ChatPage = lazy(() => import('./pages/staff/ChatPage'));
+const MyHR = lazy(() => import('./pages/staff/MyHR'));
+const StaffProfiles = lazy(() => import('./pages/staff/hr/StaffProfiles'));
+const StaffProfileDetails = lazy(() => import('./pages/staff/hr/StaffProfileDetails'));
+const PayPeriods = lazy(() => import('./pages/staff/hr/PayPeriods'));
 
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -70,6 +76,9 @@ function App() {
 
     const queryClient = useQueryClient();
     const { socket } = useSocket();
+
+    // 🔄 PWA Auto-Update Detection
+    useServiceWorkerUpdate();
 
     useEffect(() => {
         if (!socket) return;
@@ -132,7 +141,7 @@ function App() {
 
                         {/* Colaborador Routes */}
                         <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
-                        <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA']} redirectTo="/staff/login" />}>
+                        <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/staff/login" />}>
                             <Route path="/staff/dashboard" element={<PageTransition><StaffDashboard /></PageTransition>} />
                             <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
                             <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />
@@ -155,6 +164,10 @@ function App() {
                             <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
                             <Route path="/staff/chat" element={<LazyPage><ChatPage /></LazyPage>} />
                             <Route path="/staff/feed" element={<LazyPage><FeedPage /></LazyPage>} />
+                            <Route path="/staff/my-hr" element={<LazyPage><MyHR /></LazyPage>} />
+                            <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
+                            <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
+                            <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
                         </Route>
 
 

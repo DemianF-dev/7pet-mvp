@@ -290,6 +290,140 @@ body {
   border-radius: var(--radius-lg);
 }
 
+/* =========================================
+   THEME-AWARE SURFACE SYSTEM
+   ========================================= */
+
+/* Primary Surface Card - for main content cards */
+.surface-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-normal);
+}
+
+.surface-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Elevated Surface - for modals, dropdowns */
+.surface-elevated {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-xl);
+}
+
+/* Sidebar Surface - theme aware */
+.sidebar-surface {
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border);
+}
+
+/* Input Surface */
+.surface-input {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.surface-input:focus,
+.surface-input:focus-within {
+  background: var(--color-bg-surface);
+  border-color: var(--color-accent-primary);
+  box-shadow: var(--focus-ring);
+}
+
+/* =========================================
+   TEXT HIERARCHY CLASSES
+   ========================================= */
+
+.text-heading {
+  color: var(--color-text-primary) !important;
+  font-weight: var(--font-weight-bold);
+}
+
+.text-body {
+  color: var(--color-text-primary) !important;
+}
+
+.text-body-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+.text-muted {
+  color: var(--color-text-tertiary) !important;
+}
+
+.text-disabled {
+  color: var(--color-text-quaternary) !important;
+}
+
+.text-accent {
+  color: var(--color-accent-primary) !important;
+}
+
+/* =========================================
+   STATUS INDICATOR SURFACES
+   ========================================= */
+
+/* Success (green) */
+.status-success-surface {
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.25);
+  color: var(--color-success);
+}
+
+.status-success-badge {
+  background: var(--color-success);
+  color: #fff;
+}
+
+/* Warning (yellow/orange) */
+.status-warning-surface {
+  background: rgba(255, 159, 10, 0.12);
+  border: 1px solid rgba(255, 159, 10, 0.25);
+  color: var(--color-warning);
+}
+
+.status-warning-badge {
+  background: var(--color-warning);
+  color: #1D1D1F;
+}
+
+/* Error (red) */
+.status-error-surface {
+  background: rgba(255, 69, 58, 0.12);
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  color: var(--color-error);
+}
+
+.status-error-badge {
+  background: var(--color-error);
+  color: #fff;
+}
+
+/* Info (blue) */
+.status-info-surface {
+  background: rgba(0, 113, 227, 0.12);
+  border: 1px solid rgba(0, 113, 227, 0.25);
+  color: var(--color-info, var(--color-accent-primary));
+}
+
+.status-info-badge {
+  background: var(--color-info, var(--color-accent-primary));
+  color: #fff;
+}
+
+/* Neutral */
+.status-neutral-surface {
+  background: var(--color-fill-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
 /* Primary Button */
 .btn-primary {
   background-color: var(--color-accent-primary);

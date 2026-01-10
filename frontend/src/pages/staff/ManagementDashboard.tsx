@@ -32,6 +32,9 @@ import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
 import Skeleton from '../../components/Skeleton';
+import { NotificationControlPanel } from '../../components/admin/NotificationControlPanel';
+import { UserNotificationMatrix } from '../../components/admin/UserNotificationMatrix';
+import { useAuthStore } from '../../store/authStore';
 
 // Use CSS variable-based colors from design system
 const COLORS = [
@@ -93,6 +96,14 @@ interface ManagementKPIs {
 export default function ManagementDashboard() {
     const [kpis, setKpis] = useState<ManagementKPIs | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { user } = useAuthStore();
+    const isMaster = user?.role === 'MASTER';
+
+    useEffect(() => {
+        console.log('[Dashboard] User:', user);
+        console.log('[Dashboard] Role:', user?.role);
+        console.log('[Dashboard] isMaster:', isMaster);
+    }, [user, isMaster]);
 
     const fetchKPIs = async () => {
         setIsLoading(true);
@@ -110,17 +121,22 @@ export default function ManagementDashboard() {
         fetchKPIs();
     }, []);
 
-    const chartData = kpis?.revenue.trend.map(item => ({
+    useEffect(() => {
+        console.log('[Dashboard] User Debug:', JSON.stringify(user, null, 2));
+    }, [user]);
+
+    const kpisLoaded = kpis && kpis.revenue && kpis.revenue.trend;
+    const chartData = kpisLoaded ? kpis.revenue.trend.map(item => ({
         ...item,
         formattedDate: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-    })) || [];
+    })) : [];
 
-    const pieData = kpis?.appointments.distribution.map(item => ({
+    const pieData = kpisLoaded ? kpis.appointments.distribution.map(item => ({
         name: item.status,
         value: item._count
-    })) || [];
+    })) : [];
 
-    const barData = kpis?.services.slice(0, 5) || [];
+    const barData = kpis?.services?.slice(0, 5) || [];
 
     if (isLoading) {
         return (
@@ -421,9 +437,30 @@ export default function ManagementDashboard() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Notification Control Panel - MASTER ONLY */}
+                    {isMaster && (
+                        <>
+                            <div className="mt-12">
+                                <NotificationControlPanel />
+                            </div>
+                            <div className="mt-8">
+                                <UserNotificationMatrix />
+                            </div>
+                        </>
+                    )}
                 </div>
-            </main>
-        </div>
+
+
+                {/* Debug Info */}
+                <div className="mt-8 p-4 bg-gray-100 rounded text-xs text-gray-500 font-mono">
+                    <p>Debug Info:</p>
+                    <p>User: {user?.email}</p>
+                    <p>Role: {user?.role}</p>
+                    <p>Is Master: {isMaster ? 'YES' : 'NO'}</p>
+                </div>
+            </main >
+        </div >
     );
 }
 

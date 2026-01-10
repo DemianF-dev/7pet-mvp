@@ -10,10 +10,22 @@ const router = Router();
 router.use(authenticate);
 
 // Publicly available to staff for selection (but still filtered in controller if needed)
-router.get('/users', authorize(['ADMIN', 'GESTAO', 'OPERACIONAL', 'SPA', 'LOGISTICA']), managementController.listUsers);
+router.get('/users', authorize(['ADMIN', 'GESTAO', 'OPERACIONAL', 'SPA', 'LOGISTICA', 'COMERCIAL']), managementController.listUsers);
 
-// Restricted actions
-router.use(authorize(['ADMIN']));
+// Restricted actions - ADMIN division OR MASTER role
+router.use((req, res, next) => {
+    const user = (req as any).user;
+    const userDivision = user?.division || user?.role;
+    const userRole = user?.role;
+
+    // Allow MASTER role OR ADMIN division
+    if (userRole === 'MASTER' || userDivision === 'ADMIN') {
+        return next();
+    }
+
+    console.log('[Management Routes] Access denied - not MASTER or ADMIN');
+    return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
+});
 
 router.get('/kpis', managementController.getKPIs);
 router.get('/reports', managementController.getReports);

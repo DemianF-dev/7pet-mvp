@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft, Fingerprint } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
@@ -12,10 +12,16 @@ export default function StaffLogin() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true); // Default: 30 days
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+
+    // Clear any stale error messages on component mount
+    useEffect(() => {
+        setError('');
+        setSuccessMsg('');
+    }, []);
 
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -24,7 +30,7 @@ export default function StaffLogin() {
                 const response = await api.post('/auth/google', { idToken: tokenResponse.access_token });
                 const { user, token } = response.data;
                 const userRole = (user.role || '').toUpperCase().trim();
-                const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA'];
+                const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL'];
 
                 if (!staffRoles.includes(userRole)) {
                     throw new Error(`Área exclusiva para parceiros. Sua conta: ${userRole}`);
@@ -50,7 +56,7 @@ export default function StaffLogin() {
             const response = await api.post('/auth/login', { email, password, rememberMe });
             const { user, token } = response.data;
             const userRole = (user.role || '').toUpperCase().trim();
-            const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA'];
+            const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL'];
 
             if (!staffRoles.includes(userRole)) {
                 throw new Error('Acesso restrito a colaboradores.');

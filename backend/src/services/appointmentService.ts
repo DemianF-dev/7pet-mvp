@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 import { auditService } from './auditService';
+import hrService from './hrService';
 
 export const create = async (data: {
     customerId: string;
@@ -251,7 +252,9 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
         data: { status },
         include: {
             customer: { include: { user: true } },
-            pet: true
+            pet: true,
+            services: true,
+            transport: true
         }
     });
 
@@ -265,6 +268,65 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
             newData: { status: updated.status },
             reason: reason || `Alteração de status para ${status}`
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // HR INTEGRATION: Record Production when finished
+    // -------------------------------------------------------------------------
+    if (status === AppointmentStatus.FINALIZADO && updated.performerId) {
+        try {
+            // Get staff profile
+            const staff = await hrService.getStaffProfileByUserId(updated.performerId);
+
+            if (staff && staff.isActive) {
+                // Record SPA production if it's a SPA appointment or has services
+                if (updated.category === 'SPA' || (updated.services && updated.services.length > 0)) {
+                    for (const svc of (updated.services || [])) {
+                        await hrService.createServiceExecution({
+                            appointmentId: updated.id,
+                            staffId: staff.id,
+                            serviceId: svc.id,
+                            notes: `Auto-registrado via finalização de agendamento #${updated.seqId}`
+                        });
+                    }
+
+                    // If it was only a SPA but had no services in the list, record a generic one?
+                    if (updated.services.length === 0) {
+                        await hrService.createServiceExecution({
+                            appointmentId: updated.id,
+                            staffId: staff.id,
+                            notes: `Serviço avulso (SPA) - Agendamento #${updated.seqId}`
+                        });
+                    }
+                }
+
+                // Record Transport production if it's LOGISTICA
+                if (updated.category === 'LOGISTICA' || updated.transport) {
+                    // check if already has legs to avoid duplicates
+                    const existingLegs = await hrService.getTransportLegExecutions({ staffId: staff.id });
+                    const apptLegs = existingLegs.filter(l => l.appointmentId === updated.id);
+
+                    if (apptLegs.length === 0) {
+                        // Record legs
+                        await hrService.createTransportLegExecution({
+                            appointmentId: updated.id,
+                            staffId: staff.id,
+                            legType: 'pickup',
+                            notes: `Auto-registrado (Saída) - Agendamento #${updated.seqId}`
+                        });
+
+                        await hrService.createTransportLegExecution({
+                            appointmentId: updated.id,
+                            staffId: staff.id,
+                            legType: 'dropoff',
+                            notes: `Auto-registrado (Retorno) - Agendamento #${updated.seqId}`
+                        });
+                    }
+                }
+            }
+        } catch (hrError) {
+            console.error('[AppointmentService] Error recording HR production:', hrError);
+        }
     }
 
     return updated;

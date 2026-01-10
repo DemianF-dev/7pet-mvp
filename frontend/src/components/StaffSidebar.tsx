@@ -20,13 +20,16 @@ import {
     Package,
     AlertTriangle,
     Settings,
-    Smartphone
+    Smartphone,
+    Clock,
+    Briefcase
 } from 'lucide-react';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import ThemeToggle from './ThemeToggle';
 import { useNotification } from '../context/NotificationContext';
+import ConfirmModal from './ConfirmModal';
 
 export default function StaffSidebar() {
     const navigate = useNavigate();
@@ -34,9 +37,9 @@ export default function StaffSidebar() {
     const { user, logout } = useAuthStore();
     const { unreadCount } = useNotification();
     const [isOpen, setIsOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-    const handleLogout = () => {
-        if (!window.confirm('Deseja realmente sair do sistema?')) return;
+    const handleLogoutConfirm = () => {
         logout();
         navigate('/');
     };
@@ -218,6 +221,27 @@ export default function StaffSidebar() {
                 />
             )}
 
+            {/* 10.1 RH - Gestão/Admin only */}
+            {checkPermission('management') && (
+                <>
+                    <div className="mt-4 mb-2 px-4">
+                        <p className="text-xs font-black text-muted uppercase tracking-widest">RH</p>
+                    </div>
+                    <SidebarItem
+                        icon={<Users size={20} />}
+                        label="Colaboradores"
+                        active={location.pathname === '/staff/hr/collaborators'}
+                        onClick={() => { navigate('/staff/hr/collaborators'); setIsOpen(false); }}
+                    />
+                    <SidebarItem
+                        icon={<Briefcase size={20} />}
+                        label="Fechamentos"
+                        active={location.pathname === '/staff/hr/pay-periods'}
+                        onClick={() => { navigate('/staff/hr/pay-periods'); setIsOpen(false); }}
+                    />
+                </>
+            )}
+
             {/* 11. Chamados Técnicos */}
             <SidebarItem
                 icon={<AlertTriangle size={20} />}
@@ -243,6 +267,14 @@ export default function StaffSidebar() {
                 onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
             />
 
+            {/* 12.1 Meu RH - Self-service ponto/produção */}
+            <SidebarItem
+                icon={<Clock size={20} />}
+                label="Meu RH"
+                active={location.pathname === '/staff/my-hr'}
+                onClick={() => { navigate('/staff/my-hr'); setIsOpen(false); }}
+            />
+
             {/* 13. Configurações PWA */}
             <SidebarItem
                 icon={<Smartphone size={20} />}
@@ -259,7 +291,7 @@ export default function StaffSidebar() {
             {/* Mobile Trigger */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="md:hidden fixed top-6 left-6 z-40 p-3 bg-secondary text-white rounded-2xl shadow-xl shadow-secondary/20 hover:scale-110 active:scale-95 transition-all"
+                className="md:hidden fixed top-6 left-6 z-40 p-3 bg-bg-surface text-accent rounded-2xl shadow-xl border border-border hover:scale-110 active:scale-95 transition-all glass-surface"
             >
                 <MenuIcon size={24} />
             </button>
@@ -273,21 +305,21 @@ export default function StaffSidebar() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsOpen(false)}
-                            className="fixed inset-0 bg-secondary/80 backdrop-blur-sm z-[50] md:hidden"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] md:hidden"
                         />
                         <motion.aside
                             initial={{ x: '-100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-80 bg-secondary z-[60] p-6 flex flex-col shadow-2xl md:hidden overflow-y-auto"
+                            className="fixed inset-y-0 left-0 w-80 sidebar-surface glass-elevated z-[60] p-6 flex flex-col shadow-2xl md:hidden overflow-y-auto"
                         >
                             <div className="flex items-center justify-between mb-10">
                                 <div className="flex items-center gap-2">
                                     <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain" alt="Logo" />
-                                    <span className="font-bold text-xl text-white">7Pet</span>
+                                    <span className="font-bold text-xl text-heading">7Pet</span>
                                 </div>
-                                <button onClick={() => setIsOpen(false)} className="p-2 text-gray-400 hover:text-white">
+                                <button onClick={() => setIsOpen(false)} className="p-2 text-body-secondary hover:text-heading transition-colors">
                                     <X size={24} />
                                 </button>
                             </div>
@@ -306,10 +338,10 @@ export default function StaffSidebar() {
                                         onClick={() => navigate('/staff/profile')}
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-white truncate cursor-pointer" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
+                                        <p className="text-sm font-bold text-heading truncate cursor-pointer" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
                                         <button
-                                            onClick={handleLogout}
-                                            className="text-xs text-gray-400 hover:text-primary flex items-center gap-1 transition-colors"
+                                            onClick={() => setShowLogoutConfirm(true)}
+                                            className="text-xs text-body-secondary hover:text-accent flex items-center gap-1 transition-colors"
                                         >
                                             Sair <LogOut size={12} />
                                         </button>
@@ -322,16 +354,22 @@ export default function StaffSidebar() {
             </AnimatePresence>
 
             {/* Desktop Sidebar */}
-            <aside className="w-64 bg-secondary border-r border-secondary-dark hidden md:flex flex-col p-6 fixed h-full text-white overflow-y-auto">
-                <div className="flex items-center gap-2 mb-10 cursor-pointer" onClick={() => navigate('/staff/dashboard')}>
-                    <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform" alt="Logo" />
-                    <span className="font-bold text-xl">7Pet Operational</span>
+            <aside className="w-64 sidebar-surface glass-surface hidden md:flex flex-col fixed h-full border-r border-white/5">
+                {/* Fixed Header */}
+                <div className="flex-none p-6 pb-2">
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/staff/dashboard')}>
+                        <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform" alt="Logo" />
+                        <span className="font-bold text-xl text-heading">7Pet Operational</span>
+                    </div>
                 </div>
 
-                {menuItems}
+                {/* Scrollable Menu Area */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+                    {menuItems}
+                </div>
 
-
-                <div className="pt-6 border-t border-white/10">
+                {/* Fixed Footer */}
+                <div className="flex-none p-6 pt-2 border-t border-white/10 bg-inherit z-10">
                     <div className="mb-4 px-2">
                         <ThemeToggle />
                         <p className="text-[10px] text-white/40 text-center font-mono mt-2">
@@ -339,19 +377,18 @@ export default function StaffSidebar() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3 mb-6 p-2 bg-white/5 rounded-2xl">
-
+                    <div className="flex items-center gap-3 p-2 surface-input rounded-2xl">
                         <img
                             src={`https://ui-avatars.com/api/?name=${user?.name || user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
-                            className="w-10 h-10 rounded-full border-2 border-primary/20 cursor-pointer hover:scale-105 transition-transform"
+                            className="w-10 h-10 rounded-full border-2 border-accent/20 cursor-pointer hover:scale-105 transition-transform"
                             alt="Avatar"
                             onClick={() => navigate('/staff/profile')}
                         />
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white truncate cursor-pointer hover:text-primary transition-colors" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
+                            <p className="text-sm font-bold text-heading truncate cursor-pointer hover:text-accent transition-colors" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
                             <button
-                                onClick={handleLogout}
-                                className="text-xs text-gray-400 hover:text-primary flex items-center gap-1 transition-colors"
+                                onClick={() => setShowLogoutConfirm(true)}
+                                className="text-xs text-body-secondary hover:text-accent flex items-center gap-1 transition-colors"
                             >
                                 Sair <LogOut size={12} />
                             </button>
@@ -359,6 +396,16 @@ export default function StaffSidebar() {
                     </div>
                 </div>
             </aside>
+
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Sair do Sistema?"
+                description="Tem certeza que deseja encerrar sua sessão? Você precisará fazer login novamente para acessar o sistema."
+                confirmText="Sair Agora"
+                confirmColor="bg-red-500"
+            />
         </>
     );
 }
@@ -368,13 +415,13 @@ function SidebarItem({ icon, label, active = false, onClick, badge }: { icon: an
         <button
             type="button"
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-accent text-white shadow-lg shadow-accent/20 font-bold' : 'text-body-secondary hover:bg-fill-secondary hover:text-heading'}`}
             aria-current={active ? 'page' : undefined}
         >
             {icon}
             <span className="text-sm flex-1">{label}</span>
             {badge !== undefined && badge > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                <span className="status-error-badge text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                     {badge > 99 ? '99+' : badge}
                 </span>
             )}

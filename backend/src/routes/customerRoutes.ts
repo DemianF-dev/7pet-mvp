@@ -10,7 +10,7 @@ router.get('/me', customerController.getMe);
 router.post('/request-recurrence', customerController.requestRecurrence);
 
 // Restrict these routes to staff only
-const staffOnly = authorize(['OPERACIONAL', 'GESTAO', 'ADMIN']);
+const staffOnly = authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'COMERCIAL']);
 
 router.get('/search', staffOnly, customerController.search);
 router.get('/', staffOnly, customerController.list);
@@ -27,5 +27,16 @@ router.delete('/:id/permanent', staffOnly, customerController.permanentRemove);
 router.post('/:id/pets', staffOnly, customerController.createPet);
 router.patch('/pets/:petId', staffOnly, customerController.updatePet);
 router.delete('/pets/:petId', staffOnly, customerController.deletePet);
+
+// Financial Transactions Routes
+router.post('/:id/transactions', staffOnly, customerController.createTransaction);
+router.get('/:id/transactions', staffOnly, customerController.listTransactions);
+router.post('/:id/sync-balance', staffOnly, customerController.syncBalance);
+
+// Customer Alerts Routes
+router.post('/:id/alerts', staffOnly, customerController.createAlert);
+router.get('/:id/alerts', staffOnly, customerController.listAlerts);
+router.patch('/alerts/:alertId/resolve', staffOnly, customerController.resolveAlert);
+router.delete('/alerts/:alertId', staffOnly, customerController.deleteAlert);
 
 export default router;

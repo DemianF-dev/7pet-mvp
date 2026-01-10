@@ -276,6 +276,10 @@ export const login = async (email: string, password: string, rememberMe: boolean
         include: { customer: true }
     });
 
+    if (user) {
+        console.log(`[AuthService] Login attempt for ${email}. Found role: ${user.role}`);
+    }
+
     if (!user || !user.passwordHash) throw new Error('Credenciais inválidas');
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
