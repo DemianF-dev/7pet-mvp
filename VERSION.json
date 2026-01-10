@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260109-1559",
+  "version": "BETA20260109-2107",
   "stage": "BETA",
-  "timestamp": "2026-01-09T15:59:52.000Z",
-  "commit": "a88bbd7",
-  "buildNumber": 50,
-  "releaseNotes": "Auto-generated from commit: fix: navigation blocking, services filter, and socket production issues"
+  "timestamp": "2026-01-09T21:07:32.000Z",
+  "commit": "94be83a",
+  "buildNumber": 51,
+  "releaseNotes": "Auto-generated from commit: feat: implement Apple design system and theme tokens"
 }
