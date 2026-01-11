@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260111-1455",
+  "version": "BETA20260111-1703",
   "stage": "BETA",
-  "timestamp": "2026-01-11T14:55:57.000Z",
-  "commit": "2b20912",
-  "buildNumber": 54,
-  "releaseNotes": "Auto-generated from commit: fix: comprehensive mobile compatibility fixes for iOS/Android\n\n- Fix viewport meta tags (remove user-scalable, add viewport-fit)\n- Add mobile-specific CSS (-webkit-fill-available, safe-area-inset)\n- Create ErrorBoundary for debugging mobile issues\n- Add viewport height script for Android Chrome address bar\n- Implement touch targets minimum 44x44px\n- Fix position fixed flickering with GPU acceleration\n- Remove tap highlight and improve touch scrolling\n- Proper CSS loading order for mobile"
+  "timestamp": "2026-01-11T17:03:19.000Z",
+  "commit": "12dfc4b",
+  "buildNumber": 55,
+  "releaseNotes": "Auto-generated from commit: fix: client sidebar detection and mobile touch events\n\n- Fix PacienciaPage to show correct sidebar based on user role\n- Add touch event support to Card component (touchstart/move/end)\n- Update PacienciaGame to accept TouchEvent in drag handlers\n- Simplify PausaPage to show only Paciência Pet game\n- Remove coming-soon games from catalog"
 }
