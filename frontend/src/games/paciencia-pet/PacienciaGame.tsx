@@ -248,6 +248,187 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         });
     }, []);
 
+    // TAP-TO-SELECT & TAP-TO-MOVE for mobile
+    // First tap: select card(s)
+    // Second tap: move to destination
+    const handleTapWaste = useCallback(() => {
+        if (gameState.waste.length === 0) return;
+
+        const card = gameState.waste[gameState.waste.length - 1];
+        const isSelected = gameState.selected?.source === 'waste';
+
+        if (isSelected) {
+            // Deselect if tapping same card
+            setGameState(prev => ({ ...prev, selected: null }));
+        } else {
+            // Select waste card
+            setGameState(prev => ({
+                ...prev,
+                selected: { source: 'waste', pileIndex: undefined, cardIndex: prev.waste.length - 1 }
+            }));
+        }
+    }, [gameState.waste, gameState.selected]);
+
+    const handleTapTableau = useCallback((pileIndex: number, cardIndex: number) => {
+        const pile = gameState.tableau[pileIndex];
+        const card = pile[cardIndex];
+
+        if (!card?.faceUp) return; // Can't interact with face-down cards
+
+        const isSelected = gameState.selected?.source === 'tableau' &&
+            gameState.selected?.pileIndex === pileIndex &&
+            gameState.selected?.cardIndex === cardIndex;
+
+        if (isSelected) {
+            // Deselect if tapping same card
+            setGameState(prev => ({ ...prev, selected: null }));
+            return;
+        }
+
+        // If something is already selected, try to move TO this pile
+        if (gameState.selected) {
+            const sel = gameState.selected;
+            let cardsToMove: CardType[] = [];
+
+            if (sel.source === 'waste') {
+                cardsToMove = [gameState.waste[gameState.waste.length - 1]];
+            } else if (sel.source === 'tableau' && sel.pileIndex !== undefined && sel.cardIndex !== undefined) {
+                cardsToMove = getMovableCards(gameState.tableau[sel.pileIndex], sel.cardIndex);
+            }
+
+            if (cardsToMove.length > 0 && canMoveToTableau(cardsToMove[0], pile)) {
+                // Move cards to this tableau pile
+                setGameState(prev => {
+                    const newState = { ...prev };
+
+                    // Remove from source
+                    if (sel.source === 'waste') {
+                        newState.waste = prev.waste.slice(0, -1);
+                    } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
+                        newState.tableau = [...prev.tableau];
+                        newState.tableau[sel.pileIndex] = prev.tableau[sel.pileIndex].slice(0, sel.cardIndex);
+                        newState.tableau = flipTableauCard(newState.tableau);
+                    }
+
+                    // Add to destination
+                    if (!newState.tableau) newState.tableau = [...prev.tableau];
+                    newState.tableau[pileIndex] = [...pile, ...cardsToMove];
+                    newState.moves += 1;
+                    newState.selected = null;
+
+                    return newState;
+                });
+                toast.success('Movido! 🎯', { duration: 800 });
+                return;
+            } else {
+                // Can't move, show hint
+                if (pile.length === 0 && cardsToMove[0]?.rank !== 'K') {
+                    toast('Só Reis em colunas vazias', { icon: '💡' });
+                }
+            }
+        }
+
+        // Select this card
+        setGameState(prev => ({
+            ...prev,
+            selected: { source: 'tableau', pileIndex, cardIndex }
+        }));
+    }, [gameState]);
+
+    const handleTapEmptyTableau = useCallback((pileIndex: number) => {
+        if (!gameState.selected) return;
+
+        const sel = gameState.selected;
+        let cardsToMove: CardType[] = [];
+
+        if (sel.source === 'waste') {
+            cardsToMove = [gameState.waste[gameState.waste.length - 1]];
+        } else if (sel.source === 'tableau' && sel.pileIndex !== undefined && sel.cardIndex !== undefined) {
+            cardsToMove = getMovableCards(gameState.tableau[sel.pileIndex], sel.cardIndex);
+        }
+
+        if (cardsToMove.length === 0) return;
+
+        // Only Kings can go to empty tableau
+        if (cardsToMove[0].rank !== 'K') {
+            toast('Só Reis em colunas vazias', { icon: '💡' });
+            return;
+        }
+
+        setGameState(prev => {
+            const newState = { ...prev };
+
+            // Remove from source
+            if (sel.source === 'waste') {
+                newState.waste = prev.waste.slice(0, -1);
+            } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
+                newState.tableau = [...prev.tableau];
+                newState.tableau[sel.pileIndex] = prev.tableau[sel.pileIndex].slice(0, sel.cardIndex);
+                newState.tableau = flipTableauCard(newState.tableau);
+            }
+
+            // Add to empty column
+            if (!newState.tableau) newState.tableau = [...prev.tableau];
+            newState.tableau[pileIndex] = [...cardsToMove];
+            newState.moves += 1;
+            newState.selected = null;
+
+            return newState;
+        });
+        toast.success('Rei colocado! 👑', { duration: 800 });
+    }, [gameState]);
+
+    const handleTapFoundation = useCallback((suit: Suit) => {
+        if (!gameState.selected) return;
+
+        const sel = gameState.selected;
+        let card: CardType | null = null;
+
+        if (sel.source === 'waste') {
+            card = gameState.waste[gameState.waste.length - 1];
+        } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
+            const pile = gameState.tableau[sel.pileIndex];
+            const idx = sel.cardIndex ?? pile.length - 1;
+            // Can only move last card of pile to foundation
+            if (idx === pile.length - 1) {
+                card = pile[idx];
+            }
+        }
+
+        if (!card || card.suit !== suit) {
+            toast('Selecione uma carta do mesmo naipe', { icon: '💡' });
+            return;
+        }
+
+        const foundation = gameState.foundations[suit];
+        if (!canMoveToFoundation(card, foundation)) {
+            toast('Carta não pode ir para fundação ainda', { icon: '💡' });
+            return;
+        }
+
+        setGameState(prev => {
+            const newState = { ...prev };
+
+            // Remove from source
+            if (sel.source === 'waste') {
+                newState.waste = prev.waste.slice(0, -1);
+            } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
+                newState.tableau = [...prev.tableau];
+                newState.tableau[sel.pileIndex] = prev.tableau[sel.pileIndex].slice(0, -1);
+                newState.tableau = flipTableauCard(newState.tableau);
+            }
+
+            // Add to foundation
+            newState.foundations = { ...prev.foundations };
+            newState.foundations[suit] = [...foundation, card!];
+            newState.moves += 1;
+            newState.selected = null;
+
+            return newState;
+        });
+        toast.success('Fundação! 🎯', { duration: 800 });
+    }, [gameState]);
+
     const getSuitSymbol = (suit: Suit) => ({ hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit]);
 
     return (
@@ -307,7 +488,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
 
                         {/* Waste */}
                         <div
-                            style={{ position: 'relative', width: '70px', height: '98px' }}
+                            style={{ position: 'relative', width: 'var(--card-width, 70px)', height: 'var(--card-height, 98px)' }}
                             onDoubleClick={() => handleDoubleClick('waste')}
                         >
                             {gameState.waste.length > 0 && (
@@ -315,6 +496,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                                     card={gameState.waste[gameState.waste.length - 1]}
                                     isClickable={true}
                                     isDraggable={true}
+                                    isSelected={gameState.selected?.source === 'waste'}
+                                    onClick={handleTapWaste}
                                     onDragStart={(e) => handleDragStart(e, 'waste')}
                                 />
                             )}
@@ -331,13 +514,14 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                             return (
                                 <div
                                     key={suit}
-                                    style={{ position: 'relative' }}
+                                    style={{ position: 'relative', cursor: 'pointer' }}
+                                    onClick={() => handleTapFoundation(suit)}
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => handleDropOnFoundation(e, index)}
                                 >
                                     <div style={{
-                                        width: '70px',
-                                        height: '98px',
+                                        width: 'var(--card-width, 70px)',
+                                        height: 'var(--card-height, 98px)',
                                         borderRadius: 'var(--radius-lg)',
                                         border: `2px dashed ${suitColor}30`,
                                         backgroundColor: 'var(--color-fill-quaternary)',
@@ -364,49 +548,67 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                     </div>
 
                     {/* Tableau */}
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
+                    <div className="game-tableau" style={{ display: 'flex', gap: 'clamp(0.25rem, 1.5vw, var(--space-3))', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
                         {gameState.tableau.map((column, colIndex) => (
                             <div
                                 key={colIndex}
-                                style={{ minWidth: '70px', minHeight: '98px' }}
+                                className="tableau-column"
+                                style={{ minWidth: 'var(--card-width, 70px)', minHeight: 'var(--card-height, 98px)' }}
                                 onDragOver={handleDragOver}
                                 onDrop={(e) => handleDropOnTableau(e, colIndex)}
                             >
                                 {column.length === 0 && (
-                                    <div style={{
-                                        width: '70px',
-                                        height: '98px',
-                                        borderRadius: 'var(--radius-lg)',
-                                        border: '2px dashed var(--color-border)',
-                                        backgroundColor: 'var(--color-fill-quaternary)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 'var(--space-1)',
-                                        fontSize: 'var(--font-size-title3)',
-                                        color: 'var(--color-text-tertiary)',
-                                        opacity: 0.5
-                                    }}>
+                                    <div
+                                        onClick={() => handleTapEmptyTableau(colIndex)}
+                                        style={{
+                                            width: 'var(--card-width, 70px)',
+                                            height: 'var(--card-height, 98px)',
+                                            borderRadius: 'var(--radius-lg)',
+                                            border: '2px dashed var(--color-border)',
+                                            backgroundColor: 'var(--color-fill-quaternary)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 'var(--space-1)',
+                                            fontSize: 'var(--font-size-title3)',
+                                            color: 'var(--color-text-tertiary)',
+                                            opacity: 0.5,
+                                            cursor: gameState.selected ? 'pointer' : 'default'
+                                        }}>
                                         <div style={{ fontSize: '16px' }}>👑</div>
                                         <div>K</div>
                                     </div>
                                 )}
 
-                                {column.map((card, cardIndex) => (
-                                    <div
-                                        key={card.id}
-                                        style={{ marginTop: cardIndex === 0 ? 0 : '-78px', position: 'relative' }}
-                                        onDoubleClick={() => card.faceUp && cardIndex === column.length - 1 && handleDoubleClick('tableau', colIndex, cardIndex)}
-                                    >
-                                        <Card
-                                            card={card}
-                                            isClickable={card.faceUp}
-                                            isDraggable={card.faceUp}
-                                            onDragStart={(e) => handleDragStart(e, 'tableau', colIndex, cardIndex)}
-                                        />
-                                    </div>
-                                ))}
+                                {column.map((card, cardIndex) => {
+                                    const isCardSelected = gameState.selected?.source === 'tableau' &&
+                                        gameState.selected?.pileIndex === colIndex &&
+                                        gameState.selected?.cardIndex !== undefined &&
+                                        cardIndex >= gameState.selected.cardIndex;
+
+                                    return (
+                                        <div
+                                            key={card.id}
+                                            className={`tableau-card-stacked ${isCardSelected ? 'selected' : ''}`}
+                                            style={{
+                                                marginTop: cardIndex === 0 ? 0 : 'var(--tableau-offset, -78px)',
+                                                position: 'relative',
+                                                zIndex: cardIndex
+                                            }}
+                                            onDoubleClick={() => card.faceUp && cardIndex === column.length - 1 && handleDoubleClick('tableau', colIndex, cardIndex)}
+                                        >
+                                            <Card
+                                                card={card}
+                                                isClickable={card.faceUp}
+                                                isDraggable={card.faceUp}
+                                                isSelected={isCardSelected}
+                                                onClick={() => card.faceUp && handleTapTableau(colIndex, cardIndex)}
+                                                onDragStart={(e) => handleDragStart(e, 'tableau', colIndex, cardIndex)}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ))}
                     </div>
@@ -416,8 +618,9 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--color-fill-quaternary)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-footnote)' }}>
                     <p style={{ margin: 0, marginBottom: 'var(--space-2)' }}><strong>Como jogar:</strong></p>
                     <ul style={{ margin: 0, paddingLeft: 'var(--space-5)' }}>
-                        <li><strong>Arraste</strong> cartas para mover</li>
-                        <li><strong>Clique duplo</strong> para mover automaticamente para fundação</li>
+                        <li><strong>Toque</strong> para selecionar, <strong>toque</strong> no destino para mover 📱</li>
+                        <li><strong>Arraste</strong> cartas para mover (desktop)</li>
+                        <li><strong>Toque duplo</strong> para fundação automática</li>
                         <li>Fundações: Ás até Rei, mesmo naipe</li>
                         <li>Tableau: alternar cores, ordem decrescente</li>
                         <li>Só Reis em colunas vazias</li>
