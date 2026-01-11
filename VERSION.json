@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260110-0433",
+  "version": "BETA20260111-0443",
   "stage": "BETA",
-  "timestamp": "2026-01-10T04:33:11.000Z",
-  "commit": "0997e3f",
-  "buildNumber": 52,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp\n# Please enter a commit message to explain why this merge is necessary,\n# especially if it merges an updated upstream into a topic branch.\n#\n# Lines starting with '#' will be ignored, and an empty message aborts\n# the commit."
+  "timestamp": "2026-01-11T04:43:50.000Z",
+  "commit": "de2f132",
+  "buildNumber": 53,
+  "releaseNotes": "Auto-generated from commit: feat: Add collapsible sidebar & pet-themed Paciência enhancements\n\n- Implement collapsible sidebar with localStorage persistence\n- Add pet emojis to cards by suit (🐶♥ 🐱♦ 🐰♣ 🐦♠)\n- Enhance Paciência page with full StaffSidebar integration\n- Add hover animations and gradients to cards\n- Implement win celebration with confetti component\n- Improve foundation and tableau visual feedback\n- All animations optimized for 60fps performance"
 }
