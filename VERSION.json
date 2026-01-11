@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260111-0443",
+  "version": "BETA20260111-1455",
   "stage": "BETA",
-  "timestamp": "2026-01-11T04:43:50.000Z",
-  "commit": "de2f132",
-  "buildNumber": 53,
-  "releaseNotes": "Auto-generated from commit: feat: Add collapsible sidebar & pet-themed Paciência enhancements\n\n- Implement collapsible sidebar with localStorage persistence\n- Add pet emojis to cards by suit (🐶♥ 🐱♦ 🐰♣ 🐦♠)\n- Enhance Paciência page with full StaffSidebar integration\n- Add hover animations and gradients to cards\n- Implement win celebration with confetti component\n- Improve foundation and tableau visual feedback\n- All animations optimized for 60fps performance"
+  "timestamp": "2026-01-11T14:55:57.000Z",
+  "commit": "2b20912",
+  "buildNumber": 54,
+  "releaseNotes": "Auto-generated from commit: fix: comprehensive mobile compatibility fixes for iOS/Android\n\n- Fix viewport meta tags (remove user-scalable, add viewport-fit)\n- Add mobile-specific CSS (-webkit-fill-available, safe-area-inset)\n- Create ErrorBoundary for debugging mobile issues\n- Add viewport height script for Android Chrome address bar\n- Implement touch targets minimum 44x44px\n- Fix position fixed flickering with GPU acceleration\n- Remove tap highlight and improve touch scrolling\n- Proper CSS loading order for mobile"
 }
