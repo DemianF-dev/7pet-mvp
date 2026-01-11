@@ -19,6 +19,7 @@ import Card from './components/Card';
 import Confetti from './components/Confetti';
 import toast from 'react-hot-toast';
 import '../../styles/design-system-base.css';
+import './mobile-game.css';
 
 interface PacienciaGameProps {
     onWin?: () => void;

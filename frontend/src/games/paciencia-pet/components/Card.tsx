@@ -84,10 +84,10 @@ export default function Card({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className={isClickable || canDrag ? 'interactive' : ''}
+            className={`game-card ${isClickable || canDrag ? 'interactive' : ''}`}
             style={{
-                width: '70px',
-                height: '98px',
+                width: 'var(--card-width, 70px)',
+                height: 'var(--card-height, 98px)',
                 borderRadius: 'var(--radius-lg)',
                 background: card.faceUp
                     ? 'linear-gradient(135deg, var(--color-bg-surface) 0%, var(--color-bg-secondary) 100%)'
