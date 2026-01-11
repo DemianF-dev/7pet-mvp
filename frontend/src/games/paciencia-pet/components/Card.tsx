@@ -22,8 +22,11 @@ interface CardProps {
     isSelected?: boolean;
     isClickable?: boolean;
     isDraggable?: boolean;
-    onDragStart?: (e: React.DragEvent) => void;
-    onDragEnd?: (e: React.DragEvent) => void;
+    onDragStart?: (e: React.DragEvent | React.TouchEvent) => void;
+    onDragEnd?: (e: React.DragEvent | React.TouchEvent) => void;
+    onTouchStart?: (e: React.TouchEvent) => void;
+    onTouchMove?: (e: React.TouchEvent) => void;
+    onTouchEnd?: (e: React.TouchEvent) => void;
     style?: React.CSSProperties;
 }
 
@@ -35,10 +38,42 @@ export default function Card({
     isDraggable,
     onDragStart,
     onDragEnd,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
     style
 }: CardProps) {
     const isRed = SUIT_COLORS[card.suit] === 'red';
     const canDrag = isDraggable && card.faceUp;
+
+    // Touch event handlers for mobile support
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!canDrag && !isClickable) return;
+
+        // Prevent default to avoid scroll
+        e.preventDefault();
+
+        if (canDrag && onDragStart) {
+            onDragStart(e);
+        }
+        onTouchStart?.(e);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!canDrag) return;
+        e.preventDefault();
+        onTouchMove?.(e);
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (!canDrag && !isClickable) return;
+        e.preventDefault();
+
+        if (canDrag && onDragEnd) {
+            onDragEnd(e);
+        }
+        onTouchEnd?.(e);
+    };
 
     return (
         <div
@@ -46,7 +81,10 @@ export default function Card({
             draggable={canDrag}
             onDragStart={canDrag ? onDragStart : undefined}
             onDragEnd={canDrag ? onDragEnd : undefined}
-            className={isClickable ? 'interactive' : ''}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className={isClickable || canDrag ? 'interactive' : ''}
             style={{
                 width: '70px',
                 height: '98px',

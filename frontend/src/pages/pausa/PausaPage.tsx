@@ -14,7 +14,7 @@ import { GameMetadata } from '../../types/game.types';
 import GameCard from '../../components/games/GameCard';
 import '../../styles/design-system-base.css';
 
-// Game catalog
+// Game catalog - Only Paciência available for now
 const GAMES: GameMetadata[] = [
     {
         id: 'paciencia-pet',
@@ -25,26 +25,6 @@ const GAMES: GameMetadata[] = [
         estimatedTime: '5-10 min',
         status: 'active',
         tags: ['Cartas', 'Relaxante']
-    },
-    {
-        id: 'memory-game',
-        name: 'Memória Pet',
-        description: 'Encontre os pares de pets escondidos.',
-        icon: '🧩',
-        difficulty: 'easy',
-        estimatedTime: '3-5 min',
-        status: 'coming-soon',
-        tags: ['Memória', 'Casual']
-    },
-    {
-        id: 'puzzle',
-        name: 'Quebra-Cabeça',
-        description: 'Monte lindas imagens de pets.',
-        icon: '🎨',
-        difficulty: 'medium',
-        estimatedTime: '10-15 min',
-        status: 'coming-soon',
-        tags: ['Puzzle', 'Desafiador']
     }
 ];
 

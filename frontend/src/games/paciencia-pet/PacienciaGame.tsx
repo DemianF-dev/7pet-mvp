@@ -84,9 +84,9 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         }));
     }, []);
 
-    // Drag handlers
+    // Drag handlers (support both mouse and touch)
     const handleDragStart = useCallback((
-        e: React.DragEvent,
+        e: React.DragEvent | React.TouchEvent,
         source: 'waste' | 'tableau',
         pileIndex?: number,
         cardIndex?: number
@@ -105,8 +105,12 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         }
 
         dragDataRef.current = { source, pileIndex, cardIndex, cards };
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', 'card');
+
+        // Only set dataTransfer for drag events (not touch)
+        if ('dataTransfer' in e) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', 'card');
+        }
     }, [gameState]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {

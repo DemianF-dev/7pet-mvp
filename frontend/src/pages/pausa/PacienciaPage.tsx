@@ -9,13 +9,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StaffSidebar from '../../components/StaffSidebar';
+import Sidebar from '../../components/Sidebar';
+import { useAuthStore } from '../../store/useAuthStore';
 import GameHost from '../../components/games/GameHost';
 import { GameModule } from '../../types/game.types';
 import '../../styles/design-system-base.css';
 
 export default function PacienciaPage() {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [showCelebration, setShowCelebration] = useState(false);
+
+    // Determine which sidebar to show based on user role
+    const isClient = user?.role === 'CLIENTE';
 
     // Dynamic import function for the game module
     const loadPacienciaGame = () =>
@@ -23,7 +29,8 @@ export default function PacienciaPage() {
 
     return (
         <div className="flex min-h-screen bg-bg-primary">
-            <StaffSidebar />
+            {/* Render appropriate sidebar based on user role */}
+            {isClient ? <Sidebar /> : <StaffSidebar />}
 
             <main className="flex-1 md:ml-64 transition-all duration-300">
                 {/* Page Header with 7Pet Branding */}
