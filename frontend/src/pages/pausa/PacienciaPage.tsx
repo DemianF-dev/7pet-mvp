@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StaffSidebar from '../../components/StaffSidebar';
 import Sidebar from '../../components/Sidebar';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useAuthStore } from '../../store/authStore';
 import GameHost from '../../components/games/GameHost';
 import { GameModule } from '../../types/game.types';
 import '../../styles/design-system-base.css';
