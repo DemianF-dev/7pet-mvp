@@ -18,6 +18,7 @@ import './styles/themes/ocean-calm.css'
 import './styles/themes/forest-nature.css'
 import './styles/themes/candy-pop.css'
 import './styles/design-system-base.css'   // Design system reusable classes
+import './styles/sidebar-collapsible.css'   // Collapsible sidebar support
 import './index.css'
 import { SocketProvider } from './context/SocketContext'
 

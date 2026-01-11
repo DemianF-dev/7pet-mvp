@@ -54,6 +54,10 @@ const StaffProfiles = lazy(() => import('./pages/staff/hr/StaffProfiles'));
 const StaffProfileDetails = lazy(() => import('./pages/staff/hr/StaffProfileDetails'));
 const PayPeriods = lazy(() => import('./pages/staff/hr/PayPeriods'));
 
+// ⚡ PAUSA MODULE - Mini-games (lazy loaded)
+const PausaPage = lazy(() => import('./pages/pausa/PausaPage'));
+const PacienciaPage = lazy(() => import('./pages/pausa/PacienciaPage'));
+
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -137,6 +141,10 @@ function App() {
                             <Route path="/client/payments" element={<LazyPage><PaymentList /></LazyPage>} />
                             <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
                         </Route>
+
+                        {/* Pausa Module - Mini-games (available to all authenticated users) */}
+                        <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
+                        <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
 
 
                         {/* Colaborador Routes */}

@@ -667,18 +667,6 @@ export async function getMyPayStatements(userId: string) {
     });
 }
 
-// ============================================
-// TODAY'S STATUS (for "Meu Ponto")
-// ============================================
-
-export async function getTodayAttendance(staffId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return prisma.attendanceRecord.findUnique({
-        where: { staffId_date: { staffId, date: today } }
-    });
-}
 
 export default {
     createStaffProfile,

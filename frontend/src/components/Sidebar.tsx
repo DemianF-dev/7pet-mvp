@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Calendar,
     Dog,
@@ -10,7 +10,10 @@ import {
     Menu as MenuIcon,
     X,
     LayoutDashboard,
-    Bell
+    Bell,
+    Gamepad2,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -18,6 +21,9 @@ import { useModalFocusTrap } from '../hooks/useModalKeyboard';
 import ConfirmModal from './ConfirmModal';
 import ThemeToggle from './ThemeToggle';
 import { useNotification } from '../context/NotificationContext';
+import { createContext, useContext } from 'react';
+
+const SidebarContext = createContext({ isCollapsed: false });
 
 export default function Sidebar() {
     const navigate = useNavigate();
@@ -27,6 +33,24 @@ export default function Sidebar() {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const mobileAsideRef = useRef<HTMLElement>(null);
     const { unreadCount } = useNotification();
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        const saved = localStorage.getItem('client-sidebar-collapsed');
+        return saved === 'true';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('client-sidebar-collapsed', String(isCollapsed));
+        // Toggle body class for CSS transitions
+        if (isCollapsed) {
+            document.body.classList.add('sidebar-collapsed');
+        } else {
+            document.body.classList.remove('sidebar-collapsed');
+        }
+    }, [isCollapsed]);
+
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+    };
 
     useModalFocusTrap(isOpen, mobileAsideRef);
 
@@ -36,51 +60,59 @@ export default function Sidebar() {
     };
 
     const menuItems = (
-        <nav className="flex-1 space-y-2">
-            <SidebarItem
-                icon={<LayoutDashboard size={20} />}
-                label="Dashboard"
-                active={location.pathname === '/client/dashboard'}
-                onClick={() => { navigate('/client/dashboard'); setIsOpen(false); }}
-            />
-            <SidebarItem
-                icon={<Dog size={20} />}
-                label="Meus Pets"
-                active={location.pathname === '/client/pets'}
-                onClick={() => { navigate('/client/pets'); setIsOpen(false); }}
-            />
-            <SidebarItem
-                icon={<Calendar size={20} />}
-                label="Agendamentos"
-                active={location.pathname === '/client/appointments'}
-                onClick={() => { navigate('/client/appointments'); setIsOpen(false); }}
-            />
-            <SidebarItem
-                icon={<FileText size={20} />}
-                label="Orçamentos"
-                active={location.pathname === '/client/quotes'}
-                onClick={() => { navigate('/client/quotes'); setIsOpen(false); }}
-            />
-            <SidebarItem
-                icon={<User size={20} />}
-                label="Meu Perfil"
-                active={location.pathname === '/client/profile'}
-                onClick={() => { navigate('/client/profile'); setIsOpen(false); }}
-            />
-            <SidebarItem
-                icon={<CreditCard size={20} />}
-                label="Pagamentos"
-                active={location.pathname === '/client/payments'}
-                onClick={() => { navigate('/client/payments'); setIsOpen(false); }}
-            />
-            <SidebarItem
-                icon={<Bell size={20} />}
-                label="Notificações"
-                active={location.pathname === '/client/notifications'}
-                onClick={() => { navigate('/client/notifications'); setIsOpen(false); }}
-                badge={unreadCount}
-            />
-        </nav>
+        <SidebarContext.Provider value={{ isCollapsed }}>
+            <nav className="flex-1 space-y-2">
+                <SidebarItem
+                    icon={<LayoutDashboard size={20} />}
+                    label="Dashboard"
+                    active={location.pathname === '/client/dashboard'}
+                    onClick={() => { navigate('/client/dashboard'); setIsOpen(false); }}
+                />
+                <SidebarItem
+                    icon={<Dog size={20} />}
+                    label="Meus Pets"
+                    active={location.pathname === '/client/pets'}
+                    onClick={() => { navigate('/client/pets'); setIsOpen(false); }}
+                />
+                <SidebarItem
+                    icon={<Calendar size={20} />}
+                    label="Agendamentos"
+                    active={location.pathname === '/client/appointments'}
+                    onClick={() => { navigate('/client/appointments'); setIsOpen(false); }}
+                />
+                <SidebarItem
+                    icon={<FileText size={20} />}
+                    label="Orçamentos"
+                    active={location.pathname === '/client/quotes'}
+                    onClick={() => { navigate('/client/quotes'); setIsOpen(false); }}
+                />
+                <SidebarItem
+                    icon={<User size={20} />}
+                    label="Meu Perfil"
+                    active={location.pathname === '/client/profile'}
+                    onClick={() => { navigate('/client/profile'); setIsOpen(false); }}
+                />
+                <SidebarItem
+                    icon={<CreditCard size={20} />}
+                    label="Pagamentos"
+                    active={location.pathname === '/client/payments'}
+                    onClick={() => { navigate('/client/payments'); setIsOpen(false); }}
+                />
+                <SidebarItem
+                    icon={<Bell size={20} />}
+                    label="Notificações"
+                    active={location.pathname === '/client/notifications'}
+                    onClick={() => { navigate('/client/notifications'); setIsOpen(false); }}
+                    badge={unreadCount}
+                />
+                <SidebarItem
+                    icon={<Gamepad2 size={20} />}
+                    label="Pausa"
+                    active={location.pathname.startsWith('/pausa')}
+                    onClick={() => { navigate('/pausa'); setIsOpen(false); }}
+                />
+            </nav>
+        </SidebarContext.Provider>
     );
 
     return (
@@ -161,10 +193,39 @@ export default function Sidebar() {
             </AnimatePresence>
 
             {/* Desktop Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col p-6 fixed h-full">
-                <div className="flex items-center gap-2 mb-10 cursor-pointer" onClick={() => navigate('/client/dashboard')}>
-                    <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform" alt="Logo" />
-                    <span className="font-bold text-xl text-secondary">7Pet</span>
+            <aside
+                className={`${isCollapsed ? 'w-20' : 'w-64'
+                    } bg-white border-r border-gray-100 hidden md:flex flex-col ${isCollapsed ? 'p-4' : 'p-6'} fixed h-full transition-all duration-300 ease-out`}
+            >
+                <div className={`flex items-center ${isCollapsed ? 'justify-center mb-6' : 'gap-2 mb-10'} cursor-pointer`} onClick={() => navigate('/client/dashboard')}>
+                    <img
+                        src="/logo.png"
+                        className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform"
+                        alt="Logo"
+                    />
+                    {!isCollapsed && (
+                        <span className="font-bold text-xl text-secondary whitespace-nowrap overflow-hidden">
+                            7Pet
+                        </span>
+                    )}
+                </div>
+
+                {/* Toggle Collapse Button */}
+                <div className="mb-4">
+                    <button
+                        onClick={toggleCollapse}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-primary/10 text-gray-400 hover:text-primary transition-all"
+                        aria-label={isCollapsed ? 'Expandir menu' : 'Retrair menu'}
+                    >
+                        {isCollapsed ? (
+                            <ChevronRight size={18} />
+                        ) : (
+                            <>
+                                <ChevronLeft size={18} />
+                                <span className="text-xs font-medium">Retrair</span>
+                            </>
+                        )}
+                    </button>
                 </div>
 
                 {menuItems}
@@ -172,30 +233,36 @@ export default function Sidebar() {
 
                 <div className="pt-6 border-t border-gray-100">
                     {/* Versão do Sistema */}
-                    <div className="mb-4 px-2">
-                        <ThemeToggle />
-                        <p className="text-[10px] text-gray-400 text-center font-mono mt-2">
-                            v0.1.0-beta
-                        </p>
-                    </div>
+                    {!isCollapsed && (
+                        <div className="mb-4 px-2">
+                            <ThemeToggle />
+                            <p className="text-[10px] text-gray-400 text-center font-mono mt-2">
+                                v0.1.0-beta
+                            </p>
+                        </div>
+                    )}
 
-                    <div className="flex items-center gap-3 mb-6 p-2 hover:bg-gray-50 rounded-2xl transition-colors">
+                    <div className={`flex items-center gap-3 mb-6 p-2 hover:bg-gray-50 rounded-2xl transition-colors ${isCollapsed ? 'justify-center' : ''
+                        }`}>
 
                         <img
                             src={`https://ui-avatars.com/api/?name=${user?.customer?.name || user?.email}&background=00D664&color=fff`}
                             className="w-10 h-10 rounded-full border-2 border-primary/20"
                             alt="Avatar"
+                            title={user?.customer?.name || 'Cliente'}
                         />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-secondary truncate">{user?.customer?.name || 'Cliente'}</p>
-                            <button
-                                onClick={() => setShowLogoutConfirm(true)}
-                                className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
-                                aria-label="Sair da conta"
-                            >
-                                Sair da conta <LogOut size={12} aria-hidden="true" />
-                            </button>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-secondary truncate">{user?.customer?.name || 'Cliente'}</p>
+                                <button
+                                    onClick={() => setShowLogoutConfirm(true)}
+                                    className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+                                    aria-label="Sair da conta"
+                                >
+                                    Sair da conta <LogOut size={12} aria-hidden="true" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </aside>
@@ -214,19 +281,34 @@ export default function Sidebar() {
 }
 
 function SidebarItem({ icon, label, active = false, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number }) {
+    const { isCollapsed } = useContext(SidebarContext);
+
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'}`}
+            className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'
+                }`}
             aria-label={`Navegar para ${label}`}
             aria-current={active ? 'page' : undefined}
+            title={isCollapsed ? label : undefined}
         >
-            {icon}
-            <span className="font-semibold flex-1">{label}</span>
-            {badge !== undefined && badge > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                    {badge > 99 ? '99+' : badge}
-                </span>
+            <div className="relative flex-shrink-0">
+                {icon}
+                {isCollapsed && badge !== undefined && badge > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                        {badge > 9 ? '9+' : badge}
+                    </span>
+                )}
+            </div>
+            {!isCollapsed && (
+                <>
+                    <span className="font-semibold flex-1">{label}</span>
+                    {badge !== undefined && badge > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                            {badge > 99 ? '99+' : badge}
+                        </span>
+                    )}
+                </>
             )}
         </button>
     );

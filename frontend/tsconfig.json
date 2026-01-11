@@ -29,7 +29,9 @@
         "noImplicitThis": false,
         "alwaysStrict": false,
         "types": [
-            "vite/client"
+            "vite/client",
+            "vite-plugin-pwa/client",
+            "vite-plugin-pwa/react"
         ]
     },
     "include": [

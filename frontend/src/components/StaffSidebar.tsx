@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
     MessageCircle,
@@ -22,7 +22,10 @@ import {
     Settings,
     Smartphone,
     Clock,
-    Briefcase
+    Briefcase,
+    Gamepad2,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -30,6 +33,9 @@ import { useAuthStore } from '../store/authStore';
 import ThemeToggle from './ThemeToggle';
 import { useNotification } from '../context/NotificationContext';
 import ConfirmModal from './ConfirmModal';
+import { createContext, useContext } from 'react';
+
+const SidebarContext = createContext({ isCollapsed: false });
 
 export default function StaffSidebar() {
     const navigate = useNavigate();
@@ -38,6 +44,24 @@ export default function StaffSidebar() {
     const { unreadCount } = useNotification();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        const saved = localStorage.getItem('staff-sidebar-collapsed');
+        return saved === 'true';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('staff-sidebar-collapsed', String(isCollapsed));
+        // Toggle body class for CSS transitions
+        if (isCollapsed) {
+            document.body.classList.add('sidebar-collapsed');
+        } else {
+            document.body.classList.remove('sidebar-collapsed');
+        }
+    }, [isCollapsed]);
+
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+    };
 
     const handleLogoutConfirm = () => {
         logout();
@@ -86,204 +110,213 @@ export default function StaffSidebar() {
     };
 
     const menuItems = (
-        <nav className="flex-1 space-y-2">
-            {/* 1. Dashboard */}
-            {checkPermission('dashboard') && (
+        <SidebarContext.Provider value={{ isCollapsed }}>
+            <nav className="flex-1 space-y-2">
+                {/* 1. Dashboard */}
+                {checkPermission('dashboard') && (
+                    <SidebarItem
+                        icon={<LayoutDashboard size={20} />}
+                        label="Dashboard"
+                        active={location.pathname === '/staff/dashboard'}
+                        onClick={() => { navigate('/staff/dashboard'); setIsOpen(false); }}
+                    />
+                )}
+
+                {/* 1.1 Bate-papo */}
                 <SidebarItem
-                    icon={<LayoutDashboard size={20} />}
-                    label="Dashboard"
-                    active={location.pathname === '/staff/dashboard'}
-                    onClick={() => { navigate('/staff/dashboard'); setIsOpen(false); }}
+                    icon={<MessageCircle size={20} />}
+                    label="Bate-papo"
+                    active={location.pathname === '/staff/chat'}
+                    onClick={() => { navigate('/staff/chat'); setIsOpen(false); }}
                 />
-            )}
 
-            {/* 1.1 Bate-papo */}
-            <SidebarItem
-                icon={<MessageCircle size={20} />}
-                label="Bate-papo"
-                active={location.pathname === '/staff/chat'}
-                onClick={() => { navigate('/staff/chat'); setIsOpen(false); }}
-            />
-
-            {/* 1.2 Mural */}
-            <SidebarItem
-                icon={<MessageSquare size={20} />}
-                label="Mural"
-                active={location.pathname === '/staff/feed'}
-                onClick={() => { navigate('/staff/feed'); setIsOpen(false); }}
-            />
-
-            {/* 2. Orçamentos */}
-            {checkPermission('quotes') && (
+                {/* 1.2 Mural */}
                 <SidebarItem
-                    icon={<Quote size={20} />}
-                    label="Orçamentos"
-                    active={location.pathname === '/staff/quotes'}
-                    onClick={() => { navigate('/staff/quotes'); setIsOpen(false); }}
+                    icon={<MessageSquare size={20} />}
+                    label="Mural"
+                    active={location.pathname === '/staff/feed'}
+                    onClick={() => { navigate('/staff/feed'); setIsOpen(false); }}
                 />
-            )}
 
-            {/* 3. Agenda SPA - Always visible to all staff */}
-            <SidebarItem
-                icon={<Sparkles size={20} />}
-                label="Agenda SPA"
-                active={location.pathname === '/staff/agenda-spa'}
-                onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
-            />
+                {/* 2. Orçamentos */}
+                {checkPermission('quotes') && (
+                    <SidebarItem
+                        icon={<Quote size={20} />}
+                        label="Orçamentos"
+                        active={location.pathname === '/staff/quotes'}
+                        onClick={() => { navigate('/staff/quotes'); setIsOpen(false); }}
+                    />
+                )}
 
-            {/* 4. Agenda LOG - Always visible to all staff */}
-            <SidebarItem
-                icon={<Truck size={20} />}
-                label="Agenda LOG"
-                active={location.pathname === '/staff/agenda-log'}
-                onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
-            />
-
-            {/* 5. Clientes */}
-            {checkPermission('customers') && (
+                {/* 3. Agenda SPA - Always visible to all staff */}
                 <SidebarItem
-                    icon={<Users size={20} />}
-                    label="Clientes"
-                    active={location.pathname === '/staff/customers'}
-                    onClick={() => { navigate('/staff/customers'); setIsOpen(false); }}
+                    icon={<Sparkles size={20} />}
+                    label="Agenda SPA"
+                    active={location.pathname === '/staff/agenda-spa'}
+                    onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
                 />
-            )}
 
-            {/* 6. Serviços */}
-            {checkPermission('services') && (
+                {/* 4. Agenda LOG - Always visible to all staff */}
                 <SidebarItem
-                    icon={<ClipboardList size={20} />}
-                    label="Serviços"
-                    active={location.pathname === '/staff/services'}
-                    onClick={() => { navigate('/staff/services'); setIsOpen(false); }}
+                    icon={<Truck size={20} />}
+                    label="Agenda LOG"
+                    active={location.pathname === '/staff/agenda-log'}
+                    onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
                 />
-            )}
 
-            {/* 6.1 Produtos */}
-            {checkPermission('management') && (
-                <SidebarItem
-                    icon={<Package size={20} />}
-                    label="Produtos"
-                    active={location.pathname === '/staff/products'}
-                    onClick={() => { navigate('/staff/products'); setIsOpen(false); }}
-                />
-            )}
-
-            {/* 7. Financeiro */}
-            {checkPermission('billing') && (
-                <SidebarItem
-                    icon={<CreditCard size={20} />}
-                    label="Financeiro"
-                    active={location.pathname === '/staff/billing'}
-                    onClick={() => { navigate('/staff/billing'); setIsOpen(false); }}
-                />
-            )}
-
-            {/* 8. Relatórios */}
-            {checkPermission('reports') && (
-                <SidebarItem
-                    icon={<FileText size={20} />}
-                    label="Relatórios"
-                    active={location.pathname === '/staff/reports'}
-                    onClick={() => { navigate('/staff/reports'); setIsOpen(false); }}
-                />
-            )}
-
-            {/* 9. Gestão */}
-            {checkPermission('management') && (
-                <SidebarItem
-                    icon={<TrendingUp size={20} />}
-                    label="Gestão"
-                    active={location.pathname === '/staff/management'}
-                    onClick={() => { navigate('/staff/management'); setIsOpen(false); }}
-                />
-            )}
-
-
-
-            {/* 9.1 Config Transporte */}
-            {checkPermission('transport-config') && (
-                <SidebarItem
-                    icon={<Settings size={20} />}
-                    label="Config. Transporte"
-                    active={location.pathname === '/staff/transport-config'}
-                    onClick={() => { navigate('/staff/transport-config'); setIsOpen(false); }}
-                />
-            )}
-
-            {/* 10. Usuários */}
-            {checkPermission('users') && (
-                <SidebarItem
-                    icon={<Users size={20} />}
-                    label="Usuários"
-                    active={location.pathname === '/staff/users'}
-                    onClick={() => { navigate('/staff/users'); setIsOpen(false); }}
-                />
-            )}
-
-            {/* 10.1 RH - Gestão/Admin only */}
-            {checkPermission('management') && (
-                <>
-                    <div className="mt-4 mb-2 px-4">
-                        <p className="text-xs font-black text-muted uppercase tracking-widest">RH</p>
-                    </div>
+                {/* 5. Clientes */}
+                {checkPermission('customers') && (
                     <SidebarItem
                         icon={<Users size={20} />}
-                        label="Colaboradores"
-                        active={location.pathname === '/staff/hr/collaborators'}
-                        onClick={() => { navigate('/staff/hr/collaborators'); setIsOpen(false); }}
+                        label="Clientes"
+                        active={location.pathname === '/staff/customers'}
+                        onClick={() => { navigate('/staff/customers'); setIsOpen(false); }}
                     />
+                )}
+
+                {/* 6. Serviços */}
+                {checkPermission('services') && (
                     <SidebarItem
-                        icon={<Briefcase size={20} />}
-                        label="Fechamentos"
-                        active={location.pathname === '/staff/hr/pay-periods'}
-                        onClick={() => { navigate('/staff/hr/pay-periods'); setIsOpen(false); }}
+                        icon={<ClipboardList size={20} />}
+                        label="Serviços"
+                        active={location.pathname === '/staff/services'}
+                        onClick={() => { navigate('/staff/services'); setIsOpen(false); }}
                     />
-                </>
-            )}
+                )}
 
-            {/* 11. Chamados Técnicos */}
-            <SidebarItem
-                icon={<AlertTriangle size={20} />}
-                label="Chamados Técnicos"
-                active={location.pathname === '/staff/support'}
-                onClick={() => { navigate('/staff/support'); setIsOpen(false); }}
-            />
+                {/* 6.1 Produtos */}
+                {checkPermission('management') && (
+                    <SidebarItem
+                        icon={<Package size={20} />}
+                        label="Produtos"
+                        active={location.pathname === '/staff/products'}
+                        onClick={() => { navigate('/staff/products'); setIsOpen(false); }}
+                    />
+                )}
 
-            {/* 11. Notificações */}
-            <SidebarItem
-                icon={<Bell size={20} />}
-                label="Notificações"
-                active={location.pathname === '/staff/notifications'}
-                onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
-                badge={unreadCount}
-            />
+                {/* 7. Financeiro */}
+                {checkPermission('billing') && (
+                    <SidebarItem
+                        icon={<CreditCard size={20} />}
+                        label="Financeiro"
+                        active={location.pathname === '/staff/billing'}
+                        onClick={() => { navigate('/staff/billing'); setIsOpen(false); }}
+                    />
+                )}
 
-            {/* 12. Meu Perfil */}
-            <SidebarItem
-                icon={<UserIcon size={20} />}
-                label="Meu Perfil"
-                active={location.pathname === '/staff/profile'}
-                onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
-            />
+                {/* 8. Relatórios */}
+                {checkPermission('reports') && (
+                    <SidebarItem
+                        icon={<FileText size={20} />}
+                        label="Relatórios"
+                        active={location.pathname === '/staff/reports'}
+                        onClick={() => { navigate('/staff/reports'); setIsOpen(false); }}
+                    />
+                )}
 
-            {/* 12.1 Meu RH - Self-service ponto/produção */}
-            <SidebarItem
-                icon={<Clock size={20} />}
-                label="Meu RH"
-                active={location.pathname === '/staff/my-hr'}
-                onClick={() => { navigate('/staff/my-hr'); setIsOpen(false); }}
-            />
+                {/* 9. Gestão */}
+                {checkPermission('management') && (
+                    <SidebarItem
+                        icon={<TrendingUp size={20} />}
+                        label="Gestão"
+                        active={location.pathname === '/staff/management'}
+                        onClick={() => { navigate('/staff/management'); setIsOpen(false); }}
+                    />
+                )}
 
-            {/* 13. Configurações PWA */}
-            <SidebarItem
-                icon={<Smartphone size={20} />}
-                label="Configurações do App"
-                active={location.pathname === '/staff/settings'}
-                onClick={() => { navigate('/staff/settings'); setIsOpen(false); }}
-            />
-        </nav>
 
+
+                {/* 9.1 Config Transporte */}
+                {checkPermission('transport-config') && (
+                    <SidebarItem
+                        icon={<Settings size={20} />}
+                        label="Config. Transporte"
+                        active={location.pathname === '/staff/transport-config'}
+                        onClick={() => { navigate('/staff/transport-config'); setIsOpen(false); }}
+                    />
+                )}
+
+                {/* 10. Usuários */}
+                {checkPermission('users') && (
+                    <SidebarItem
+                        icon={<Users size={20} />}
+                        label="Usuários"
+                        active={location.pathname === '/staff/users'}
+                        onClick={() => { navigate('/staff/users'); setIsOpen(false); }}
+                    />
+                )}
+
+                {/* 10.1 RH - Gestão/Admin only */}
+                {checkPermission('management') && (
+                    <>
+                        <div className="mt-4 mb-2 px-4">
+                            <p className="text-xs font-black text-muted uppercase tracking-widest">RH</p>
+                        </div>
+                        <SidebarItem
+                            icon={<Users size={20} />}
+                            label="Colaboradores"
+                            active={location.pathname === '/staff/hr/collaborators'}
+                            onClick={() => { navigate('/staff/hr/collaborators'); setIsOpen(false); }}
+                        />
+                        <SidebarItem
+                            icon={<Briefcase size={20} />}
+                            label="Fechamentos"
+                            active={location.pathname === '/staff/hr/pay-periods'}
+                            onClick={() => { navigate('/staff/hr/pay-periods'); setIsOpen(false); }}
+                        />
+                    </>
+                )}
+
+                {/* 11. Chamados Técnicos */}
+                <SidebarItem
+                    icon={<AlertTriangle size={20} />}
+                    label="Chamados Técnicos"
+                    active={location.pathname === '/staff/support'}
+                    onClick={() => { navigate('/staff/support'); setIsOpen(false); }}
+                />
+
+                {/* 11. Notificações */}
+                <SidebarItem
+                    icon={<Bell size={20} />}
+                    label="Notificações"
+                    active={location.pathname === '/staff/notifications'}
+                    onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
+                    badge={unreadCount}
+                />
+
+                {/* 12. Meu Perfil */}
+                <SidebarItem
+                    icon={<UserIcon size={20} />}
+                    label="Meu Perfil"
+                    active={location.pathname === '/staff/profile'}
+                    onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
+                />
+
+                {/* 12.1 Meu RH - Self-service ponto/produção */}
+                <SidebarItem
+                    icon={<Clock size={20} />}
+                    label="Meu RH"
+                    active={location.pathname === '/staff/my-hr'}
+                    onClick={() => { navigate('/staff/my-hr'); setIsOpen(false); }}
+                />
+
+                {/* 12.2 Pausa - Mini-games */}
+                <SidebarItem
+                    icon={<Gamepad2 size={20} />}
+                    label="Pausa"
+                    active={location.pathname.startsWith('/pausa')}
+                    onClick={() => { navigate('/pausa'); setIsOpen(false); }}
+                />
+
+                {/* 13. Configurações PWA */}
+                <SidebarItem
+                    icon={<Smartphone size={20} />}
+                    label="Configurações do App"
+                    active={location.pathname === '/staff/settings'}
+                    onClick={() => { navigate('/staff/settings'); setIsOpen(false); }}
+                />
+            </nav>
+        </SidebarContext.Provider>
     );
 
     return (
@@ -354,45 +387,85 @@ export default function StaffSidebar() {
             </AnimatePresence>
 
             {/* Desktop Sidebar */}
-            <aside className="w-64 sidebar-surface glass-surface hidden md:flex flex-col fixed h-full border-r border-white/5">
+            <aside
+                className={`${isCollapsed ? 'w-20' : 'w-64'
+                    } sidebar-surface glass-surface hidden md:flex flex-col fixed h-full border-r border-white/5 transition-all duration-300 ease-out`}
+            >
                 {/* Fixed Header */}
-                <div className="flex-none p-6 pb-2">
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/staff/dashboard')}>
-                        <img src="/logo.png" className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform" alt="Logo" />
-                        <span className="font-bold text-xl text-heading">7Pet Operational</span>
+                <div className={`flex-none ${isCollapsed ? 'p-4 pb-2' : 'p-6 pb-2'}`}>
+                    <div
+                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} cursor-pointer`}
+                        onClick={() => navigate('/staff/dashboard')}
+                    >
+                        <img
+                            src="/logo.png"
+                            className="w-8 h-8 rounded-lg object-contain hover:rotate-12 transition-transform"
+                            alt="Logo"
+                        />
+                        {!isCollapsed && (
+                            <span className="font-bold text-xl text-heading whitespace-nowrap overflow-hidden">
+                                7Pet Operational
+                            </span>
+                        )}
                     </div>
                 </div>
 
+                {/* Toggle Collapse Button */}
+                <div className={`flex-none ${isCollapsed ? 'px-4 pb-2' : 'px-6 pb-2'}`}>
+                    <button
+                        onClick={toggleCollapse}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-fill-secondary hover:bg-accent/20 text-body-secondary hover:text-accent transition-all"
+                        aria-label={isCollapsed ? 'Expandir menu' : 'Retrair menu'}
+                    >
+                        {isCollapsed ? (
+                            <ChevronRight size={18} />
+                        ) : (
+                            <>
+                                <ChevronLeft size={18} />
+                                <span className="text-xs font-medium">Retrair</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+
                 {/* Scrollable Menu Area */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+                <div className={`flex-1 overflow-y-auto ${isCollapsed ? 'px-2 py-4' : 'px-6 py-4'} custom-scrollbar`}>
                     {menuItems}
                 </div>
 
                 {/* Fixed Footer */}
                 <div className="flex-none p-6 pt-2 border-t border-white/10 bg-inherit z-10">
-                    <div className="mb-4 px-2">
-                        <ThemeToggle />
-                        <p className="text-[10px] text-white/40 text-center font-mono mt-2">
-                            v0.1.0-beta
-                        </p>
-                    </div>
+                    {!isCollapsed && (
+                        <div className="mb-4 px-2">
+                            <ThemeToggle />
+                            <p className="text-[10px] text-white/40 text-center font-mono mt-2">
+                                v0.1.0-beta
+                            </p>
+                        </div>
+                    )}
 
-                    <div className="flex items-center gap-3 p-2 surface-input rounded-2xl">
+                    <div className={`flex items-center gap-3 p-2 surface-input rounded-2xl ${isCollapsed ? 'justify-center' : ''
+                        }`}>
                         <img
                             src={`https://ui-avatars.com/api/?name=${user?.name || user?.customer?.name || user?.email || 'Staff'}&background=00D664&color=fff`}
                             className="w-10 h-10 rounded-full border-2 border-accent/20 cursor-pointer hover:scale-105 transition-transform"
                             alt="Avatar"
                             onClick={() => navigate('/staff/profile')}
+                            title={user?.name || user?.customer?.name || user?.email || 'Staff'}
                         />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-heading truncate cursor-pointer hover:text-accent transition-colors" onClick={() => navigate('/staff/profile')}>{user?.name || user?.customer?.name || user?.email || 'Staff'}</p>
-                            <button
-                                onClick={() => setShowLogoutConfirm(true)}
-                                className="text-xs text-body-secondary hover:text-accent flex items-center gap-1 transition-colors"
-                            >
-                                Sair <LogOut size={12} />
-                            </button>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-heading truncate cursor-pointer hover:text-accent transition-colors" onClick={() => navigate('/staff/profile')}>
+                                    {user?.name || user?.customer?.name || user?.email || 'Staff'}
+                                </p>
+                                <button
+                                    onClick={() => setShowLogoutConfirm(true)}
+                                    className="text-xs text-body-secondary hover:text-accent flex items-center gap-1 transition-colors"
+                                >
+                                    Sair <LogOut size={12} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </aside>
@@ -411,19 +484,34 @@ export default function StaffSidebar() {
 }
 
 function SidebarItem({ icon, label, active = false, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number }) {
+    const { isCollapsed } = useContext(SidebarContext);
+
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-accent text-white shadow-lg shadow-accent/20 font-bold' : 'text-body-secondary hover:bg-fill-secondary hover:text-heading'}`}
+            className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-accent text-white shadow-lg shadow-accent/20 font-bold' : 'text-body-secondary hover:bg-fill-secondary hover:text-heading'
+                }`}
             aria-current={active ? 'page' : undefined}
+            title={isCollapsed ? label : undefined}
         >
-            {icon}
-            <span className="text-sm flex-1">{label}</span>
-            {badge !== undefined && badge > 0 && (
-                <span className="status-error-badge text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                    {badge > 99 ? '99+' : badge}
-                </span>
+            <div className="relative flex-shrink-0">
+                {icon}
+                {isCollapsed && badge !== undefined && badge > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                        {badge > 9 ? '9+' : badge}
+                    </span>
+                )}
+            </div>
+            {!isCollapsed && (
+                <>
+                    <span className="text-sm flex-1">{label}</span>
+                    {badge !== undefined && badge > 0 && (
+                        <span className="status-error-badge text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                            {badge > 99 ? '99+' : badge}
+                        </span>
+                    )}
+                </>
             )}
         </button>
     );
