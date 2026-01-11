@@ -5,6 +5,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import ErrorBoundary from './components/ErrorBoundary'
 import App from './App.tsx'
 // Theme System - Base tokens + all themes
 import './styles/tokens.base.css'
@@ -19,6 +20,7 @@ import './styles/themes/forest-nature.css'
 import './styles/themes/candy-pop.css'
 import './styles/design-system-base.css'   // Design system reusable classes
 import './styles/sidebar-collapsible.css'   // Collapsible sidebar support
+import './styles/mobile-fixes.css'          // Mobile-specific fixes (iOS/Android)
 import './index.css'
 import { SocketProvider } from './context/SocketContext'
 
@@ -41,17 +43,19 @@ const persister = createSyncStoragePersister({
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-            <PersistQueryClientProvider
-                client={queryClient}
-                persistOptions={{ persister }}
-            >
-                <BrowserRouter>
-                    <SocketProvider>
-                        <App />
-                    </SocketProvider>
-                </BrowserRouter>
-            </PersistQueryClientProvider>
-        </GoogleOAuthProvider>
+        <ErrorBoundary>
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <PersistQueryClientProvider
+                    client={queryClient}
+                    persistOptions={{ persister }}
+                >
+                    <BrowserRouter>
+                        <SocketProvider>
+                            <App />
+                        </SocketProvider>
+                    </BrowserRouter>
+                </PersistQueryClientProvider>
+            </GoogleOAuthProvider>
+        </ErrorBoundary>
     </StrictMode>,
 )
