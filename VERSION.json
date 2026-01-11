@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260111-1720",
+  "version": "BETA20260111-1738",
   "stage": "BETA",
-  "timestamp": "2026-01-11T17:20:32.000Z",
-  "commit": "e0afc51",
-  "buildNumber": 57,
-  "releaseNotes": "Auto-generated from commit: feat: add sidebar to PausaPage and responsive mobile layout\n\n- Replace custom navigation with Sidebar/StaffSidebar based on user role\n- Create mobile-game.css with CSS variables for responsive card sizing\n- Cards resize from 70x98px (desktop) to 50x70px (mobile <640px)\n- Update Card component to use var(--card-width) and var(--card-height)\n- Add game-card class for mobile optimizations\n- Touch-friendly hit areas and visual feedback"
+  "timestamp": "2026-01-11T17:38:41.000Z",
+  "commit": "0fab935",
+  "buildNumber": 58,
+  "releaseNotes": "Auto-generated from commit: feat: implement tap-to-select and tap-to-move for mobile gameplay\n\n- Add handleTapWaste, handleTapTableau, handleTapEmptyTableau, handleTapFoundation handlers\n- Connect onClick to all interactive cards with proper callbacks\n- Add visual selection feedback (highlighted border + shadow)\n- Update game instructions for mobile users (tap to select, tap to move)\n- Use CSS variables for responsive card sizing\n- First tap selects card, second tap moves to destination\n- Deselect by tapping same card again"
 }
