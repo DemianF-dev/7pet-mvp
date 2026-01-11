@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260111-1703",
+  "version": "BETA20260111-1708",
   "stage": "BETA",
-  "timestamp": "2026-01-11T17:03:19.000Z",
-  "commit": "12dfc4b",
-  "buildNumber": 55,
-  "releaseNotes": "Auto-generated from commit: fix: client sidebar detection and mobile touch events\n\n- Fix PacienciaPage to show correct sidebar based on user role\n- Add touch event support to Card component (touchstart/move/end)\n- Update PacienciaGame to accept TouchEvent in drag handlers\n- Simplify PausaPage to show only Paciência Pet game\n- Remove coming-soon games from catalog"
+  "timestamp": "2026-01-11T17:08:35.000Z",
+  "commit": "c433bf3",
+  "buildNumber": 56,
+  "releaseNotes": "Auto-generated from commit: fix: correct authStore import path in PacienciaPage"
 }
