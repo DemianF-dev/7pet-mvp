@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260111-1738",
+  "version": "BETA20260112-0138",
   "stage": "BETA",
-  "timestamp": "2026-01-11T17:38:41.000Z",
-  "commit": "0fab935",
-  "buildNumber": 58,
-  "releaseNotes": "Auto-generated from commit: feat: implement tap-to-select and tap-to-move for mobile gameplay\n\n- Add handleTapWaste, handleTapTableau, handleTapEmptyTableau, handleTapFoundation handlers\n- Connect onClick to all interactive cards with proper callbacks\n- Add visual selection feedback (highlighted border + shadow)\n- Update game instructions for mobile users (tap to select, tap to move)\n- Use CSS variables for responsive card sizing\n- First tap selects card, second tap moves to destination\n- Deselect by tapping same card again"
+  "timestamp": "2026-01-12T01:38:27.000Z",
+  "commit": "66a6478",
+  "buildNumber": 59,
+  "releaseNotes": "Auto-generated from commit: fix: resolve mobile API connection issue and update network binding"
 }
