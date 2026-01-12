@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone } from 'lucide-react'; // Added icons for Bitrix style
+import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle } from 'lucide-react'; // Added icons for Bitrix style
 import { useAuthStore } from '../../store/authStore';
 
 import { Message } from '../../types/chat';
@@ -19,6 +19,15 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [msg, setMsg] = useState('');
+
+    const handleAttention = async () => {
+        if (!window.confirm('Chamar atenção de todos nesta conversa?')) return;
+        try {
+            await api.post(`/chat/${conversationId}/attention`);
+        } catch (error) {
+            console.error('Erro ao chamar atenção:', error);
+        }
+    };
 
     const { data: messages = [] } = useQuery({
         queryKey: ['messages', conversationId],
@@ -70,7 +79,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
     });
 
     return (
-        <div className={`flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900/50 ${className}`}>
+        <div className={`flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900/50 pb-20 md:pb-0 ${className}`}>
             {/* Toolbar */}
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between z-10 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -85,6 +94,16 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                     </div>
                 </div>
                 <div className="flex items-center gap-2 text-gray-400">
+                    {(user?.role === 'ADMIN' || user?.role === 'MASTER' || user?.role === 'GESTAO') && (
+                        <button
+                            onClick={handleAttention}
+                            title="Chamar Atenção"
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-full transition-colors flex items-center gap-1"
+                        >
+                            <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest mr-1">Atenção</span>
+                            <AlertCircle size={18} />
+                        </button>
+                    )}
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"><Phone size={18} /></button>
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"><MoreVertical size={18} /></button>
                 </div>

@@ -100,8 +100,8 @@ export default function ClientDashboard() {
                 <ClientTutorial />
             </Suspense>
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
+            <main className="flex-1 md:ml-64 p-4 md:p-6 lg:p-8">
+                <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-6">
                     <div>
                         <DashboardGreeting
                             name={user?.customer?.name || user?.email || 'Visitante'}
@@ -135,7 +135,7 @@ export default function ClientDashboard() {
                 {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-48 bg-white p-8 rounded-[32px] shadow-sm border border-gray-50 flex flex-col justify-between">
+                            <div key={i} className="h-44 bg-white p-6 rounded-[24px] shadow-sm border border-gray-50 flex flex-col justify-between">
                                 <div className="space-y-4">
                                     <Skeleton variant="rounded" className="w-12 h-12" />
                                     <Skeleton variant="text" className="h-6 w-32" />
@@ -146,7 +146,7 @@ export default function ClientDashboard() {
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {quickActions.map((action, idx) => (
                             <motion.div
                                 key={idx}
@@ -158,25 +158,25 @@ export default function ClientDashboard() {
                             >
                                 <SpotlightCard
                                     onClick={() => navigate(action.link)}
-                                    className="p-6 flex flex-col justify-between hover:border-primary/30 cursor-pointer group h-full text-left"
+                                    className="p-5 flex flex-col justify-between hover:border-primary/30 cursor-pointer group h-full text-left"
                                     spotlightColor="rgba(var(--color-primary-rgb), 0.15)"
                                 >
                                     <div className="w-full">
-                                        <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                                        <div className={`w-10 h-10 ${action.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                                             {action.icon}
                                         </div>
                                         <div className="flex justify-between items-start w-full">
-                                            <h3 className="text-xl font-bold text-secondary">{action.title}</h3>
+                                            <h3 className="text-lg font-bold text-secondary">{action.title}</h3>
                                             {action.badge && (
-                                                <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${action.title === 'Pagamentos' || action.title === 'Meus Pets' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md ${action.title === 'Pagamentos' || action.title === 'Meus Pets' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                                                     {action.badge}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-gray-500 text-sm mt-1">{action.desc}</p>
+                                        <p className="text-gray-500 text-xs mt-0.5">{action.desc}</p>
                                     </div>
                                     <div
-                                        className="mt-6 text-sm font-bold text-secondary group-hover:text-primary transition-colors flex items-center gap-2"
+                                        className="mt-4 text-xs font-bold text-secondary group-hover:text-primary transition-colors flex items-center gap-2"
                                     >
                                         {action.title === 'Agendar Serviço' ? 'Agendar Agora' : action.title === 'Agendar Transporte' ? 'Solicitar Transporte' : 'Gerenciar'}
                                         <Plus size={16} />
@@ -187,22 +187,22 @@ export default function ClientDashboard() {
                     </div>
                 )}
 
-                <section className="mt-10 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <section className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {/* Banner Indicação */}
-                    <div className="bg-secondary rounded-[40px] p-8 relative overflow-hidden group shadow-2xl shadow-secondary/20 border border-white/10">
+                    <div className="bg-secondary rounded-[32px] p-6 relative overflow-hidden group shadow-2xl shadow-secondary/20 border border-white/10">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-1000"></div>
                         <div className="relative z-10 flex flex-col justify-between h-full gap-8">
                             <div className="space-y-4">
                                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/20 rounded-full border border-primary/30">
                                     <MessageCircle size={14} className="text-primary" />
-                                    <span className="text-primary font-black text-[10px] uppercase tracking-widest">Indicação</span>
+                                    <span className="text-primary font-black text-[9px] uppercase tracking-widest">Indicação</span>
                                 </span>
-                                <h2 className="text-3xl font-black text-white leading-tight">Ganhe 10% OFF a cada amigo indicado!</h2>
-                                <p className="text-gray-400 max-w-sm font-medium">Envie um convite agora pelo WhatsApp. Quanto mais indicar, mais descontos acumulados você ganha.</p>
+                                <h2 className="text-2xl font-black text-white leading-tight">Ganhe 10% OFF a cada amigo indicado!</h2>
+                                <p className="text-gray-400 max-w-sm text-xs font-medium">Envie um convite agora pelo WhatsApp. Quanto mais indicar, mais descontos acumulados você ganha.</p>
                             </div>
                             <button
                                 onClick={handleReferral}
-                                className="w-full bg-primary hover:bg-primary-dark text-white font-black py-5 px-8 rounded-2xl transition-all shadow-xl shadow-primary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-xs"
+                                className="w-full bg-primary hover:bg-primary-dark text-white font-black py-4 px-6 rounded-xl transition-all shadow-xl shadow-primary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-[10px]"
                             >
                                 <MessageCircle size={20} />
                                 Indicar pelo WhatsApp
@@ -211,20 +211,20 @@ export default function ClientDashboard() {
                     </div>
 
                     {/* Banner Google Review */}
-                    <div className="bg-white rounded-[40px] p-8 relative overflow-hidden group shadow-xl border-2 border-dashed border-gray-100 hover:border-primary/20 transition-all">
+                    <div className="bg-white rounded-[32px] p-6 relative overflow-hidden group shadow-xl border-2 border-dashed border-gray-100 hover:border-primary/20 transition-all">
                         <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-1000"></div>
-                        <div className="relative z-10 flex flex-col justify-between h-full gap-8">
+                        <div className="relative z-10 flex flex-col justify-between h-full gap-6">
                             <div className="space-y-4">
                                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-100 rounded-full border border-yellow-200">
                                     <Star size={14} className="text-yellow-600 fill-yellow-600" />
-                                    <span className="text-yellow-700 font-black text-[10px] uppercase tracking-widest">Avaliação Google</span>
+                                    <span className="text-yellow-700 font-black text-[9px] uppercase tracking-widest">Avaliação Google</span>
                                 </span>
-                                <h2 className="text-3xl font-black text-secondary leading-tight">Ganhe 10% OFF ao nos avaliar!</h2>
-                                <p className="text-gray-500 max-w-sm font-medium">Sua opinião é fundamental. Avalie nossos serviços uma única vez e ganhe um desconto especial imediato.</p>
+                                <h2 className="text-2xl font-black text-secondary leading-tight">Ganhe 10% OFF ao nos avaliar!</h2>
+                                <p className="text-gray-500 max-w-sm text-xs font-medium">Sua opinião é fundamental. Avalie nossos serviços uma única vez e ganhe um desconto especial imediato.</p>
                             </div>
                             <button
                                 onClick={handleGoogleReview}
-                                className="w-full bg-secondary hover:bg-secondary/90 text-white font-black py-5 px-8 rounded-2xl transition-all shadow-xl shadow-secondary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-xs"
+                                className="w-full bg-secondary hover:bg-secondary/90 text-white font-black py-4 px-6 rounded-xl transition-all shadow-xl shadow-secondary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-[10px]"
                             >
                                 <Star size={20} className="text-yellow-400 fill-yellow-400" />
                                 Avaliar no Google

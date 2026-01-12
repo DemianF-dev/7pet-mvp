@@ -109,8 +109,8 @@ export default function StaffDashboard() {
         <div className="min-h-screen flex">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
+            <main className="flex-1 md:ml-64 p-4 md:p-6 lg:p-8">
+                <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-6">
                     <div>
                         <Breadcrumbs />
                         <DashboardGreeting
@@ -132,7 +132,7 @@ export default function StaffDashboard() {
                 {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-48 bg-white dark:bg-gray-800 p-8 rounded-[40px] shadow-sm border border-gray-50 dark:border-gray-700 flex flex-col justify-center">
+                            <div key={i} className="h-44 bg-white dark:bg-gray-800 p-6 rounded-[32px] shadow-sm border border-gray-50 dark:border-gray-700 flex flex-col justify-center">
                                 <Skeleton variant="rounded" className="w-14 h-14 mb-6" />
                                 <Skeleton variant="text" className="w-20 h-2 mb-2" />
                                 <Skeleton variant="rounded" className="w-12 h-10" />
@@ -140,9 +140,9 @@ export default function StaffDashboard() {
                         ))}
                     </div>
                 ) : (
-                    <div className="space-y-10">
+                    <div className="space-y-6">
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             {cards.map((card, idx) => (
                                 <motion.div
                                     key={idx}
@@ -153,15 +153,15 @@ export default function StaffDashboard() {
                                 >
                                     <SpotlightCard
                                         onClick={() => navigate(card.link)}
-                                        className={`bg-white dark:bg-gray-800 p-8 rounded-[40px] shadow-sm border ${card.urgent ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10' : 'border-gray-50 dark:border-gray-700'
+                                        className={`bg-white dark:bg-gray-800 p-6 rounded-[32px] shadow-sm border ${card.urgent ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10' : 'border-gray-50 dark:border-gray-700'
                                             } group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden text-left w-full h-full`}
                                         spotlightColor="rgba(var(--color-primary-rgb), 0.1)"
                                     >
-                                        <div className={`w-14 h-14 ${card.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                                        <div className={`w-12 h-12 ${card.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                                             {card.icon}
                                         </div>
-                                        <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-1">{card.label}</p>
-                                        <h3 className={`text-4xl font-black ${card.urgent ? 'text-red-600 dark:text-red-400' : 'text-secondary dark:text-white'
+                                        <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-[9px] mb-1">{card.label}</p>
+                                        <h3 className={`text-3xl font-black ${card.urgent ? 'text-red-600 dark:text-red-400' : 'text-secondary dark:text-white'
                                             }`}>{card.value}</h3>
                                         {card.urgent && (
                                             <div className="absolute top-4 right-4">
@@ -177,10 +177,10 @@ export default function StaffDashboard() {
                         </div>
 
                         {/* Recent Activity / Status Board */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="bg-white dark:bg-gray-800 p-8 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700">
-                                <h2 className="text-xl font-bold text-secondary dark:text-white mb-6 flex items-center gap-2">
-                                    <TrendingUp className="text-primary" size={20} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-[32px] shadow-sm border border-gray-100 dark:border-gray-700">
+                                <h2 className="text-lg font-bold text-secondary dark:text-white mb-4 flex items-center gap-2">
+                                    <TrendingUp className="text-primary" size={18} />
                                     Distribuição (Próximos 7 dias)
                                 </h2>
                                 <div className="space-y-4">
@@ -207,10 +207,10 @@ export default function StaffDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-secondary dark:bg-gray-900 p-10 rounded-[48px] text-white shadow-2xl shadow-secondary/20 dark:shadow-none flex flex-col justify-between">
+                            <div className="bg-secondary dark:bg-gray-900 p-8 rounded-[32px] text-white shadow-2xl shadow-secondary/20 dark:shadow-none flex flex-col justify-between">
                                 <div>
-                                    <h3 className="text-2xl font-black mb-4">Módulo de IA em treinamento</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                    <h3 className="text-xl font-black mb-2">Módulo de IA em treinamento</h3>
+                                    <p className="text-gray-400 text-xs leading-relaxed">
                                         Em breve, usaremos inteligência artificial para otimizar suas rotas de transporte e prever horários de pico.
                                     </p>
                                 </div>

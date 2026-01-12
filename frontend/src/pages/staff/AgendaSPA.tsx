@@ -23,6 +23,7 @@ import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsMo
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
+import WebAgendaLayout from '../../components/staff/calendar/WebAgendaLayout';
 
 interface Appointment {
     id: string;
@@ -556,13 +557,71 @@ export default function AgendaSPA() {
     };
 
 
-    // COMPACT view renders as full-screen mobile layout
+
+    const renderKanbanView = () => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
+            {statusColumns.map((col) => (
+                <div key={col.key} className="flex flex-col h-full min-h-0">
+                    <div className="flex items-center justify-between mb-3 px-3 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${col.color} shadow-lg shadow-current/20`}></div>
+                            <h3 className="font-black text-secondary dark:text-gray-300 uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
+                        </div>
+                        <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+                            {getColumnItems(col.key).length}
+                        </span>
+                    </div>
+                    <div className="flex-1 bg-gray-50/50 dark:bg-gray-800/20 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200 dark:border-gray-800">
+                        {getColumnItems(col.key).map((appt) => {
+                            const isSelected = selectedIds.includes(appt.id);
+                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                            const isRecurring = appt.customer?.type === 'RECORRENTE';
+
+                            return (
+                                <div
+                                    key={appt.id}
+                                    onClick={() => handleOpenDetails(appt)}
+                                    className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-primary/20 bg-white dark:bg-gray-700 border-primary/50 shadow-primary/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
+                                    style={!isSelected && appt.performer?.color ? {
+                                        borderLeftColor: appt.performer.color,
+                                        backgroundColor: `${appt.performer.color}08`
+                                    } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary dark:text-gray-300 border border-gray-100 dark:border-gray-600 shadow-sm">
+                                            <Clock size={12} className="text-primary" />
+                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                        {(isBulkMode || isSelected) && (
+                                            <button
+                                                onClick={(e) => toggleSelect(appt.id, e)}
+                                                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-600 border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 dark:text-gray-400 border-gray-100 dark:border-gray-500'}`}
+                                            >
+                                                <CheckSquare size={16} strokeWidth={3} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center justify-between">
+                                        <span>{appt.pet.name} {isRecurring ? '(R)' : '(A)'}</span>
+                                        {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
+                                            <span className="bg-orange-500 text-white text-[8px] px-2 py-0.5 rounded-full">TR</span>
+                                        )}
+                                    </h4>
+                                    <p className="text-[11px] opacity-70 font-bold truncate mt-1">{appt.customer.name}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
+    // COMPACT view renders as full-screen mobile layout (Mobile First Default)
     if (view === 'COMPACT') {
         return (
             <>
                 {renderCompactView()}
-
-                {/* Modals still work in COMPACT mode */}
                 <AnimatePresence>
                     {isFormOpen && (
                         <AppointmentFormModal
@@ -575,7 +634,6 @@ export default function AgendaSPA() {
                         />
                     )}
                 </AnimatePresence>
-
                 <AnimatePresence>
                     {isDetailsOpen && (
                         <AppointmentDetailsModal
@@ -592,268 +650,41 @@ export default function AgendaSPA() {
         );
     }
 
+    // DESKTOP LAYOUT (WebArenaLayout)
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black flex">
+        <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden">
+            {/* Sidebar is kept, but layout is managed side-by-side */}
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-4 md:p-8">
-                <header className="mb-8">
-                    <Breadcrumbs />
-                    <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
-                                <div className="h-[2px] w-6 bg-primary"></div>
-                                CENTRAL DE AGENDAMENTOS SPA
-                            </div>
-                            <div className="flex items-center gap-6">
-                                <h1 className="text-4xl font-black text-secondary dark:text-white tracking-tight capitalize">
-                                    {view === 'DAY' ? selectedDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }) :
-                                        selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                                </h1>
-                                <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <button onClick={prevDate} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all text-gray-400 hover:text-primary">
-                                        <ChevronLeft size={20} />
-                                    </button>
-                                    <button onClick={setToday} className="px-6 py-2 text-[10px] font-black text-secondary dark:text-white hover:text-primary uppercase tracking-[0.2em] transition-colors">
-                                        Hoje
-                                    </button>
-                                    <button onClick={nextDate} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all text-gray-400 hover:text-primary">
-                                        <ChevronRight size={20} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+            <div className="flex-1 md:ml-64 h-full overflow-hidden">
+                <WebAgendaLayout
+                    appointments={filteredAppointments}
+                    selectedDate={selectedDate}
+                    onSelectedDateChange={setSelectedDate}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    performers={performers}
+                    selectedPerformerId={selectedPerformerId}
+                    onPerformerChange={setSelectedPerformerId}
+                    view={view}
+                    onViewChange={(v) => {
+                        setView(v);
+                        localStorage.setItem('agendaSPAView', v);
+                    }}
+                    onCreateNew={handleCreateNew}
+                    tab={tab}
+                    onTabChange={(t) => { setTab(t); setSelectedIds([]); }}
+                    isLoading={isLoading}
+                    onRefresh={fetchAppointments}
+                    onAppointmentClick={handleOpenDetails}
+                >
+                    {view === 'KANBAN' && renderKanbanView()}
+                    {view === 'DAY' && renderDayView()}
+                    {view === 'WEEK' && renderWeekView()}
+                </WebAgendaLayout>
+            </div>
 
-                        {/* Performer Selector */}
-
-                        <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-2 rounded-[24px] border border-white dark:border-gray-700 shadow-xl shadow-black/5">
-                            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                                <Users size={16} className="text-secondary/50 dark:text-gray-400" />
-                                <select
-                                    value={selectedPerformerId}
-                                    onChange={(e) => setSelectedPerformerId(e.target.value)}
-                                    className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-secondary dark:text-white focus:ring-0 cursor-pointer min-w-[150px] outline-none dark:bg-gray-800"
-                                >
-                                    <option value="ALL">Todos da Equipe</option>
-                                    {performers.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-2 rounded-[32px] border border-white dark:border-gray-700 shadow-xl shadow-black/5">
-                            <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                <button
-                                    onClick={() => { setTab('active'); setSelectedIds([]); }}
-                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                                >
-                                    Ativos
-                                </button>
-                                <button
-                                    onClick={() => { setTab('trash'); setSelectedIds([]); }}
-                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                                >
-                                    <Trash2 size={14} /> Lixeira
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-gray-700/50 p-2 rounded-[28px]">
-                                <button
-                                    onClick={fetchAppointments}
-                                    disabled={isLoading}
-                                    className="p-3 bg-white dark:bg-gray-800 text-gray-400 hover:text-primary rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
-                                    title="Atualizar Agenda"
-                                >
-                                    <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
-                                </button>
-
-                                <button
-                                    onClick={() => setIsBulkMode(!isBulkMode)}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-secondary dark:hover:text-white shadow-sm'}`}
-                                >
-                                    <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
-                                    <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
-                                </button>
-
-                                <div className="h-6 w-px bg-gray-200 mx-1"></div>
-
-                                {['COMPACT', 'KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
-                                    <button
-                                        key={v}
-                                        onClick={() => {
-                                            setView(v as ViewType);
-                                            setSelectedIds([]);
-                                            localStorage.setItem('agendaSPAView', v);
-                                        }}
-                                        className={`flex items-center gap-3 px-6 py-3 rounded-[22px] text-[10px] font-black transition-all ${view === v ? 'bg-white dark:bg-gray-800 text-primary shadow-lg scale-[1.02]' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                                    >
-                                        {v === 'COMPACT' ? <CalendarIcon size={14} /> :
-                                            v === 'KANBAN' ? <Layout size={14} /> :
-                                                v === 'DAY' ? <List size={14} /> :
-                                                    <CalendarIcon size={14} />}
-                                        <span className="uppercase tracking-widest">{v}</span>
-                                    </button>
-                                ))}
-                            </div>
-                            {tab === 'active' && (
-                                <button
-                                    onClick={handleCreateNew}
-                                    className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-[26px] font-black shadow-lg shadow-primary/20 transition-all text-[11px] tracking-widest flex items-center gap-3 uppercase"
-                                >
-                                    <Plus size={18} strokeWidth={3} /> NOVO ITEM
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </header>
-
-                {/* Bulk Actions Bar */}
-                <AnimatePresence>
-                    {(selectedIds.length > 0 || isBulkMode) && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
-                        >
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={handleSelectAll}
-                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
-                                >
-                                    {selectedIds.length === filteredAppointments.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
-                                </button>
-                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                    <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
-                                    itens prontos
-                                </p>
-                            </div>
-                            <div className="h-10 w-px bg-white/10 ml-auto"></div>
-                            <div className="flex items-center gap-6">
-                                <button
-                                    onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
-                                    className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
-                                >
-                                    Cancelar
-                                </button>
-                                {tab === 'trash' ? (
-                                    <>
-                                        <button
-                                            onClick={handleBulkRestore}
-                                            disabled={selectedIds.length === 0}
-                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                        >
-                                            <RefreshCcw size={18} /> Restaurar
-                                        </button>
-                                        <button
-                                            onClick={handleBulkDelete}
-                                            disabled={selectedIds.length === 0}
-                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                        >
-                                            <Trash2 size={18} /> Excluir Permanente
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={handleBulkDelete}
-                                        disabled={selectedIds.length === 0}
-                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                    >
-                                        <Trash2 size={18} /> Mover para Lixeira
-                                    </button>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <div className="relative mb-8">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Pesquisar por tutor, pet ou serviço..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-800 border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold placeholder:text-gray-300 dark:placeholder:text-gray-500 text-secondary dark:text-white"
-                    />
-                </div>
-
-                {isLoading ? (
-                    <div className="flex items-center justify-center py-40">
-                        <RefreshCcw className="animate-spin text-primary" size={48} />
-                    </div>
-                ) : (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {view === 'KANBAN' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {statusColumns.map((col) => (
-                                    <div key={col.key} className="flex flex-col h-[calc(100vh-320px)]">
-                                        <div className="flex items-center justify-between mb-5 px-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-3 h-3 rounded-full ${col.color} shadow-lg shadow-current/20`}></div>
-                                                <h3 className="font-black text-secondary dark:text-gray-300 uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
-                                            </div>
-                                            <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
-                                                {getColumnItems(col.key).length}
-                                            </span>
-                                        </div>
-                                        <div className="flex-1 bg-gray-50/50 dark:bg-gray-800/20 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200 dark:border-gray-800">
-                                            {getColumnItems(col.key).map((appt) => {
-                                                const isSelected = selectedIds.includes(appt.id);
-                                                const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                                                const isRecurring = appt.customer?.type === 'RECORRENTE';
-
-                                                return (
-                                                    <div
-                                                        key={appt.id}
-                                                        onClick={() => handleOpenDetails(appt)}
-                                                        className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-primary/20 bg-white dark:bg-gray-700 border-primary/50 shadow-primary/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
-                                                        style={!isSelected && appt.performer?.color ? {
-                                                            borderLeftColor: appt.performer.color,
-                                                            backgroundColor: `${appt.performer.color}08`
-                                                        } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-4">
-                                                            <div className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary dark:text-gray-300 border border-gray-100 dark:border-gray-600 shadow-sm">
-                                                                <Clock size={12} className="text-primary" />
-                                                                {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                            </div>
-                                                            {(isBulkMode || isSelected) && (
-                                                                <button
-                                                                    onClick={(e) => toggleSelect(appt.id, e)}
-                                                                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-600 border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 dark:text-gray-400 border-gray-100 dark:border-gray-500'}`}
-                                                                >
-                                                                    <CheckSquare size={16} strokeWidth={3} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center justify-between">
-                                                            <span>{appt.pet.name} {isRecurring ? '(R)' : '(A)'}</span>
-                                                            {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
-                                                                <span className="bg-orange-500 text-white text-[8px] px-2 py-0.5 rounded-full">TR</span>
-                                                            )}
-                                                        </h4>
-                                                        <p className="text-[11px] opacity-70 font-bold truncate mt-1">{appt.customer.name}</p>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <>
-                                {view === 'COMPACT' && renderCompactView()}
-                                {view === 'DAY' && renderDayView()}
-                                {view === 'WEEK' && renderWeekView()}
-                                {view === 'MONTH' && renderMonthView()}
-                            </>
-                        )}
-                    </div>
-                )}
-            </main>
-
+            {/* Modals for Desktop */}
             <AnimatePresence>
                 {isFormOpen && (
                     <AppointmentFormModal

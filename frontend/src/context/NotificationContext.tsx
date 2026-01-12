@@ -222,8 +222,48 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         socket.on('chat:new_message', handleChatMessage);
 
+        const handleAttention = (data: any) => {
+            if (import.meta.env.DEV) console.log('⚠️ Attention received:', data);
+
+            // Get current user ID
+            const storedUser = localStorage.getItem('7pet-auth-storage');
+            const currentUserId = storedUser ? JSON.parse(storedUser)?.state?.user?.id : null;
+
+            // Optional: skip if triggered by self (though controller handles other participants)
+
+            playSound();
+
+            // Very prominent toast for Attention
+            toast.custom(
+                (t) => (
+                    <div
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            window.location.href = '/staff/chat'; // Redirect to chat
+                        }}
+                        className={`${t.visible ? 'animate-bounce' : 'animate-leave'} max-w-md w-full bg-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)] rounded-2xl pointer-events-auto flex ring-4 ring-white cursor-pointer overflow-hidden p-6 text-white`}
+                    >
+                        <div className="flex items-center gap-6">
+                            <div className="bg-white/20 p-4 rounded-full">
+                                <AlertCircle size={40} className="text-white animate-pulse" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-black text-xl uppercase tracking-tighter leading-none mb-1">CHAMADA DE ATENÇÃO!</p>
+                                <p className="text-lg font-bold opacity-90">Atenção, vc tem mensagem importante no seu chat.</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest mt-3 opacity-70 underline">Clique para abrir agora</p>
+                            </div>
+                        </div>
+                    </div>
+                ),
+                { duration: 15000, position: 'top-center' }
+            );
+        };
+
+        socket.on('chat:attention', handleAttention);
+
         return () => {
             socket.off('chat:new_message', handleChatMessage);
+            socket.off('chat:attention', handleAttention);
         };
     }, [socket, playSound]);
 

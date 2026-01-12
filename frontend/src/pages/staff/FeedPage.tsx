@@ -3,7 +3,7 @@ import { useSocket } from '../../context/SocketContext';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Send, MessageCircle, Heart, MoreHorizontal, User, Calendar, CheckSquare, TrendingUp, Paperclip, Smile, Search, ChevronDown } from 'lucide-react';
+import { Send, MessageCircle, Heart, MoreHorizontal, User, Calendar, CheckSquare, TrendingUp, Paperclip, Smile, Search } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import StaffSidebar from '../../components/StaffSidebar';
 
@@ -99,22 +99,21 @@ export default function FeedPage() {
         <div className="flex bg-gray-50 dark:bg-gray-900 min-h-screen">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-4 lg:p-8">
-                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <main className="w-full md:ml-64 p-0 md:p-10 pb-32 overflow-x-hidden flex-1">
+                <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8">
 
                     {/* Main Feed Area (8 columns) */}
-                    <div className="lg:col-span-8 space-y-6">
+                    <div className="lg:col-span-8 space-y-4 md:space-y-6">
 
-                        {/* Rich Input Widget (Bitrix Style) */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        {/* Rich Input Widget (Desktop Only) */}
+                        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                             {/* Tabs */}
-                            <div className="flex border-b border-gray-100 dark:border-gray-700">
+                            <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto no-scrollbar whitespace-nowrap">
                                 {['MENSAGEM', 'EVENTO', 'ENQUETE', 'ARQUIVO', 'MAIS'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab.toLowerCase())}
-                                        className={`px-6 py-3 text-xs font-bold tracking-wider hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${activeTab === tab.toLowerCase() ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'
-                                            }`}
+                                        className={`px-6 py-3 text-xs font-black tracking-wider hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors inline-block ${activeTab === tab.toLowerCase() ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
                                     >
                                         {tab}
                                     </button>
@@ -130,41 +129,40 @@ export default function FeedPage() {
                                     onChange={(e) => setNewPostContent(e.target.value)}
                                 />
 
-                                <div className="flex justify-between items-center mt-4">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
                                     <div className="flex items-center gap-2">
-                                        <button type="button" className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"><Paperclip size={18} /></button>
-                                        <button type="button" className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"><Smile size={18} /></button>
-                                        <button type="button" className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"><User size={18} /></button>
-                                        <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-2" />
-                                        <span className="text-xs text-blue-500 font-medium cursor-pointer hover:underline">Para todos os usuários</span>
+                                        <button type="button" className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition shrink-0"><Paperclip size={18} /></button>
+                                        <button type="button" className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition shrink-0"><Smile size={18} /></button>
+                                        <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1 shrink-0" />
+                                        <span className="text-xs text-blue-500 font-medium truncate max-w-[100px]">Para todos</span>
                                     </div>
                                     <button
                                         type="submit"
                                         disabled={createPostMutation.isPending || !newPostContent.trim()}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition flex items-center gap-2 text-sm font-bold uppercase tracking-wide shadow-sm"
+                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide shadow-sm ml-auto"
                                     >
-                                        {createPostMutation.isPending ? 'Enviando...' : 'Enviar'}
+                                        {createPostMutation.isPending ? '...' : 'Enviar'}
                                     </button>
                                 </div>
                             </form>
                         </div>
 
                         {/* Feed Filter (Optional) */}
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-white mr-4">Feed</h2>
+                        <div className="flex items-center gap-2 px-4 md:px-0">
+                            <h2 className="text-lg md:text-xl font-black text-gray-800 dark:text-white mr-2">Feed</h2>
                             <div className="flex-1 max-w-sm relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <input className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-sm focus:ring-1 focus:ring-blue-500" placeholder="Filtro e pesquisa" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                <input className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-gray-100 dark:border-gray-700 text-[11px] font-bold focus:ring-1 focus:ring-blue-500" placeholder="Filtro e pesquisa" />
                             </div>
                         </div>
 
                         {/* Posts Stream */}
-                        <div className="space-y-6">
+                        <div className="space-y-4 md:space-y-6 px-0 md:px-0">
                             {postsLoading ? (
                                 <div className="text-center py-10"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" /></div>
                             ) : posts.length === 0 ? (
-                                <div className="text-center py-12 text-gray-400 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                                    <p>Nenhuma publicação ainda.</p>
+                                <div className="mx-4 md:mx-0 text-center py-12 text-gray-400 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                                    <p className="text-xs font-bold uppercase tracking-widest">Nenhuma publicação ainda.</p>
                                 </div>
                             ) : (
                                 posts.map(post => <PostCard key={post.id} post={post} />)
@@ -172,9 +170,8 @@ export default function FeedPage() {
                         </div>
                     </div>
 
-                    {/* Right Widgets Sidebar (4 columns) */}
-                    <div className="lg:col-span-4 space-y-6">
-                        {/* Widget: Pulse / Info (Optional) */}
+                    {/* Right Widgets Sidebar (4 columns) - Hidden on Mobile */}
+                    <div className="hidden lg:block lg:col-span-4 space-y-6">
                         <div className="bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
                             <div className="relative z-10">
                                 <h3 className="font-bold text-lg mb-1">Bem-vindo ao 7Pet</h3>
@@ -185,7 +182,6 @@ export default function FeedPage() {
                             </div>
                         </div>
 
-                        {/* Widget: Next Events */}
                         <WidgetCard title="Próximos Eventos" icon={<Calendar size={18} className="text-blue-500" />}>
                             {widgetsLoading ? <div className="h-20 animate-pulse bg-gray-100 rounded" /> : (
                                 <div className="space-y-3">
@@ -207,7 +203,6 @@ export default function FeedPage() {
                             )}
                         </WidgetCard>
 
-                        {/* Widget: My Tasks */}
                         <WidgetCard title="Minhas Tarefas" icon={<CheckSquare size={18} className="text-green-500" />}>
                             {widgetsLoading ? <div className="h-20 animate-pulse bg-gray-100 rounded" /> : (
                                 <div className="space-y-2">
@@ -222,14 +217,12 @@ export default function FeedPage() {
                             )}
                         </WidgetCard>
 
-                        {/* Widget: Popular Posts */}
                         <WidgetCard title="Posts mais populares" icon={<TrendingUp size={18} className="text-purple-500" />}>
                             {widgetsLoading ? <div className="h-20 animate-pulse bg-gray-100 rounded" /> : (
                                 <div className="space-y-4">
                                     {widgets?.popularPosts?.map((post: Post) => (
                                         <div key={post.id} className="flex gap-3 items-start">
                                             <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0" style={{ backgroundColor: post.author.color }}>
-                                                {/* Avatar placeholder */}
                                             </div>
                                             <div>
                                                 <div className="text-xs font-bold text-blue-600 mb-0.5">{post.author.name}</div>
@@ -244,10 +237,21 @@ export default function FeedPage() {
                                 </div>
                             )}
                         </WidgetCard>
-
                     </div>
                 </div>
             </main>
+
+            {/* Mobile Actions */}
+            <MobileFab onClick={() => setActiveTab('mobile-compose')} />
+
+            <MobileComposeModal
+                isOpen={activeTab === 'mobile-compose'}
+                onClose={() => setActiveTab('mensagem')}
+                onSubmit={(content) => {
+                    createPostMutation.mutate(content);
+                    setActiveTab('mensagem');
+                }}
+            />
         </div>
     );
 }
@@ -261,17 +265,89 @@ function WidgetCard({ title, icon, children }: { title: string, icon: React.Reac
                     {icon}
                     {title}
                 </div>
-                <button className="text-gray-400 hover:text-blue-500 transition"><PlusCircle size={14} /></button>
+                <button className="text-gray-400 hover:text-blue-500 transition">
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
+                </button>
             </div>
             <div className="p-4">
                 {children}
             </div>
         </div>
-    )
+    );
 }
 
-function PlusCircle({ size }: { size: number }) { // Quick lucide fix if missing import
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
+function MobileFab({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            onClick={onClick}
+            className="md:hidden fixed bottom-24 right-4 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform"
+        >
+            <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse" />
+            <span className="relative text-2xl">✎</span>
+        </button>
+    );
+}
+
+function MobileComposeModal({ isOpen, onClose, onSubmit }: { isOpen: boolean; onClose: () => void; onSubmit: (content: string) => void }) {
+    const [content, setContent] = useState('');
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 flex flex-col animate-in slide-in-from-bottom duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+                <button
+                    onClick={onClose}
+                    className="text-gray-500 font-medium text-base hover:bg-gray-50 p-2 -ml-2 rounded-lg"
+                >
+                    Fechar
+                </button>
+                <h2 className="text-base font-bold text-gray-800 dark:text-white">Nova Publicação</h2>
+                <button
+                    onClick={() => {
+                        if (content.trim()) {
+                            onSubmit(content);
+                            setContent('');
+                        }
+                    }}
+                    disabled={!content.trim()}
+                    className="text-blue-600 font-bold text-base disabled:opacity-50 hover:bg-blue-50 p-2 -mr-2 rounded-lg"
+                >
+                    Enviar
+                </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 p-4">
+                <textarea
+                    autoFocus
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Escreva uma mensagem... Use @ para mencionar alguém."
+                    className="w-full h-full text-lg resize-none bg-transparent border-none focus:ring-0 placeholder:text-gray-400 font-normal leading-relaxed"
+                />
+            </div>
+
+            {/* Bottom Tools */}
+            <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900 p-2">
+                <div className="flex items-center gap-1 overflow-x-auto py-2 px-2 no-scrollbar">
+                    <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-600 whitespace-nowrap shadow-sm">
+                        <Paperclip size={14} className="text-gray-400" /> Anexar
+                    </button>
+                    <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-600 whitespace-nowrap shadow-sm">
+                        <span className="text-blue-500">@</span> Mencionar
+                    </button>
+                    <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-600 whitespace-nowrap shadow-sm">
+                        <span className="text-orange-500">Topics</span> Título
+                    </button>
+                </div>
+                <div className="px-4 py-2 text-center text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+                    Para: <span className="text-blue-500 font-bold">Todos os colaboradores</span>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 function PostCard({ post }: { post: Post }) {
@@ -282,6 +358,7 @@ function PostCard({ post }: { post: Post }) {
 
     const likeMutation = useMutation({
         mutationFn: async () => api.post(`/feed/${post.id}/react`, { type: 'LIKE' }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['feed'] })
     });
 
     const commentMutation = useMutation({
@@ -295,14 +372,14 @@ function PostCard({ post }: { post: Post }) {
     const hasLiked = post.reactions.some(r => r.authorId === user?.id);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="p-5">
-                <div className="flex items-start gap-4 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-none md:rounded-xl shadow-sm border-b md:border border-gray-100 dark:border-gray-700 overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="p-4 md:p-5">
+                <div className="flex items-start gap-3 sm:gap-4 mb-4">
                     <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-sm text-lg"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-white shadow-sm text-base sm:text-lg shrink-0"
                         style={{ backgroundColor: post.author.color || '#3b82f6' }}
                     >
-                        {post.author.name?.charAt(0).toUpperCase() || <User size={24} />}
+                        {post.author.name?.charAt(0).toUpperCase() || <User size={20} />}
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
@@ -384,5 +461,5 @@ function PostCard({ post }: { post: Post }) {
                 </div>
             )}
         </div>
-    )
+    );
 }

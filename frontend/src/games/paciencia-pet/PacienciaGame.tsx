@@ -157,22 +157,70 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         });
     };
 
+    const handleMouseDown = (
+        e: React.MouseEvent,
+        card: CardType,
+        source: 'waste' | 'tableau' | 'foundation',
+        pileIndex?: number,
+        cardIndex?: number
+    ) => {
+        if (!card.faceUp) return;
+        e.preventDefault(); // Prevent text selection/drag ghosting
+
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+
+        let draggedStack: CardType[] = [card];
+        if (source === 'tableau' && pileIndex !== undefined && cardIndex !== undefined) {
+            const pile = gameState.tableau[pileIndex];
+            draggedStack = pile.slice(cardIndex);
+        }
+
+        setDragState({
+            active: true,
+            card,
+            source,
+            pileIndex,
+            cardIndex,
+            startX: e.clientX,
+            startY: e.clientY,
+            currentX: e.clientX,
+            currentY: e.clientY,
+            offsetX: e.clientX - rect.left,
+            offsetY: e.clientY - rect.top,
+            draggedStack
+        });
+    };
+
     const handleTouchMove = (e: React.TouchEvent) => {
         if (!dragState?.active) return;
         const touch = e.touches[0];
         setDragState(prev => prev ? { ...prev, currentX: touch.clientX, currentY: touch.clientY } : null);
     };
 
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!dragState?.active) return;
+        setDragState(prev => prev ? { ...prev, currentX: e.clientX, currentY: e.clientY } : null);
+    };
+
+    const handleMouseUp = (e: React.MouseEvent) => {
+        if (!dragState?.active) return;
+        handleDragEnd(e.clientX, e.clientY);
+    };
+
     const handleTouchEnd = (e: React.TouchEvent) => {
         if (!dragState?.active) return;
+        const touch = e.changedTouches[0];
+        handleDragEnd(touch.clientX, touch.clientY);
+    };
 
-        const { currentX, currentY, card, source, pileIndex, cardIndex, draggedStack } = dragState;
+    const handleDragEnd = (clientX: number, clientY: number) => {
+        if (!dragState?.active) return;
+
+        const { card, source, pileIndex, cardIndex, draggedStack } = dragState;
 
         // Simple collision detection with piles
-        // We need references to pile elements efficiently. 
-        // For now, we'll use `document.elementsFromPoint` which is easier than maintaining refs for everything.
-
-        const elements = document.elementsFromPoint(currentX, currentY);
+        const elements = document.elementsFromPoint(clientX, clientY);
         const droppedOnTableau = elements.find(el => el.getAttribute('data-droptarget') === 'tableau');
         const droppedOnFoundation = elements.find(el => el.getAttribute('data-droptarget') === 'foundation');
 
@@ -417,6 +465,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             }}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
         >
             {/* Cute Background Pattern */}
             <div className="absolute inset-0 opacity-10 pointer-events-none"
@@ -494,6 +544,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                                     <div
                                         onClick={() => handleCardClick('waste')}
                                         onTouchStart={(e) => handleTouchStart(e, gameState.waste[gameState.waste.length - 1], 'waste')}
+                                        onMouseDown={(e) => handleMouseDown(e, gameState.waste[gameState.waste.length - 1], 'waste')}
                                     >
                                         <Card
                                             card={gameState.waste[gameState.waste.length - 1]}
@@ -556,6 +607,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                                         <div
                                             onClick={() => handleCardClick('tableau', colIndex, cardIndex)}
                                             onTouchStart={(e) => handleTouchStart(e, card, 'tableau', colIndex, cardIndex)}
+                                            onMouseDown={(e) => handleMouseDown(e, card, 'tableau', colIndex, cardIndex)}
                                         >
                                             <Card
                                                 card={card}
@@ -582,30 +634,32 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             </div>
 
             {/* Dragged Ghost Card */}
-            {dragState && dragState.active && (
-                <div
-                    className="fixed pointer-events-none z-50 flex flex-col"
-                    style={{
-                        left: dragState.currentX,
-                        top: dragState.currentY,
-                        width: '13vw',
-                        maxWidth: '64px',
-                        transform: 'translate(-50%, -50%) rotate(5deg)'
-                    }}
-                >
-                    {dragState.draggedStack?.map((card, i) => (
-                        <div key={card.id} style={{ marginTop: i === 0 ? 0 : '-130%' }}>
-                            <Card
-                                card={card}
-                                isClickable={false}
-                                style={{
-                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
-                                }}
-                            />
-                        </div>
-                    ))}
-                </div>
-            )}
+            {
+                dragState && dragState.active && (
+                    <div
+                        className="fixed pointer-events-none z-50 flex flex-col"
+                        style={{
+                            left: dragState.currentX,
+                            top: dragState.currentY,
+                            width: '13vw',
+                            maxWidth: '64px',
+                            transform: 'translate(-50%, -50%) rotate(5deg)'
+                        }}
+                    >
+                        {dragState.draggedStack?.map((card, i) => (
+                            <div key={card.id} style={{ marginTop: i === 0 ? 0 : '-130%' }}>
+                                <Card
+                                    card={card}
+                                    isClickable={false}
+                                    style={{
+                                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
 
             {/* Bottom Floating Action Bar - Moved UP to avoid mobile nav overlap */}
             <div className="absolute bottom-28 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex gap-1 z-40">
@@ -614,7 +668,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 <ActionBtn icon={<Lightbulb size={20} className="fill-yellow-400 text-yellow-500" />} label="Dica" onClick={handleHint} />
                 <ActionBtn icon={<Undo2 size={20} className="text-blue-500" />} label="Voltar" onClick={handleUndo} disabled={!gameState.moveHistory?.length} />
             </div>
-        </div>
+        </div >
     );
 }
 

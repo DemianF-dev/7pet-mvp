@@ -11,6 +11,7 @@ router.get('/conversations', ChatController.getConversations);
 router.post('/conversations', ChatController.createConversation);
 router.get('/:id/messages', ChatController.getMessages);
 router.post('/:id/messages', ChatController.sendMessage);
+router.post('/:id/attention', ChatController.sendAttention);
 router.get('/agents', ChatController.getSupportAgents);
 router.get('/users', ChatController.searchUsers);
 

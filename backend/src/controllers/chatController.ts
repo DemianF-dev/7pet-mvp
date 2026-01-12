@@ -217,3 +217,69 @@ export const searchUsers = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to search users' });
     }
 };
+
+export const sendAttention = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params; // conversationId
+        // @ts-ignore
+        const senderId = req.user?.id;
+        // @ts-ignore
+        const senderRole = req.user?.role;
+
+        // Verify if user is admin/director
+        if (senderRole !== 'ADMIN' && senderRole !== 'MASTER' && senderRole !== 'GESTAO') {
+            return res.status(403).json({ error: 'Apenas administradores podem chamar atenção.' });
+        }
+
+        const conversation = await prisma.conversation.findUnique({
+            where: { id },
+            include: {
+                participants: {
+                    include: { user: { select: { id: true, name: true } } }
+                }
+            }
+        });
+
+        if (!conversation) {
+            return res.status(404).json({ error: 'Conversa não encontrada' });
+        }
+
+        const sender = conversation.participants.find(p => p.userId === senderId)?.user;
+        const otherParticipants = conversation.participants.filter(p => p.userId !== senderId);
+
+        // Broadcast attention via socket
+        socketService.notifyChat(id, 'chat:attention', {
+            conversationId: id,
+            senderName: sender?.name || 'Administrador',
+            message: 'Atenção, vc tem mensagem importante no seu chat.'
+        });
+
+        // Create formal notification for each participant
+        for (const p of otherParticipants) {
+            try {
+                // Also notify their personal room in case they are not in the chat page
+                socketService.notifyUser(p.userId, 'chat:attention', {
+                    conversationId: id,
+                    senderName: sender?.name || 'Administrador',
+                    message: 'Atenção, vc tem mensagem importante no seu chat.'
+                });
+
+                const { createNotification } = require('./notificationController');
+                await createNotification(p.userId, {
+                    title: `⚠️ CHAMADA DE ATENÇÃO`,
+                    body: `O administrador ${sender?.name} está chamando sua atenção no chat.`,
+                    type: 'system',
+                    referenceId: id,
+                    data: { url: `/staff/chat`, chatId: id, forceAlert: true }
+                });
+            } catch (err) {
+                Logger.error('Error sending attention notification', err);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        Logger.error('Error sending attention', error);
+        res.status(500).json({ error: 'Failed to send attention' });
+    }
+};

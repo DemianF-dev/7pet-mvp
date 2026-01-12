@@ -312,7 +312,7 @@ export default function ServiceManager() {
         <div className="min-h-screen bg-gray-50 flex">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
+            <main className="flex-1 md:ml-64 p-4 md:p-10 pb-32">
                 <header className="mb-10">
                     <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />
@@ -655,26 +655,26 @@ export default function ServiceManager() {
 
                 {/* Content - Table or Cards View */}
                 {viewMode === 'table' ? (
-                    <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                    <div className="bg-white rounded-[24px] md:rounded-[40px] shadow-sm border border-gray-100 overflow-x-auto">
+                        <table className="w-full text-left min-w-[800px]">
+                            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-8 py-6 w-12">
+                                    <th className="px-3 md:px-8 py-4 md:py-6 w-12 text-center md:text-left">
                                         {(isBulkMode || selectedIds.length > 0) && (
                                             <button
                                                 onClick={handleSelectAll}
                                                 className="text-gray-300 hover:text-primary transition-colors"
                                             >
-                                                {selectedIds.length > 0 && selectedIds.length === sortedServices.length ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                                {selectedIds.length > 0 && selectedIds.length === sortedServices.length ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
                                             </button>
                                         )}
                                     </th>
-                                    <th className="px-8 py-6">Serviço</th>
-                                    <th className="px-8 py-6">Categoria</th>
-                                    <th className="px-8 py-6 text-center">Espécie</th>
-                                    <th className="px-8 py-6 text-center">Duração</th>
-                                    <th className="px-8 py-6 text-right">Preço</th>
-                                    <th className="px-8 py-6 text-right">Ações</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6">Serviço</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6">Categoria</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-center">Espécie</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-center">Duração</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-right">Preço</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -698,68 +698,68 @@ export default function ServiceManager() {
                                         key={service.id}
                                         className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(service.id) ? 'bg-primary/5' : ''}`}
                                     >
-                                        <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
+                                        <td className="px-3 md:px-8 py-4 md:py-6" onClick={(e) => e.stopPropagation()}>
                                             {(isBulkMode || selectedIds.includes(service.id)) && (
                                                 <button
                                                     onClick={(e) => toggleSelect(service.id, e)}
                                                     className={`transition-all ${selectedIds.includes(service.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
                                                 >
-                                                    {selectedIds.includes(service.id) ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                                    {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
                                                 </button>
                                             )}
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
-                                                    <Tag size={18} />
+                                        <td className="px-3 md:px-8 py-4 md:py-6">
+                                            <div className="flex items-center gap-2 md:gap-3">
+                                                <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/10 rounded-lg md:rounded-xl flex items-center justify-center text-primary shrink-0">
+                                                    <Tag size={16} />
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-black text-secondary uppercase text-sm">{service.name}</h3>
-                                                        <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                <div className="min-w-0">
+                                                    <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2">
+                                                        <h3 className="font-black text-secondary uppercase text-[11px] md:text-sm truncate max-w-[120px] md:max-w-none">{service.name}</h3>
+                                                        <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded-md uppercase tracking-widest w-fit">
                                                             SR-{String((service.seqId || 0) + 999).padStart(4, '0')}
                                                         </span>
                                                     </div>
                                                     {service.description && (
-                                                        <p className="text-xs text-gray-400 line-clamp-1">{service.description}</p>
+                                                        <p className="text-[10px] md:text-xs text-gray-400 line-clamp-1 hidden sm:block">{service.description}</p>
                                                     )}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                        <td className="px-3 md:px-8 py-4 md:py-6">
+                                            <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                                                 {service.category}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-center">
                                             <div className="flex justify-center">
                                                 {service.species === 'Canino' ? (
-                                                    <span className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black">
-                                                        <Dog size={12} /> Canino
+                                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[9px] md:text-[10px] font-black">
+                                                        <Dog size={10} /> <span className="hidden md:inline">Canino</span>
                                                     </span>
                                                 ) : service.species === 'Felino' ? (
-                                                    <span className="flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-xl text-[10px] font-black">
-                                                        <Cat size={12} /> Felino
+                                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-[9px] md:text-[10px] font-black">
+                                                        <Cat size={10} /> <span className="hidden md:inline">Felino</span>
                                                     </span>
                                                 ) : (
-                                                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-xl text-[10px] font-black">
-                                                        Ambos
+                                                    <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-[9px] md:text-[10px] font-black">
+                                                        <span className="hidden md:inline">Ambos</span><span className="md:hidden">A</span>
                                                     </span>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-center">
                                             <div className="flex items-center justify-center gap-1 text-gray-600">
-                                                <Clock size={14} />
-                                                <span className="font-bold text-sm">{service.duration} min</span>
+                                                <Clock size={12} />
+                                                <span className="font-bold text-[10px] md:text-sm">{service.duration}<span className="hidden md:inline"> min</span><span className="md:hidden">m</span></span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <span className="text-lg font-black text-primary">
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-right">
+                                            <span className="text-sm md:text-lg font-black text-primary whitespace-nowrap">
                                                 R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-right">
                                             <div className="flex justify-end gap-1">
                                                 {tab === 'trash' ? (
                                                     <>
@@ -827,7 +827,7 @@ export default function ServiceManager() {
                                 key={service.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`group bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
+                                className={`group bg-white p-4 md:p-6 rounded-2xl md:rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -867,9 +867,9 @@ export default function ServiceManager() {
                                     </div>
                                 </div>
 
-                                <h3 className="text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
-                                <p className="text-[10px] font-black text-primary mb-2">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
-                                <p className="text-gray-400 text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
+                                <h3 className="text-sm md:text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
+                                <p className="text-[10px] font-black text-primary mb-1">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
+                                <p className="text-gray-400 text-[10px] md:text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
 
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                                     <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">

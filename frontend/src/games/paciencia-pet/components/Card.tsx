@@ -126,12 +126,11 @@ export default function Card({
 
             {/* Main Center Rank - Soft and Clean */}
             <div style={{
-                fontSize: '24px',
-                fontWeight: '700',
+                fontSize: card.rank.length > 1 ? '22px' : '26px', // Slightly smaller if 2 digits
+                fontWeight: '600', // Reduced from 700
                 color: isRed ? '#f43f5e' : '#334155',
                 lineHeight: 1,
                 marginTop: '1px',
-                letterSpacing: '-1px',
                 fontFamily: 'Quicksand, sans-serif'
             }}>
                 {card.rank}

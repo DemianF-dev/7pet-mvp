@@ -80,7 +80,7 @@ const SPAServicesSection = ({
             {/* Service Selection */}
             <div className="space-y-4 mb-8">
                 {/* Banhos Section */}
-                <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-[32px] border border-gray-200 shadow-sm">
+                <div className="flex flex-col gap-3 bg-gray-50 p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-gray-200 shadow-sm">
                     <div className="flex flex-col">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 mb-1">Banho</label>
                         <p className="text-[11px] text-primary font-bold ml-1 mb-3 italic">Tradicional ou com hidratação ideal para o pelo do pet</p>
@@ -103,7 +103,7 @@ const SPAServicesSection = ({
                 </div>
 
                 {/* Tosas Section */}
-                <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-[32px] border border-gray-200 shadow-sm">
+                <div className="flex flex-col gap-3 bg-gray-50 p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-gray-200 shadow-sm">
                     <div className="flex flex-col">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 mb-1">Tosa</label>
                         <p className="text-[11px] text-primary font-bold ml-1 mb-3 italic">Higiênica, Geral (Máquina ou Tesoura), Bebê</p>
@@ -126,7 +126,7 @@ const SPAServicesSection = ({
                 </div>
 
                 {/* Serviços Extras Section */}
-                <div className="flex flex-col gap-3 bg-gray-100/50 p-6 rounded-[32px] border border-gray-200 shadow-sm">
+                <div className="flex flex-col gap-3 bg-gray-100/50 p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-gray-200 shadow-sm">
                     <div className="flex flex-col">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 mb-1">Serviços Extras</label>
                         <p className="text-[11px] text-primary font-bold ml-1 mb-3 italic">Hidratação, Escovação de Dentes, Corte de Unhas, etc.</p>
@@ -159,13 +159,13 @@ const SPAServicesSection = ({
             </div>
 
             {/* SPA Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 bg-white p-4 md:p-8 rounded-[24px] md:rounded-[40px] border border-gray-100 shadow-sm">
                 <div className="space-y-6">
                     {/* Hair Length removed - now in Step 2 */}
 
-                    <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[32px] border border-gray-100">
+                    <div className="flex items-center justify-between p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-[32px] border border-gray-100">
                         <div className="flex flex-col">
-                            <span className="text-secondary font-black text-sm uppercase tracking-tight">Presença de Parasitas?</span>
+                            <span className="text-secondary font-black text-xs md:text-sm uppercase tracking-tight">Presença de Parasitas?</span>
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pulgas ou Carrapatos</span>
                         </div>
                         <button
@@ -178,7 +178,7 @@ const SPAServicesSection = ({
                     </div>
 
                     {spaDetails.hasParasites && (
-                        <div className="p-6 bg-red-50/50 rounded-[32px] border border-red-100 animate-in zoom-in-95 duration-300 space-y-4">
+                        <div className="p-4 md:p-6 bg-red-50/50 rounded-2xl md:rounded-[32px] border border-red-100 animate-in zoom-in-95 duration-300 space-y-4">
                             <label className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] block ml-1">Qual tipo de parasita?</label>
                             <div className="flex flex-wrap gap-3">
                                 {['PULGA', 'CARRAPATO', 'AMBOS'].map(type => (
@@ -233,9 +233,9 @@ const SPAServicesSection = ({
                 </div>
 
                 <div className="space-y-6">
-                    <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[32px] border border-gray-100">
+                    <div className="flex items-center justify-between p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-[32px] border border-gray-100">
                         <div className="flex flex-col">
-                            <span className="text-secondary font-black text-sm uppercase tracking-tight">Possui Nós no Pelo?</span>
+                            <span className="text-secondary font-black text-xs md:text-sm uppercase tracking-tight">Possui Nós no Pelo?</span>
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Para desembaraço</span>
                         </div>
                         <button
@@ -248,7 +248,7 @@ const SPAServicesSection = ({
                     </div>
 
                     {spaDetails.hasKnots && (
-                        <div className="p-6 bg-primary/5 rounded-[32px] border border-primary/10 animate-in zoom-in-95 duration-300">
+                        <div className="p-4 md:p-6 bg-primary/5 rounded-2xl md:rounded-[32px] border border-primary/10 animate-in zoom-in-95 duration-300">
                             <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 block ml-1 text-center">Onde estão os nós?</label>
                             <div className="flex flex-wrap gap-2 justify-center">
                                 {KNOT_REGIONS.map(region => (

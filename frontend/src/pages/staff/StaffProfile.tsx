@@ -81,9 +81,9 @@ const StaffProfile: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex">
+        <div className="min-h-screen flex bg-slate-50/50">
             <StaffSidebar />
-            <main className="flex-1 md:ml-64 p-6 md:p-10" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 24px))' }}>
+            <div className="flex-1 md:ml-64 p-4 md:p-10" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom, 24px))' }}>
                 <div className="max-w-5xl mx-auto">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <motion.div
@@ -130,7 +130,7 @@ const StaffProfile: React.FC = () => {
                                     </div>
                                     <h3 className="font-bold text-slate-800 tracking-tight">Dados de Identificação</h3>
                                 </div>
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-5 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2 col-span-2">
                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">ID do Colaborador</label>
                                         <div className="relative">
@@ -139,7 +139,7 @@ const StaffProfile: React.FC = () => {
                                                 type="text"
                                                 value={`STAFF-${String(user?.staffId || user?.seqId || '').padStart(4, '0')}`}
                                                 disabled
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed font-mono"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed font-mono text-sm"
                                             />
                                         </div>
                                     </div>
@@ -165,7 +165,7 @@ const StaffProfile: React.FC = () => {
                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Divisão / Departamento</label>
                                         <div className="relative">
                                             <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" size={18} />
-                                            <div className={`w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 font-bold ${getDivisionBgClass(user?.division || 'CLIENTE')} ${getDivisionTextClass(user?.division || 'CLIENTE')}`}>
+                                            <div className={`w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 font-bold ${getDivisionBgClass(user?.division || 'CLIENTE')} ${getDivisionTextClass(user?.division || 'CLIENTE')} text-sm`}>
                                                 {DIVISION_LABELS[user?.division as keyof typeof DIVISION_LABELS] || user?.division}
                                             </div>
                                         </div>
@@ -181,7 +181,7 @@ const StaffProfile: React.FC = () => {
                                                     type="text"
                                                     value={user?.role}
                                                     disabled
-                                                    className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-700 cursor-not-allowed font-medium"
+                                                    className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-700 cursor-not-allowed font-medium text-sm"
                                                 />
                                             </div>
                                             <p className="text-[10px] text-slate-400 ml-1 italic">Seu cargo é apenas informativo e pode ser editado pela Diretoria.</p>
@@ -198,7 +198,7 @@ const StaffProfile: React.FC = () => {
                                                 value={formData.firstName}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="Primeiro nome"
                                             />
                                         </div>
@@ -214,7 +214,7 @@ const StaffProfile: React.FC = () => {
                                                 value={formData.lastName}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="Sobrenome"
                                             />
                                         </div>
@@ -229,7 +229,7 @@ const StaffProfile: React.FC = () => {
                                                 name="document"
                                                 value={formData.document}
                                                 onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="000.000.000-00"
                                             />
                                         </div>
@@ -244,7 +244,7 @@ const StaffProfile: React.FC = () => {
                                                 name="birthday"
                                                 value={formData.birthday}
                                                 onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                             />
                                         </div>
                                     </div>
@@ -264,7 +264,7 @@ const StaffProfile: React.FC = () => {
                                     </div>
                                     <h3 className="font-bold text-slate-800 tracking-tight">Contato e Localização</h3>
                                 </div>
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-5 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">E-mail Corporativo</label>
                                         <div className="relative">
@@ -275,7 +275,7 @@ const StaffProfile: React.FC = () => {
                                                 value={formData.email}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="exemplo@7pet.com"
                                             />
                                         </div>
@@ -290,7 +290,7 @@ const StaffProfile: React.FC = () => {
                                                 name="phone"
                                                 value={formData.phone}
                                                 onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="(00) 00000-0000"
                                             />
                                         </div>
@@ -305,7 +305,7 @@ const StaffProfile: React.FC = () => {
                                                 name="address"
                                                 value={formData.address}
                                                 onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="Rua, Número, Bairro, Cidade"
                                             />
                                         </div>
@@ -326,13 +326,13 @@ const StaffProfile: React.FC = () => {
                                     </div>
                                     <h3 className="font-bold text-slate-800 tracking-tight">Observações Adicionais</h3>
                                 </div>
-                                <div className="p-8">
+                                <div className="p-5 md:p-8">
                                     <textarea
                                         name="notes"
                                         value={formData.notes}
                                         onChange={handleChange}
                                         rows={4}
-                                        className="w-full p-6 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 resize-none"
+                                        className="w-full p-4 md:p-6 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 resize-none text-sm"
                                         placeholder="Alguma informação importante sobre seu cadastro ou perfil profissional..."
                                     />
                                 </div>
@@ -345,7 +345,7 @@ const StaffProfile: React.FC = () => {
                             <motion.div
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden sticky top-6"
+                                className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden md:sticky md:top-6"
                             >
                                 <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
                                     <div className="p-2 bg-white rounded-xl shadow-sm text-red-500">
@@ -368,7 +368,7 @@ const StaffProfile: React.FC = () => {
                                                 value={formData.password}
                                                 onChange={handleChange}
                                                 autoComplete="new-password"
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="••••••••"
                                             />
                                         </div>
@@ -384,7 +384,7 @@ const StaffProfile: React.FC = () => {
                                                 value={formData.confirmPassword}
                                                 onChange={handleChange}
                                                 autoComplete="new-password"
-                                                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700"
+                                                className="w-full pl-10 md:pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-200 outline-none transition-all font-medium text-slate-700 text-sm"
                                                 placeholder="••••••••"
                                             />
                                         </div>
@@ -485,7 +485,7 @@ const StaffProfile: React.FC = () => {
                         </div>
                     </form>
                 </div>
-            </main>
+            </div>
         </div>
     );
 

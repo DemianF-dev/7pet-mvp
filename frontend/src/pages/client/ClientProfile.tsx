@@ -148,7 +148,7 @@ export default function ClientProfile() {
         <div className="min-h-screen bg-gray-50 flex">
             <Sidebar />
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
+            <div className="flex-1 md:ml-64 p-4 md:p-10" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom, 24px))' }}>
                 <header className="mb-10">
                     <h1 className="text-4xl font-extrabold text-secondary">Meu <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Perfil</span></h1>
                     <p className="text-gray-500 mt-3">Mantenha seus dados atualizados para facilitar a comunicação e logística.</p>
@@ -156,11 +156,11 @@ export default function ClientProfile() {
 
                 {/* Tutorial Status Card */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ID Cliente</span>
-                        <span className="text-xl font-black text-secondary">CL-{String(user?.seqId || 0).padStart(4, '0')}</span>
+                        <span className="text-lg md:text-xl font-black text-secondary">CL-{String(user?.seqId || 0).padStart(4, '0')}</span>
                     </div>
-                    <div className="bg-white p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Guia Interativo</span>
                         <button
                             type="button"
@@ -180,16 +180,16 @@ export default function ClientProfile() {
                                     }
                                 }
                             }}
-                            className={`text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full transition-all border ${showTutorial ? 'bg-primary/5 text-primary border-primary/20' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                            className={`text-[10px] md:text-xs font-black uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full transition-all border ${showTutorial ? 'bg-primary/5 text-primary border-primary/20' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
                         >
                             {showTutorial ? 'Ativado' : 'Desativado'}
                         </button>
                     </div>
-                    <div className="bg-white p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Membro Desde</span>
-                        <span className="text-xl font-black text-secondary">{user?.createdAt ? new Date(user.createdAt).getFullYear() : '2025'}</span>
+                        <span className="text-lg md:text-xl font-black text-secondary">{user?.createdAt ? new Date(user.createdAt).getFullYear() : '2025'}</span>
                     </div>
-                    <div className="bg-white p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</span>
                         <span className="bg-green-100 text-green-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Ativo</span>
                     </div>
@@ -200,7 +200,7 @@ export default function ClientProfile() {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="glass-card p-8 shadow-sm"
+                            className="glass-card p-5 md:p-8 shadow-sm"
                         >
                             <form onSubmit={handleSave} className="space-y-6">
                                 {message && (
@@ -219,7 +219,7 @@ export default function ClientProfile() {
                                                 type="text"
                                                 value={`ID-${String(user?.seqId || '').padStart(4, '0')}`}
                                                 disabled
-                                                className="input-field pl-12 bg-gray-50 text-gray-400 cursor-not-allowed border-transparent font-mono"
+                                                className="input-field pl-10 md:pl-12 bg-gray-50 text-gray-400 cursor-not-allowed border-transparent font-mono text-sm"
                                             />
                                         </div>
                                     </div>
@@ -232,7 +232,7 @@ export default function ClientProfile() {
                                                 type="email"
                                                 value={user?.email || ''}
                                                 disabled
-                                                className="input-field pl-12 bg-gray-50 text-gray-400 cursor-not-allowed border-transparent"
+                                                className="input-field pl-10 md:pl-12 bg-gray-50 text-gray-400 cursor-not-allowed border-transparent text-sm"
                                             />
                                         </div>
                                     </div>
@@ -243,7 +243,7 @@ export default function ClientProfile() {
                                             type="text"
                                             value={firstName}
                                             onChange={(e) => setFirstName(e.target.value)}
-                                            className="input-field"
+                                            className="input-field text-sm"
                                             required
                                         />
                                     </div>
@@ -254,7 +254,7 @@ export default function ClientProfile() {
                                             type="text"
                                             value={lastName}
                                             onChange={(e) => setLastName(e.target.value)}
-                                            className="input-field"
+                                            className="input-field text-sm"
                                             required
                                         />
                                     </div>
@@ -265,7 +265,7 @@ export default function ClientProfile() {
                                             type="date"
                                             value={birthday}
                                             onChange={(e) => setBirthday(e.target.value)}
-                                            className="input-field"
+                                            className="input-field text-sm"
                                         />
                                     </div>
 
@@ -276,7 +276,7 @@ export default function ClientProfile() {
                                             value={discoverySource}
                                             onChange={(e) => setDiscoverySource(e.target.value)}
                                             placeholder="Ex: Instagram, Indicação..."
-                                            className="input-field"
+                                            className="input-field text-sm"
                                         />
                                     </div>
                                 </div>
@@ -288,11 +288,11 @@ export default function ClientProfile() {
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Telefones</label>
                                             <button type="button" onClick={() => setExtraPhones([...extraPhones, ''])} className="text-[10px] font-black text-primary hover:underline">+ Adicionar Telefone</button>
                                         </div>
-                                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field" placeholder="Telefone Principal" />
+                                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field text-sm" placeholder="Telefone Principal" />
                                         {extraPhones.map((p, i) => (
                                             <div key={i} className="flex gap-2">
-                                                <input type="tel" value={p} onChange={(e) => updateField(setExtraPhones, extraPhones, i, e.target.value)} className="input-field flex-1" placeholder="Telefone extra" />
-                                                <button type="button" onClick={() => removeField(setExtraPhones, extraPhones, i)} className="text-red-400 hover:text-red-600 px-2">Remover</button>
+                                                <input type="tel" value={p} onChange={(e) => updateField(setExtraPhones, extraPhones, i, e.target.value)} className="input-field flex-1 text-sm" placeholder="Telefone extra" />
+                                                <button type="button" onClick={() => removeField(setExtraPhones, extraPhones, i)} className="text-red-400 hover:text-red-600 px-2 text-xs font-bold">Remover</button>
                                             </div>
                                         ))}
                                     </div>
@@ -304,8 +304,8 @@ export default function ClientProfile() {
                                         </div>
                                         {extraEmails.map((em, i) => (
                                             <div key={i} className="flex gap-2">
-                                                <input type="email" value={em} onChange={(e) => updateField(setExtraEmails, extraEmails, i, e.target.value)} className="input-field flex-1" placeholder="E-mail extra" />
-                                                <button type="button" onClick={() => removeField(setExtraEmails, extraEmails, i)} className="text-red-400 hover:text-red-600 px-2">Remover</button>
+                                                <input type="email" value={em} onChange={(e) => updateField(setExtraEmails, extraEmails, i, e.target.value)} className="input-field flex-1 text-sm" placeholder="E-mail extra" />
+                                                <button type="button" onClick={() => removeField(setExtraEmails, extraEmails, i)} className="text-red-400 hover:text-red-600 px-2 text-xs font-bold">Remover</button>
                                             </div>
                                         ))}
                                     </div>
@@ -315,11 +315,11 @@ export default function ClientProfile() {
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Endereços</label>
                                             <button type="button" onClick={() => setExtraAddresses([...extraAddresses, ''])} className="text-[10px] font-black text-primary hover:underline">+ Adicionar Endereço</button>
                                         </div>
-                                        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="input-field" placeholder="Endereço Principal" />
+                                        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="input-field text-sm" placeholder="Endereço Principal" />
                                         {extraAddresses.map((ad, i) => (
                                             <div key={i} className="flex gap-2">
-                                                <input type="text" value={ad} onChange={(e) => updateField(setExtraAddresses, extraAddresses, i, e.target.value)} className="input-field flex-1" placeholder="Endereço extra" />
-                                                <button type="button" onClick={() => removeField(setExtraAddresses, extraAddresses, i)} className="text-red-400 hover:text-red-600 px-2">Remover</button>
+                                                <input type="text" value={ad} onChange={(e) => updateField(setExtraAddresses, extraAddresses, i, e.target.value)} className="input-field flex-1 text-sm" placeholder="Endereço extra" />
+                                                <button type="button" onClick={() => removeField(setExtraAddresses, extraAddresses, i)} className="text-red-400 hover:text-red-600 px-2 text-xs font-bold">Remover</button>
                                             </div>
                                         ))}
                                     </div>
@@ -349,7 +349,7 @@ export default function ClientProfile() {
                                             value={communicationOther}
                                             onChange={(e) => setCommunicationOther(e.target.value)}
                                             placeholder="Explique como prefere ser contatado..."
-                                            className="input-field mt-2"
+                                            className="input-field mt-2 text-sm"
                                         />
                                     )}
                                 </div>
@@ -368,7 +368,7 @@ export default function ClientProfile() {
 
                                     <div className="space-y-8">
                                         {additionalGuardians.map((g, idx) => (
-                                            <div key={idx} className="bg-gray-50/50 p-6 rounded-[24px] border border-gray-100 relative group animate-in slide-in-from-right-4 duration-300">
+                                            <div key={idx} className="bg-gray-50/50 p-4 md:p-6 rounded-[24px] border border-gray-100 relative group animate-in slide-in-from-right-4 duration-300">
                                                 <button
                                                     type="button"
                                                     onClick={() => setAdditionalGuardians(additionalGuardians.filter((_, i) => i !== idx))}
@@ -377,14 +377,14 @@ export default function ClientProfile() {
                                                     Remover
                                                 </button>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <input placeholder="Nome" value={g.firstName} onChange={(e) => updateGuardian(idx, 'firstName', e.target.value)} className="input-field bg-white" />
-                                                    <input placeholder="Sobrenome" value={g.lastName} onChange={(e) => updateGuardian(idx, 'lastName', e.target.value)} className="input-field bg-white" />
-                                                    <input placeholder="Telefone" value={g.phone} onChange={(e) => updateGuardian(idx, 'phone', e.target.value)} className="input-field bg-white" />
-                                                    <input placeholder="E-mail" value={g.email} onChange={(e) => updateGuardian(idx, 'email', e.target.value)} className="input-field bg-white" />
-                                                    <input placeholder="Endereço" value={g.address} onChange={(e) => updateGuardian(idx, 'address', e.target.value)} className="input-field bg-white md:col-span-2" />
+                                                    <input placeholder="Nome" value={g.firstName} onChange={(e) => updateGuardian(idx, 'firstName', e.target.value)} className="input-field bg-white text-sm" />
+                                                    <input placeholder="Sobrenome" value={g.lastName} onChange={(e) => updateGuardian(idx, 'lastName', e.target.value)} className="input-field bg-white text-sm" />
+                                                    <input placeholder="Telefone" value={g.phone} onChange={(e) => updateGuardian(idx, 'phone', e.target.value)} className="input-field bg-white text-sm" />
+                                                    <input placeholder="E-mail" value={g.email} onChange={(e) => updateGuardian(idx, 'email', e.target.value)} className="input-field bg-white text-sm" />
+                                                    <input placeholder="Endereço" value={g.address} onChange={(e) => updateGuardian(idx, 'address', e.target.value)} className="input-field bg-white md:col-span-2 text-sm" />
                                                     <div className="md:col-span-2 space-y-1">
                                                         <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Data de Nascimento (Opcional)</label>
-                                                        <input type="date" value={g.birthday} onChange={(e) => updateGuardian(idx, 'birthday', e.target.value)} className="input-field bg-white" />
+                                                        <input type="date" value={g.birthday} onChange={(e) => updateGuardian(idx, 'birthday', e.target.value)} className="input-field bg-white text-sm" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -566,7 +566,7 @@ export default function ClientProfile() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 }

@@ -119,7 +119,7 @@ export default function StaffProfileDetails() {
     return (
         <div className="min-h-screen flex">
             <StaffSidebar />
-            <main className="flex-1 md:ml-64 p-8 max-w-5xl mx-auto w-full">
+            <div className="flex-1 md:ml-64 p-4 md:p-8 max-w-5xl mx-auto w-full" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom, 24px))' }}>
                 <button
                     onClick={() => navigate('/staff/hr/collaborators')}
                     className="flex items-center gap-2 text-muted hover:text-heading mb-6"
@@ -128,18 +128,18 @@ export default function StaffProfileDetails() {
                     Voltar
                 </button>
 
-                <div className="flex items-center gap-4 mb-8">
-                    <div className="w-16 h-16 rounded-full bg-accent text-white flex items-center justify-center font-bold text-2xl">
+                <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
+                    <div className="w-16 h-16 rounded-full bg-accent text-white flex items-center justify-center font-bold text-2xl shrink-0">
                         {profile.user.name.charAt(0)}
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-heading">{profile.user.name}</h1>
-                        <p className="text-muted">{profile.department.toUpperCase()} | {profile.user.email}</p>
+                    <div className="text-center md:text-left">
+                        <h1 className="text-xl md:text-2xl font-black text-heading">{profile.user.name}</h1>
+                        <p className="text-xs md:text-sm text-muted">{profile.department.toUpperCase()} | {profile.user.email}</p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="md:ml-auto w-full md:w-auto">
                         <button
                             onClick={() => navigate(`/staff/users?email=${profile.user.email}`)}
-                            className="flex items-center gap-2 px-4 py-2 bg-fill-secondary hover:bg-fill-tertiary text-heading rounded-lg font-medium transition-colors text-sm"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-fill-secondary hover:bg-fill-tertiary text-heading rounded-lg font-medium transition-colors text-xs w-full md:w-auto"
                             title="Ir para gestão de usuário e permissões"
                         >
                             <Shield size={16} />
@@ -152,20 +152,20 @@ export default function StaffProfileDetails() {
 
                     {/* 1. Personal Info */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                        <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700">
                             <h2 className="text-lg font-bold text-heading flex items-center gap-2">
                                 <User size={20} className="text-accent" />
                                 Dados Pessoais & Contato
                             </h2>
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="label-sm">Data de Nascimento</label>
                                 <input
                                     type="date"
                                     value={formData.birthday}
                                     onChange={e => setFormData({ ...formData, birthday: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                 />
                             </div>
                             <div>
@@ -174,7 +174,7 @@ export default function StaffProfileDetails() {
                                     type="date"
                                     value={formData.hiringDate}
                                     onChange={e => setFormData({ ...formData, hiringDate: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                 />
                             </div>
                             <div className="col-span-1 md:col-span-2">
@@ -184,7 +184,7 @@ export default function StaffProfileDetails() {
                                     <input
                                         value={formData.address}
                                         onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                        className="input-field pl-10"
+                                        className="input-field pl-10 text-sm"
                                         placeholder="Rua, Número, Bairro, Cidade - UF, CEP"
                                     />
                                 </div>
@@ -194,19 +194,19 @@ export default function StaffProfileDetails() {
 
                     {/* 2. Emergency Contact */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                        <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700">
                             <h2 className="text-lg font-bold text-heading flex items-center gap-2">
                                 <Heart size={20} className="text-error" />
                                 Contato de Emergência
                             </h2>
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="label-sm">Nome do Contato</label>
                                 <input
                                     value={formData.emergencyContactName}
                                     onChange={e => setFormData({ ...formData, emergencyContactName: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                 />
                             </div>
                             <div>
@@ -214,7 +214,7 @@ export default function StaffProfileDetails() {
                                 <input
                                     value={formData.emergencyContactPhone}
                                     onChange={e => setFormData({ ...formData, emergencyContactPhone: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                 />
                             </div>
                             <div>
@@ -222,7 +222,7 @@ export default function StaffProfileDetails() {
                                 <input
                                     value={formData.emergencyContactRelation}
                                     onChange={e => setFormData({ ...formData, emergencyContactRelation: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                     placeholder="Ex: Mãe, Cônjuge"
                                 />
                             </div>
@@ -231,19 +231,19 @@ export default function StaffProfileDetails() {
 
                     {/* 3. Driver Info */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                        <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700">
                             <h2 className="text-lg font-bold text-heading flex items-center gap-2">
                                 <Truck size={20} className="text-blue-500" />
                                 Habilitação (CNH)
                             </h2>
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                        <div className="p-4 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-6 items-end">
                             <div className="md:col-span-1">
                                 <label className="label-sm">Nº Registro</label>
                                 <input
                                     value={formData.cnhNumber}
                                     onChange={e => setFormData({ ...formData, cnhNumber: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                 />
                             </div>
                             <div>
@@ -251,7 +251,7 @@ export default function StaffProfileDetails() {
                                 <input
                                     value={formData.cnhCategory}
                                     onChange={e => setFormData({ ...formData, cnhCategory: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                     placeholder="Ex: AB"
                                 />
                             </div>
@@ -261,7 +261,7 @@ export default function StaffProfileDetails() {
                                     type="date"
                                     value={formData.cnhExpiry}
                                     onChange={e => setFormData({ ...formData, cnhExpiry: e.target.value })}
-                                    className="input-field"
+                                    className="input-field text-sm"
                                 />
                             </div>
                             <div className="pb-3">
@@ -280,23 +280,23 @@ export default function StaffProfileDetails() {
 
                     {/* 4. Contract Info */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                        <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700">
                             <h2 className="text-lg font-bold text-heading flex items-center gap-2">
                                 <FileText size={20} className="text-accent" />
                                 Dados Contratuais & Bancários
                             </h2>
                         </div>
 
-                        <div className="p-6 space-y-6">
+                        <div className="p-4 md:p-6 space-y-6">
                             {/* Employment Type */}
                             <div>
                                 <label className="label-sm">Tipo de Contrato</label>
-                                <div className="flex gap-4">
+                                <div className="flex gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
                                     {['PF', 'PJ', 'CLT'].map(type => (
                                         <button
                                             key={type}
                                             onClick={() => setFormData({ ...formData, employmentType: type })}
-                                            className={`px-6 py-2 rounded-lg font-bold transition-colors ${formData.employmentType === type
+                                            className={`px-4 md:px-6 py-2 rounded-lg font-bold transition-colors text-sm shrink-0 ${formData.employmentType === type
                                                 ? 'bg-accent text-white'
                                                 : 'bg-fill-secondary text-body-secondary'
                                                 }`}
@@ -316,7 +316,7 @@ export default function StaffProfileDetails() {
                                         <input
                                             value={formData.companyName}
                                             onChange={e => setFormData({ ...formData, companyName: e.target.value })}
-                                            className="input-field pl-10"
+                                            className="input-field pl-10 text-sm"
                                             placeholder="Nome da Empresa"
                                         />
                                     </div>
@@ -324,13 +324,13 @@ export default function StaffProfileDetails() {
                             )}
 
                             {/* Document */}
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="label-sm">Tipo de Documento</label>
                                     <select
                                         value={formData.documentType}
                                         onChange={e => setFormData({ ...formData, documentType: e.target.value })}
-                                        className="input-field"
+                                        className="input-field text-sm"
                                     >
                                         <option value="CPF">CPF</option>
                                         <option value="CNPJ">CNPJ</option>
@@ -343,7 +343,7 @@ export default function StaffProfileDetails() {
                                         <input
                                             value={formData.documentNumber}
                                             onChange={e => setFormData({ ...formData, documentNumber: e.target.value })}
-                                            className="input-field pl-10"
+                                            className="input-field pl-10 text-sm"
                                             placeholder={formData.documentType === 'CNPJ' ? '00.000.000/0000-00' : '000.000.000-00'}
                                         />
                                     </div>
@@ -362,7 +362,7 @@ export default function StaffProfileDetails() {
                                         <input
                                             value={formData.pixKey}
                                             onChange={e => setFormData({ ...formData, pixKey: e.target.value })}
-                                            className="input-field"
+                                            className="input-field text-sm"
                                             placeholder="CPF, Email, Tel ou Aleatória"
                                         />
                                     </div>
@@ -371,25 +371,27 @@ export default function StaffProfileDetails() {
                                         <input
                                             value={formData.bankName}
                                             onChange={e => setFormData({ ...formData, bankName: e.target.value })}
-                                            className="input-field"
+                                            className="input-field text-sm"
                                             placeholder="Ex: Nubank, Itaú"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="label-sm">Agência</label>
-                                        <input
-                                            value={formData.bankAgency}
-                                            onChange={e => setFormData({ ...formData, bankAgency: e.target.value })}
-                                            className="input-field"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="label-sm">Conta</label>
-                                        <input
-                                            value={formData.bankAccount}
-                                            onChange={e => setFormData({ ...formData, bankAccount: e.target.value })}
-                                            className="input-field"
-                                        />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="label-sm">Agência</label>
+                                            <input
+                                                value={formData.bankAgency}
+                                                onChange={e => setFormData({ ...formData, bankAgency: e.target.value })}
+                                                className="input-field text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label-sm">Conta</label>
+                                            <input
+                                                value={formData.bankAccount}
+                                                onChange={e => setFormData({ ...formData, bankAccount: e.target.value })}
+                                                className="input-field text-sm"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -399,17 +401,18 @@ export default function StaffProfileDetails() {
                                 <textarea
                                     value={formData.notes}
                                     onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                    className="input-field h-24 resize-none"
+                                    className="input-field h-24 resize-none text-sm"
                                     placeholder="Informações adicionais..."
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex justify-end z-20 md:static md:bg-transparent md:border-0 md:p-0">
+                    {/* Fixed Action Bar - adjusted bottom for mobile nav */}
+                    <div className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-0 right-0 p-4 bg-white/80 backdrop-blur-md dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700 flex justify-end z-20 md:static md:bg-transparent md:border-0 md:p-0">
                         <button
                             onClick={handleSubmit}
-                            className="btn-primary flex items-center gap-2 px-8 py-3 w-full md:w-auto justify-center"
+                            className="btn-primary flex items-center gap-2 px-8 py-4 w-full md:w-auto justify-center shadow-lg shadow-accent/20"
                         >
                             <Save size={20} />
                             Salvar Ficha Completa
@@ -418,14 +421,14 @@ export default function StaffProfileDetails() {
                 </div>
 
                 <style>{`
-                .label-sm {
-                    @apply text-xs font-black text-muted uppercase tracking-wider mb-2 block;
-                }
-                .input-field {
-                    @apply w-full px-4 py-2 surface-input rounded-lg border-transparent focus:border-accent transition-colors;
-                }
-            `}</style>
-            </main>
+                    .label-sm {
+                        @apply text-xs font-black text-muted uppercase tracking-wider mb-2 block;
+                    }
+                    .input-field {
+                        @apply w-full px-4 py-2 surface-input rounded-lg border-transparent focus:border-accent transition-colors;
+                    }
+                `}</style>
+            </div>
         </div>
     );
 }
