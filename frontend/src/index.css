@@ -140,8 +140,8 @@ body {
     margin-left: 0 !important;
   }
 
-  /* Cards and containers should be full width */
-  .grid {
+  /* Cards and containers should be full width - but NOT calendar grids */
+  .grid:not([class*="grid-cols-7"]):not([class*="grid-cols-8"]) {
     grid-template-columns: 1fr !important;
   }
 

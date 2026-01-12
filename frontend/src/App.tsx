@@ -53,10 +53,15 @@ const MyHR = lazy(() => import('./pages/staff/MyHR'));
 const StaffProfiles = lazy(() => import('./pages/staff/hr/StaffProfiles'));
 const StaffProfileDetails = lazy(() => import('./pages/staff/hr/StaffProfileDetails'));
 const PayPeriods = lazy(() => import('./pages/staff/hr/PayPeriods'));
+const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
+
+// ⚡ LAYOUT SYSTEM - Shell for mobile/desktop
+import AppShell from './layouts/AppShell';
 
 // ⚡ PAUSA MODULE - Mini-games (lazy loaded)
 const PausaPage = lazy(() => import('./pages/pausa/PausaPage'));
 const PacienciaPage = lazy(() => import('./pages/pausa/PacienciaPage'));
+const DesenroscaPage = lazy(() => import('./pages/pausa/DesenroscaPage'));
 
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -142,40 +147,46 @@ function App() {
                             <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
                         </Route>
 
-                        {/* Pausa Module - Mini-games (available to all authenticated users) */}
-                        <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
-                        <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
+
 
 
                         {/* Colaborador Routes */}
                         <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
                         <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/staff/login" />}>
-                            <Route path="/staff/dashboard" element={<PageTransition><StaffDashboard /></PageTransition>} />
-                            <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
-                            <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />
-                            <Route path="/staff/agenda-log" element={<LazyPage><AgendaLOG /></LazyPage>} />
-                            <Route path="/staff/transport" element={<LazyPage><TransportManager /></LazyPage>} />
-                            <Route path="/staff/quotes" element={<LazyPage><QuoteManager /></LazyPage>} />
-                            <Route path="/staff/quotes/:id" element={<LazyPage><QuoteEditor /></LazyPage>} />
-                            <Route path="/staff/customers" element={<LazyPage><CustomerManager /></LazyPage>} />
-                            <Route path="/staff/customers/:id" element={<LazyPage><CustomerDetail /></LazyPage>} />
-                            <Route path="/staff/services" element={<LazyPage><ServiceManager /></LazyPage>} />
-                            <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
-                            <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
-                            <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
-                            <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
-                            <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
-                            <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />
-                            <Route path="/staff/profile" element={<LazyPage><StaffProfile /></LazyPage>} />
-                            <Route path="/staff/support" element={<LazyPage><SupportTicketList /></LazyPage>} />
-                            <Route path="/staff/transport-config" element={<LazyPage><TransportConfig /></LazyPage>} />
-                            <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
-                            <Route path="/staff/chat" element={<LazyPage><ChatPage /></LazyPage>} />
-                            <Route path="/staff/feed" element={<LazyPage><FeedPage /></LazyPage>} />
-                            <Route path="/staff/my-hr" element={<LazyPage><MyHR /></LazyPage>} />
-                            <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
-                            <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
-                            <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
+                            <Route element={<AppShell />}>
+                                <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                                <Route path="/staff/menu" element={<LazyPage><MobileMenuHub /></LazyPage>} />
+                                <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
+                                <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />
+                                <Route path="/staff/agenda-log" element={<LazyPage><AgendaLOG /></LazyPage>} />
+                                <Route path="/staff/transport" element={<LazyPage><TransportManager /></LazyPage>} />
+                                <Route path="/staff/quotes" element={<LazyPage><QuoteManager /></LazyPage>} />
+                                <Route path="/staff/quotes/:id" element={<LazyPage><QuoteEditor /></LazyPage>} />
+                                <Route path="/staff/customers" element={<LazyPage><CustomerManager /></LazyPage>} />
+                                <Route path="/staff/customers/:id" element={<LazyPage><CustomerDetail /></LazyPage>} />
+                                <Route path="/staff/services" element={<LazyPage><ServiceManager /></LazyPage>} />
+                                <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
+                                <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
+                                <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
+                                <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
+                                <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
+                                <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />
+                                <Route path="/staff/profile" element={<LazyPage><StaffProfile /></LazyPage>} />
+                                <Route path="/staff/support" element={<LazyPage><SupportTicketList /></LazyPage>} />
+                                <Route path="/staff/transport-config" element={<LazyPage><TransportConfig /></LazyPage>} />
+                                <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                                <Route path="/staff/chat" element={<LazyPage><ChatPage /></LazyPage>} />
+                                <Route path="/staff/feed" element={<LazyPage><FeedPage /></LazyPage>} />
+                                <Route path="/staff/my-hr" element={<LazyPage><MyHR /></LazyPage>} />
+                                <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
+                                <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
+                                <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
+
+                                {/* Pausa Module - Mini-games within AppShell for mobile nav */}
+                                <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
+                                <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
+                                <Route path="/pausa/coleira" element={<LazyPage><DesenroscaPage /></LazyPage>} />
+                            </Route>
                         </Route>
 
 

@@ -201,3 +201,19 @@ export function flipTableauCard(tableau: Pile[]): Pile[] {
         return column;
     });
 }
+
+/**
+ * Revert the last move in the game state
+ */
+export function undoMove(state: GameState): GameState {
+    if (state.moveHistory.length === 0) return state;
+
+    const lastState = state.moveHistory[state.moveHistory.length - 1];
+    const newHistory = state.moveHistory.slice(0, -1);
+
+    return {
+        ...lastState,
+        moveHistory: newHistory,
+        moves: state.moves // Or we can decrement moves if we want
+    };
+}

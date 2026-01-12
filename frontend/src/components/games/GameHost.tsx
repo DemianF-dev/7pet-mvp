@@ -71,11 +71,20 @@ export default function GameHost({ gameLoader, options, className }: GameHostPro
         // Load and mount the game
         async function loadGame() {
             try {
-                // Wait a tick to ensure container is mounted
-                await new Promise(resolve => setTimeout(resolve, 50));
+                // Wait for container to be fully mounted
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Retry logic: wait up to 1 second for container
+                let retries = 0;
+                while (retries < 10 && (!containerRef.current || !mounted)) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
+                }
 
                 if (!mounted || !containerRef.current) {
-                    console.error('GameHost: Container not available');
+                    console.error('GameHost: Container not available after retries');
+                    setError('Erro ao inicializar container do jogo');
+                    setIsLoading(false);
                     return;
                 }
 

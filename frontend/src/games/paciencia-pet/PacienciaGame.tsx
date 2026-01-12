@@ -1,7 +1,8 @@
 /**
  * PacienciaGame - Main game component
  * 
- * Implements the Klondike Solitaire game with drag-and-drop + click-to-move.
+ * Fullscreen mobile-first Solitaire with compact layout
+ * Redesigned for premium mobile experience.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -13,28 +14,19 @@ import {
     canMoveToTableau,
     getMovableCards,
     flipTableauCard,
-    checkWin
+    checkWin,
+    undoMove
 } from './game-logic';
 import Card from './components/Card';
-import Confetti from './components/Confetti';
 import toast from 'react-hot-toast';
-import '../../styles/design-system-base.css';
-import './mobile-game.css';
+import { BarChart3, Calendar, Play, Lightbulb, Undo2, Settings, Trophy, Clock, Zap } from 'lucide-react';
 
 interface PacienciaGameProps {
     onWin?: () => void;
-    reducedMotion?: boolean;
 }
 
 const STORAGE_KEY = '7pet_paciencia_saved_game';
-
-// Drag data type
-interface DragData {
-    source: 'waste' | 'tableau';
-    pileIndex?: number;
-    cardIndex?: number;
-    cards: CardType[];
-}
+const DOUBLE_CLICK_DELAY = 300;
 
 export default function PacienciaGame({ onWin }: PacienciaGameProps) {
     const [gameState, setGameState] = useState<GameState>(() => {
@@ -48,585 +40,427 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         }
         return initializeGame();
     });
-    const [showConfetti, setShowConfetti] = useState(false);
 
-    const dragDataRef = useRef<DragData | null>(null);
+    const [time, setTime] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Save game state
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }, [gameState]);
 
-    // Check win
+    // Timer logic
+    useEffect(() => {
+        if (!gameState.isPaused && gameState.moves > 0) {
+            timerRef.current = setInterval(() => {
+                setTime(t => t + 1);
+            }, 1000);
+        } else {
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [gameState.isPaused, gameState.moves]);
+
     useEffect(() => {
         if (checkWin(gameState)) {
-            setShowConfetti(true);
             toast.success('🎉 Parabéns! Você venceu!', { duration: 5000 });
             onWin?.();
         }
     }, [gameState, onWin]);
 
-    const handleNewGame = useCallback(() => {
-        setGameState(initializeGame());
-        toast.success('Novo jogo iniciado! 🐾');
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const recordMove = useCallback((prev: GameState, newState: Partial<GameState>) => {
+        const { moveHistory, ...stateToSave } = prev;
+        return {
+            ...prev,
+            ...newState,
+            moveHistory: [...(prev.moveHistory || []), stateToSave],
+            moves: prev.moves + 1
+        };
     }, []);
 
-    const handleClearProgress = useCallback(() => {
-        localStorage.removeItem(STORAGE_KEY);
+    const handleNewGame = useCallback(() => {
+        if (gameState.moves > 0 && !window.confirm('Iniciar novo jogo e perder o progresso atual?')) return;
         setGameState(initializeGame());
-        toast('Progresso limpo!');
+        setTime(0);
+        toast.success('Novo jogo! 🐾');
+    }, [gameState.moves]);
+
+    const handleUndo = useCallback(() => {
+        setGameState(prev => undoMove(prev));
     }, []);
 
     const handleDrawCard = useCallback(() => {
-        setGameState(prev => ({
-            ...drawCard(prev),
-            moves: prev.moves + 1,
-            selected: null
-        }));
-    }, []);
+        setGameState(prev => recordMove(prev, drawCard(prev)));
+    }, [recordMove]);
 
-    // Drag handlers (support both mouse and touch)
-    const handleDragStart = useCallback((
-        e: React.DragEvent | React.TouchEvent,
-        source: 'waste' | 'tableau',
+    const lastClickRef = useRef<{ time: number; source: string; pileIndex?: number; cardIndex?: number } | null>(null);
+
+    const handleCardClick = useCallback((
+        source: 'waste' | 'foundation' | 'tableau',
         pileIndex?: number,
         cardIndex?: number
     ) => {
-        let cards: CardType[] = [];
+        const now = Date.now();
+        const lastClick = lastClickRef.current;
 
-        if (source === 'waste') {
-            cards = [gameState.waste[gameState.waste.length - 1]];
-        } else if (source === 'tableau' && pileIndex !== undefined && cardIndex !== undefined) {
-            cards = getMovableCards(gameState.tableau[pileIndex], cardIndex);
-        }
+        const isDoubleClick = lastClick &&
+            (now - lastClick.time) < DOUBLE_CLICK_DELAY &&
+            lastClick.source === source &&
+            lastClick.pileIndex === pileIndex &&
+            lastClick.cardIndex === cardIndex;
 
-        if (cards.length === 0) {
-            e.preventDefault();
+        lastClickRef.current = { time: now, source, pileIndex, cardIndex };
+
+        // Double-click auto-move to foundation
+        if (isDoubleClick && source !== 'foundation') {
+            setGameState(prev => {
+                let card: CardType | null = null;
+
+                if (source === 'waste' && prev.waste.length > 0) {
+                    card = prev.waste[prev.waste.length - 1];
+                } else if (source === 'tableau' && pileIndex !== undefined) {
+                    const pile = prev.tableau[pileIndex];
+                    const lastIdx = pile.length - 1;
+                    if (lastIdx >= 0 && pile[lastIdx]?.faceUp) {
+                        card = pile[lastIdx];
+                    }
+                }
+
+                if (!card) return prev;
+
+                const foundation = prev.foundations[card.suit];
+                if (!canMoveToFoundation(card, foundation)) {
+                    toast('Não pode mover ainda', { icon: '💡' });
+                    return prev;
+                }
+
+                const newState = { ...prev };
+
+                if (source === 'waste') {
+                    newState.waste = prev.waste.slice(0, -1);
+                } else if (source === 'tableau' && pileIndex !== undefined) {
+                    newState.tableau = [...prev.tableau];
+                    newState.tableau[pileIndex] = prev.tableau[pileIndex].slice(0, -1);
+                    newState.tableau = flipTableauCard(newState.tableau);
+                }
+
+                newState.foundations = { ...prev.foundations };
+                newState.foundations[card.suit] = [...foundation, card];
+
+                return recordMove(prev, newState);
+            });
             return;
         }
 
-        dragDataRef.current = { source, pileIndex, cardIndex, cards };
-
-        // Only set dataTransfer for drag events (not touch)
-        if ('dataTransfer' in e) {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', 'card');
-        }
-    }, [gameState]);
-
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    }, []);
-
-    const handleDropOnFoundation = useCallback((e: React.DragEvent, foundationIndex: number) => {
-        e.preventDefault();
-        const dragData = dragDataRef.current;
-        if (!dragData || dragData.cards.length !== 1) return;
-
-        const card = dragData.cards[0];
-        const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
-        const targetSuit = suits[foundationIndex];
-
+        // Single click logic
         setGameState(prev => {
-            const foundation = prev.foundations[targetSuit];
+            if (!prev.selected) {
+                if (source === 'waste' && prev.waste.length === 0) return prev;
+                if (source === 'foundation') return prev;
 
-            if (!canMoveToFoundation(card, foundation)) {
-                toast('Movimento inválido', { icon: '💡' });
-                return prev;
-            }
-
-            const newState = { ...prev };
-
-            // Remove from source
-            if (dragData.source === 'waste') {
-                newState.waste = prev.waste.slice(0, -1);
-            } else if (dragData.source === 'tableau' && dragData.pileIndex !== undefined) {
-                newState.tableau = [...prev.tableau];
-                newState.tableau[dragData.pileIndex] = prev.tableau[dragData.pileIndex].slice(0, dragData.cardIndex);
-                newState.tableau = flipTableauCard(newState.tableau);
-            }
-
-            // Add to foundation
-            newState.foundations = { ...prev.foundations };
-            newState.foundations[targetSuit] = [...foundation, card];
-            newState.moves += 1;
-            newState.selected = null;
-
-            return newState;
-        });
-
-        dragDataRef.current = null;
-    }, []);
-
-    const handleDropOnTableau = useCallback((e: React.DragEvent, targetPileIndex: number) => {
-        e.preventDefault();
-        const dragData = dragDataRef.current;
-        if (!dragData) return;
-
-        const card = dragData.cards[0];
-
-        setGameState(prev => {
-            const targetTableau = prev.tableau[targetPileIndex];
-
-            if (!canMoveToTableau(card, targetTableau)) {
-                if (targetTableau.length === 0 && card.rank !== 'K') {
-                    toast('Só Reis em colunas vazias', { icon: '💡' });
-                } else {
-                    toast('Alterne cores, ordem decrescente', { icon: '💡' });
+                if (source === 'tableau' && pileIndex !== undefined) {
+                    const tableau = prev.tableau[pileIndex];
+                    if (tableau.length === 0) return prev;
+                    if (cardIndex === undefined || !tableau[cardIndex]?.faceUp) return prev;
                 }
-                return prev;
+
+                return { ...prev, selected: { source, pileIndex, cardIndex } };
             }
 
-            const newState = { ...prev };
+            const { selected } = prev;
 
-            // Remove from source
-            if (dragData.source === 'waste') {
-                newState.waste = prev.waste.slice(0, -1);
-            } else if (dragData.source === 'tableau' && dragData.pileIndex !== undefined) {
-                newState.tableau = [...prev.tableau];
-                newState.tableau[dragData.pileIndex] = prev.tableau[dragData.pileIndex].slice(0, dragData.cardIndex);
-                newState.tableau = flipTableauCard(newState.tableau);
+            if (selected.source === source &&
+                selected.pileIndex === pileIndex &&
+                selected.cardIndex === cardIndex) {
+                return { ...prev, selected: null };
             }
 
-            // Add to tableau
-            if (!newState.tableau) newState.tableau = [...prev.tableau];
-            newState.tableau[targetPileIndex] = [...targetTableau, ...dragData.cards];
-            newState.moves += 1;
-            newState.selected = null;
-
-            return newState;
-        });
-
-        dragDataRef.current = null;
-    }, []);
-
-    // Double-click to auto-move to foundation
-    const handleDoubleClick = useCallback((
-        source: 'waste' | 'tableau',
-        pileIndex?: number,
-        cardIndex?: number
-    ) => {
-        setGameState(prev => {
-            let card: CardType | null = null;
-
-            if (source === 'waste' && prev.waste.length > 0) {
-                card = prev.waste[prev.waste.length - 1];
-            } else if (source === 'tableau' && pileIndex !== undefined) {
-                const pile = prev.tableau[pileIndex];
-                const idx = cardIndex ?? pile.length - 1;
-                if (idx === pile.length - 1 && pile[idx]?.faceUp) {
-                    card = pile[idx];
-                }
-            }
-
-            if (!card) return prev;
-
-            const foundation = prev.foundations[card.suit];
-            if (!canMoveToFoundation(card, foundation)) {
-                toast('Carta não pode ir para fundação ainda', { icon: '💡' });
-                return prev;
-            }
-
-            const newState = { ...prev };
-
-            if (source === 'waste') {
-                newState.waste = prev.waste.slice(0, -1);
-            } else if (source === 'tableau' && pileIndex !== undefined) {
-                newState.tableau = [...prev.tableau];
-                newState.tableau[pileIndex] = prev.tableau[pileIndex].slice(0, -1);
-                newState.tableau = flipTableauCard(newState.tableau);
-            }
-
-            newState.foundations = { ...prev.foundations };
-            newState.foundations[card.suit] = [...foundation, card];
-            newState.moves += 1;
-            newState.selected = null;
-
-            toast.success('Movido! 🎯', { duration: 1000 });
-            return newState;
-        });
-    }, []);
-
-    // TAP-TO-SELECT & TAP-TO-MOVE for mobile
-    // First tap: select card(s)
-    // Second tap: move to destination
-    const handleTapWaste = useCallback(() => {
-        if (gameState.waste.length === 0) return;
-
-        const card = gameState.waste[gameState.waste.length - 1];
-        const isSelected = gameState.selected?.source === 'waste';
-
-        if (isSelected) {
-            // Deselect if tapping same card
-            setGameState(prev => ({ ...prev, selected: null }));
-        } else {
-            // Select waste card
-            setGameState(prev => ({
-                ...prev,
-                selected: { source: 'waste', pileIndex: undefined, cardIndex: prev.waste.length - 1 }
-            }));
-        }
-    }, [gameState.waste, gameState.selected]);
-
-    const handleTapTableau = useCallback((pileIndex: number, cardIndex: number) => {
-        const pile = gameState.tableau[pileIndex];
-        const card = pile[cardIndex];
-
-        if (!card?.faceUp) return; // Can't interact with face-down cards
-
-        const isSelected = gameState.selected?.source === 'tableau' &&
-            gameState.selected?.pileIndex === pileIndex &&
-            gameState.selected?.cardIndex === cardIndex;
-
-        if (isSelected) {
-            // Deselect if tapping same card
-            setGameState(prev => ({ ...prev, selected: null }));
-            return;
-        }
-
-        // If something is already selected, try to move TO this pile
-        if (gameState.selected) {
-            const sel = gameState.selected;
+            let cardToMove: CardType | null = null;
             let cardsToMove: CardType[] = [];
 
-            if (sel.source === 'waste') {
-                cardsToMove = [gameState.waste[gameState.waste.length - 1]];
-            } else if (sel.source === 'tableau' && sel.pileIndex !== undefined && sel.cardIndex !== undefined) {
-                cardsToMove = getMovableCards(gameState.tableau[sel.pileIndex], sel.cardIndex);
+            if (selected.source === 'waste') {
+                cardToMove = prev.waste[prev.waste.length - 1];
+                cardsToMove = [cardToMove];
+            } else if (selected.source === 'tableau' && selected.pileIndex !== undefined && selected.cardIndex !== undefined) {
+                cardsToMove = getMovableCards(prev.tableau[selected.pileIndex], selected.cardIndex);
+                if (cardsToMove.length === 0) return { ...prev, selected: null };
+                cardToMove = cardsToMove[0];
             }
 
-            if (cardsToMove.length > 0 && canMoveToTableau(cardsToMove[0], pile)) {
-                // Move cards to this tableau pile
-                setGameState(prev => {
+            if (!cardToMove) return { ...prev, selected: null };
+
+            // Move to foundation
+            if (source === 'foundation' && pileIndex !== undefined && cardsToMove.length === 1) {
+                const suit = (['hearts', 'diamonds', 'clubs', 'spades'] as Suit[])[pileIndex];
+                const foundation = prev.foundations[suit];
+
+                if (canMoveToFoundation(cardToMove, foundation)) {
                     const newState = { ...prev };
 
-                    // Remove from source
-                    if (sel.source === 'waste') {
-                        newState.waste = prev.waste.slice(0, -1);
-                    } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
+                    if (selected.source === 'waste') {
+                        newState.waste = newState.waste.slice(0, -1);
+                    } else if (selected.source === 'tableau' && selected.pileIndex !== undefined) {
                         newState.tableau = [...prev.tableau];
-                        newState.tableau[sel.pileIndex] = prev.tableau[sel.pileIndex].slice(0, sel.cardIndex);
+                        newState.tableau[selected.pileIndex] = prev.tableau[selected.pileIndex].slice(0, selected.cardIndex);
                         newState.tableau = flipTableauCard(newState.tableau);
                     }
 
-                    // Add to destination
-                    if (!newState.tableau) newState.tableau = [...prev.tableau];
-                    newState.tableau[pileIndex] = [...pile, ...cardsToMove];
-                    newState.moves += 1;
+                    newState.foundations = { ...prev.foundations };
+                    newState.foundations[suit] = [...foundation, cardToMove];
                     newState.selected = null;
 
-                    return newState;
-                });
-                toast.success('Movido! 🎯', { duration: 800 });
-                return;
-            } else {
-                // Can't move, show hint
-                if (pile.length === 0 && cardsToMove[0]?.rank !== 'K') {
-                    toast('Só Reis em colunas vazias', { icon: '💡' });
+                    return recordMove(prev, newState);
+                } else {
+                    toast('Movimento inválido', { icon: '💡' });
+                    return { ...prev, selected: null };
+                }
+            }
+
+            // Move to tableau
+            if (source === 'tableau' && pileIndex !== undefined) {
+                const targetTableau = prev.tableau[pileIndex];
+
+                if (canMoveToTableau(cardToMove, targetTableau)) {
+                    const newState = { ...prev };
+
+                    if (selected.source === 'waste') {
+                        newState.waste = newState.waste.slice(0, -1);
+                    } else if (selected.source === 'tableau' && selected.pileIndex !== undefined) {
+                        newState.tableau = [...prev.tableau];
+                        newState.tableau[selected.pileIndex] = prev.tableau[selected.pileIndex].slice(0, selected.cardIndex);
+                        newState.tableau = flipTableauCard(newState.tableau);
+                    }
+
+                    newState.tableau = [...(newState.tableau || prev.tableau)];
+                    newState.tableau[pileIndex] = [...targetTableau, ...cardsToMove];
+                    newState.selected = null;
+
+                    return recordMove(prev, newState);
+                } else {
+                    toast('Movimento inválido', { icon: '💡' });
+                    return { ...prev, selected: null };
+                }
+            }
+
+            return { ...prev, selected: null };
+        });
+    }, [recordMove]);
+
+    const handleHint = useCallback(() => {
+        // Simple hint: check if any tableau card can move to foundation
+        for (let i = 0; i < gameState.tableau.length; i++) {
+            const pile = gameState.tableau[i];
+            if (pile.length === 0) continue;
+            const topCard = pile[pile.length - 1];
+            if (!topCard.faceUp) continue;
+
+            for (const suit in gameState.foundations) {
+                if (canMoveToFoundation(topCard, gameState.foundations[suit as Suit])) {
+                    toast(`Dica: Mova o ${topCard.rank} de ${topCard.suit} para a fundação`, { icon: '💡' });
+                    setGameState(prev => ({ ...prev, selected: { source: 'tableau', pileIndex: i, cardIndex: pile.length - 1 } }));
+                    return;
                 }
             }
         }
 
-        // Select this card
-        setGameState(prev => ({
-            ...prev,
-            selected: { source: 'tableau', pileIndex, cardIndex }
-        }));
-    }, [gameState]);
-
-    const handleTapEmptyTableau = useCallback((pileIndex: number) => {
-        if (!gameState.selected) return;
-
-        const sel = gameState.selected;
-        let cardsToMove: CardType[] = [];
-
-        if (sel.source === 'waste') {
-            cardsToMove = [gameState.waste[gameState.waste.length - 1]];
-        } else if (sel.source === 'tableau' && sel.pileIndex !== undefined && sel.cardIndex !== undefined) {
-            cardsToMove = getMovableCards(gameState.tableau[sel.pileIndex], sel.cardIndex);
-        }
-
-        if (cardsToMove.length === 0) return;
-
-        // Only Kings can go to empty tableau
-        if (cardsToMove[0].rank !== 'K') {
-            toast('Só Reis em colunas vazias', { icon: '💡' });
-            return;
-        }
-
-        setGameState(prev => {
-            const newState = { ...prev };
-
-            // Remove from source
-            if (sel.source === 'waste') {
-                newState.waste = prev.waste.slice(0, -1);
-            } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
-                newState.tableau = [...prev.tableau];
-                newState.tableau[sel.pileIndex] = prev.tableau[sel.pileIndex].slice(0, sel.cardIndex);
-                newState.tableau = flipTableauCard(newState.tableau);
-            }
-
-            // Add to empty column
-            if (!newState.tableau) newState.tableau = [...prev.tableau];
-            newState.tableau[pileIndex] = [...cardsToMove];
-            newState.moves += 1;
-            newState.selected = null;
-
-            return newState;
-        });
-        toast.success('Rei colocado! 👑', { duration: 800 });
-    }, [gameState]);
-
-    const handleTapFoundation = useCallback((suit: Suit) => {
-        if (!gameState.selected) return;
-
-        const sel = gameState.selected;
-        let card: CardType | null = null;
-
-        if (sel.source === 'waste') {
-            card = gameState.waste[gameState.waste.length - 1];
-        } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
-            const pile = gameState.tableau[sel.pileIndex];
-            const idx = sel.cardIndex ?? pile.length - 1;
-            // Can only move last card of pile to foundation
-            if (idx === pile.length - 1) {
-                card = pile[idx];
+        // Secondary hint: check if waste card can move to foundation
+        if (gameState.waste.length > 0) {
+            const topCard = gameState.waste[gameState.waste.length - 1];
+            for (const suit in gameState.foundations) {
+                if (canMoveToFoundation(topCard, gameState.foundations[suit as Suit])) {
+                    toast(`Dica: Mova o ${topCard.rank} de ${topCard.suit} do lixo para a fundação`, { icon: '💡' });
+                    setGameState(prev => ({ ...prev, selected: { source: 'waste' } }));
+                    return;
+                }
             }
         }
 
-        if (!card || card.suit !== suit) {
-            toast('Selecione uma carta do mesmo naipe', { icon: '💡' });
-            return;
-        }
-
-        const foundation = gameState.foundations[suit];
-        if (!canMoveToFoundation(card, foundation)) {
-            toast('Carta não pode ir para fundação ainda', { icon: '💡' });
-            return;
-        }
-
-        setGameState(prev => {
-            const newState = { ...prev };
-
-            // Remove from source
-            if (sel.source === 'waste') {
-                newState.waste = prev.waste.slice(0, -1);
-            } else if (sel.source === 'tableau' && sel.pileIndex !== undefined) {
-                newState.tableau = [...prev.tableau];
-                newState.tableau[sel.pileIndex] = prev.tableau[sel.pileIndex].slice(0, -1);
-                newState.tableau = flipTableauCard(newState.tableau);
-            }
-
-            // Add to foundation
-            newState.foundations = { ...prev.foundations };
-            newState.foundations[suit] = [...foundation, card!];
-            newState.moves += 1;
-            newState.selected = null;
-
-            return newState;
-        });
-        toast.success('Fundação! 🎯', { duration: 800 });
+        toast('Nenhum movimento óbvio encontrado...', { icon: '🔍' });
     }, [gameState]);
 
     const getSuitSymbol = (suit: Suit) => ({ hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit]);
 
     return (
-        <div className="page-container">
-            <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
-            <div className="page-content">
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-                    <div>
-                        <h1 style={{ fontSize: 'var(--font-size-title2)', fontWeight: 'var(--font-weight-bold)', margin: 0 }}>Paciência Pet 🐾</h1>
-                        <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>Movimentos: {gameState.moves}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                        <button onClick={handleNewGame} className="interactive" style={{ padding: 'var(--space-2) var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-bg-surface)', cursor: 'pointer' }}>
-                            Novo Jogo
-                        </button>
-                        <button onClick={handleClearProgress} className="interactive" style={{ padding: 'var(--space-2) var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-bg-surface)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
-                            Limpar
-                        </button>
-                    </div>
+        <div
+            className="absolute inset-0 flex flex-col overflow-hidden select-none"
+            style={{
+                background: 'linear-gradient(180deg, #1e3a5f 0%, #102a43 100%)',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+            }}
+        >
+            {/* Top Stats Bar - Ultra Compact */}
+            <div className="h-12 flex-shrink-0 px-2 flex items-center justify-between bg-black/30 backdrop-blur-md border-b border-white/10">
+                <button className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 rounded-lg text-white transition-all">
+                    <BarChart3 size={16} />
+                </button>
+
+                <div className="flex gap-4 sm:gap-6">
+                    <Stat label="MOVES" value={gameState.moves} />
+                    <Stat label="TIME" value={formatTime(time)} />
+                    <Stat label="SCORE" value={gameState.moves * 10} />
                 </div>
 
-                {/* Game board */}
-                <div className="card card-padding-lg">
-                    {/* Top row */}
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
-                        {/* Deck */}
-                        <div
-                            onClick={handleDrawCard}
-                            className="interactive"
-                            style={{
-                                width: '70px',
-                                height: '98px',
-                                borderRadius: 'var(--radius-lg)',
-                                border: '2px dashed var(--color-border)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                background: 'linear-gradient(135deg, var(--color-fill-quaternary) 0%, var(--color-fill-tertiary) 100%)',
-                                fontSize: 'var(--font-size-title2)',
-                                transition: 'all var(--duration-fast) var(--ease-out-apple)',
-                                transform: 'scale(1)',
-                                boxShadow: 'var(--shadow-sm)'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'scale(1.05)';
-                                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                            }}
-                        >
-                            {gameState.deck.length > 0 ? ('🎴') : ('🔄')}
-                        </div>
+                <div className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 rounded-lg text-white transition-all">
+                    🐾
+                </div>
+            </div>
 
-                        {/* Waste */}
-                        <div
-                            style={{ position: 'relative', width: 'var(--card-width, 70px)', height: 'var(--card-height, 98px)' }}
-                            onDoubleClick={() => handleDoubleClick('waste')}
-                        >
-                            {gameState.waste.length > 0 && (
-                                <Card
-                                    card={gameState.waste[gameState.waste.length - 1]}
-                                    isClickable={true}
-                                    isDraggable={true}
-                                    isSelected={gameState.selected?.source === 'waste'}
-                                    onClick={handleTapWaste}
-                                    onDragStart={(e) => handleDragStart(e, 'waste')}
-                                />
-                            )}
-                        </div>
-
-                        {/* Spacer */}
-                        <div style={{ flex: 1, minWidth: 'var(--space-4)' }} />
-
-                        {/* Foundations */}
-                        {(['hearts', 'diamonds', 'clubs', 'spades'] as Suit[]).map((suit, index) => {
-                            const petEmoji = { hearts: '🐶', diamonds: '🐱', clubs: '🐰', spades: '🐦' }[suit];
-                            const suitColor = { hearts: '#ff4757', diamonds: '#ff6348', clubs: '#2f3542', spades: '#2f3542' }[suit];
-
-                            return (
+            {/* Game Area - ZERO margins, full screen utilization */}
+            <div className="flex-1 overflow-x-hidden overflow-y-auto px-0.5 py-0.5 pb-16 touch-pan-y">
+                {/* Top Row: Foundations (Left) + Deck/Waste (Right) */}
+                <div className="flex justify-between items-start mb-2 gap-0.5">
+                    {/* Foundations - Horizontal Grid */}
+                    <div className="flex gap-0.5">
+                        {(['hearts', 'diamonds', 'clubs', 'spades'] as Suit[]).map((suit, index) => (
+                            <div key={suit} className="relative w-[13vw] max-w-[60px] aspect-[5/7]">
                                 <div
-                                    key={suit}
-                                    style={{ position: 'relative', cursor: 'pointer' }}
-                                    onClick={() => handleTapFoundation(suit)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDropOnFoundation(e, index)}
+                                    onClick={() => handleCardClick('foundation', index)}
+                                    className="w-full h-full rounded-lg border-2 border-white/10 bg-black/20 flex items-center justify-center text-2xl text-white/20 cursor-pointer hover:bg-black/30 transition-colors"
                                 >
-                                    <div style={{
-                                        width: 'var(--card-width, 70px)',
-                                        height: 'var(--card-height, 98px)',
-                                        borderRadius: 'var(--radius-lg)',
-                                        border: `2px dashed ${suitColor}30`,
-                                        backgroundColor: 'var(--color-fill-quaternary)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 'var(--space-1)',
-                                        fontSize: 'var(--font-size-title2)',
-                                        opacity: 0.5,
-                                        transition: 'all var(--duration-fast)'
-                                    }}>
-                                        <div style={{ fontSize: '18px' }}>{petEmoji}</div>
-                                        <div>{getSuitSymbol(suit)}</div>
-                                    </div>
-                                    {gameState.foundations[suit].length > 0 && (
-                                        <div style={{ position: 'absolute', top: 0, left: 0 }}>
-                                            <Card card={gameState.foundations[suit][gameState.foundations[suit].length - 1]} isClickable={false} />
-                                        </div>
-                                    )}
+                                    {getSuitSymbol(suit)}
                                 </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Tableau */}
-                    <div className="game-tableau" style={{ display: 'flex', gap: 'clamp(0.25rem, 1.5vw, var(--space-3))', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
-                        {gameState.tableau.map((column, colIndex) => (
-                            <div
-                                key={colIndex}
-                                className="tableau-column"
-                                style={{ minWidth: 'var(--card-width, 70px)', minHeight: 'var(--card-height, 98px)' }}
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleDropOnTableau(e, colIndex)}
-                            >
-                                {column.length === 0 && (
-                                    <div
-                                        onClick={() => handleTapEmptyTableau(colIndex)}
-                                        style={{
-                                            width: 'var(--card-width, 70px)',
-                                            height: 'var(--card-height, 98px)',
-                                            borderRadius: 'var(--radius-lg)',
-                                            border: '2px dashed var(--color-border)',
-                                            backgroundColor: 'var(--color-fill-quaternary)',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 'var(--space-1)',
-                                            fontSize: 'var(--font-size-title3)',
-                                            color: 'var(--color-text-tertiary)',
-                                            opacity: 0.5,
-                                            cursor: gameState.selected ? 'pointer' : 'default'
-                                        }}>
-                                        <div style={{ fontSize: '16px' }}>👑</div>
-                                        <div>K</div>
+                                {gameState.foundations[suit].length > 0 && (
+                                    <div className="absolute inset-0">
+                                        <Card
+                                            card={gameState.foundations[suit][gameState.foundations[suit].length - 1]}
+                                            isClickable={false}
+                                            style={{ width: '100%', height: '100%' }}
+                                        />
                                     </div>
                                 )}
-
-                                {column.map((card, cardIndex) => {
-                                    const isCardSelected = gameState.selected?.source === 'tableau' &&
-                                        gameState.selected?.pileIndex === colIndex &&
-                                        gameState.selected?.cardIndex !== undefined &&
-                                        cardIndex >= gameState.selected.cardIndex;
-
-                                    return (
-                                        <div
-                                            key={card.id}
-                                            className={`tableau-card-stacked ${isCardSelected ? 'selected' : ''}`}
-                                            style={{
-                                                marginTop: cardIndex === 0 ? 0 : 'var(--tableau-offset, -78px)',
-                                                position: 'relative',
-                                                zIndex: cardIndex
-                                            }}
-                                            onDoubleClick={() => card.faceUp && cardIndex === column.length - 1 && handleDoubleClick('tableau', colIndex, cardIndex)}
-                                        >
-                                            <Card
-                                                card={card}
-                                                isClickable={card.faceUp}
-                                                isDraggable={card.faceUp}
-                                                isSelected={isCardSelected}
-                                                onClick={() => card.faceUp && handleTapTableau(colIndex, cardIndex)}
-                                                onDragStart={(e) => handleDragStart(e, 'tableau', colIndex, cardIndex)}
-                                            />
-                                        </div>
-                                    );
-                                })}
                             </div>
                         ))}
                     </div>
+
+                    {/* Deck + Waste */}
+                    <div className="flex gap-0.5">
+                        {/* Waste */}
+                        <div className="relative w-[13vw] max-w-[60px] aspect-[5/7]">
+                            {gameState.waste.length > 0 && (
+                                <div onClick={() => handleCardClick('waste')}>
+                                    <Card
+                                        card={gameState.waste[gameState.waste.length - 1]}
+                                        isSelected={gameState.selected?.source === 'waste'}
+                                        isClickable={true}
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Deck */}
+                        <div
+                            onClick={handleDrawCard}
+                            className="w-[13vw] max-w-[60px] aspect-[5/7] rounded-lg border-2 border-white/20 bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center cursor-pointer shadow-lg active:scale-95 transition-all"
+                        >
+                            {gameState.deck.length > 0 ? (
+                                <span className="text-white/80 text-xl">🐾</span>
+                            ) : (
+                                <Undo2 className="text-white/60" size={22} />
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Instructions */}
-                <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--color-fill-quaternary)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-footnote)' }}>
-                    <p style={{ margin: 0, marginBottom: 'var(--space-2)' }}><strong>Como jogar:</strong></p>
-                    <ul style={{ margin: 0, paddingLeft: 'var(--space-5)' }}>
-                        <li><strong>Toque</strong> para selecionar, <strong>toque</strong> no destino para mover 📱</li>
-                        <li><strong>Arraste</strong> cartas para mover (desktop)</li>
-                        <li><strong>Toque duplo</strong> para fundação automática</li>
-                        <li>Fundações: Ás até Rei, mesmo naipe</li>
-                        <li>Tableau: alternar cores, ordem decrescente</li>
-                        <li>Só Reis em colunas vazias</li>
-                    </ul>
+                {/* Tableau - Maximized space, ZERO gaps */}
+                <div className="grid grid-cols-7 gap-0.5">
+                    {gameState.tableau.map((column, colIndex) => (
+                        <div key={colIndex} className="flex flex-col">
+                            {column.length === 0 && (
+                                <div
+                                    onClick={() => handleCardClick('tableau', colIndex)}
+                                    className="w-full aspect-[5/7] rounded-lg border-2 border-dashed border-white/5 bg-black/10 flex items-center justify-center text-sm font-black text-white/5 cursor-pointer"
+                                >
+                                    K
+                                </div>
+                            )}
+
+                            {column.map((card, cardIndex) => (
+                                <div
+                                    key={card.id}
+                                    className="relative transition-all"
+                                    style={{
+                                        marginTop: cardIndex === 0 ? 0 : '-120%',
+                                        zIndex: cardIndex
+                                    }}
+                                >
+                                    <div onClick={() => handleCardClick('tableau', colIndex, cardIndex)}>
+                                        <Card
+                                            card={card}
+                                            isSelected={
+                                                gameState.selected?.source === 'tableau' &&
+                                                gameState.selected.pileIndex === colIndex &&
+                                                gameState.selected.cardIndex !== undefined &&
+                                                cardIndex >= gameState.selected.cardIndex
+                                            }
+                                            isClickable={card.faceUp}
+                                            style={{
+                                                width: '100%',
+                                                height: 'auto',
+                                                aspectRatio: '5/7'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
                 </div>
             </div>
+
+            {/* Bottom Action Bar - Discrete Play Button */}
+            <div className="h-14 flex-shrink-0 bg-black/50 backdrop-blur-2xl border-t border-white/10 flex justify-around items-center px-1">
+                <ActionBtn icon={<Settings size={18} />} label="Settings" onClick={() => toast('Configurações em breve')} />
+                <ActionBtn icon={<Calendar size={18} />} label="Daily" onClick={() => toast('Desafios em breve')} />
+                <ActionBtn icon={<Play size={18} />} label="New Game" onClick={handleNewGame} />
+                <ActionBtn icon={<Lightbulb size={18} />} label="Hint" onClick={handleHint} />
+                <ActionBtn icon={<Undo2 size={18} />} label="Undo" onClick={handleUndo} disabled={!gameState.moveHistory?.length} />
+            </div>
         </div>
+    );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+    return (
+        <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black tracking-[0.15em] text-white/50 mb-0.5">{label}</span>
+            <span className="text-sm sm:text-base font-bold text-white leading-none tabular-nums drop-shadow-sm">{value}</span>
+        </div>
+    );
+}
+
+function ActionBtn({
+    icon,
+    label,
+    onClick,
+    disabled
+}: {
+    icon: React.ReactNode;
+    label: string;
+    onClick?: () => void;
+    disabled?: boolean;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className={`
+                flex flex-col items-center justify-center gap-0.5 min-w-[56px] transition-all active:scale-90
+                ${disabled ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}
+            `}
+        >
+            <div className="text-white/80">
+                {icon}
+            </div>
+            <span className="text-[9px] font-semibold text-white/50 tracking-tight">{label}</span>
+        </button>
     );
 }

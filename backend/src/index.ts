@@ -209,8 +209,9 @@ app.get('/diag', async (req, res) => {
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
-    httpServer.listen(PORT, () => {
-        Logger.info(`🚀 Server running on port ${PORT}`);
+    const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces for mobile access
+    httpServer.listen(Number(PORT), HOST, () => {
+        Logger.info(`🚀 Server running on ${HOST}:${PORT}`);
         Logger.info(`📊 Monitoring dashboard: http://localhost:${PORT}/dashboard.html`);
     });
 }

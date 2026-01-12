@@ -1,8 +1,7 @@
 /**
  * Card Component - Visual representation of a playing card
  * 
- * Uses only design system tokens for styling.
- * Supports drag and drop.
+ * Standard playing card aesthetic with premium pet touches.
  */
 
 import { Card as CardType, SUIT_SYMBOLS, SUIT_COLORS, Suit } from '../types';
@@ -43,151 +42,110 @@ export default function Card({
     onTouchEnd,
     style
 }: CardProps) {
-    const isRed = SUIT_COLORS[card.suit] === 'red';
+    const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
     const canDrag = isDraggable && card.faceUp;
 
-    // Touch event handlers for mobile support
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (!canDrag && !isClickable) return;
-
-        // Prevent default to avoid scroll
-        e.preventDefault();
-
-        if (canDrag && onDragStart) {
-            onDragStart(e);
-        }
-        onTouchStart?.(e);
+    // Standard card proportions
+    const cardStyle: React.CSSProperties = {
+        width: '100%',
+        aspectRatio: '5/7',
+        borderRadius: '8px',
+        position: 'relative',
+        userSelect: 'none',
+        transition: 'transform 0.1s ease-out, box-shadow 0.1s ease-out',
+        cursor: isClickable || canDrag ? 'pointer' : 'default',
+        boxShadow: isSelected
+            ? '0 0 0 3px #fbbf24, 0 8px 16px rgba(0,0,0,0.4)'
+            : '0 2px 4px rgba(0,0,0,0.2)',
+        transform: isSelected ? 'scale(1.05) translateY(-4px)' : 'scale(1)',
+        zIndex: isSelected ? 50 : 1,
+        ...style
     };
 
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (!canDrag) return;
-        e.preventDefault();
-        onTouchMove?.(e);
-    };
-
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        if (!canDrag && !isClickable) return;
-        e.preventDefault();
-
-        if (canDrag && onDragEnd) {
-            onDragEnd(e);
-        }
-        onTouchEnd?.(e);
-    };
+    if (!card.faceUp) {
+        return (
+            <div
+                onClick={isClickable ? onClick : undefined}
+                className="game-card back"
+                style={{
+                    ...cardStyle,
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                    border: '3px solid white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🐾</div>
+                <div className="absolute inset-2 border border-white/20 rounded-md" />
+            </div>
+        );
+    }
 
     return (
         <div
             onClick={isClickable ? onClick : undefined}
-            draggable={canDrag}
-            onDragStart={canDrag ? onDragStart : undefined}
-            onDragEnd={canDrag ? onDragEnd : undefined}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className={`game-card ${isClickable || canDrag ? 'interactive' : ''}`}
+            className={`game-card face ${isSelected ? 'selected' : ''}`}
             style={{
-                width: 'var(--card-width, 70px)',
-                height: 'var(--card-height, 98px)',
-                borderRadius: 'var(--radius-lg)',
-                background: card.faceUp
-                    ? 'linear-gradient(135deg, var(--color-bg-surface) 0%, var(--color-bg-secondary) 100%)'
-                    : 'linear-gradient(135deg, var(--color-accent-primary) 0%, var(--color-accent-secondary, #00b050) 100%)',
-                border: isSelected
-                    ? '3px solid var(--color-accent-primary)'
-                    : '1px solid var(--color-border)',
-                boxShadow: isSelected ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
+                ...cardStyle,
+                backgroundColor: 'white',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
                 justifyContent: 'center',
-                cursor: canDrag ? 'grab' : (isClickable ? 'pointer' : 'default'),
-                userSelect: 'none',
-                transition: 'all var(--duration-fast) var(--ease-out-apple)',
-                position: 'relative',
-                transform: 'scale(1)',
-                willChange: 'transform, box-shadow',
-                ...style
-            }}
-            onMouseEnter={(e) => {
-                if (canDrag || isClickable) {
-                    e.currentTarget.style.transform = 'scale(1.05) translateY(-2px)';
-                    e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                }
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                e.currentTarget.style.boxShadow = isSelected ? 'var(--shadow-lg)' : 'var(--shadow-sm)';
+                alignItems: 'center',
+                border: '1px solid #e2e8f0',
             }}
         >
-            {card.faceUp ? (
-                <>
-                    {/* Pet emoji in top-right corner */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 'var(--space-1)',
-                            right: 'var(--space-1)',
-                            fontSize: '14px',
-                            opacity: 0.7
-                        }}
-                    >
-                        {PET_EMOJIS[card.suit]}
-                    </div>
+            {/* Top-Left Corner Rank & Suit - Delicate */}
+            <div className="absolute top-0.5 left-1 flex flex-col items-center leading-none">
+                <span style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: isRed ? '#f43f5e' : '#334155'
+                }}>
+                    {card.rank}
+                </span>
+                <span style={{
+                    fontSize: '9px',
+                    color: isRed ? '#f43f5e' : '#334155',
+                    marginTop: '-1px'
+                }}>
+                    {SUIT_SYMBOLS[card.suit]}
+                </span>
+            </div>
 
-                    {/* Rank */}
-                    <div
-                        style={{
-                            fontSize: 'var(--font-size-title3)',
-                            fontWeight: 'var(--font-weight-bold)',
-                            color: isRed ? 'var(--color-error)' : 'var(--color-text-primary)',
-                            lineHeight: 1
-                        }}
-                    >
-                        {card.rank}
-                    </div>
+            {/* Top-Right Pet Icon - Very subtle */}
+            <div className="absolute top-1 right-1 opacity-5 filter grayscale scale-50">
+                {PET_EMOJIS[card.suit]}
+            </div>
 
-                    {/* Suit symbol */}
-                    <div
-                        style={{
-                            fontSize: 'var(--font-size-headline)',
-                            color: isRed ? 'var(--color-error)' : 'var(--color-text-primary)',
-                            marginTop: 'var(--space-1)'
-                        }}
-                    >
-                        {SUIT_SYMBOLS[card.suit]}
-                    </div>
+            {/* Main Center Rank - Soft and Clean */}
+            <div style={{
+                fontSize: '22px',
+                fontWeight: '600',
+                color: isRed ? '#f43f5e' : '#334155',
+                lineHeight: 1,
+                marginTop: '1px',
+                letterSpacing: '-0.5px'
+            }}>
+                {card.rank}
+            </div>
 
-                    {/* Small rank in corner */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 'var(--space-1)',
-                            left: 'var(--space-1)',
-                            fontSize: 'var(--font-size-caption1)',
-                            fontWeight: 'var(--font-weight-semibold)',
-                            color: isRed ? 'var(--color-error)' : 'var(--color-text-primary)'
-                        }}
-                    >
-                        {card.rank}
-                    </div>
-                </>
-            ) : (
-                // Card back (face down)
-                <div
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 'var(--font-size-title2)',
-                        color: 'white'
-                    }}
-                >
-                    🐾
-                </div>
-            )}
+            {/* Center Suit - Delicate */}
+            <div style={{
+                fontSize: '16px',
+                color: isRed ? '#f43f5e' : '#334155',
+                marginTop: '-1px',
+                opacity: 0.7
+            }}>
+                {SUIT_SYMBOLS[card.suit]}
+            </div>
+
+            {/* Bottom-Right Corner (Inverted) - Very light */}
+            <div className="absolute bottom-0.5 right-1 flex flex-col items-center leading-none rotate-180 opacity-15">
+                <span style={{ fontSize: '9px', fontWeight: '700', color: isRed ? '#f43f5e' : '#334155' }}>{card.rank}</span>
+                <span style={{ fontSize: '8px', color: isRed ? '#f43f5e' : '#334155' }}>{SUIT_SYMBOLS[card.suit]}</span>
+            </div>
         </div>
     );
 }
-

@@ -3,19 +3,14 @@
  * 
  * Premium Apple-like layout with liquid glass aesthetics.
  * Displays a grid of available games for the user to select.
- * Includes navigation controls (back + sidebar toggle).
  */
 
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import StaffSidebar from '../../components/StaffSidebar';
-import { useAuthStore } from '../../store/authStore';
 import { GameMetadata } from '../../types/game.types';
 import GameCard from '../../components/games/GameCard';
 import '../../styles/design-system-base.css';
 
-// Game catalog - Only Paciência available for now
+// Game catalog
 const GAMES: GameMetadata[] = [
     {
         id: 'paciencia-pet',
@@ -26,24 +21,29 @@ const GAMES: GameMetadata[] = [
         estimatedTime: '5-10 min',
         status: 'active',
         tags: ['Cartas', 'Relaxante']
+    },
+    {
+        id: 'coleira',
+        name: 'Desenrosca a Coleira',
+        description: 'Desembaraçe as coleiras sem cruzamentos.',
+        icon: '🐕',
+        difficulty: 'medium',
+        estimatedTime: '2-5 min',
+        status: 'active',
+        tags: ['Puzzle', 'Lógica']
     }
 ];
 
 export default function PausaPage() {
     const navigate = useNavigate();
-    const { user } = useAuthStore();
-    const isClient = user?.role === 'CLIENTE';
 
     const handleGameSelect = (gameId: string) => {
         navigate(`/pausa/${gameId}`);
     };
 
     return (
-        <div className="flex min-h-screen bg-bg-primary">
-            {/* Render appropriate sidebar based on user role */}
-            {isClient ? <Sidebar /> : <StaffSidebar />}
-
-            <main className="flex-1 md:ml-64 transition-all duration-300">
+        <div className="flex flex-col min-h-full bg-bg-primary">
+            <main className="flex-1 transition-all duration-300">
                 {/* Main content */}
                 <div className="p-6 md:p-10">
                     {/* Premium Header */}
@@ -55,25 +55,12 @@ export default function PausaPage() {
                         }}
                     >
                         <h1
-                            className="page-title"
-                            style={{
-                                fontSize: 'var(--font-size-title1)',
-                                fontWeight: 'var(--font-weight-bold)',
-                                color: 'var(--color-text-primary)',
-                                marginBottom: 'var(--space-3)',
-                                letterSpacing: '-0.02em'
-                            }}
+                            className="page-title text-4xl font-black text-[var(--color-text-primary)] mb-3 tracking-tighter"
                         >
                             🎮 Pausa
                         </h1>
                         <p
-                            className="page-subtitle"
-                            style={{
-                                fontSize: 'var(--font-size-headline)',
-                                color: 'var(--color-text-secondary)',
-                                maxWidth: '600px',
-                                margin: '0 auto'
-                            }}
+                            className="page-subtitle text-lg text-[var(--color-text-secondary)] max-w-[600px] mx-auto font-medium"
                         >
                             Um respiro rápido. Sem bagunçar sua agenda.
                         </p>
@@ -122,6 +109,8 @@ export default function PausaPage() {
                     </div>
                 </div>
             </main>
+            {/* Added spacer to clear the bottom nav */}
+            <div className="h-24" aria-hidden="true" />
         </div>
     );
 }

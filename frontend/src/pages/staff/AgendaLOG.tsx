@@ -22,6 +22,7 @@ import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
+import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
 
 interface Appointment {
     id: string;
@@ -43,7 +44,7 @@ interface Appointment {
     };
 }
 
-type ViewType = 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH';
+type ViewType = 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT';
 type TabType = 'active' | 'trash';
 
 interface Staff {
@@ -70,6 +71,7 @@ export default function AgendaLOG() {
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     const [isCopying, setIsCopying] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDayDate, setSelectedDayDate] = useState(new Date()); // For COMPACT view day selection
     const [searchTerm, setSearchTerm] = useState('');
     const [preFillData, setPreFillData] = useState<any>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -120,6 +122,20 @@ export default function AgendaLOG() {
     useEffect(() => {
         fetchAppointments();
     }, [tab]);
+
+    // Mobile detection - default to COMPACT view on mobile
+    useEffect(() => {
+        const isMobile = window.innerWidth < 768;
+        const savedView = localStorage.getItem('agendaLOGView');
+
+        if (savedView && !isMobile) {
+            setView(savedView as ViewType);
+        } else if (isMobile && view !== 'COMPACT') {
+            setView('COMPACT');
+        }
+    }, []);
+
+
 
     const toggleSelect = (id: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
@@ -195,6 +211,12 @@ export default function AgendaLOG() {
         setIsFormOpen(true);
     };
 
+    const isSameDay = (date1: Date, date2: Date) => {
+        return date1.getDate() === date2.getDate() &&
+            date1.getMonth() === date2.getMonth() &&
+            date1.getFullYear() === date2.getFullYear();
+    };
+
     const filteredAppointments = appointments.filter(a => {
         const matchesGlobal = a.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -205,6 +227,15 @@ export default function AgendaLOG() {
 
         return matchesGlobal && matchesPerformer;
     });
+
+    // Filter appointments for selected day in COMPACT view
+    const dayAppointments = React.useMemo(() => {
+        if (view !== 'COMPACT') return [];
+
+        return filteredAppointments
+            .filter(a => isSameDay(new Date(a.startAt), selectedDayDate))
+            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    }, [view, filteredAppointments, selectedDayDate]);
 
     const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
 
@@ -226,11 +257,7 @@ export default function AgendaLOG() {
 
     const setToday = () => setSelectedDate(new Date());
 
-    const isSameDay = (date1: Date, date2: Date) => {
-        return date1.getDate() === date2.getDate() &&
-            date1.getMonth() === date2.getMonth() &&
-            date1.getFullYear() === date2.getFullYear();
-    };
+
 
     const renderDayView = () => {
         const dayAppts = filteredAppointments
@@ -494,6 +521,67 @@ export default function AgendaLOG() {
         );
     };
 
+    const renderCompactView = () => {
+        // Full-screen mobile layout using wrapper component
+        return (
+            <MobileCalendarCompactView
+                appointments={filteredAppointments}
+                isLoading={isLoading}
+                selectedDayDate={selectedDayDate}
+                onSelectDay={setSelectedDayDate}
+                onAppointmentClick={handleOpenDetails}
+                onCreateNew={handleCreateNew}
+                performers={performers}
+                selectedPerformerId={selectedPerformerId}
+                onPerformerChange={setSelectedPerformerId}
+                tab={tab}
+                onTabChange={(t) => { setTab(t); setSelectedIds([]); }}
+                isBulkMode={isBulkMode}
+                onBulkModeToggle={() => setIsBulkMode(!isBulkMode)}
+                selectedIds={selectedIds}
+                onBulkDelete={handleBulkDelete}
+                onBulkRestore={handleBulkRestore}
+            />
+        );
+    };
+
+
+    // COMPACT view renders as full-screen mobile layout
+    if (view === 'COMPACT') {
+        return (
+            <>
+                {renderCompactView()}
+
+                {/* Modals still work in COMPACT mode */}
+                <AnimatePresence>
+                    {isFormOpen && (
+                        <AppointmentFormModal
+                            isOpen={isFormOpen}
+                            onClose={() => { setIsFormOpen(false); setPreFillData(null); }}
+                            onSuccess={fetchAppointments}
+                            appointment={selectedAppointment}
+                            isCopy={isCopying}
+                            preFill={preFillData}
+                        />
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {isDetailsOpen && (
+                        <AppointmentDetailsModal
+                            isOpen={isDetailsOpen}
+                            onClose={() => setIsDetailsOpen(false)}
+                            onSuccess={fetchAppointments}
+                            appointment={selectedAppointment}
+                            onModify={handleModify}
+                            onCopy={handleCopy}
+                        />
+                    )}
+                </AnimatePresence>
+            </>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black flex">
             <StaffSidebar />
@@ -579,13 +667,20 @@ export default function AgendaLOG() {
 
                                 <div className="h-6 w-px bg-gray-200 mx-1"></div>
 
-                                {['KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
+                                {['COMPACT', 'KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
                                     <button
                                         key={v}
-                                        onClick={() => { setView(v as ViewType); setSelectedIds([]); }}
+                                        onClick={() => {
+                                            setView(v as ViewType);
+                                            setSelectedIds([]);
+                                            localStorage.setItem('agendaLOGView', v);
+                                        }}
                                         className={`flex items-center gap-3 px-6 py-3 rounded-[22px] text-[10px] font-black transition-all ${view === v ? 'bg-white dark:bg-gray-800 text-orange-500 shadow-lg scale-[1.02]' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                                     >
-                                        {v === 'KANBAN' ? <Layout size={14} /> : v === 'DAY' ? <List size={14} /> : <CalendarIcon size={14} />}
+                                        {v === 'COMPACT' ? <CalendarIcon size={14} /> :
+                                            v === 'KANBAN' ? <Layout size={14} /> :
+                                                v === 'DAY' ? <List size={14} /> :
+                                                    <CalendarIcon size={14} />}
                                         <span className="uppercase tracking-widest">{v}</span>
                                     </button>
                                 ))}
@@ -738,6 +833,7 @@ export default function AgendaLOG() {
                             </div>
                         ) : (
                             <>
+                                {view === 'COMPACT' && renderCompactView()}
                                 {view === 'DAY' && renderDayView()}
                                 {view === 'WEEK' && renderWeekView()}
                                 {view === 'MONTH' && renderMonthView()}

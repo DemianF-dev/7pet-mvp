@@ -59,14 +59,18 @@ export default function FeedbackWidget() {
         <>
             {/* Floating Button */}
             <motion.button
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 0.4 }}
+                whileHover={{ opacity: 1, scale: 1.1 }}
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group"
+                className="fixed bottom-[85px] right-4 sm:bottom-6 sm:right-6 z-[60] bg-[var(--color-text-tertiary)]/40 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 text-white p-2 sm:p-4 rounded-full shadow-md sm:shadow-2xl active:scale-95 transition-all group backdrop-blur-md"
                 title="Solicitar Ajuste ou Melhoria"
+                style={{
+                    bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 85px)'
+                }}
             >
-                <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-                <MessageSquarePlus size={24} className="group-hover:rotate-12 transition-transform" />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-4 sm:h-4 bg-red-500 rounded-full animate-pulse border border-white sm:border-0" />
+                <MessageSquarePlus size={16} className="sm:w-[24px] sm:h-[24px] group-hover:rotate-12 transition-transform" />
             </motion.button>
 
             {/* Modal */}

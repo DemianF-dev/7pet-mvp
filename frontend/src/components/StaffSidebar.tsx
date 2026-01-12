@@ -34,10 +34,15 @@ import ThemeToggle from './ThemeToggle';
 import { useNotification } from '../context/NotificationContext';
 import ConfirmModal from './ConfirmModal';
 import { createContext, useContext } from 'react';
+import { useInMobileShell } from '../context/MobileShellContext';
 
 const SidebarContext = createContext({ isCollapsed: false });
 
 export default function StaffSidebar() {
+    // If we're inside MobileShell, don't render the sidebar
+    const inMobileShell = useInMobileShell();
+    if (inMobileShell) return null;
+
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout } = useAuthStore();

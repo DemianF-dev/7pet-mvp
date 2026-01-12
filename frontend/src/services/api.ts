@@ -42,7 +42,14 @@ api.interceptors.response.use(
     (error) => {
         // Network Error or Server Down
         if (!error.response) {
-            const attemptedUrl = error.config?.url || 'URL desconhecida';
+            const attemptedUrl = error.config?.url || '';
+
+            // 🔇 Silently fail for polling endpoints like notifications
+            if (attemptedUrl.includes('/notifications')) {
+                console.warn('[API Polling] 🔇 Silent fail for notifications');
+                return Promise.reject(error);
+            }
+
             const baseURL = error.config?.baseURL || '';
             const fullUrl = attemptedUrl.startsWith('http') ? attemptedUrl : `${baseURL}${attemptedUrl}`;
 

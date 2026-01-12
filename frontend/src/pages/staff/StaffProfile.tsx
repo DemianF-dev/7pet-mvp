@@ -83,7 +83,7 @@ const StaffProfile: React.FC = () => {
     return (
         <div className="min-h-screen flex">
             <StaffSidebar />
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
+            <main className="flex-1 md:ml-64 p-6 md:p-10" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 24px))' }}>
                 <div className="max-w-5xl mx-auto">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <motion.div
