@@ -73,7 +73,7 @@ export default function WebAgendaToolbar({
                 {/* LEFT: Context & Nav */}
                 <div className="flex items-center gap-6">
                     <div className="flex flex-col">
-                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">7Pet > Agenda SPA</span>
+                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">7Pet &gt; Agenda SPA</span>
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-black text-gray-800 dark:text-white capitalize leading-none">
                                 {capitalizedMonth}
