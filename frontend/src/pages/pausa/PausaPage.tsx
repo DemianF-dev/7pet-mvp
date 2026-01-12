@@ -33,6 +33,16 @@ const GAMES: GameMetadata[] = [
         estimatedTime: '2-5 min',
         status: 'active',
         tags: ['Puzzle', 'Lógica']
+    },
+    {
+        id: 'zen-espuma',
+        name: 'Zen Pad',
+        description: 'Espuma relaxante para acalmar a mente.',
+        icon: '🫧',
+        difficulty: 'easy',
+        estimatedTime: '∞',
+        status: 'active',
+        tags: ['Relax', 'Sensorial']
     }
 ];
 

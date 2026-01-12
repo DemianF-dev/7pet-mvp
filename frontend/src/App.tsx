@@ -62,6 +62,7 @@ import AppShell from './layouts/AppShell';
 const PausaPage = lazy(() => import('./pages/pausa/PausaPage'));
 const PacienciaPage = lazy(() => import('./pages/pausa/PacienciaPage'));
 const DesenroscaPage = lazy(() => import('./pages/pausa/DesenroscaPage'));
+const PauseZenEspuma = lazy(() => import('./pages/pausa/PauseZenEspuma'));
 
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -186,6 +187,7 @@ function App() {
                                 <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
                                 <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
                                 <Route path="/pausa/coleira" element={<LazyPage><DesenroscaPage /></LazyPage>} />
+                                <Route path="/pausa/zen-espuma" element={<LazyPage><PauseZenEspuma /></LazyPage>} />
                             </Route>
                         </Route>
 

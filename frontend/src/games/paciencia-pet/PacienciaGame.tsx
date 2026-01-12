@@ -101,6 +101,150 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         setGameState(prev => recordMove(prev, drawCard(prev)));
     }, [recordMove]);
 
+    // Touch Drag-and-Drop State
+    const [dragState, setDragState] = useState<{
+        active: boolean;
+        card: CardType;
+        source: 'waste' | 'tableau' | 'foundation';
+        pileIndex?: number;
+        cardIndex?: number;
+        startX: number;
+        startY: number;
+        currentX: number;
+        currentY: number;
+        offsetX: number;
+        offsetY: number;
+        draggedStack?: CardType[];
+    } | null>(null);
+
+    const handleTouchStart = (
+        e: React.TouchEvent,
+        card: CardType,
+        source: 'waste' | 'tableau' | 'foundation',
+        pileIndex?: number,
+        cardIndex?: number
+    ) => {
+        // Only allow dragging face-up cards
+        if (!card.faceUp) return;
+
+        // For tableau, only allow dragging if all cards on top are movable (standard logic)
+        // But for simplicity in this MVP, we just check if it's face up. 
+        // Real validation happens on potential drop.
+
+        const touch = e.touches[0];
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+
+        let draggedStack: CardType[] = [card];
+        if (source === 'tableau' && pileIndex !== undefined && cardIndex !== undefined) {
+            const pile = gameState.tableau[pileIndex];
+            draggedStack = pile.slice(cardIndex);
+        }
+
+        setDragState({
+            active: true,
+            card,
+            source,
+            pileIndex,
+            cardIndex,
+            startX: touch.clientX,
+            startY: touch.clientY,
+            currentX: touch.clientX,
+            currentY: touch.clientY,
+            offsetX: touch.clientX - rect.left,
+            offsetY: touch.clientY - rect.top,
+            draggedStack
+        });
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!dragState?.active) return;
+        const touch = e.touches[0];
+        setDragState(prev => prev ? { ...prev, currentX: touch.clientX, currentY: touch.clientY } : null);
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (!dragState?.active) return;
+
+        const { currentX, currentY, card, source, pileIndex, cardIndex, draggedStack } = dragState;
+
+        // Simple collision detection with piles
+        // We need references to pile elements efficiently. 
+        // For now, we'll use `document.elementsFromPoint` which is easier than maintaining refs for everything.
+
+        const elements = document.elementsFromPoint(currentX, currentY);
+        const droppedOnTableau = elements.find(el => el.getAttribute('data-droptarget') === 'tableau');
+        const droppedOnFoundation = elements.find(el => el.getAttribute('data-droptarget') === 'foundation');
+
+        if (droppedOnFoundation && draggedStack?.length === 1) {
+            const targetSuitIdx = parseInt(droppedOnFoundation.getAttribute('data-index') || '0');
+            const suit = (['hearts', 'diamonds', 'clubs', 'spades'] as Suit[])[targetSuitIdx];
+            const foundation = gameState.foundations[suit];
+
+            if (canMoveToFoundation(card, foundation)) {
+                handleMoveToFoundation(card, source, pileIndex, cardIndex);
+                setDragState(null);
+                return;
+            }
+        }
+
+        if (droppedOnTableau) {
+            const targetColIdx = parseInt(droppedOnTableau.getAttribute('data-index') || '0');
+            const targetTableau = gameState.tableau[targetColIdx];
+
+            if (canMoveToTableau(card, targetTableau)) {
+                handleMoveToTableau(draggedStack || [card], targetColIdx, source, pileIndex, cardIndex);
+                setDragState(null);
+                return;
+            }
+        }
+
+        // Reset if no valid drop
+        setDragState(null);
+    };
+
+    // Refactored Move Logic for reuse (Click + Drag)
+    const handleMoveToFoundation = (card: CardType, source: string, pileIndex?: number, cardIndex?: number) => {
+        setGameState(prev => {
+            const newState = { ...prev };
+            const foundation = prev.foundations[card.suit];
+
+            if (source === 'waste') {
+                newState.waste = newState.waste.slice(0, -1);
+            } else if (source === 'tableau' && pileIndex !== undefined) {
+                newState.tableau = [...prev.tableau];
+                newState.tableau[pileIndex] = prev.tableau[pileIndex].slice(0, cardIndex);
+                newState.tableau = flipTableauCard(newState.tableau);
+            }
+
+            newState.foundations = { ...prev.foundations };
+            newState.foundations[card.suit] = [...foundation, card];
+            newState.selected = null;
+            return recordMove(prev, newState);
+        });
+    };
+
+    const handleMoveToTableau = (cards: CardType[], targetColIdx: number, source: string, sourcePileIdx?: number, sourceCardIdx?: number) => {
+        setGameState(prev => {
+            const newState = { ...prev };
+            const targetPile = prev.tableau[targetColIdx];
+
+            if (source === 'waste') {
+                newState.waste = newState.waste.slice(0, -1);
+            } else if (source === 'tableau' && sourcePileIdx !== undefined && sourceCardIdx !== undefined) {
+                newState.tableau = [...prev.tableau];
+                newState.tableau[sourcePileIdx] = prev.tableau[sourcePileIdx].slice(0, sourceCardIdx);
+                newState.tableau = flipTableauCard(newState.tableau);
+            }
+
+            newState.tableau = [...(newState.tableau || prev.tableau)];
+            newState.tableau[targetColIdx] = [...targetPile, ...cards];
+            newState.selected = null;
+            return recordMove(prev, newState);
+        });
+    };
+
+
     const lastClickRef = useRef<{ time: number; source: string; pileIndex?: number; cardIndex?: number } | null>(null);
 
     const handleCardClick = useCallback((
@@ -108,6 +252,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
         pileIndex?: number,
         cardIndex?: number
     ) => {
+        // Prevent click if dragging just ended (optional optimization, usually okay)
+
         const now = Date.now();
         const lastClick = lastClickRef.current;
 
@@ -130,7 +276,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                     const pile = prev.tableau[pileIndex];
                     const lastIdx = pile.length - 1;
                     if (lastIdx >= 0 && pile[lastIdx]?.faceUp) {
-                        card = pile[lastIdx];
+                        // Only top card for double click auto-move
+                        if (cardIndex === lastIdx) card = pile[lastIdx];
                     }
                 }
 
@@ -142,8 +289,9 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                     return prev;
                 }
 
+                // Re-use logic manually inside setState since we don't have access to helper function context easily without refactoring everything to use refs or effect-based state which is overkill.
+                // Or I can just copy the logic effectively.
                 const newState = { ...prev };
-
                 if (source === 'waste') {
                     newState.waste = prev.waste.slice(0, -1);
                 } else if (source === 'tableau' && pileIndex !== undefined) {
@@ -151,14 +299,13 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                     newState.tableau[pileIndex] = prev.tableau[pileIndex].slice(0, -1);
                     newState.tableau = flipTableauCard(newState.tableau);
                 }
-
                 newState.foundations = { ...prev.foundations };
                 newState.foundations[card.suit] = [...foundation, card];
-
                 return recordMove(prev, newState);
             });
             return;
         }
+
 
         // Single click logic
         setGameState(prev => {
@@ -203,21 +350,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 const foundation = prev.foundations[suit];
 
                 if (canMoveToFoundation(cardToMove, foundation)) {
-                    const newState = { ...prev };
-
-                    if (selected.source === 'waste') {
-                        newState.waste = newState.waste.slice(0, -1);
-                    } else if (selected.source === 'tableau' && selected.pileIndex !== undefined) {
-                        newState.tableau = [...prev.tableau];
-                        newState.tableau[selected.pileIndex] = prev.tableau[selected.pileIndex].slice(0, selected.cardIndex);
-                        newState.tableau = flipTableauCard(newState.tableau);
-                    }
-
-                    newState.foundations = { ...prev.foundations };
-                    newState.foundations[suit] = [...foundation, cardToMove];
-                    newState.selected = null;
-
-                    return recordMove(prev, newState);
+                    handleMoveToFoundation(cardToMove, selected.source, selected.pileIndex, selected.cardIndex);
+                    return { ...prev, selected: null }; // Selected state is cleared by handleMoveToFoundation
                 } else {
                     toast('Movimento inválido', { icon: '💡' });
                     return { ...prev, selected: null };
@@ -229,21 +363,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 const targetTableau = prev.tableau[pileIndex];
 
                 if (canMoveToTableau(cardToMove, targetTableau)) {
-                    const newState = { ...prev };
-
-                    if (selected.source === 'waste') {
-                        newState.waste = newState.waste.slice(0, -1);
-                    } else if (selected.source === 'tableau' && selected.pileIndex !== undefined) {
-                        newState.tableau = [...prev.tableau];
-                        newState.tableau[selected.pileIndex] = prev.tableau[selected.pileIndex].slice(0, selected.cardIndex);
-                        newState.tableau = flipTableauCard(newState.tableau);
-                    }
-
-                    newState.tableau = [...(newState.tableau || prev.tableau)];
-                    newState.tableau[pileIndex] = [...targetTableau, ...cardsToMove];
-                    newState.selected = null;
-
-                    return recordMove(prev, newState);
+                    handleMoveToTableau(cardsToMove, pileIndex, selected.source, selected.pileIndex, selected.cardIndex);
+                    return { ...prev, selected: null }; // Selected state is cleared by handleMoveToTableau
                 } else {
                     toast('Movimento inválido', { icon: '💡' });
                     return { ...prev, selected: null };
@@ -252,7 +373,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
 
             return { ...prev, selected: null };
         });
-    }, [recordMove]);
+    }, [recordMove, handleMoveToFoundation, handleMoveToTableau]);
 
     const handleHint = useCallback(() => {
         // Simple hint: check if any tableau card can move to foundation
@@ -294,6 +415,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             style={{
                 fontFamily: 'Quicksand, "Varela Round", sans-serif' // Fallback to soft fonts
             }}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
         >
             {/* Cute Background Pattern */}
             <div className="absolute inset-0 opacity-10 pointer-events-none"
@@ -331,119 +454,161 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             </div>
 
             {/* Game Area - Centered & Contained */}
-            <div className="flex-1 overflow-x-hidden overflow-y-auto w-full max-w-[500px] mx-auto px-2 py-4 z-0 touch-pan-y">
-                {/* Top Row: Foundations + Deck */}
-                <div className="flex justify-between items-start mb-6 gap-2">
-                    {/* Foundations - 2x2 Grid for cuteness/compactness or horizontal depending on preference. Keeping horizontal for standard gameplay but styling it cute. */}
-                    <div className="flex gap-2">
-                        {(['hearts', 'diamonds', 'clubs', 'spades'] as Suit[]).map((suit, index) => (
-                            <div key={suit} className="relative w-[13vw] max-w-[64px] aspect-[5/7]">
+            <div className="relative flex-1 overflow-visible w-full max-w-[500px] mx-auto z-0 touch-none">
+                <div className="absolute inset-0 px-2 py-4">
+                    {/* Top Row: Foundations + Deck */}
+                    <div className="flex justify-between items-start mb-4 gap-2 h-[15vw] max-h-[80px]">
+                        {/* Foundations - 2x2 Grid for cuteness/compactness or horizontal depending on preference. Keeping horizontal for standard gameplay but styling it cute. */}
+                        <div className="flex gap-2">
+                            {(['hearts', 'diamonds', 'clubs', 'spades'] as Suit[]).map((suit, index) => (
                                 <div
-                                    onClick={() => handleCardClick('foundation', index)}
-                                    className="w-full h-full rounded-2xl border-2 border-dashed border-rose-200 bg-white/50 flex items-center justify-center text-2xl text-rose-200 cursor-pointer hover:bg-white/80 transition-colors shadow-inner"
+                                    key={suit}
+                                    className="relative w-[13vw] max-w-[64px] aspect-[5/7]"
+                                    data-droptarget="foundation"
+                                    data-index={index}
                                 >
-                                    {getSuitSymbol(suit)}
+                                    <div
+                                        onClick={() => handleCardClick('foundation', index)}
+                                        className="w-full h-full rounded-2xl border-2 border-dashed border-rose-200 bg-white/50 flex items-center justify-center text-2xl text-rose-200 cursor-pointer hover:bg-white/80 transition-colors shadow-inner"
+                                    >
+                                        {getSuitSymbol(suit)}
+                                    </div>
+                                    {gameState.foundations[suit].length > 0 && (
+                                        <div className="absolute inset-0">
+                                            <Card
+                                                card={gameState.foundations[suit][gameState.foundations[suit].length - 1]}
+                                                isClickable={false}
+                                                style={{ width: '100%', height: '100%' }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                                {gameState.foundations[suit].length > 0 && (
-                                    <div className="absolute inset-0">
+                            ))}
+                        </div>
+
+                        {/* Deck + Waste */}
+                        <div className="flex gap-2">
+                            {/* Waste */}
+                            <div className="relative w-[13vw] max-w-[64px] aspect-[5/7]">
+                                {gameState.waste.length > 0 && (
+                                    <div
+                                        onClick={() => handleCardClick('waste')}
+                                        onTouchStart={(e) => handleTouchStart(e, gameState.waste[gameState.waste.length - 1], 'waste')}
+                                    >
                                         <Card
-                                            card={gameState.foundations[suit][gameState.foundations[suit].length - 1]}
-                                            isClickable={false}
+                                            card={gameState.waste[gameState.waste.length - 1]}
+                                            isSelected={gameState.selected?.source === 'waste'}
+                                            isClickable={true}
                                             style={{ width: '100%', height: '100%' }}
                                         />
                                     </div>
                                 )}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Deck + Waste */}
-                    <div className="flex gap-2">
-                        {/* Waste */}
-                        <div className="relative w-[13vw] max-w-[64px] aspect-[5/7]">
-                            {gameState.waste.length > 0 && (
-                                <div onClick={() => handleCardClick('waste')}>
-                                    <Card
-                                        card={gameState.waste[gameState.waste.length - 1]}
-                                        isSelected={gameState.selected?.source === 'waste'}
-                                        isClickable={true}
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                            {/* Deck */}
+                            <div
+                                onClick={handleDrawCard}
+                                className="w-[13vw] max-w-[64px] aspect-[5/7] rounded-2xl border-4 border-white bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center cursor-pointer shadow-md hover:shadow-lg active:scale-95 transition-all relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 opacity-20"
+                                    style={{
+                                        backgroundImage: 'radial-gradient(white 2px, transparent 2px)',
+                                        backgroundSize: '12px 12px'
+                                    }}
+                                />
+                                {gameState.deck.length > 0 ? (
+                                    <span className="text-white text-3xl drop-shadow-md">🐾</span>
+                                ) : (
+                                    <Undo2 className="text-white/80" size={24} />
+                                )}
+                                <div className="absolute bottom-1 right-2 text-[10px] font-bold text-white/90">
+                                    {gameState.deck.length}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Deck */}
-                        <div
-                            onClick={handleDrawCard}
-                            className="w-[13vw] max-w-[64px] aspect-[5/7] rounded-2xl border-4 border-white bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center cursor-pointer shadow-md hover:shadow-lg active:scale-95 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute inset-0 opacity-20"
-                                style={{
-                                    backgroundImage: 'radial-gradient(white 2px, transparent 2px)',
-                                    backgroundSize: '12px 12px'
-                                }}
-                            />
-                            {gameState.deck.length > 0 ? (
-                                <span className="text-white text-3xl drop-shadow-md">🐾</span>
-                            ) : (
-                                <Undo2 className="text-white/80" size={24} />
-                            )}
-                            <div className="absolute bottom-1 right-2 text-[10px] font-bold text-white/90">
-                                {gameState.deck.length}
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Tableau */}
-                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                    {gameState.tableau.map((column, colIndex) => (
-                        <div key={colIndex} className="flex flex-col items-center">
-                            {column.length === 0 && (
+                    {/* Tableau - ABSOLUTE POSITIONING FIX */}
+                    <div className="flex justify-between items-start gap-1.5 sm:gap-2 h-full mt-2">
+                        {gameState.tableau.map((column, colIndex) => (
+                            <div
+                                key={colIndex}
+                                className="relative flex-1 h-full"
+                                data-droptarget="tableau"
+                                data-index={colIndex}
+                            >
+                                {/* Empty placeholder */}
                                 <div
                                     onClick={() => handleCardClick('tableau', colIndex)}
-                                    className="w-full aspect-[5/7] rounded-2xl border-2 border-dashed border-rose-200 bg-white/30 flex items-center justify-center text-xs font-bold text-rose-200 cursor-pointer"
-                                >
+                                    className="w-full aspect-[5/7] rounded-2xl border-2 border-dashed border-rose-200 bg-white/30 flex items-center justify-center text-xs font-bold text-rose-200 cursor-pointer absolute top-0 left-0"
+                                />
 
-                                </div>
-                            )}
-
-                            {column.map((card, cardIndex) => (
-                                <div
-                                    key={card.id}
-                                    className="relative transition-all w-full"
-                                    style={{
-                                        marginTop: cardIndex === 0 ? 0 : '-130%',
-                                        zIndex: cardIndex
-                                    }}
-                                >
-                                    <div onClick={() => handleCardClick('tableau', colIndex, cardIndex)}>
-                                        <Card
-                                            card={card}
-                                            isSelected={
-                                                gameState.selected?.source === 'tableau' &&
-                                                gameState.selected.pileIndex === colIndex &&
-                                                gameState.selected.cardIndex !== undefined &&
-                                                cardIndex >= gameState.selected.cardIndex
-                                            }
-                                            isClickable={card.faceUp}
-                                            style={{
-                                                width: '100%',
-                                                height: 'auto',
-                                                aspectRatio: '5/7'
-                                            }}
-                                        />
+                                {/* Cards Stacked Absolutely */}
+                                {column.map((card, cardIndex) => (
+                                    <div
+                                        key={card.id}
+                                        className="absolute left-0 w-full"
+                                        style={{
+                                            top: `${cardIndex * 35}px`, // Fixed spacing, no compression
+                                            zIndex: cardIndex
+                                        }}
+                                    >
+                                        <div
+                                            onClick={() => handleCardClick('tableau', colIndex, cardIndex)}
+                                            onTouchStart={(e) => handleTouchStart(e, card, 'tableau', colIndex, cardIndex)}
+                                        >
+                                            <Card
+                                                card={card}
+                                                isSelected={
+                                                    gameState.selected?.source === 'tableau' &&
+                                                    gameState.selected.pileIndex === colIndex &&
+                                                    gameState.selected.cardIndex !== undefined &&
+                                                    cardIndex >= gameState.selected.cardIndex
+                                                }
+                                                isClickable={card.faceUp}
+                                                style={{
+                                                    width: '100%',
+                                                    height: 'auto',
+                                                    aspectRatio: '5/7'
+                                                }}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    ))}
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Bottom Floating Action Bar */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex gap-1 z-20">
+            {/* Dragged Ghost Card */}
+            {dragState && dragState.active && (
+                <div
+                    className="fixed pointer-events-none z-50 flex flex-col"
+                    style={{
+                        left: dragState.currentX,
+                        top: dragState.currentY,
+                        width: '13vw',
+                        maxWidth: '64px',
+                        transform: 'translate(-50%, -50%) rotate(5deg)'
+                    }}
+                >
+                    {dragState.draggedStack?.map((card, i) => (
+                        <div key={card.id} style={{ marginTop: i === 0 ? 0 : '-130%' }}>
+                            <Card
+                                card={card}
+                                isClickable={false}
+                                style={{
+                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+                                }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Bottom Floating Action Bar - Moved UP to avoid mobile nav overlap */}
+            <div className="absolute bottom-28 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex gap-1 z-40">
                 <ActionBtn icon={<Play size={20} className="fill-emerald-500 text-emerald-600" />} label="Novo" onClick={handleNewGame} />
                 <div className="w-px h-8 bg-gray-200 my-auto mx-1" />
                 <ActionBtn icon={<Lightbulb size={20} className="fill-yellow-400 text-yellow-500" />} label="Dica" onClick={handleHint} />
