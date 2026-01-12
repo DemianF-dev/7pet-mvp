@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260112-0309",
+  "version": "BETA20260112-0348",
   "stage": "BETA",
-  "timestamp": "2026-01-12T03:09:43.000Z",
-  "commit": "634d7b2",
-  "buildNumber": 60,
-  "releaseNotes": "Auto-generated from commit: feat: standardize version display, refine paciencia game UI, and fix mobile bugs"
+  "timestamp": "2026-01-12T03:48:26.000Z",
+  "commit": "d20a6a0",
+  "buildNumber": 61,
+  "releaseNotes": "Auto-generated from commit: feat: fix paciencia pet mobile drag and drop and layout"
 }
