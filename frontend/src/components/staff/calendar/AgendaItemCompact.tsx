@@ -58,44 +58,44 @@ export default function AgendaItemCompact({ appointment, onClick }: AgendaItemCo
     return (
         <div
             onClick={() => onClick(appointment)}
-            className="flex w-full bg-[#121212] active:bg-[#1a1a1a] transition-colors min-h-[56px]"
+            className="flex w-full bg-[var(--color-bg-primary)] active:bg-[var(--color-bg-secondary)] transition-all min-h-[64px] border-b border-[var(--color-border)]/50"
         >
             {/* Left Vertical Bar */}
             <div
-                className="w-[4px] shrink-0 rounded-r-sm"
+                className="w-[5px] shrink-0"
                 style={{ backgroundColor: barColor }}
             />
 
             {/* Content Area */}
-            <div className="flex-1 py-3 px-4 flex items-start gap-3">
+            <div className="flex-1 py-3.5 px-5 flex items-start gap-4">
                 {/* Icon */}
                 {isRecurring && (
-                    <RefreshCw size={14} className="text-gray-400 mt-1 shrink-0" />
+                    <RefreshCw size={14} className="text-[var(--color-text-tertiary)] mt-1 shrink-0 opacity-70" />
                 )}
                 {isTransport && !isRecurring && (
-                    <Truck size={14} className="text-gray-400 mt-1 shrink-0" />
+                    <Truck size={14} className="text-[var(--color-text-tertiary)] mt-1 shrink-0 opacity-70" />
                 )}
 
                 {/* Text Content */}
                 <div className="flex-1 min-w-0">
                     {/* Title Row */}
                     <div className="flex items-start justify-between gap-2">
-                        <span className="text-white font-medium text-[14px] leading-tight truncate flex-1">
+                        <span className="text-[var(--color-text-primary)] font-bold text-[15px] leading-tight truncate flex-1 tracking-tight">
                             {title}
                         </span>
-                        <span className="text-gray-500 text-[13px] whitespace-nowrap shrink-0">
+                        <span className="text-[var(--color-text-tertiary)] text-[12px] font-medium whitespace-nowrap shrink-0 ml-2">
                             {isAllDay ? 'o dia todo' : timeString}
                         </span>
                     </div>
 
                     {/* Subtitle Row */}
                     {subtitle && (
-                        <div className="flex items-start justify-between gap-2 mt-0.5">
-                            <span className="text-gray-500 text-[12px] truncate flex-1">
+                        <div className="flex items-start justify-between gap-2 mt-1">
+                            <span className="text-[var(--color-text-secondary)] text-[13px] truncate flex-1 opacity-80">
                                 {subtitle}
                             </span>
                             {!isAllDay && (
-                                <span className="text-gray-600 text-[12px] whitespace-nowrap shrink-0">
+                                <span className="text-[var(--color-text-tertiary)] text-[11px] whitespace-nowrap shrink-0 opacity-50 font-light">
                                     {timeString}
                                 </span>
                             )}

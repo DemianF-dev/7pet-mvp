@@ -5,6 +5,7 @@ import { Bell, BellOff, Download, Wifi, WifiOff, Smartphone, Check, X, ArrowLeft
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { toast } from 'react-hot-toast';
 import ThemePicker from './ThemePicker';
+import { APP_VERSION } from '../constants/version';
 
 const PWASettings: React.FC = () => {
     const navigate = useNavigate();
@@ -324,6 +325,12 @@ const PWASettings: React.FC = () => {
                             <span><strong>Limitação:</strong> Criar/editar dados requer conexão</span>
                         </li>
                     </ul>
+                </div>
+
+                <div className="text-center pb-6">
+                    <p className="text-xs text-text-tertiary font-mono opacity-50">
+                        {APP_VERSION}
+                    </p>
                 </div>
             </motion.div>
         </div>

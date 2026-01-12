@@ -84,9 +84,9 @@ const QuoteTableRow = React.memo(({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={(e) => { e.stopPropagation(); onViewCustomer(quote.customerId); }}
-                            className="font-black text-secondary dark:text-white uppercase tracking-tighter text-lg hover:text-primary transition-colors text-left"
+                            className="font-black text-secondary dark:text-white uppercase tracking-tighter text-lg hover:text-primary transition-colors text-left truncate max-w-[120px] md:max-w-none"
                         >
-                            {quote.customer?.name || 'Cliente'}
+                            {quote.customer?.name ? (quote.customer.name.length > 18 ? quote.customer.name.slice(0, 18) + '...' : quote.customer.name) : 'Cliente'}
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onViewDetails(quote.id); }}

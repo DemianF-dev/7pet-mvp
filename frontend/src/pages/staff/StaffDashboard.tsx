@@ -18,6 +18,7 @@ import api from '../../services/api';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import Skeleton from '../../components/Skeleton';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
+import DashboardGreeting from '../../components/DashboardGreeting';
 
 interface DashboardMetrics {
     todayAppointments: number;
@@ -112,8 +113,10 @@ export default function StaffDashboard() {
                 <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
                     <div>
                         <Breadcrumbs />
-                        <h1 className="text-4xl font-extrabold text-secondary dark:text-white">Dashboard <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Operacional</span></h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-3">Métricas globais e acesso rápido aos processos.</p>
+                        <DashboardGreeting
+                            name={user?.name || user?.email || 'Colaborador'}
+                            subtitle="Dashboard Operacional"
+                        />
                     </div>
                     <button
                         onClick={handleRefresh}

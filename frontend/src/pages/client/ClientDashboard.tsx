@@ -20,6 +20,7 @@ import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
 import Skeleton from '../../components/Skeleton';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
+import DashboardGreeting from '../../components/DashboardGreeting';
 
 // Lazy load ClientTutorial to improve initial load time
 const ClientTutorial = React.lazy(() => import('../../components/client/ClientTutorial').catch(() => ({ default: () => null })));
@@ -102,13 +103,14 @@ export default function ClientDashboard() {
             <main className="flex-1 md:ml-64 p-6 md:p-10">
                 <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-10">
                     <div>
-                        <h1 className="text-4xl font-extrabold text-secondary">Olá, <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">{(user?.customer?.name || user?.email || 'Visitante').split(' ')[0]}!</span></h1>
-                        <p className="text-gray-500 mt-3">
-                            {nextAppt
+                        <DashboardGreeting
+                            name={user?.customer?.name || user?.email || 'Visitante'}
+                            subtitle={nextAppt
                                 ? `Você tem um agendamento para o ${nextAppt?.pet?.name || 'pet'} no dia ${nextAppt?.startAt ? new Date(nextAppt.startAt).toLocaleDateString('pt-BR') : ''}.`
                                 : 'Como podemos ajudar o seu pet hoje? Gerencie agendamentos e serviços com facilidade.'
                             }
-                        </p>
+                            isClient={true}
+                        />
                     </div>
 
                     <div className="flex items-center gap-4">

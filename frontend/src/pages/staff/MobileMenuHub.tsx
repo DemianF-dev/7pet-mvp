@@ -26,6 +26,7 @@ import { useAuthStore } from '../../store/authStore';
 import MobileNavSettings from '../../components/mobile/MobileNavSettings';
 import { AnimatePresence } from 'framer-motion';
 import { DIVISION_LABELS } from '../../constants/divisions';
+import { APP_VERSION } from '../../constants/version';
 
 /**
  * Menu section configuration
@@ -75,10 +76,10 @@ export default function MobileMenuHub() {
             items: [
                 { id: 'agenda-spa', label: 'Agenda SPA', icon: Calendar, path: '/staff/agenda-spa' },
                 { id: 'agenda-log', label: 'Agenda Transporte', icon: Truck, path: '/staff/agenda-log' },
-                { id: 'kanban', label: 'Kanban Operacional', icon: Layout, path: '/staff/kanban' },
                 { id: 'transport', label: 'Transporte', icon: Truck, path: '/staff/transport' },
                 { id: 'quotes', label: 'Orçamentos', icon: FileText, path: '/staff/quotes' },
                 { id: 'customers', label: 'Clientes', icon: Users, path: '/staff/customers' },
+                { id: 'mural', label: 'Mural', icon: Layout, path: '/staff/feed' },
                 { id: 'pausa', label: 'Pausa (Mini-games)', icon: Gamepad2, path: '/pausa' },
             ],
         },
@@ -88,6 +89,9 @@ export default function MobileMenuHub() {
                 { id: 'services', label: 'Serviços', icon: ClipboardList, path: '/staff/services' },
                 { id: 'products', label: 'Produtos', icon: Package, path: '/staff/products' },
                 { id: 'billing', label: 'Faturamento', icon: CreditCard, path: '/staff/billing' },
+                { id: 'financeiro', label: 'Financeiro', icon: CreditCard, path: '/staff/billing' },
+                { id: 'transport-config', label: 'Config. Transporte', icon: Settings, path: '/staff/transport-config' },
+                { id: 'collaborators', label: 'Colaboradores', icon: Users, path: '/staff/hr/collaborators' },
                 { id: 'management', label: 'Dashboard Gestão', icon: BarChart3, path: '/staff/management' },
                 { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/staff/reports' },
                 { id: 'users', label: 'Usuários', icon: Users, path: '/staff/users' },
@@ -210,8 +214,15 @@ export default function MobileMenuHub() {
                 ))}
             </div>
 
+            {/* Version Info */}
+            <div className="py-4 text-center">
+                <p className="text-[10px] text-[var(--color-text-tertiary)] font-mono opacity-50">
+                    {APP_VERSION}
+                </p>
+            </div>
+
             {/* Bottom Spacer for Scrolling */}
-            <div className="h-32" aria-hidden="true" />
+            <div className="h-24" aria-hidden="true" />
 
             <AnimatePresence>
                 {isNavSettingsOpen && (

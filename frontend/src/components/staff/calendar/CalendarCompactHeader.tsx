@@ -31,25 +31,29 @@ export default function CalendarCompactHeader({
     const year = currentDate.getFullYear();
 
     return (
-        <div className="flex flex-col bg-[#121212] shrink-0 border-b border-gray-800">
+        <div className="flex flex-col bg-[var(--color-bg-primary)] shrink-0 border-b border-[var(--color-border)]">
             {/* Top Row: Switcher & Tools */}
-            <div className="flex items-center justify-between px-4 h-[56px]">
+            <div className="flex items-center justify-between px-4 h-[60px]">
                 {/* Switcher: SPA vs LOG */}
-                <div className="flex bg-[#1a1a1a] p-1 rounded-xl border border-gray-800">
+                <div className="flex bg-[var(--color-bg-secondary)] p-1 rounded-2xl border border-[var(--color-border)] shadow-inner">
                     <button
                         onClick={() => navigate('/staff/agenda-spa')}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all ${!isLog ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500'
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isLog
+                            ? 'bg-[var(--color-accent-primary)] text-white shadow-lg'
+                            : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
                             }`}
                     >
-                        <Sparkles size={12} />
+                        <Sparkles size={12} strokeWidth={2.5} />
                         SPA
                     </button>
                     <button
                         onClick={() => navigate('/staff/agenda-log')}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all ${isLog ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-500'
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isLog
+                            ? 'bg-[var(--color-warning)] text-white shadow-lg'
+                            : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
                             }`}
                     >
-                        <Truck size={12} />
+                        <Truck size={12} strokeWidth={2.5} />
                         LOG
                     </button>
                 </div>
@@ -57,43 +61,44 @@ export default function CalendarCompactHeader({
                 {/* Right: Icons */}
                 <div className="flex items-center gap-1">
                     <button
-                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                        className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90"
                         aria-label="Pesquisar"
                     >
-                        <Search size={20} strokeWidth={1.5} />
+                        <Search size={22} strokeWidth={2} />
                     </button>
                     <button
                         onClick={onToday}
-                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                        className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90"
                         aria-label="Hoje"
                     >
-                        <Plus size={22} strokeWidth={1.5} />
+                        <Plus size={24} strokeWidth={2} />
                     </button>
                     <button
                         onClick={onFilterClick}
-                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                        className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90"
                         aria-label="Filtros"
                     >
-                        <MoreHorizontal size={22} strokeWidth={1.5} />
+                        <MoreHorizontal size={24} strokeWidth={2} />
                     </button>
                 </div>
             </div>
 
             {/* Bottom Row: Month Year & Nav */}
-            <div className="flex items-center justify-between px-4 pb-3">
+            <div className="flex items-center justify-between px-5 pb-4">
                 <div className="flex items-center">
-                    <span className="text-white text-2xl font-black tracking-tight">{month}</span>
-                    <span className="text-gray-500 text-2xl font-light ml-2">{year}</span>
+                    <span className="text-[var(--color-text-primary)] text-3xl font-black tracking-tight">{month}</span>
+                    <span className="text-[var(--color-text-tertiary)] text-3xl font-light ml-2 opacity-50">{year}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                    <button onClick={onPrevMonth} className="text-gray-500 hover:text-white p-1">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                <div className="flex items-center gap-6">
+                    <button onClick={onPrevMonth} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 active:scale-90 transition-all">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                     </button>
-                    <button onClick={onNextMonth} className="text-gray-500 hover:text-white p-1">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                    <button onClick={onNextMonth} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 active:scale-90 transition-all">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                     </button>
                 </div>
             </div>
         </div>
     );
 }
+

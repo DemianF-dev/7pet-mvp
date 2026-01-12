@@ -100,7 +100,7 @@ export default function MobileCalendarCompactView({
     };
 
     return (
-        <div className="flex flex-col h-[100dvh] bg-[#121212] overflow-hidden">
+        <div className="flex flex-col h-[100dvh] bg-[var(--color-bg-primary)] overflow-hidden">
             {/* ========================================
                 FIXED TOP: Header + Calendar Grid
                ======================================== */}
@@ -128,7 +128,7 @@ export default function MobileCalendarCompactView({
                 SCROLLABLE: Day Appointments List
                ======================================== */}
             <div
-                className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-[var(--color-bg-secondary)]"
                 style={{ paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 20px))' }}
             >
                 <DayAgendaList
@@ -146,7 +146,7 @@ export default function MobileCalendarCompactView({
             {tab === 'active' && !isBulkMode && (
                 <button
                     onClick={onCreateNew}
-                    className="fixed right-5 z-[45] bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-[0_8px_25px_rgba(37,99,235,0.4)] flex items-center justify-center transition-all active:scale-90"
+                    className="fixed right-5 z-[45] bg-[var(--color-accent-primary)] hover:brightness-110 text-white w-14 h-14 rounded-full shadow-[0_8px_25px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all active:scale-90"
                     style={{ bottom: 'calc(88px + env(safe-area-inset-bottom, 16px))' }}
                     aria-label="Novo agendamento"
                 >
@@ -164,7 +164,7 @@ export default function MobileCalendarCompactView({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 z-50"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
                             onClick={() => setIsFilterOpen(false)}
                         />
 
@@ -173,16 +173,16 @@ export default function MobileCalendarCompactView({
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed bottom-0 left-0 right-0 bg-[#1a1a1a] rounded-t-[32px] z-[60] max-h-[80vh] flex flex-col"
+                            className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-elevated)] rounded-t-[32px] z-[60] max-h-[80vh] flex flex-col border-t border-[var(--color-border)]"
                             style={{ paddingBottom: 'env(safe-area-inset-bottom, 24px)' }}
                         >
-                            <div className="flex items-center justify-between p-6 border-b border-gray-800">
-                                <h3 className="text-lg font-black text-white uppercase tracking-widest">
+                            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
+                                <h3 className="text-lg font-black text-[var(--color-text-primary)] uppercase tracking-widest">
                                     Filtros
                                 </h3>
                                 <button
                                     onClick={() => setIsFilterOpen(false)}
-                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 text-gray-400"
+                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)]"
                                 >
                                     <X size={20} />
                                 </button>
@@ -190,7 +190,7 @@ export default function MobileCalendarCompactView({
 
                             <div className="p-6 space-y-6 overflow-y-auto">
                                 <div>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
                                         <Users size={14} />
                                         Equipe
                                     </label>
@@ -198,8 +198,8 @@ export default function MobileCalendarCompactView({
                                         <button
                                             onClick={() => onPerformerChange('ALL')}
                                             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedPerformerId === 'ALL'
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-800 text-gray-400'
+                                                ? 'bg-[var(--color-accent-primary)] text-white shadow-lg shadow-[var(--color-accent-primary)]/20'
+                                                : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                                 }`}
                                         >
                                             Todos
@@ -209,8 +209,8 @@ export default function MobileCalendarCompactView({
                                                 key={p.id}
                                                 onClick={() => onPerformerChange(p.id)}
                                                 className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedPerformerId === p.id
-                                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                                    : 'bg-gray-800 text-gray-400'
+                                                    ? 'bg-[var(--color-accent-primary)] text-white shadow-lg'
+                                                    : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                                     }`}
                                                 style={selectedPerformerId === p.id && p.color ? { backgroundColor: p.color } : {}}
                                             >
@@ -221,7 +221,7 @@ export default function MobileCalendarCompactView({
                                 </div>
 
                                 <div>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
                                         <Trash2 size={14} />
                                         Status
                                     </label>
@@ -229,8 +229,8 @@ export default function MobileCalendarCompactView({
                                         <button
                                             onClick={() => onTabChange('active')}
                                             className={`py-3 rounded-xl text-xs font-black uppercase ${tab === 'active'
-                                                ? 'bg-blue-600 text-white shadow-lg'
-                                                : 'bg-gray-800 text-gray-400'
+                                                ? 'bg-[var(--color-accent-primary)] text-white shadow-lg shadow-[var(--color-accent-primary)]/20'
+                                                : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                                 }`}
                                         >
                                             Ativos
@@ -238,8 +238,8 @@ export default function MobileCalendarCompactView({
                                         <button
                                             onClick={() => onTabChange('trash')}
                                             className={`py-3 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 ${tab === 'trash'
-                                                ? 'bg-red-600 text-white shadow-lg'
-                                                : 'bg-gray-800 text-gray-400'
+                                                ? 'bg-[var(--color-error)] text-white shadow-lg shadow-[var(--color-error)]/20'
+                                                : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                                 }`}
                                         >
                                             <Trash2 size={14} />
@@ -249,7 +249,7 @@ export default function MobileCalendarCompactView({
                                 </div>
 
                                 <div>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
                                         <CheckSquare size={14} />
                                         Múltipla Seleção
                                     </label>
@@ -258,9 +258,9 @@ export default function MobileCalendarCompactView({
                                             onBulkModeToggle();
                                             setIsFilterOpen(false);
                                         }}
-                                        className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest ${isBulkMode
+                                        className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isBulkMode
                                             ? 'bg-purple-600 text-white shadow-lg'
-                                            : 'bg-gray-800 text-gray-400'
+                                            : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                             }`}
                                     >
                                         {isBulkMode ? 'Desativar Seleção' : 'Ativar Seleção em Massa'}
@@ -271,7 +271,7 @@ export default function MobileCalendarCompactView({
                             <div className="p-6">
                                 <button
                                     onClick={() => setIsFilterOpen(false)}
-                                    className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-blue-600/20"
+                                    className="w-full bg-[var(--color-accent-primary)] text-white py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-[var(--color-accent-primary)]/20"
                                 >
                                     Aplicar Filtros
                                 </button>
@@ -287,20 +287,20 @@ export default function MobileCalendarCompactView({
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}
-                        className="fixed bottom-[72px] left-0 right-0 bg-[#1a1a1a]/95 backdrop-blur-md border-t border-gray-800 p-4 z-[45] flex items-center justify-between"
+                        className="fixed bottom-[72px] left-0 right-0 bg-[var(--color-bg-elevated)] backdrop-blur-md border-t border-[var(--color-border)] p-4 z-[45] flex items-center justify-between"
                         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 8px)' }}
                     >
                         <div className="flex items-center gap-3">
-                            <span className="bg-blue-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black">
+                            <span className="bg-[var(--color-accent-primary)] text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black">
                                 {selectedIds.length}
                             </span>
-                            <span className="text-gray-300 text-xs font-bold">Selecionados</span>
+                            <span className="text-[var(--color-text-secondary)] text-xs font-bold">Selecionados</span>
                         </div>
                         <div className="flex gap-2">
                             {tab === 'trash' && onBulkRestore && (
                                 <button
                                     onClick={onBulkRestore}
-                                    className="px-5 py-2.5 bg-green-600 rounded-xl text-white text-[10px] font-black uppercase tracking-wider"
+                                    className="px-5 py-2.5 bg-[var(--color-success)] rounded-xl text-white text-[10px] font-black uppercase tracking-wider"
                                 >
                                     Restaurar
                                 </button>
@@ -308,7 +308,7 @@ export default function MobileCalendarCompactView({
                             {onBulkDelete && (
                                 <button
                                     onClick={onBulkDelete}
-                                    className="px-5 py-2.5 bg-red-600 rounded-xl text-white text-[10px] font-black uppercase tracking-wider"
+                                    className="px-5 py-2.5 bg-[var(--color-error)] rounded-xl text-white text-[10px] font-black uppercase tracking-wider"
                                 >
                                     {tab === 'trash' ? 'Excluir' : 'Lixeira'}
                                 </button>

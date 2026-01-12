@@ -512,7 +512,7 @@ export default function UserManager() {
         <div className="min-h-screen bg-gray-50 flex">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
+            <main className="flex-1 md:ml-64 p-6 md:p-10 pb-28 md:pb-10">
                 <header className="mb-10">
                     <Breadcrumbs />
                     <BackButton className="mb-4 ml-[-1rem]" />

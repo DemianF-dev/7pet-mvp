@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 interface Appointment {
     id: string;
     startAt: string;
+    status: string;
     [key: string]: any;
 }
 
@@ -12,6 +13,8 @@ interface MonthGridCompactProps {
     appointments: Appointment[];
     onSelectDay: (date: Date) => void;
 }
+
+type DayStatus = 'completed' | 'upcoming' | 'none';
 
 export default function MonthGridCompact({
     currentDate,
@@ -26,14 +29,30 @@ export default function MonthGridCompact({
             date1.getFullYear() === date2.getFullYear();
     };
 
-    // Calculate days with events for badge display
-    const daysWithEvents = useMemo(() => {
-        const map = new Map<string, number>();
+    // Calculate days with events and their status
+    const dayStatusMap = useMemo(() => {
+        const map = new Map<string, DayStatus>();
+
+        // Group appointments by day
+        const dayGroups = new Map<string, Appointment[]>();
+
         appointments.forEach(appt => {
             const date = new Date(appt.startAt);
             const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            map.set(dateStr, (map.get(dateStr) || 0) + 1);
+            if (!dayGroups.has(dateStr)) dayGroups.set(dateStr, []);
+            dayGroups.get(dateStr)!.push(appt);
         });
+
+        dayGroups.forEach((appts, dateStr) => {
+            // Se algum não estiver concluído, a bolinha é verde (upcoming)
+            // Se todos estiverem concluídos, a bolinha é branca (completed)
+            const isAllCompleted = appts.every(a =>
+                ['CONCLUIDO', 'CONCLUDED', 'COMPLETED', 'FINALIZADO'].includes(a.status?.toUpperCase())
+            );
+
+            map.set(dateStr, isAllCompleted ? 'completed' : 'upcoming');
+        });
+
         return map;
     }, [appointments]);
 
@@ -79,14 +98,14 @@ export default function MonthGridCompact({
     const today = new Date();
 
     return (
-        <div className="bg-[#121212] pt-2 pb-4 shrink-0 select-none w-full">
+        <div className="bg-[var(--color-bg-primary)] pt-2 pb-4 shrink-0 select-none w-full border-b border-[var(--color-border)]">
             {/* Week Headers - with empty first column for week numbers */}
             <div className="grid grid-cols-8 mb-2 px-2">
                 <div className="w-6"></div> {/* Empty space for week numbers */}
                 {weekHeaders.map((wh, i) => (
                     <div
                         key={i}
-                        className="text-center text-[11px] font-medium text-gray-500 uppercase tracking-wide"
+                        className="text-center text-[11px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest"
                     >
                         {wh}
                     </div>
@@ -95,9 +114,9 @@ export default function MonthGridCompact({
 
             {/* Calendar Grid - 6 rows */}
             {[0, 1, 2, 3, 4, 5].map((rowIndex) => (
-                <div key={rowIndex} className="grid grid-cols-8 px-2 mb-1">
+                <div key={rowIndex} className="grid grid-cols-8 px-2">
                     {/* Week Number */}
-                    <div className="flex items-center justify-center text-[10px] text-gray-600 font-medium w-6">
+                    <div className="flex items-center justify-center text-[10px] text-[var(--color-text-tertiary)] opacity-50 font-medium w-6">
                         {weeks[rowIndex]}
                     </div>
 
@@ -108,28 +127,42 @@ export default function MonthGridCompact({
                         const isSelected = isSameDay(day, selectedDate);
 
                         const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-                        const hasEvents = (daysWithEvents.get(dateStr) || 0) > 0;
+                        const status = dayStatusMap.get(dateStr) || 'none';
 
                         return (
                             <div
                                 key={dayIdx}
-                                className="flex flex-col items-center justify-center h-[40px] cursor-pointer"
+                                className="flex flex-col items-center justify-center h-[42px] cursor-pointer"
                                 onClick={() => onSelectDay(day)}
                             >
-                                <div
-                                    className={`
-                                        w-[32px] h-[32px] flex items-center justify-center rounded-full text-[14px] transition-all
-                                        ${isSelected
-                                            ? 'bg-white text-black font-bold'
-                                            : isToday
-                                                ? 'text-blue-500 font-semibold'
-                                                : isCurrentMonth
-                                                    ? 'text-gray-200'
-                                                    : 'text-gray-600'
-                                        }
-                                    `}
-                                >
-                                    {day.getDate()}
+                                <div className="relative">
+                                    <div
+                                        className={`
+                                            w-[34px] h-[34px] flex items-center justify-center rounded-full text-[14px] transition-all
+                                            ${isSelected
+                                                ? 'bg-[var(--color-accent-primary)] text-white font-black shadow-lg shadow-[var(--color-accent-primary)]/20'
+                                                : isToday
+                                                    ? 'text-[var(--color-accent-primary)] font-black border border-[var(--color-accent-primary)]/30'
+                                                    : isCurrentMonth
+                                                        ? 'text-[var(--color-text-primary)] font-medium'
+                                                        : 'text-[var(--color-text-quaternary)] opacity-40'
+                                            }
+                                        `}
+                                    >
+                                        {day.getDate()}
+                                    </div>
+
+                                    {/* Indicators (Dots) */}
+                                    {status !== 'none' && (
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                            <div
+                                                className={`w-1.5 h-1.5 rounded-full shadow-sm ${status === 'completed'
+                                                        ? 'bg-white border border-gray-200'
+                                                        : 'bg-[#30d158] shadow-[0_0_5px_rgba(48,209,88,0.5)]'
+                                                    }`}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -139,3 +172,4 @@ export default function MonthGridCompact({
         </div>
     );
 }
+

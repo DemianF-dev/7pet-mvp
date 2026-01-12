@@ -290,40 +290,57 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
 
     return (
         <div
-            className="absolute inset-0 flex flex-col overflow-hidden select-none"
+            className="absolute inset-0 flex flex-col overflow-hidden select-none bg-rose-50"
             style={{
-                background: 'linear-gradient(180deg, #1e3a5f 0%, #102a43 100%)',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+                fontFamily: 'Quicksand, "Varela Round", sans-serif' // Fallback to soft fonts
             }}
         >
-            {/* Top Stats Bar - Ultra Compact */}
-            <div className="h-12 flex-shrink-0 px-2 flex items-center justify-between bg-black/30 backdrop-blur-md border-b border-white/10">
-                <button className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 rounded-lg text-white transition-all">
-                    <BarChart3 size={16} />
-                </button>
+            {/* Cute Background Pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none"
+                style={{
+                    backgroundImage: 'radial-gradient(#fb7185 2px, transparent 2px)',
+                    backgroundSize: '32px 32px'
+                }}
+            />
 
-                <div className="flex gap-4 sm:gap-6">
-                    <Stat label="MOVES" value={gameState.moves} />
-                    <Stat label="TIME" value={formatTime(time)} />
-                    <Stat label="SCORE" value={gameState.moves * 10} />
+            {/* Top Stats Bar - Cute & Compact */}
+            <div className="h-14 flex-shrink-0 px-4 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-rose-100 z-10 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => window.history.back()}
+                        className="w-9 h-9 flex items-center justify-center bg-rose-100 hover:bg-rose-200 active:scale-90 rounded-2xl text-rose-600 transition-all shadow-sm border border-rose-200"
+                        title="Sair"
+                    >
+                        <Undo2 size={18} className="rotate-90" />
+                    </button>
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-rose-50 rounded-2xl border border-rose-100">
+                        <span className="text-xl">🐶</span>
+                        <span className="text-sm font-bold text-rose-800">Paciência Pet</span>
+                    </div>
                 </div>
 
-                <div className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 rounded-lg text-white transition-all">
-                    🐾
+                <div className="flex gap-4 sm:gap-8">
+                    <Stat label="MOVIMENTOS" value={gameState.moves} icon={<Zap size={10} className="text-amber-400" />} />
+                    <Stat label="TEMPO" value={formatTime(time)} icon={<Clock size={10} className="text-blue-400" />} />
+                    <Stat label="PONTOS" value={gameState.moves * 10} icon={<Trophy size={10} className="text-yellow-500" />} />
+                </div>
+
+                <div className="w-9 h-9 flex items-center justify-center bg-indigo-100 hover:bg-indigo-200 active:scale-90 rounded-2xl text-indigo-600 transition-all shadow-sm border border-indigo-200">
+                    <Settings size={18} />
                 </div>
             </div>
 
-            {/* Game Area - ZERO margins, full screen utilization */}
-            <div className="flex-1 overflow-x-hidden overflow-y-auto px-0.5 py-0.5 pb-16 touch-pan-y">
-                {/* Top Row: Foundations (Left) + Deck/Waste (Right) */}
-                <div className="flex justify-between items-start mb-2 gap-0.5">
-                    {/* Foundations - Horizontal Grid */}
-                    <div className="flex gap-0.5">
+            {/* Game Area - Centered & Contained */}
+            <div className="flex-1 overflow-x-hidden overflow-y-auto w-full max-w-[500px] mx-auto px-2 py-4 z-0 touch-pan-y">
+                {/* Top Row: Foundations + Deck */}
+                <div className="flex justify-between items-start mb-6 gap-2">
+                    {/* Foundations - 2x2 Grid for cuteness/compactness or horizontal depending on preference. Keeping horizontal for standard gameplay but styling it cute. */}
+                    <div className="flex gap-2">
                         {(['hearts', 'diamonds', 'clubs', 'spades'] as Suit[]).map((suit, index) => (
-                            <div key={suit} className="relative w-[13vw] max-w-[60px] aspect-[5/7]">
+                            <div key={suit} className="relative w-[13vw] max-w-[64px] aspect-[5/7]">
                                 <div
                                     onClick={() => handleCardClick('foundation', index)}
-                                    className="w-full h-full rounded-lg border-2 border-white/10 bg-black/20 flex items-center justify-center text-2xl text-white/20 cursor-pointer hover:bg-black/30 transition-colors"
+                                    className="w-full h-full rounded-2xl border-2 border-dashed border-rose-200 bg-white/50 flex items-center justify-center text-2xl text-rose-200 cursor-pointer hover:bg-white/80 transition-colors shadow-inner"
                                 >
                                     {getSuitSymbol(suit)}
                                 </div>
@@ -341,9 +358,9 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                     </div>
 
                     {/* Deck + Waste */}
-                    <div className="flex gap-0.5">
+                    <div className="flex gap-2">
                         {/* Waste */}
-                        <div className="relative w-[13vw] max-w-[60px] aspect-[5/7]">
+                        <div className="relative w-[13vw] max-w-[64px] aspect-[5/7]">
                             {gameState.waste.length > 0 && (
                                 <div onClick={() => handleCardClick('waste')}>
                                     <Card
@@ -359,36 +376,45 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                         {/* Deck */}
                         <div
                             onClick={handleDrawCard}
-                            className="w-[13vw] max-w-[60px] aspect-[5/7] rounded-lg border-2 border-white/20 bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center cursor-pointer shadow-lg active:scale-95 transition-all"
+                            className="w-[13vw] max-w-[64px] aspect-[5/7] rounded-2xl border-4 border-white bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center cursor-pointer shadow-md hover:shadow-lg active:scale-95 transition-all relative overflow-hidden"
                         >
+                            <div className="absolute inset-0 opacity-20"
+                                style={{
+                                    backgroundImage: 'radial-gradient(white 2px, transparent 2px)',
+                                    backgroundSize: '12px 12px'
+                                }}
+                            />
                             {gameState.deck.length > 0 ? (
-                                <span className="text-white/80 text-xl">🐾</span>
+                                <span className="text-white text-3xl drop-shadow-md">🐾</span>
                             ) : (
-                                <Undo2 className="text-white/60" size={22} />
+                                <Undo2 className="text-white/80" size={24} />
                             )}
+                            <div className="absolute bottom-1 right-2 text-[10px] font-bold text-white/90">
+                                {gameState.deck.length}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Tableau - Maximized space, ZERO gaps */}
-                <div className="grid grid-cols-7 gap-0.5">
+                {/* Tableau */}
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                     {gameState.tableau.map((column, colIndex) => (
-                        <div key={colIndex} className="flex flex-col">
+                        <div key={colIndex} className="flex flex-col items-center">
                             {column.length === 0 && (
                                 <div
                                     onClick={() => handleCardClick('tableau', colIndex)}
-                                    className="w-full aspect-[5/7] rounded-lg border-2 border-dashed border-white/5 bg-black/10 flex items-center justify-center text-sm font-black text-white/5 cursor-pointer"
+                                    className="w-full aspect-[5/7] rounded-2xl border-2 border-dashed border-rose-200 bg-white/30 flex items-center justify-center text-xs font-bold text-rose-200 cursor-pointer"
                                 >
-                                    K
+
                                 </div>
                             )}
 
                             {column.map((card, cardIndex) => (
                                 <div
                                     key={card.id}
-                                    className="relative transition-all"
+                                    className="relative transition-all w-full"
                                     style={{
-                                        marginTop: cardIndex === 0 ? 0 : '-120%',
+                                        marginTop: cardIndex === 0 ? 0 : '-130%',
                                         zIndex: cardIndex
                                     }}
                                 >
@@ -416,23 +442,24 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 </div>
             </div>
 
-            {/* Bottom Action Bar - Discrete Play Button */}
-            <div className="h-14 flex-shrink-0 bg-black/50 backdrop-blur-2xl border-t border-white/10 flex justify-around items-center px-1">
-                <ActionBtn icon={<Settings size={18} />} label="Settings" onClick={() => toast('Configurações em breve')} />
-                <ActionBtn icon={<Calendar size={18} />} label="Daily" onClick={() => toast('Desafios em breve')} />
-                <ActionBtn icon={<Play size={18} />} label="New Game" onClick={handleNewGame} />
-                <ActionBtn icon={<Lightbulb size={18} />} label="Hint" onClick={handleHint} />
-                <ActionBtn icon={<Undo2 size={18} />} label="Undo" onClick={handleUndo} disabled={!gameState.moveHistory?.length} />
+            {/* Bottom Floating Action Bar */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex gap-1 z-20">
+                <ActionBtn icon={<Play size={20} className="fill-emerald-500 text-emerald-600" />} label="Novo" onClick={handleNewGame} />
+                <div className="w-px h-8 bg-gray-200 my-auto mx-1" />
+                <ActionBtn icon={<Lightbulb size={20} className="fill-yellow-400 text-yellow-500" />} label="Dica" onClick={handleHint} />
+                <ActionBtn icon={<Undo2 size={20} className="text-blue-500" />} label="Voltar" onClick={handleUndo} disabled={!gameState.moveHistory?.length} />
             </div>
         </div>
     );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value, icon }: { label: string; value: string | number; icon?: React.ReactNode }) {
     return (
         <div className="flex flex-col items-center">
-            <span className="text-[8px] font-black tracking-[0.15em] text-white/50 mb-0.5">{label}</span>
-            <span className="text-sm sm:text-base font-bold text-white leading-none tabular-nums drop-shadow-sm">{value}</span>
+            <span className="text-[10px] font-bold tracking-wider text-rose-400 mb-0.5 flex items-center gap-1">
+                {icon} {label}
+            </span>
+            <span className="text-base font-black text-rose-900 leading-none tabular-nums">{value}</span>
         </div>
     );
 }
@@ -453,14 +480,14 @@ function ActionBtn({
             onClick={onClick}
             disabled={disabled}
             className={`
-                flex flex-col items-center justify-center gap-0.5 min-w-[56px] transition-all active:scale-90
-                ${disabled ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}
+                w-12 h-12 flex flex-col items-center justify-center rounded-full hover:bg-rose-50 active:scale-95 transition-all
+                ${disabled ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}
             `}
+            title={label}
         >
-            <div className="text-white/80">
+            <div className="mb-0.5">
                 {icon}
             </div>
-            <span className="text-[9px] font-semibold text-white/50 tracking-tight">{label}</span>
         </button>
     );
 }

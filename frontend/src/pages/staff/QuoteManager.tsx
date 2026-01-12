@@ -247,7 +247,7 @@ export default function QuoteManager() {
         <div className="min-h-screen flex">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
+            <main className="flex-1 md:ml-64 p-6 md:p-10 pb-28 md:pb-10">
                 <header className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
                     <div className="flex-1">
                         <Breadcrumbs />

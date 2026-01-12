@@ -5,9 +5,11 @@
  * Displays a grid of available games for the user to select.
  */
 
+import GameCard from '../../components/games/GameCard';
+import StaffSidebar from '../../components/StaffSidebar';
+import BackButton from '../../components/BackButton';
 import { useNavigate } from 'react-router-dom';
 import { GameMetadata } from '../../types/game.types';
-import GameCard from '../../components/games/GameCard';
 import '../../styles/design-system-base.css';
 
 // Game catalog
@@ -42,10 +44,14 @@ export default function PausaPage() {
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-bg-primary">
-            <main className="flex-1 transition-all duration-300">
+        <div className="min-h-screen flex bg-bg-primary">
+            <StaffSidebar />
+
+            <main className="flex-1 md:ml-64 transition-all duration-300">
                 {/* Main content */}
                 <div className="p-6 md:p-10">
+                    <BackButton className="mb-6 ml-[-1rem]" />
+
                     {/* Premium Header */}
                     <div
                         className="page-header"
@@ -108,9 +114,9 @@ export default function PausaPage() {
                         </p>
                     </div>
                 </div>
+                {/* Added spacer to clear the bottom nav */}
+                <div className="h-24 md:hidden" aria-hidden="true" />
             </main>
-            {/* Added spacer to clear the bottom nav */}
-            <div className="h-24" aria-hidden="true" />
         </div>
     );
 }

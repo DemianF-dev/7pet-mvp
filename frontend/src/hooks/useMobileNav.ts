@@ -26,7 +26,6 @@ export const ALL_MOBILE_TABS: NavTabConfig[] = [
     { id: 'clientes', label: 'Clientes', icon: Users, path: '/staff/customers' },
     { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/staff/chat' },
     { id: 'pausa', label: 'Pausa', icon: Gamepad2, path: '/pausa' },
-    { id: 'kanban', label: 'Kanban', icon: Layout, path: '/staff/kanban' },
     { id: 'quotes', label: 'Orçamentos', icon: FileText, path: '/staff/quotes' },
 ];
 

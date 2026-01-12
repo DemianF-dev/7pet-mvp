@@ -35,6 +35,7 @@ import { useNotification } from '../context/NotificationContext';
 import ConfirmModal from './ConfirmModal';
 import { createContext, useContext } from 'react';
 import { useInMobileShell } from '../context/MobileShellContext';
+import { APP_VERSION } from '../constants/version';
 
 const SidebarContext = createContext({ isCollapsed: false });
 
@@ -444,7 +445,7 @@ export default function StaffSidebar() {
                         <div className="mb-4 px-2">
                             <ThemeToggle />
                             <p className="text-[10px] text-white/40 text-center font-mono mt-2">
-                                v0.1.0-beta
+                                {APP_VERSION}
                             </p>
                         </div>
                     )}

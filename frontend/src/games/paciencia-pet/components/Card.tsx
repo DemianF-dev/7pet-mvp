@@ -35,11 +35,6 @@ export default function Card({
     isSelected,
     isClickable,
     isDraggable,
-    onDragStart,
-    onDragEnd,
-    onTouchStart,
-    onTouchMove,
-    onTouchEnd,
     style
 }: CardProps) {
     const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
@@ -49,15 +44,15 @@ export default function Card({
     const cardStyle: React.CSSProperties = {
         width: '100%',
         aspectRatio: '5/7',
-        borderRadius: '8px',
+        borderRadius: '10px',
         position: 'relative',
         userSelect: 'none',
-        transition: 'transform 0.1s ease-out, box-shadow 0.1s ease-out',
+        transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy transition
         cursor: isClickable || canDrag ? 'pointer' : 'default',
         boxShadow: isSelected
-            ? '0 0 0 3px #fbbf24, 0 8px 16px rgba(0,0,0,0.4)'
-            : '0 2px 4px rgba(0,0,0,0.2)',
-        transform: isSelected ? 'scale(1.05) translateY(-4px)' : 'scale(1)',
+            ? '0 0 0 4px #fbbf24, 0 12px 24px -8px rgba(251, 191, 36, 0.5)'
+            : '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+        transform: isSelected ? 'scale(1.05) translateY(-8px)' : 'scale(1)',
         zIndex: isSelected ? 50 : 1,
         ...style
     };
@@ -66,18 +61,27 @@ export default function Card({
         return (
             <div
                 onClick={isClickable ? onClick : undefined}
-                className="game-card back"
+                className="game-card back overflow-hidden"
                 style={{
                     ...cardStyle,
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                    border: '3px solid white',
+                    background: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 100%)',
+                    border: '4px solid white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                 }}
             >
-                <div style={{ fontSize: '24px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🐾</div>
-                <div className="absolute inset-2 border border-white/20 rounded-md" />
+                {/* Pattern Overlay */}
+                <div className="absolute inset-0 opacity-20"
+                    style={{
+                        backgroundImage: 'radial-gradient(white 2px, transparent 2px)',
+                        backgroundSize: '8px 8px'
+                    }}
+                />
+
+                <div className="relative bg-white/20 p-2 rounded-full backdrop-blur-sm">
+                    <div style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>🐾</div>
+                </div>
             </div>
         );
     }
@@ -96,55 +100,57 @@ export default function Card({
                 border: '1px solid #e2e8f0',
             }}
         >
-            {/* Top-Left Corner Rank & Suit - Delicate */}
-            <div className="absolute top-0.5 left-1 flex flex-col items-center leading-none">
+            {/* Top-Left Corner Rank & Suit */}
+            <div className="absolute top-1 left-1.5 flex flex-col items-center leading-none">
                 <span style={{
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    color: isRed ? '#f43f5e' : '#334155'
+                    fontSize: '12px',
+                    fontWeight: '800',
+                    color: isRed ? '#f43f5e' : '#334155',
+                    fontFamily: 'Quicksand, sans-serif'
                 }}>
                     {card.rank}
                 </span>
                 <span style={{
-                    fontSize: '9px',
+                    fontSize: '10px',
                     color: isRed ? '#f43f5e' : '#334155',
-                    marginTop: '-1px'
+                    marginTop: '0px'
                 }}>
                     {SUIT_SYMBOLS[card.suit]}
                 </span>
             </div>
 
             {/* Top-Right Pet Icon - Very subtle */}
-            <div className="absolute top-1 right-1 opacity-5 filter grayscale scale-50">
+            <div className="absolute top-1.5 right-1.5 opacity-20 filter grayscale scale-75">
                 {PET_EMOJIS[card.suit]}
             </div>
 
             {/* Main Center Rank - Soft and Clean */}
             <div style={{
-                fontSize: '22px',
-                fontWeight: '600',
+                fontSize: '24px',
+                fontWeight: '700',
                 color: isRed ? '#f43f5e' : '#334155',
                 lineHeight: 1,
                 marginTop: '1px',
-                letterSpacing: '-0.5px'
+                letterSpacing: '-1px',
+                fontFamily: 'Quicksand, sans-serif'
             }}>
                 {card.rank}
             </div>
 
             {/* Center Suit - Delicate */}
             <div style={{
-                fontSize: '16px',
+                fontSize: '18px',
                 color: isRed ? '#f43f5e' : '#334155',
-                marginTop: '-1px',
-                opacity: 0.7
+                marginTop: '2px',
+                opacity: 0.8
             }}>
                 {SUIT_SYMBOLS[card.suit]}
             </div>
 
-            {/* Bottom-Right Corner (Inverted) - Very light */}
-            <div className="absolute bottom-0.5 right-1 flex flex-col items-center leading-none rotate-180 opacity-15">
-                <span style={{ fontSize: '9px', fontWeight: '700', color: isRed ? '#f43f5e' : '#334155' }}>{card.rank}</span>
-                <span style={{ fontSize: '8px', color: isRed ? '#f43f5e' : '#334155' }}>{SUIT_SYMBOLS[card.suit]}</span>
+            {/* Bottom-Right Corner (Inverted) */}
+            <div className="absolute bottom-1 right-1.5 flex flex-col items-center leading-none rotate-180 opacity-30">
+                <span style={{ fontSize: '10px', fontWeight: '800', color: isRed ? '#f43f5e' : '#334155' }}>{card.rank}</span>
+                <span style={{ fontSize: '9px', color: isRed ? '#f43f5e' : '#334155' }}>{SUIT_SYMBOLS[card.suit]}</span>
             </div>
         </div>
     );
