@@ -326,3 +326,126 @@ export const markAsRead = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to mark as read' });
     }
 };
+
+export const deleteConversation = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        // @ts-ignore
+        const userId = req.user?.id;
+
+        // Verify if user is participant
+        const participant = await prisma.participant.findUnique({
+            where: { userId_conversationId: { userId, conversationId: id } }
+        });
+
+        if (!participant) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        // We delete the conversation for everyone (as requested 'apagar')
+        // Alternatively, we could just remove the participant, but "apagar" usually means the thread
+        await prisma.conversation.delete({
+            where: { id }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        Logger.error('Error deleting conversation', error);
+        res.status(500).json({ error: 'Failed to delete conversation' });
+    }
+};
+
+export const addParticipant = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { userId: newUserId } = req.body;
+        // @ts-ignore
+        const userId = req.user?.id;
+
+        // Check if existing participant is adding
+        const participant = await prisma.participant.findUnique({
+            where: { userId_conversationId: { userId, conversationId: id } }
+        });
+
+        if (!participant) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        // Upsert participant
+        await prisma.participant.upsert({
+            where: { userId_conversationId: { userId: newUserId, conversationId: id } },
+            create: { userId: newUserId, conversationId: id },
+            update: {} // No change if already exists
+        });
+
+        // Update conversation to GROUP if it was DIRECT and now has > 2? 
+        // Or just let it be. Let's upgrade to GROUP if name is provided or > 2 participants.
+
+        const conversation = await prisma.conversation.findUnique({
+            where: { id },
+            include: { participants: { include: { user: { select: { id: true, name: true } } } } }
+        });
+
+        if (conversation && conversation.type === 'DIRECT' && conversation.participants.length > 2) {
+            await prisma.conversation.update({
+                where: { id },
+                data: { type: 'GROUP' }
+            });
+        }
+
+        // Notify new participant
+        socketService.notifyUser(newUserId, 'chat:new_conversation', conversation);
+
+        res.json({ success: true, conversation });
+    } catch (error) {
+        Logger.error('Error adding participant', error);
+        res.status(500).json({ error: 'Failed to add participant' });
+    }
+};
+
+export const transferConversation = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { targetUserId } = req.body;
+        // @ts-ignore
+        const userId = req.user?.id;
+
+        // Verify if current user is participant
+        const participant = await prisma.participant.findUnique({
+            where: { userId_conversationId: { userId, conversationId: id } }
+        });
+
+        if (!participant) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        // 1. Add new participant
+        await prisma.participant.upsert({
+            where: { userId_conversationId: { userId: targetUserId, conversationId: id } },
+            create: { userId: targetUserId, conversationId: id },
+            update: {}
+        });
+
+        // 2. Remove current user (Transfer)
+        await prisma.participant.delete({
+            where: { userId_conversationId: { userId, conversationId: id } }
+        });
+
+        // 3. Send system message about transfer
+        const targetUser = await prisma.user.findUnique({ where: { id: targetUserId }, select: { name: true } });
+        const currentUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+
+        await prisma.message.create({
+            data: {
+                content: `Atendimento transferido de ${currentUser?.name} para ${targetUser?.name}`,
+                conversationId: id,
+                senderId: userId // Or a system dummy user if exists
+            }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        Logger.error('Error transferring conversation', error);
+        res.status(500).json({ error: 'Failed to transfer conversation' });
+    }
+};

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle } from 'lucide-react'; // Added icons for Bitrix style
+import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 import { Message } from '../../types/chat';
@@ -19,6 +19,9 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [msg, setMsg] = useState('');
+    const [showMenu, setShowMenu] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showTransferModal, setShowTransferModal] = useState(false);
 
     const handleAttention = async () => {
         if (!window.confirm('Chamar atenção de todos nesta conversa?')) return;
@@ -26,6 +29,42 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
             await api.post(`/chat/${conversationId}/attention`);
         } catch (error) {
             console.error('Erro ao chamar atenção:', error);
+        }
+    };
+
+    const handleDeleteChat = async () => {
+        if (!window.confirm('Tem certeza que deseja apagar esta conversa para todos? ESTA AÇÃO É IRREVERSÍVEL.')) return;
+        try {
+            await api.delete(`/chat/${conversationId}`);
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            if (onBack) onBack();
+        } catch (error) {
+            console.error('Erro ao apagar conversa:', error);
+            alert('Falha ao apagar conversa.');
+        }
+    };
+
+    const handleAddParticipant = async (targetUserId: string) => {
+        try {
+            await api.post(`/chat/${conversationId}/participants`, { userId: targetUserId });
+            queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+            setShowAddModal(false);
+        } catch (error) {
+            console.error('Erro ao adicionar participante:', error);
+            alert('Falha ao adicionar participante.');
+        }
+    };
+
+    const handleTransferChat = async (targetUserId: string) => {
+        if (!window.confirm('Deseja transferir este atendimento? Você perderá acesso à conversa.')) return;
+        try {
+            await api.post(`/chat/${conversationId}/transfer`, { targetUserId });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            if (onBack) onBack();
+            setShowTransferModal(false);
+        } catch (error) {
+            console.error('Erro ao transferir chat:', error);
+            alert('Falha ao transferir chat.');
         }
     };
 
@@ -183,9 +222,61 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                         </button>
                     )}
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"><Phone size={18} /></button>
-                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"><MoreVertical size={18} /></button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowMenu(!showMenu)}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        >
+                            <MoreVertical size={18} />
+                        </button>
+
+                        {showMenu && (
+                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <button
+                                    onClick={() => {
+                                        const url = `${window.location.origin}/staff/chat?chatId=${conversationId}`;
+                                        navigator.clipboard.writeText(url);
+                                        setShowMenu(false);
+                                        alert('Link da conversa copiado!');
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                    <Paperclip size={16} /> Compartilhar Conversa
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowAddModal(true);
+                                        setShowMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                    <PlusCircle size={16} /> Incluir Participante
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowTransferModal(true);
+                                        setShowMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                    <MoreVertical size={16} className="rotate-90" /> Transferir Atendimento
+                                </button>
+                                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+                                <button
+                                    onClick={handleDeleteChat}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                >
+                                    <AlertCircle size={16} /> Apagar Conversa
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Modals */}
+            {showAddModal && <UserSelectionModal title="Incluir Participante" onSelect={handleAddParticipant} onClose={() => setShowAddModal(false)} />}
+            {showTransferModal && <UserSelectionModal title="Transferir Atendimento" onSelect={handleTransferChat} onClose={() => setShowTransferModal(false)} />}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollRef}>
@@ -295,4 +386,61 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
             </div>
         </div>
     )
+}
+
+function UserSelectionModal({ title, onSelect, onClose }: { title: string, onSelect: (id: string) => void, onClose: () => void }) {
+    const [query, setQuery] = useState('');
+    const { data: results = [], isLoading } = useQuery({
+        queryKey: ['users-search', query],
+        queryFn: async () => {
+            if (!query) return [];
+            const res = await api.get(`/chat/users?query=${encodeURIComponent(query)}`);
+            return res.data;
+        }
+    });
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-white">
+                    <h3 className="font-bold">{title}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">&times;</button>
+                </div>
+                <div className="p-4">
+                    <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Buscar usuário..."
+                            className="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-lg py-2.5 pl-10 text-sm focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            value={query}
+                            onChange={e => setQuery(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {isLoading && <div className="text-center py-4 text-gray-400">Buscando...</div>}
+                        {results.map((u: any) => (
+                            <button
+                                key={u.id}
+                                onClick={() => onSelect(u.id)}
+                                className="w-full text-left p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition flex items-center gap-3"
+                            >
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-full flex items-center justify-center font-bold">
+                                    <UserIcon size={14} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 block truncate">{u.name}</span>
+                                    <span className="text-[10px] text-gray-500">{u.email}</span>
+                                </div>
+                            </button>
+                        ))}
+                        {query && results.length === 0 && !isLoading && (
+                            <div className="text-center py-4 text-sm text-gray-500">Nenhum usuário encontrado.</div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
