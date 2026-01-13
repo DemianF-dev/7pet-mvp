@@ -29,7 +29,8 @@ export default function ConversationList({ conversations, onSelect, activeId }: 
             {conversations.map(conv => {
                 const otherParticipant = conv.participants.find(p => p.user.id !== user?.id)?.user;
                 const name = conv.name || otherParticipant?.name || 'Chat';
-                const lastMsg = conv.messages[0]?.content || 'Inicie uma conversa';
+                const m = conv.messages[0];
+                const lastMsg = m ? (m.content || (m.fileType?.startsWith('image/') ? '📷 Foto' : '📎 Arquivo')) : 'Inicie uma conversa';
                 const isActive = activeId === conv.id;
                 const isUnread = (conv.unreadCount || 0) > 0;
 
