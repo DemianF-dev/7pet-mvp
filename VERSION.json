@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260113-1447",
+  "version": "BETA20260113-1457",
   "stage": "BETA",
-  "timestamp": "2026-01-13T14:47:59.000Z",
-  "commit": "f7f50ed",
-  "buildNumber": 66,
-  "releaseNotes": "Auto-generated from commit: feat: chat file attachments with Supabase Storage and drag-and-drop"
+  "timestamp": "2026-01-13T14:57:18.000Z",
+  "commit": "09f0d64",
+  "buildNumber": 67,
+  "releaseNotes": "Auto-generated from commit: fix: add missing supabase-js dependency and fix backend crash"
 }
