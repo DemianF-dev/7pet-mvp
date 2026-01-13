@@ -567,7 +567,10 @@ model Participant {
 
 model Message {
   id             String       @id @default(uuid())
-  content        String
+  content        String?
+  fileUrl        String?
+  fileType       String?
+  fileName       String?
   senderId       String
   conversationId String
   createdAt      DateTime     @default(now())

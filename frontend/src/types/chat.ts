@@ -1,6 +1,9 @@
 export interface Message {
     id: string;
-    content: string;
+    content?: string;
+    fileUrl?: string;
+    fileType?: string;
+    fileName?: string;
     createdAt: string;
     updatedAt?: string;
     senderId: string;

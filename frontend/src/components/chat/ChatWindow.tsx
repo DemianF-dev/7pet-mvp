@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon } from 'lucide-react';
+import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon, Image as ImageIcon, File as FileIcon, Loader2, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 import { Message } from '../../types/chat';
@@ -19,6 +19,9 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [msg, setMsg] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [showMenu, setShowMenu] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showTransferModal, setShowTransferModal] = useState(false);
@@ -122,7 +125,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
             socket.off('chat:new_message', handleMsg);
             socket.emit('leave_chat', conversationId);
         }
-    }, [conversationId, socket, queryClient]);
+    }, [conversationId, socket, queryClient, user?.id]);
 
     // Scroll on load and mark as read
     useEffect(() => {
@@ -145,55 +148,56 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
     }, [messages.length, conversationId, queryClient]);
 
     const sendMutation = useMutation({
-        mutationFn: async (content: string) => {
-            return api.post(`/chat/${conversationId}/messages`, { content });
+        mutationFn: async (payload: { content?: string, fileUrl?: string, fileType?: string, fileName?: string }) => {
+            const res = await api.post(`/chat/${conversationId}/messages`, payload);
+            return res.data;
         },
-        onMutate: async (newContent) => {
-            // Cancel any outgoing refetches
-            await queryClient.cancelQueries({ queryKey: ['messages', conversationId] });
-
-            // Snapshot the previous value
-            const previousMessages = queryClient.getQueryData<Message[]>(['messages', conversationId]);
-
-            // Optimistically update to the new value
-            const optimisticMessage: Message = {
-                id: `temp-${Date.now()}`,
-                content: newContent,
-                conversationId,
-                senderId: user?.id || 'me',
-                sender: { id: user?.id || 'me', name: user?.name, color: user?.color },
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-
-            queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
-                return [...(old || []), optimisticMessage];
-            });
-
-            // Scroll to bottom immediately
-            setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
-
-            return { previousMessages };
-        },
-        onError: (err, newContent, context) => {
-            if (context?.previousMessages) {
-                queryClient.setQueryData(['messages', conversationId], context.previousMessages);
-            }
-            alert('Falha ao enviar mensagem. Verifique a conexão.');
-        },
-        onSettled: () => {
-            // We don't necessarily need to invalidate immediately if socket handles the real update
-            // But it's good practice to ensure consistency
-            // queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
-        },
-        onSuccess: (data) => {
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
             setMsg('');
-            // Replace temp ID with real ID in cache if needed, but usually regex replacement or socket/invalidation handles it
-            queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
-                return old?.map(m => m.id.startsWith('temp-') && m.content === data.data.content ? data.data : m) || [];
-            });
         }
     });
+
+    const handleFileUpload = async (file: File) => {
+        if (!file) return;
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post('/chat/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            // After upload, send as message
+            sendMutation.mutate({
+                fileUrl: res.data.url,
+                fileType: res.data.fileType,
+                fileName: res.data.fileName
+            });
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert('Falha ao enviar arquivo.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileUpload(file);
+    };
 
     return (
         <div className={`flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900/50 pb-20 md:pb-0 ${className}`}>
@@ -328,15 +332,33 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                             )}
                             <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                    <div
-                                        className={`rounded-2xl p-3 px-4 text-sm shadow-sm break-words ${isMe
-                                            ? 'bg-blue-600 text-white rounded-br-none'
-                                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-gray-700'
-                                            }`}
-                                    >
-                                        <p className="mb-1">{m.content}</p>
-                                        <span className={`text-[10px] block text-right ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
-                                            {formatTime(msgDate)}
+                                    <div className={`p-4 rounded-2xl max-w-[85%] relative ${isMe ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow-sm'}`}>
+                                        {!isMe && <span className="text-[10px] font-bold block mb-1 opacity-70">{m.sender.name}</span>}
+
+                                        {/* File Rendering */}
+                                        {m.fileUrl && (
+                                            <div className="mb-2">
+                                                {m.fileType?.startsWith('image/') ? (
+                                                    <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg group">
+                                                        <img src={m.fileUrl} alt={m.fileName} className="max-w-full h-auto max-h-60 object-cover transition-transform group-hover:scale-105" />
+                                                    </a>
+                                                ) : (
+                                                    <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border ${isMe ? 'bg-blue-700/50 border-blue-400' : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'} hover:opacity-90 transition-opacity`}>
+                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isMe ? 'bg-blue-500' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600'}`}>
+                                                            <FileIcon size={20} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-semibold truncate">{m.fileName}</p>
+                                                            <p className="text-[10px] opacity-70 uppercase">{m.fileType?.split('/')[1] || 'DOC'}</p>
+                                                        </div>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {m.content && <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>}
+                                        <span className={`text-[10px] mt-1 block text-right opacity-60`}>
+                                            {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                     {!isMe && <span className="text-[10px] text-gray-400 mt-1 ml-1">{m.sender?.name}</span>}
@@ -347,41 +369,60 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                 })}
             </div>
 
-            {/* Input Area (Bitrix style) */}
-            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                <div className="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-2 border border-transparent focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
-                    <textarea
-                        className="w-full text-sm bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[40px] text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                        placeholder="Digite sua mensagem (Ctrl+Enter para enviar)..."
-                        value={msg}
-                        onChange={e => setMsg(e.target.value)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                if (msg.trim()) {
-                                    sendMutation.mutate(msg);
-                                    setMsg(''); // Clear immediately for UX
-                                }
-                            }
-                        }}
-                    />
-                    <div className="flex justify-between items-center mt-2 px-1">
-                        <div className="flex gap-2 text-gray-400">
-                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"><Paperclip size={18} /></button>
-                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"><Smile size={18} /></button>
+            {/* Input */}
+            <div
+                className={`p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative ${isDragging ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
+                {isDragging && (
+                    <div className="absolute inset-0 bg-blue-600/10 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none border-2 border-dashed border-blue-600 rounded-lg m-2">
+                        <div className="flex flex-col items-center text-blue-600 bg-white/90 dark:bg-gray-800/90 p-4 rounded-2xl shadow-xl animate-in zoom-in duration-200">
+                            <Paperclip size={32} className="mb-2" />
+                            <span className="font-bold">Solte para enviar arquivo</span>
                         </div>
-                        <button
-                            disabled={!msg.trim()} // || sendMutation.isPending -> Removed to allow rapid fire
-                            onClick={() => {
-                                if (msg.trim()) {
-                                    sendMutation.mutate(msg);
-                                    setMsg(''); // Clear immediately for UX
+                    </div>
+                )}
+
+                <div className="flex items-center gap-2 max-w-6xl mx-auto">
+                    <input
+                        type="file"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="p-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all hover:text-blue-600 disabled:opacity-50"
+                        title="Anexar arquivo"
+                    >
+                        {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Paperclip size={20} />}
+                    </button>
+                    <button className="p-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all hover:text-yellow-500"><Smile size={20} /></button>
+                    <div className="flex-1 relative">
+                        <textarea
+                            rows={1}
+                            placeholder="Escreva uma mensagem..."
+                            className="w-full bg-gray-100 dark:bg-gray-700/50 border-none rounded-2xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-500 resize-none max-h-32 transition-all dark:text-white"
+                            value={msg}
+                            onChange={e => setMsg(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (msg.trim()) sendMutation.mutate({ content: msg.trim() });
                                 }
                             }}
-                            className="p-2 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wide"
-                        >
-                            Enviar <Send size={14} />
-                        </button>
+                        />
                     </div>
+                    <button
+                        onClick={() => msg.trim() && sendMutation.mutate({ content: msg.trim() })}
+                        disabled={!msg.trim() || sendMutation.isPending}
+                        className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:grayscale"
+                    >
+                        <Send size={20} />
+                    </button>
                 </div>
             </div>
         </div>

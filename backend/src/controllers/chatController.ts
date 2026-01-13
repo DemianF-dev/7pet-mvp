@@ -73,13 +73,16 @@ export const getMessages = async (req: Request, res: Response) => {
 export const sendMessage = async (req: Request, res: Response) => {
     try {
         const { id } = req.params; // conversationId
-        const { content } = req.body;
+        const { content, fileUrl, fileType, fileName } = req.body;
         // @ts-ignore
         const senderId = req.user?.id;
 
         const message = await prisma.message.create({
             data: {
                 content,
+                fileUrl,
+                fileType,
+                fileName,
                 conversationId: id,
                 senderId
             },
@@ -121,9 +124,13 @@ export const sendMessage = async (req: Request, res: Response) => {
             for (const p of otherParticipants) {
                 try {
                     const { createNotification } = require('./notificationController');
+                    const displayBody = content
+                        ? (content.substring(0, 50) + (content.length > 50 ? '...' : ''))
+                        : (fileType?.startsWith('image/') ? '📷 Foto' : '📎 Arquivo');
+
                     await createNotification(p.userId, {
                         title: `Nova mensagem de ${senderName}`,
-                        body: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+                        body: displayBody,
                         type: 'chat',
                         referenceId: id,
                         icon: message.sender.color || undefined,
