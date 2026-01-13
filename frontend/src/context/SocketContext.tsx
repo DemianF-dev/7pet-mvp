@@ -23,50 +23,46 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
-        // Delay socket connection to not block initial render
-        const connectTimeout = setTimeout(() => {
-            const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-            // In production (Vercel serverless), WebSocket connections don't persist
-            // Only attempt connection if we have explicit socket URL or in dev
-            if (import.meta.env.PROD && !import.meta.env.VITE_SOCKET_URL) {
-                if (import.meta.env.DEV) console.log('🔌 Socket disabled in serverless production');
-                return;
-            }
+        // Connect immediately without timeout
+        // In production, we might need a specific VITE_SOCKET_URL if the backend is on a different domain/port
+        const targetUrl = import.meta.env.VITE_SOCKET_URL || socketUrl;
 
-            // Ensure we connect to base URL, socket.io handles /socket.io path
-            const newSocket = io(import.meta.env.VITE_SOCKET_URL || socketUrl, {
-                query: { userId: user.id },
-                auth: { token },
-                transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
-                autoConnect: true,
-                reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionAttempts: 3, // Limit reconnection attempts
-                timeout: 10000, // Connection timeout
-            });
+        if (import.meta.env.DEV) {
+            console.log(`🔌 Initializing Socket.io connection to: ${targetUrl}`);
+        }
 
-            newSocket.on('connect', () => {
-                if (import.meta.env.DEV) console.log('🔌 Socket connected');
-                setIsConnected(true);
-            });
+        const newSocket = io(targetUrl, {
+            query: { userId: user.id },
+            auth: { token },
+            transports: ['websocket', 'polling'], // Prioritize websocket
+            autoConnect: true,
+            reconnection: true,
+            reconnectionDelay: 500, // Faster retry
+            reconnectionAttempts: 10,
+            timeout: 5000,
+        });
 
-            newSocket.on('disconnect', () => {
-                if (import.meta.env.DEV) console.log('🔌 Socket disconnected');
-                setIsConnected(false);
-            });
+        newSocket.on('connect', () => {
+            if (import.meta.env.DEV) console.log('🔌 Socket connected:', newSocket.id);
+            setIsConnected(true);
+        });
 
-            newSocket.on('connect_error', (error) => {
-                if (import.meta.env.DEV) console.log('Socket connection error (non-critical):', error.message);
-            });
+        newSocket.on('disconnect', (reason) => {
+            if (import.meta.env.DEV) console.log('🔌 Socket disconnected:', reason);
+            setIsConnected(false);
+        });
 
-            setSocket(newSocket);
-        }, 1000); // Wait 1 second before connecting
+        newSocket.on('connect_error', (error) => {
+            console.error('Socket connection error:', error.message);
+        });
+
+        setSocket(newSocket);
 
         return () => {
-            clearTimeout(connectTimeout);
-            if (socket) {
-                socket.disconnect();
+            if (newSocket) {
+                newSocket.disconnect();
             }
         };
     }, [user?.id, token]);

@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
-import api from '../../services/api';
+import { useServices } from '../../context/ServicesContext';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import toast from 'react-hot-toast';
@@ -48,14 +48,10 @@ interface Customer {
 
 type TabType = 'active' | 'trash';
 
-const fetchCustomers = async (tab: TabType): Promise<Customer[]> => {
-    const endpoint = tab === 'trash' ? '/customers/trash' : '/customers';
-    const response = await api.get(endpoint);
-    // Handle both paginated response { data: [...], meta: ... } and direct array
-    return Array.isArray(response.data) ? response.data : (response.data.data || []);
-};
+// fetchCustomers removed as it's now handled by the service in the component closure
 
 export default function CustomerManager() {
+    const { customers: customersService } = useServices();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -66,12 +62,13 @@ export default function CustomerManager() {
 
     const { data: customers = [], isLoading, isFetching } = useQuery({
         queryKey: ['customers', tab],
-        queryFn: () => fetchCustomers(tab),
+        queryFn: () => tab === 'trash' ? customersService.listTrash() : customersService.list(),
         staleTime: 5 * 60 * 1000,
     });
 
+    // Explicitly define Customer type for the mutation callback
     const bulkDeleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.post('/customers/bulk-delete', { ids }),
+        mutationFn: (ids: string[]) => customersService.bulkDelete(ids),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['customers'] });
             setSelectedIds([]);
@@ -81,7 +78,7 @@ export default function CustomerManager() {
     });
 
     const permanentDeleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/customers/${id}/permanent`),
+        mutationFn: (id: string) => customersService.deletePermanent(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['customers'] });
             toast.success('Cliente excluído permanentemente');
@@ -89,7 +86,7 @@ export default function CustomerManager() {
     });
 
     const bulkRestoreMutation = useMutation({
-        mutationFn: (ids: string[]) => api.post('/customers/bulk-restore', { ids }),
+        mutationFn: (ids: string[]) => customersService.bulkRestore(ids),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['customers'] });
             setSelectedIds([]);

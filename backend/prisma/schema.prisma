@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -9,57 +10,51 @@ datasource db {
 }
 
 model User {
-  id                   String             @id @default(uuid())
-  email                String             @unique
-  passwordHash         String?
-  googleId             String?            @unique
-  name                 String?
-  phone                String?
-  document             String?
-  address              String?
-  birthday             DateTime?
-  admissionDate        DateTime?
-  notes                String?
-  permissions          String?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  deletedAt            DateTime?
-  extraAddresses       Json?              @default("[]")
-  extraEmails          Json?              @default("[]")
-  extraPhones          Json?              @default("[]")
-  firstName            String?
-  lastName             String?
-  seqId                Int                @unique @default(autoincrement())
-  staffId              Int?               @unique
-  showTutorial         Boolean            @default(true)
-  color                String?            @default("#3B82F6")
-  role                 String?
-  plainPassword        String?
-  division             String             @default("CLIENTE")
-  isEligible           Boolean            @default(false)
-  active               Boolean            @default(true) // Helper for quick disable
-  isSupportAgent       Boolean            @default(false) // Defines if user appears in Client Support list
-  assignedAppointments Appointment[]      @relation("AppointmentPerformer")
-  authenticators       Authenticator[]
-  bugReports           BugReport[]
-  customer             Customer?
-  notifications        Notification[]
-  performedItems       QuoteItem[]        @relation("ItemPerformer")
-  assignedServices     Service[]          @relation("ServiceResponsible")
-  pushSubscriptions    PushSubscription[]
-
-  // Feed & Chat
-  posts                Post[]
-  comments             Comment[]
-  reactions            Reaction[]
-  sentMessages         Message[]          @relation("MessageSender")
-  conversations        Participant[]
-  
-  // Notification Preferences
+  id                      String                       @id @default(uuid())
+  email                   String                       @unique
+  passwordHash            String?
+  googleId                String?                      @unique
+  name                    String?
+  phone                   String?
+  document                String?
+  address                 String?
+  birthday                DateTime?
+  admissionDate           DateTime?
+  notes                   String?
+  permissions             String?
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  deletedAt               DateTime?
+  extraAddresses          Json?                        @default("[]")
+  extraEmails             Json?                        @default("[]")
+  extraPhones             Json?                        @default("[]")
+  firstName               String?
+  lastName                String?
+  seqId                   Int                          @unique @default(autoincrement())
+  staffId                 Int?                         @unique
+  showTutorial            Boolean                      @default(true)
+  color                   String?                      @default("#3B82F6")
+  role                    String?
+  plainPassword           String?
+  division                String                       @default("CLIENTE")
+  isEligible              Boolean                      @default(false)
+  active                  Boolean                      @default(true)
+  isSupportAgent          Boolean                      @default(false)
+  assignedAppointments    Appointment[]                @relation("AppointmentPerformer")
+  authenticators          Authenticator[]
+  bugReports              BugReport[]
+  comments                Comment[]
+  customer                Customer?
+  sentMessages            Message[]                    @relation("MessageSender")
+  notifications           Notification[]
+  conversations           Participant[]
+  posts                   Post[]
+  pushSubscriptions       PushSubscription[]
+  performedItems          QuoteItem[]                  @relation("ItemPerformer")
+  reactions               Reaction[]
+  assignedServices        Service[]                    @relation("ServiceResponsible")
+  staffProfile            StaffProfile?
   notificationPreferences UserNotificationPreference[]
-  
-  // HR / Staff Profile
-  staffProfile         StaffProfile?
 
   @@index([email])
   @@index([division])
@@ -81,41 +76,41 @@ model Authenticator {
 }
 
 model Customer {
-  id                       String        @id @default(uuid())
-  userId                   String        @unique
+  id                       String                 @id @default(uuid())
+  userId                   String                 @unique
   name                     String
   phone                    String?
   address                  String?
-  noShowCount              Int           @default(0)
-  isBlocked                Boolean       @default(false)
-  canRequestQuotes         Boolean       @default(true)
-  requiresPrepayment       Boolean       @default(false)
-  createdAt                DateTime      @default(now())
-  updatedAt                DateTime      @updatedAt
-  type                     String        @default("AVULSO")
+  noShowCount              Int                    @default(0)
+  isBlocked                Boolean                @default(false)
+  requiresPrepayment       Boolean                @default(false)
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  type                     String                 @default("AVULSO")
   recurringFrequency       String?
-  discountPercentage       Float         @default(0.0)
+  discountPercentage       Float                  @default(0.0)
   internalNotes            String?
-  balance                  Float         @default(0.0)
+  balance                  Float                  @default(0.0)
   secondaryGuardianAddress String?
   secondaryGuardianEmail   String?
   secondaryGuardianName    String?
   secondaryGuardianPhone   String?
-  additionalGuardians      Json?         @default("[]")
+  additionalGuardians      Json?                  @default("[]")
   communicationOther       Json?
-  communicationPrefs       Json?         @default("[]")
+  communicationPrefs       Json?                  @default("[]")
   discoverySource          String?
   recurrenceDiscount       Float?
   recurrenceFrequency      String?
   deletedAt                DateTime?
-  riskLevel                String?       @default("Nivel 1") // Nivel 1, Nivel 2, Nivel 3
+  canRequestQuotes         Boolean                @default(true)
+  riskLevel                String?                @default("Nivel 1")
   appointments             Appointment[]
-  user                     User          @relation(fields: [userId], references: [id])
+  user                     User                   @relation(fields: [userId], references: [id])
+  alerts                   CustomerAlert[]
+  financialTransactions    FinancialTransaction[]
   invoices                 Invoice[]
   pets                     Pet[]
   quotes                   Quote[]
-  financialTransactions    FinancialTransaction[]
-  alerts                   CustomerAlert[]
 
   @@index([userId])
   @@index([type])
@@ -124,43 +119,41 @@ model Customer {
   @@index([userId], map: "idx_customer_userid")
 }
 
-// Financial Transactions for Customer Balance Tracking
 model FinancialTransaction {
-  id               String    @id @default(uuid())
+  id               String   @id @default(uuid())
   customerId       String
-  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  type             String    // 'DEBIT' | 'CREDIT'
+  type             String
   amount           Float
   description      String
-  category         String?   // 'QUOTE' | 'PAYMENT' | 'ADJUSTMENT' | 'DISCOUNT' | 'PENALTY'
+  category         String?
   relatedQuoteId   String?
-  relatedQuote     Quote?    @relation(fields: [relatedQuoteId], references: [id])
   relatedInvoiceId String?
-  relatedInvoice   Invoice?  @relation(fields: [relatedInvoiceId], references: [id])
-  createdBy        String    // User ID who created
-  createdAt        DateTime  @default(now())
+  createdBy        String
+  createdAt        DateTime @default(now())
   notes            String?
-  
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  relatedInvoice   Invoice? @relation(fields: [relatedInvoiceId], references: [id])
+  relatedQuote     Quote?   @relation(fields: [relatedQuoteId], references: [id])
+
   @@index([customerId])
   @@index([type])
   @@index([createdAt])
   @@index([category])
 }
 
-// Customer Alerts for Staff Visibility
 model CustomerAlert {
-  id          String    @id @default(uuid())
-  customerId  String
-  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  type        String    // 'WARNING' | 'CRITICAL' | 'INFO'
-  title       String
-  message     String
-  isActive    Boolean   @default(true)
-  resolvedAt  DateTime?
-  resolvedBy  String?   // User ID
-  createdBy   String    // User ID
-  createdAt   DateTime  @default(now())
-  
+  id         String    @id @default(uuid())
+  customerId String
+  type       String
+  title      String
+  message    String
+  isActive   Boolean   @default(true)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdBy  String
+  createdAt  DateTime  @default(now())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
   @@index([customerId])
   @@index([isActive])
   @@index([type])
@@ -189,14 +182,11 @@ model Pet {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   usedToGrooming   Boolean       @default(true)
-  
-  // Detalhes de Tosa
-  groomingMachine  String?       // Máquina utilizada (ex: "Andis", "Oster")
-  groomingHeight   String?       // Altura do corte (ex: "3mm", "7mm")
-  groomingAdapter  String?       // Adaptador utilizado
-  groomingScissors String?       // Tipo de tesoura
-  groomingNotes    String?       // Observações sobre a tosa
-  
+  groomingAdapter  String?
+  groomingHeight   String?
+  groomingMachine  String?
+  groomingNotes    String?
+  groomingScissors String?
   appointments     Appointment[]
   customer         Customer      @relation(fields: [customerId], references: [id])
   quotes           Quote[]
@@ -205,33 +195,30 @@ model Pet {
   @@index([customerId], map: "idx_pet_customerid")
 }
 
-
 model Service {
-  id            String        @id @default(uuid())
-  name          String
-  description   String?
-  basePrice     Float
-  duration      Int
-  category      String?
-  species       String        @default("Canino")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  maxWeight     Float?
-  minWeight     Float?
-  sizeLabel     String?
-  responsibleId String?
-  seqId         Int           @unique @default(autoincrement())
-  deletedAt     DateTime?
-  subcategory   String?
-  type          String?
-  coatType      String?
-  unit          String?       @default("por pet")
-  quoteItems    QuoteItem[]
-  responsible   User?         @relation("ServiceResponsible", fields: [responsibleId], references: [id])
-  appointments  Appointment[] @relation("AppointmentToService")
-  
-  // HR - Produção
+  id                String             @id @default(uuid())
+  name              String
+  description       String?
+  basePrice         Float
+  duration          Int
+  category          String?
+  species           String             @default("Canino")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  maxWeight         Float?
+  minWeight         Float?
+  sizeLabel         String?
+  responsibleId     String?
+  seqId             Int                @unique @default(autoincrement())
+  deletedAt         DateTime?
+  subcategory       String?
+  type              String?
+  coatType          String?
+  unit              String?            @default("por pet")
+  quoteItems        QuoteItem[]
+  responsible       User?              @relation("ServiceResponsible", fields: [responsibleId], references: [id])
   serviceExecutions ServiceExecution[]
+  appointments      Appointment[]      @relation("AppointmentToService")
 
   @@index([deletedAt])
   @@index([responsibleId])
@@ -253,39 +240,40 @@ model Product {
 }
 
 model Appointment {
-  id                 String              @id @default(uuid())
-  customerId         String
-  petId              String
-  startAt            DateTime
-  status             AppointmentStatus   @default(PENDENTE)
-  cancellationReason String?
-  noShowReason       String?
-  deletedAt          DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  notified24h        Boolean             @default(false)
-  notified1h         Boolean             @default(false)
-  category           AppointmentCategory @default(SPA)
-  seqId              Int                 @unique @default(autoincrement())
-  performerId        String?
-  quoteId            String?
-  customer           Customer            @relation(fields: [customerId], references: [id])
-  performer          User?               @relation("AppointmentPerformer", fields: [performerId], references: [id])
-  pet                Pet                 @relation(fields: [petId], references: [id])
-  quote              Quote?              @relation(fields: [quoteId], references: [id])
-  invoice            Invoice?
-  statusHistory      StatusHistory[]
-  transport          TransportDetails?
-  services           Service[]           @relation("AppointmentToService")
-  
-  // HR - Produção
-  serviceExecutions  ServiceExecution[]
+  id                     String                  @id @default(uuid())
+  customerId             String
+  petId                  String
+  startAt                DateTime
+  status                 AppointmentStatus       @default(PENDENTE)
+  cancellationReason     String?
+  noShowReason           String?
+  deletedAt              DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  notified24h            Boolean                 @default(false)
+  notified1h             Boolean                 @default(false)
+  category               AppointmentCategory     @default(SPA)
+  seqId                  Int                     @unique @default(autoincrement())
+  performerId            String?
+  quoteId                String?
+  customer               Customer                @relation(fields: [customerId], references: [id])
+  performer              User?                   @relation("AppointmentPerformer", fields: [performerId], references: [id])
+  pet                    Pet                     @relation(fields: [petId], references: [id])
+  quote                  Quote?                  @relation(fields: [quoteId], references: [id])
+  invoice                Invoice?
+  serviceExecutions      ServiceExecution[]
+  statusHistory          StatusHistory[]
+  transport              TransportDetails?
   transportLegExecutions TransportLegExecution[]
+  services               Service[]               @relation("AppointmentToService")
 
   @@index([customerId])
   @@index([status])
   @@index([startAt])
   @@index([deletedAt])
+  @@index([performerId])
+  @@index([category])
+  @@index([category, deletedAt, startAt])
   @@index([customerId], map: "idx_appointment_customerid")
 }
 
@@ -297,47 +285,47 @@ model TransportDetails {
   requestedPeriod TransportPeriod
   confirmedTime   DateTime?
   status          String          @default("SOLICITADO")
-  type            String? // LEVA or TRAZ
+  type            String?
   appointment     Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 }
 
 model Quote {
-  id                     String           @id @default(uuid())
+  id                     String                 @id @default(uuid())
   customerId             String
   petId                  String?
-  status                 QuoteStatus      @default(SOLICITADO)
-  totalAmount            Float            @default(0)
+  status                 QuoteStatus            @default(SOLICITADO)
+  totalAmount            Float                  @default(0)
   desiredAt              DateTime?
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
   deletedAt              DateTime?
-  transportDestination   String?          @default("7Pet")
+  transportDestination   String?                @default("7Pet")
   transportOrigin        String?
   transportPeriod        TransportPeriod?
-  type                   QuoteType        @default(SPA)
+  type                   QuoteType              @default(SPA)
   hairLength             String?
-  hasKnots               Boolean          @default(false)
-  hasParasites           Boolean          @default(false)
+  hasKnots               Boolean                @default(false)
+  hasParasites           Boolean                @default(false)
   knotRegions            String?
-  petQuantity            Int              @default(1)
-  transportType          TransportType?
+  petQuantity            Int                    @default(1)
   transportReturnAddress String?
-  seqId                  Int              @unique @default(autoincrement())
+  seqId                  Int                    @unique @default(autoincrement())
   scheduledAt            DateTime?
   transportAt            DateTime?
-  transportLevaAt        DateTime?
-  transportTrazAt        DateTime?
   invoiceId              String?
   parasiteComments       String?
   parasiteTypes          String?
-  wantsMedicatedBath     Boolean          @default(false)
+  wantsMedicatedBath     Boolean                @default(false)
+  transportType          TransportType?
+  transportLevaAt        DateTime?
+  transportTrazAt        DateTime?
   appointments           Appointment[]
-  customer               Customer         @relation(fields: [customerId], references: [id])
-  invoice                Invoice?         @relation(fields: [invoiceId], references: [id])
-  pet                    Pet?             @relation(fields: [petId], references: [id])
+  financialTransactions  FinancialTransaction[]
+  customer               Customer               @relation(fields: [customerId], references: [id])
+  invoice                Invoice?               @relation(fields: [invoiceId], references: [id])
+  pet                    Pet?                   @relation(fields: [petId], references: [id])
   items                  QuoteItem[]
   statusHistory          StatusHistory[]
-  financialTransactions  FinancialTransaction[]
 
   @@index([customerId])
   @@index([status])
@@ -364,20 +352,20 @@ model QuoteItem {
 }
 
 model Invoice {
-  id            String          @id @default(uuid())
-  customerId    String
-  appointmentId String?         @unique
-  amount        Float
-  status        InvoiceStatus   @default(PENDENTE)
-  dueDate       DateTime
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  deletedAt     DateTime?
-  appointment   Appointment?    @relation(fields: [appointmentId], references: [id])
-  customer      Customer        @relation(fields: [customerId], references: [id])
-  payments      PaymentRecord[]
-  quotes        Quote[]
+  id                    String                 @id @default(uuid())
+  customerId            String
+  appointmentId         String?                @unique
+  amount                Float
+  status                InvoiceStatus          @default(PENDENTE)
+  dueDate               DateTime
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
   financialTransactions FinancialTransaction[]
+  appointment           Appointment?           @relation(fields: [appointmentId], references: [id])
+  customer              Customer               @relation(fields: [customerId], references: [id])
+  payments              PaymentRecord[]
+  quotes                Quote[]
 
   @@index([status])
   @@index([dueDate])
@@ -466,6 +454,7 @@ model BugReport {
   user        User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  @@index([userId], map: "idx_bugreport_userid")
 }
 
 model TransportSettings {
@@ -483,6 +472,305 @@ model TransportSettings {
   minPriceRetorno     Float    @default(1.5)
   handlingTimeLargada Int      @default(0)
   handlingTimeRetorno Int      @default(0)
+}
+
+model Metric {
+  id        String   @id @default(uuid())
+  type      String
+  data      Json
+  timestamp DateTime @default(now())
+
+  @@index([type, timestamp])
+  @@index([timestamp])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Post {
+  id          String     @id @default(uuid())
+  content     String
+  authorId    String
+  attachments Json?      @default("[]")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  comments    Comment[]
+  author      User       @relation(fields: [authorId], references: [id])
+  reactions   Reaction[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  author    User      @relation(fields: [authorId], references: [id])
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  type      String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, postId])
+}
+
+model Conversation {
+  id            String        @id @default(uuid())
+  type          String        @default("DIRECT")
+  name          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastMessageAt DateTime?
+  messages      Message[]
+  participants  Participant[]
+}
+
+model Participant {
+  id             String       @id @default(uuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, conversationId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String
+  senderId       String
+  conversationId String
+  createdAt      DateTime     @default(now())
+  readBy         Json?        @default("[]")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model NotificationSettings {
+  id               String   @id @default(uuid())
+  notificationType String   @unique
+  enabled          Boolean  @default(true)
+  frequency        String   @default("IMMEDIATE")
+  allowedRoles     Json?    @default("[]")
+  minInterval      Int      @default(0)
+  updatedAt        DateTime @updatedAt
+  updatedBy        String?
+
+  @@index([notificationType])
+}
+
+model UserNotificationPreference {
+  id               String   @id @default(uuid())
+  userId           String
+  notificationType String
+  enabled          Boolean  @default(true)
+  channels         Json?    @default("[\"IN_APP\", \"PUSH\"]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationType])
+  @@index([userId])
+  @@index([notificationType])
+}
+
+model StaffProfile {
+  id                       String                  @id @default(uuid())
+  userId                   String                  @unique
+  department               String
+  payModel                 String
+  dailyRate                Float?
+  perLegRate               Float?
+  payPeriodPreference      String                  @default("monthly")
+  isActive                 Boolean                 @default(true)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  mealVoucher              Float?                  @default(0)
+  otherBenefits            Float?                  @default(0)
+  transportVoucher         Float?                  @default(0)
+  bankAccount              String?
+  bankAgency               String?
+  bankName                 String?
+  companyName              String?
+  documentNumber           String?
+  documentType             String?
+  employmentType           String?                 @default("PF")
+  notes                    String?
+  pixKey                   String?
+  address                  String?
+  birthday                 DateTime?
+  cnhCategory              String?
+  cnhEar                   Boolean                 @default(false)
+  cnhExpiry                DateTime?
+  cnhNumber                String?
+  emergencyContactName     String?
+  emergencyContactPhone    String?
+  emergencyContactRelation String?
+  hiringDate               DateTime?
+  attendanceRecords        AttendanceRecord[]
+  payAdjustments           PayAdjustment[]
+  payStatements            PayStatement[]
+  serviceExecutions        ServiceExecution[]
+  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transportLegExecutions   TransportLegExecution[]
+
+  @@index([department])
+  @@index([isActive])
+}
+
+model AttendanceRecord {
+  id           String       @id @default(uuid())
+  staffId      String
+  date         DateTime     @db.Date
+  checkInAt    DateTime?
+  checkOutAt   DateTime?
+  status       String       @default("incomplete")
+  notes        String?
+  createdById  String
+  updatedById  String?
+  updateReason String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  staff        StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([staffId])
+  @@index([date])
+  @@index([status])
+}
+
+model ServiceExecution {
+  id            String       @id @default(uuid())
+  appointmentId String
+  staffId       String
+  serviceId     String?
+  executedAt    DateTime     @default(now())
+  notes         String?
+  createdAt     DateTime     @default(now())
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service       Service?     @relation(fields: [serviceId], references: [id])
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([staffId])
+  @@index([executedAt])
+}
+
+model TransportLegExecution {
+  id            String       @id @default(uuid())
+  appointmentId String
+  staffId       String
+  legType       String
+  completedAt   DateTime     @default(now())
+  legValue      Float?
+  notes         String?
+  createdAt     DateTime     @default(now())
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, staffId, legType])
+  @@index([appointmentId])
+  @@index([staffId])
+  @@index([completedAt])
+}
+
+model PayPeriod {
+  id          String          @id @default(uuid())
+  startDate   DateTime        @db.Date
+  endDate     DateTime        @db.Date
+  type        String
+  status      String          @default("draft")
+  createdById String
+  closedById  String?
+  closedAt    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  adjustments PayAdjustment[]
+  statements  PayStatement[]
+
+  @@index([startDate, endDate])
+  @@index([status])
+}
+
+model PayAdjustment {
+  id          String       @id @default(uuid())
+  payPeriodId String
+  staffId     String
+  type        String
+  amount      Float
+  direction   String
+  reason      String
+  createdById String
+  createdAt   DateTime     @default(now())
+  payPeriod   PayPeriod    @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([payPeriodId])
+  @@index([staffId])
+}
+
+model PayStatement {
+  id               String       @id @default(uuid())
+  payPeriodId      String
+  staffId          String
+  baseTotal        Float        @default(0)
+  adjustmentsTotal Float        @default(0)
+  totalDue         Float        @default(0)
+  detailsJson      Json?
+  generatedAt      DateTime     @default(now())
+  payPeriod        PayPeriod    @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
+  staff            StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([payPeriodId, staffId])
+  @@index([payPeriodId])
+  @@index([staffId])
+}
+
+model HrAuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  metaJson    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 enum AppointmentStatus {
@@ -539,341 +827,3 @@ enum AppointmentCategory {
   SPA
   LOGISTICA
 }
-
-model Metric {
-  id        String   @id @default(uuid())
-  type      String // request, security, database, system
-  data      Json
-  timestamp DateTime @default(now())
-
-  @@index([type, timestamp])
-  @@index([timestamp])
-}
-
-model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-// --- Feed Models ---
-model Post {
-  id        String     @id @default(uuid())
-  content   String
-  authorId  String
-  attachments Json?    @default("[]")
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  deletedAt DateTime?
-  
-  author    User       @relation(fields: [authorId], references: [id])
-  comments  Comment[]
-  reactions Reaction[]
-
-  @@index([authorId])
-  @@index([createdAt])
-  @@index([deletedAt])
-}
-
-model Comment {
-  id        String   @id @default(uuid())
-  content   String
-  authorId  String
-  postId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  author    User     @relation(fields: [authorId], references: [id])
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@index([authorId])
-}
-
-model Reaction {
-  id        String   @id @default(uuid())
-  type      String   // LIKE, LOVE, etc.
-  authorId  String
-  postId    String
-  createdAt DateTime @default(now())
-
-  author    User     @relation(fields: [authorId], references: [id])
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([authorId, postId])
-}
-
-// --- Chat Models ---
-model Conversation {
-  id        String        @id @default(uuid())
-  type      String        @default("DIRECT") // DIRECT, GROUP
-  name      String?       // For group chats
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  lastMessageAt DateTime? // Optimization for sorting
-  
-  messages     Message[]
-  participants Participant[]
-}
-
-model Participant {
-  id             String       @id @default(uuid())
-  userId         String
-  conversationId String
-  joinedAt       DateTime     @default(now())
-  lastReadAt     DateTime?
-
-  user           User         @relation(fields: [userId], references: [id])
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, conversationId])
-  @@index([userId])
-  @@index([conversationId])
-}
-
-model Message {
-  id             String       @id @default(uuid())
-  content        String
-  senderId       String
-  conversationId String
-  createdAt      DateTime     @default(now())
-  readBy         Json?        @default("[]")
-  
-  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId])
-  @@index([createdAt])
-}
-
-// --- Notification Control System ---
-model NotificationSettings {
-  id               String   @id @default(uuid())
-  notificationType String   // APPOINTMENT_REMINDER, QUOTE_UPDATE, CHAT_MESSAGE, DAILY_REVIEW
-  enabled          Boolean  @default(true)
-  frequency        String   @default("IMMEDIATE") // IMMEDIATE, HOURLY, DAILY, DISABLED
-  allowedRoles     Json?    @default("[]") // Array of roles that can receive this type
-  minInterval      Int      @default(0) // Minimum interval in minutes between notifications
-  updatedAt        DateTime @updatedAt
-  updatedBy        String?  // User ID who last updated
-
-  @@unique([notificationType])
-  @@index([notificationType])
-}
-
-model UserNotificationPreference {
-  id               String   @id @default(uuid())
-  userId           String
-  notificationType String   // APPOINTMENT_REMINDER, QUOTE_UPDATE, CHAT_MESSAGE, DAILY_REVIEW
-  enabled          Boolean  @default(true)
-  channels         Json?    @default("[\"IN_APP\", \"PUSH\"]") // IN_APP, PUSH, EMAIL
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, notificationType])
-  @@index([userId])
-  @@index([notificationType])
-}
-
-// =========================================
-// HR / FINANCEIRO DE PRESTADORES
-// =========================================
-
-// Staff Profile - Perfil do colaborador/prestador
-model StaffProfile {
-  id                    String   @id @default(uuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department            String   // 'spa' | 'transport' | 'atendimento' | 'gestao'
-  payModel              String   // 'daily' | 'per_leg' | 'fixed'
-  dailyRate             Float?   // Valor da diária
-  perLegRate            Float?   // Valor por pernada
-  payPeriodPreference   String   @default("monthly") // 'weekly' | 'biweekly' | 'monthly' | 'custom'
-  isActive              Boolean  @default(true)
-  
-  // Detailed Pay breakdown (Daily Model)
-  transportVoucher    Float?   @default(0) // VT
-  mealVoucher         Float?   @default(0) // VR
-  otherBenefits       Float?   @default(0) // Auxilio
-  
-  // Employment Details (PF/PJ)
-  employmentType      String?  @default("PF") // 'PF' | 'PJ' | 'CLT'
-  documentType        String?  // 'CPF' | 'CNPJ'
-  documentNumber      String?
-  companyName         String?  // For PJ
-  pixKey              String?
-  bankName            String?
-  bankAgency          String?
-  bankAccount         String?
-  notes               String?
-  
-  // Personal & Bio
-  hiringDate          DateTime?
-  birthday            DateTime?
-  address             String?
-  
-  // Emergency Contact
-  emergencyContactName  String?
-  emergencyContactPhone String?
-  emergencyContactRelation String?
-  
-  // Driver Details (CNH)
-  cnhNumber           String?
-  cnhCategory         String?
-  cnhExpiry           DateTime?
-  cnhEar              Boolean  @default(false) // Exerce Atividade Remunerada
-
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  // Relations
-  attendanceRecords     AttendanceRecord[]
-  serviceExecutions     ServiceExecution[]
-  transportLegExecutions TransportLegExecution[]
-  payAdjustments        PayAdjustment[]
-  payStatements         PayStatement[]
-
-  @@index([department])
-  @@index([isActive])
-}
-
-// Attendance Record - Controle de ponto
-model AttendanceRecord {
-  id           String    @id @default(uuid())
-  staffId      String
-  staff        StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  date         DateTime  @db.Date
-  checkInAt    DateTime?
-  checkOutAt   DateTime?
-  status       String    @default("incomplete") // 'ok' | 'incomplete' | 'adjusted' | 'absent'
-  notes        String?
-  createdById  String
-  updatedById  String?
-  updateReason String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@unique([staffId, date])
-  @@index([staffId])
-  @@index([date])
-  @@index([status])
-}
-
-// Service Execution - Produção SPA (serviços executados)
-model ServiceExecution {
-  id            String   @id @default(uuid())
-  appointmentId String
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  staffId       String
-  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  serviceId     String?
-  service       Service? @relation(fields: [serviceId], references: [id])
-  executedAt    DateTime @default(now())
-  notes         String?
-  createdAt     DateTime @default(now())
-
-  @@index([appointmentId])
-  @@index([staffId])
-  @@index([executedAt])
-}
-
-// Transport Leg Execution - Produção Transporte (pernadas)
-model TransportLegExecution {
-  id            String   @id @default(uuid())
-  appointmentId String
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  staffId       String
-  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  legType       String   // 'pickup' | 'dropoff'
-  completedAt   DateTime @default(now())
-  legValue      Float?   // Se null, usa staff.perLegRate
-  notes         String?
-  createdAt     DateTime @default(now())
-
-  @@unique([appointmentId, staffId, legType])
-  @@index([appointmentId])
-  @@index([staffId])
-  @@index([completedAt])
-}
-
-// Pay Period - Período de fechamento
-model PayPeriod {
-  id          String    @id @default(uuid())
-  startDate   DateTime  @db.Date
-  endDate     DateTime  @db.Date
-  type        String    // 'weekly' | 'biweekly' | 'monthly' | 'custom'
-  status      String    @default("draft") // 'draft' | 'closed'
-  createdById String
-  closedById  String?
-  closedAt    DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  adjustments   PayAdjustment[]
-  statements    PayStatement[]
-
-  @@index([startDate, endDate])
-  @@index([status])
-}
-
-// Pay Adjustment - Ajustes (adiantamento/bônus/desconto/benefício)
-model PayAdjustment {
-  id          String   @id @default(uuid())
-  payPeriodId String
-  payPeriod   PayPeriod @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
-  staffId     String
-  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  type        String   // 'advance' | 'bonus' | 'discount' | 'benefit' | 'correction'
-  amount      Float    // Sempre positivo
-  direction   String   // 'add' | 'subtract'
-  reason      String
-  createdById String
-  createdAt   DateTime @default(now())
-
-  @@index([payPeriodId])
-  @@index([staffId])
-}
-
-// Pay Statement - Resumo/recibo por colaborador
-model PayStatement {
-  id              String   @id @default(uuid())
-  payPeriodId     String
-  payPeriod       PayPeriod @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
-  staffId         String
-  staff           StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  baseTotal       Float    @default(0)
-  adjustmentsTotal Float   @default(0)
-  totalDue        Float    @default(0)
-  detailsJson     Json?    // Resumo: dias, diárias, pernadas, lista de ids
-  generatedAt     DateTime @default(now())
-
-  @@unique([payPeriodId, staffId])
-  @@index([payPeriodId])
-  @@index([staffId])
-}
-
-// HR Audit Log - Log de auditoria para ações críticas
-model HrAuditLog {
-  id          String   @id @default(uuid())
-  actorUserId String
-  action      String   // 'attendance.update', 'pay_period.close', etc
-  entityType  String
-  entityId    String
-  metaJson    Json?
-  createdAt   DateTime @default(now())
-
-  @@index([actorUserId])
-  @@index([entityType, entityId])
-  @@index([createdAt])
-}
-
-

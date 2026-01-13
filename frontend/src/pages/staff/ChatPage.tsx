@@ -23,6 +23,17 @@ export default function ChatPage() {
         enabled: Boolean(user)
     });
 
+    // Check for chatId in URL on mount
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const chatId = params.get('chatId');
+        if (chatId) {
+            setActiveConversationId(chatId);
+            // Optional: clear param to avoid re-triggering
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, []);
+
     // New Chat Modal State
     const [showNewChatModal, setShowNewChatModal] = useState(false);
     const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -161,7 +172,7 @@ export default function ChatPage() {
                                 </div>
 
                                 <div className="space-y-2 max-h-80 overflow-y-auto">
-                                    {isSearchingUsers && <div className="text-center py-4 text-gray-400">Buscando...</div>}
+                                    {isSearchingUsers && <div className="text-center py-4 text-gray-400 text-sm">Buscando...</div>}
 
                                     {!isSearchingUsers && searchResults.length === 0 && (
                                         <div className="text-center py-4 text-gray-400 text-sm">Nenhum usuário encontrado.</div>

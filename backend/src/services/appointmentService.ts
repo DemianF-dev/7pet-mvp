@@ -119,35 +119,41 @@ export const create = async (data: {
 };
 
 export const list = async (
-    filters: { customerId?: string; status?: AppointmentStatus; category?: AppointmentCategory },
+    filters: { customerId?: string; status?: AppointmentStatus; category?: AppointmentCategory; performerId?: string },
     pagination?: { skip?: number; take?: number }
 ) => {
-    return prisma.appointment.findMany({
+    return (prisma.appointment as any).findMany({
+        relationLoadStrategy: 'join',
         where: {
             ...filters,
             deletedAt: null // Only active appointments
         },
         include: {
-            pet: true,
-            services: true,
+            pet: {
+                select: { id: true, name: true, species: true, breed: true }
+            },
+            services: {
+                select: { id: true, name: true, basePrice: true, duration: true }
+            },
             transport: true,
-            performer: true,
+            performer: {
+                select: { id: true, name: true, color: true }
+            },
             invoice: {
                 select: { id: true, status: true, amount: true }
             },
             quote: {
-                include: {
+                select: {
+                    id: true,
+                    status: true,
                     appointments: {
                         where: { deletedAt: null },
                         select: { id: true, category: true, transport: { select: { type: true } } }
-                    },
-                    invoice: {
-                        select: { id: true, status: true, amount: true }
                     }
                 }
             },
             customer: {
-                include: { pets: true }
+                select: { id: true, name: true, phone: true, type: true, user: { select: { email: true } } }
             }
         },
         orderBy: { startAt: 'desc' },
@@ -166,7 +172,8 @@ export const count = async (filters: { customerId?: string; status?: Appointment
 };
 
 export const get = async (id: string) => {
-    return prisma.appointment.findUnique({
+    return (prisma.appointment as any).findUnique({
+        relationLoadStrategy: 'join',
         where: { id },
         include: {
             pet: true,
@@ -183,9 +190,7 @@ export const get = async (id: string) => {
                     }
                 }
             },
-            customer: {
-                include: { pets: true }
-            }
+            customer: true
         }
     });
 };

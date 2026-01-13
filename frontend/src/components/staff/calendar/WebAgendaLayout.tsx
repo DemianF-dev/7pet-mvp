@@ -33,6 +33,7 @@ interface WebAgendaLayoutProps {
     isLoading: boolean;
     onRefresh: () => void;
     onAppointmentClick: (appt: Appointment) => void;
+    breadcrumb?: string;
     children?: React.ReactNode; // For other views if needed
 }
 
@@ -53,6 +54,7 @@ export default function WebAgendaLayout({
     isLoading,
     onRefresh,
     onAppointmentClick,
+    breadcrumb,
     children
 }: WebAgendaLayoutProps) {
 
@@ -96,6 +98,7 @@ export default function WebAgendaLayout({
                 onTabChange={onTabChange}
                 isLoading={isLoading}
                 onRefresh={onRefresh}
+                breadcrumb={breadcrumb}
             />
 
             <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 relative">

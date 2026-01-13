@@ -1,58 +1,19 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-    Plus,
-    Calendar as CalendarIcon,
-    Layout,
-    List,
-    RefreshCcw,
     Clock,
-    Search,
-    ChevronLeft,
-    ChevronRight,
     CheckSquare,
     Square,
-    Trash2,
-    Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
-import api from '../../services/api';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
-import Breadcrumbs from '../../components/staff/Breadcrumbs';
-import BackButton from '../../components/BackButton';
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
-
-interface Appointment {
-    id: string;
-    startAt: string;
-    status: string;
-    customerId: string;
-    customer: { name: string; phone?: string; user: { email: string }; type: string };
-    petId: string;
-    pet: { name: string; species: string; breed: string };
-    services?: { id: string; name: string; basePrice: number; duration: number }[];
-    service?: { name: string; basePrice: number; duration: number }; // Legacy
-    transport?: any;
-    deletedAt?: string;
-    performerId?: string;
-    performer?: { id: string; name: string; color?: string };
-    category?: string;
-    quote?: {
-        appointments?: { id: string; category: string; transport?: { type: string } }[];
-    };
-}
-
-type ViewType = 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT';
-type TabType = 'active' | 'trash';
-
-interface Staff {
-    id: string;
-    name: string;
-    role: string;
-    color?: string;
-}
+import WebAgendaLayout from '../../components/staff/calendar/WebAgendaLayout';
+import { useAgendaViewModel } from '../../features/agenda/viewmodels/useAgendaViewModel';
+import AgendaDebugPanel from '../../features/agenda/dev/AgendaDebugPanel';
 
 const statusColumns = [
     { key: 'PENDENTE', label: 'Solicitados', color: 'bg-orange-500' },
@@ -63,201 +24,114 @@ const statusColumns = [
 
 export default function AgendaLOG() {
     const location = useLocation();
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [view, setView] = useState<ViewType>('MONTH');
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-    const [isCopying, setIsCopying] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedDayDate, setSelectedDayDate] = useState(new Date()); // For COMPACT view day selection
-    const [searchTerm, setSearchTerm] = useState('');
-    const [preFillData, setPreFillData] = useState<any>(null);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isBulkMode, setIsBulkMode] = useState(false);
-    const [tab, setTab] = useState<TabType>('active');
-    const [performers, setPerformers] = useState<Staff[]>([]);
-    const [selectedPerformerId, setSelectedPerformerId] = useState<string>('ALL');
+    const { state, actions } = useAgendaViewModel({ domain: 'LOG' });
 
-    useEffect(() => {
-        fetchPerformers();
-    }, []);
-
-    const fetchPerformers = async () => {
-        try {
-            const response = await api.get('/management/users');
-            const allUsers = response.data || [];
-            // Filter only staff (non-clients)
-            const staffMembers = allUsers.filter((u: any) => u.role !== 'CLIENTE');
-            setPerformers(staffMembers);
-        } catch (err) {
-            console.error('Erro ao buscar colaboradores:', err);
-        }
-    };
+    const {
+        appointments: filteredAppointments,
+        isLoading,
+        view,
+        selectedDate,
+        selectedDayDate,
+        searchTerm,
+        tab,
+        performers,
+        selectedPerformerId,
+        selectedIds,
+        isBulkMode,
+        isFormOpen,
+        isDetailsOpen,
+        selectedAppointment,
+        isCopying,
+        preFillData
+    } = state;
 
     useEffect(() => {
         if (location.state?.prefill) {
-            setPreFillData(location.state.prefill);
-            setIsFormOpen(true);
+            actions.openCreateModal(location.state.prefill);
             window.history.replaceState({}, document.title);
         }
-    }, [location]);
+    }, [location, actions]);
 
-    const fetchAppointments = async () => {
-        setIsLoading(true);
-        try {
-            const endpoint = tab === 'trash' ? '/appointments/trash' : '/appointments?category=LOGISTICA';
-            const response = await api.get(endpoint);
-            const rawData = Array.isArray(response.data) ? response.data : (response.data.data || []);
-            const data = tab === 'trash' ? rawData.filter((a: Appointment) => a.category === 'LOGISTICA') : rawData;
-            setAppointments(data);
-        } catch (err) {
-            console.error('Erro ao buscar agendamentos:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchAppointments();
-    }, [tab]);
-
-    // Mobile detection - default to COMPACT view on mobile
-    useEffect(() => {
-        const isMobile = window.innerWidth < 768;
-        const savedView = localStorage.getItem('agendaLOGView');
-
-        if (savedView && !isMobile) {
-            setView(savedView as ViewType);
-        } else if (isMobile && view !== 'COMPACT') {
-            setView('COMPACT');
-        }
-    }, []);
-
-
-
-    const toggleSelect = (id: string, e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
-        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-    };
-
-    const handleBulkDelete = async () => {
-        const action = tab === 'trash' ? 'excluir PERMANENTEMENTE' : 'mover para a lixeira';
-        if (!window.confirm(`ATENÇÃO: Deseja realmente ${action} os ${selectedIds.length} itens de logística selecionados?`)) return;
-        try {
-            if (tab === 'trash') {
-                // Permanent delete from trash
-                await api.post('/appointments/bulk-permanent', { ids: selectedIds });
-            } else {
-                // Soft delete - move to trash
-                await api.post('/appointments/bulk-delete', { ids: selectedIds });
-            }
-            fetchAppointments();
-            setSelectedIds([]);
-            setIsBulkMode(false);
-        } catch (err) {
-            alert('Erro ao processar agendamentos');
-        }
-    };
-
-    const handleBulkRestore = async () => {
-        if (!window.confirm(`Deseja restaurar ${selectedIds.length} itens de logística da lixeira?`)) return;
-        try {
-            await api.post('/appointments/bulk-restore', { ids: selectedIds });
-            fetchAppointments();
-            setSelectedIds([]);
-            setIsBulkMode(false);
-        } catch (err) {
-            alert('Erro ao restaurar agendamentos');
-        }
-    };
-
-    const handleOpenDetails = (appt: Appointment) => {
-        if (isBulkMode) {
-            toggleSelect(appt.id);
-            return;
-        }
-        setSelectedAppointment(appt);
-        setIsDetailsOpen(true);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedIds.length === filteredAppointments.length) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(filteredAppointments.map(a => a.id));
-        }
-    };
-
-    const handleModify = (appt: Appointment) => {
-        setIsDetailsOpen(false);
-        setSelectedAppointment(appt);
-        setIsCopying(false);
-        setIsFormOpen(true);
-    };
-
-    const handleCopy = (appt: Appointment) => {
-        setIsDetailsOpen(false);
-        setSelectedAppointment(appt);
-        setIsCopying(true);
-        setIsFormOpen(true);
-    };
-
-    const handleCreateNew = () => {
-        setSelectedAppointment(null);
-        setPreFillData(null);
-        setIsCopying(false);
-        setIsFormOpen(true);
-    };
-
+    // Helpers strictly for rendering
     const isSameDay = (date1: Date, date2: Date) => {
         return date1.getDate() === date2.getDate() &&
             date1.getMonth() === date2.getMonth() &&
             date1.getFullYear() === date2.getFullYear();
     };
 
-    const filteredAppointments = appointments.filter(a => {
-        const matchesGlobal = a.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (a.services && a.services.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
-            (a.service && a.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-        const matchesPerformer = selectedPerformerId === 'ALL' || a.performerId === selectedPerformerId;
-
-        return matchesGlobal && matchesPerformer;
-    });
-
-    // Filter appointments for selected day in COMPACT view
-    const dayAppointments = React.useMemo(() => {
-        if (view !== 'COMPACT') return [];
-
-        return filteredAppointments
-            .filter(a => isSameDay(new Date(a.startAt), selectedDayDate))
-            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-    }, [view, filteredAppointments, selectedDayDate]);
-
     const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
 
-    const nextDate = () => {
-        const d = new Date(selectedDate);
-        if (view === 'DAY') d.setDate(d.getDate() + 1);
-        else if (view === 'WEEK') d.setDate(d.getDate() + 7);
-        else d.setMonth(d.getMonth() + 1);
-        setSelectedDate(d);
+    const getWeekDays = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        return Array.from({ length: 6 }, (_, i) => {
+            const dayOfweek = new Date(monday);
+            dayOfweek.setDate(monday.getDate() + i);
+            return dayOfweek;
+        });
     };
 
-    const prevDate = () => {
-        const d = new Date(selectedDate);
-        if (view === 'DAY') d.setDate(d.getDate() - 1);
-        else if (view === 'WEEK') d.setDate(d.getDate() - 7);
-        else d.setMonth(d.getMonth() - 1);
-        setSelectedDate(d);
-    };
+    const renderKanbanView = () => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
+            {statusColumns.map((col) => (
+                <div key={col.key} className="flex flex-col h-full min-h-0">
+                    <div className="flex items-center justify-between mb-3 px-3 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${col.color} shadow-lg shadow-current/20`}></div>
+                            <h3 className="font-black text-secondary dark:text-gray-300 uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
+                        </div>
+                        <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+                            {getColumnItems(col.key).length}
+                        </span>
+                    </div>
+                    <div className="flex-1 bg-gray-50/50 dark:bg-gray-800/20 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200 dark:border-gray-700">
+                        {getColumnItems(col.key).map((appt) => {
+                            const isSelected = selectedIds.includes(appt.id);
+                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                            const isRecurring = appt.customer?.type === 'RECORRENTE';
 
-    const setToday = () => setSelectedDate(new Date());
-
-
+                            return (
+                                <div
+                                    key={appt.id}
+                                    onClick={() => actions.openDetailsModal(appt)}
+                                    className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-orange-500/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-orange-500/20 bg-white dark:bg-gray-700 border-orange-500/50 shadow-orange-500/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
+                                    style={!isSelected && appt.performer?.color ? {
+                                        borderLeftColor: appt.performer.color,
+                                        backgroundColor: `${appt.performer.color}08`
+                                    } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary dark:text-gray-300 border border-gray-100 dark:border-gray-600 shadow-sm">
+                                            <Clock size={12} className="text-orange-500" />
+                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                        {(isBulkMode || isSelected) && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
+                                                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
+                                            >
+                                                <CheckSquare size={16} strokeWidth={3} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-orange-500 transition-colors truncate uppercase drop-shadow-sm leading-tight">
+                                        {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
+                                        {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                    </h4>
+                                    <p className="text-[11px] opacity-70 font-bold truncate mt-1 text-gray-500 dark:text-gray-400">{appt.customer.name}</p>
+                                    <p className="text-[9px] font-black text-orange-600 dark:text-orange-400 mt-2 bg-orange-50 dark:bg-orange-500/10 p-1.5 rounded-lg border border-orange-100 dark:border-orange-500/20 truncate">
+                                        {appt.transport?.origin} → {appt.transport?.destination}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 
     const renderDayView = () => {
         const dayAppts = filteredAppointments
@@ -276,11 +150,12 @@ export default function AgendaLOG() {
                         {dayAppts.map(appt => {
                             const isCat = appt.pet.species?.toUpperCase().includes('GATO');
                             const isRecurring = appt.customer?.type === 'RECORRENTE';
-
                             const isSelected = selectedIds.includes(appt.id);
 
                             return (
                                 <motion.div
+                                    key={appt.id}
+                                    onClick={() => actions.openDetailsModal(appt)}
                                     className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 dark:border-gray-700 flex items-center gap-6 hover:shadow-2xl hover:border-orange-500/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] ${isSelected ? 'ring-4 ring-orange-500/30 bg-orange-500/10 border-orange-500/40' : 'bg-white dark:bg-gray-800'}`}
                                     style={!isSelected && appt.performer?.color ? {
                                         borderLeftColor: appt.performer.color,
@@ -289,7 +164,7 @@ export default function AgendaLOG() {
                                 >
                                     {(isBulkMode || isSelected) && (
                                         <button
-                                            onClick={(e) => toggleSelect(appt.id, e)}
+                                            onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
                                             className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-md border-2 ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-700 text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
                                         >
                                             {isSelected ? <CheckSquare size={24} strokeWidth={3} /> : <Square size={24} strokeWidth={3} />}
@@ -351,18 +226,6 @@ export default function AgendaLOG() {
         );
     };
 
-    const getWeekDays = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(d.setDate(diff));
-        return Array.from({ length: 6 }, (_, i) => {
-            const dayOfweek = new Date(monday);
-            dayOfweek.setDate(monday.getDate() + i);
-            return dayOfweek;
-        });
-    };
-
     const renderWeekView = () => {
         const weekDays = getWeekDays(selectedDate);
         return (
@@ -395,7 +258,7 @@ export default function AgendaLOG() {
                                         return (
                                             <div
                                                 key={appt.id}
-                                                onClick={() => handleOpenDetails(appt)}
+                                                onClick={() => actions.openDetailsModal(appt)}
                                                 className={`p-4 rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-orange-500/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${isSelected ? 'ring-4 ring-orange-500/20 bg-orange-500/5 border-orange-500/50' : 'bg-white dark:bg-gray-800 border-gray-50 dark:border-gray-700'}`}
                                                 style={!isSelected && appt.performer?.color ? {
                                                     borderLeftColor: appt.performer.color,
@@ -412,7 +275,7 @@ export default function AgendaLOG() {
                                                     </span>
                                                     {(isBulkMode || isSelected) && (
                                                         <button
-                                                            onClick={(e) => toggleSelect(appt.id, e)}
+                                                            onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
                                                             className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
                                                         >
                                                             <CheckSquare size={16} strokeWidth={3} />
@@ -437,144 +300,49 @@ export default function AgendaLOG() {
         );
     };
 
-    const renderMonthView = () => {
-        const firstDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-        const startDate = new Date(firstDayOfMonth);
-        const day = startDate.getDay();
-        const diff = (day === 0 ? -6 : 1) - day;
-        startDate.setDate(firstDayOfMonth.getDate() + diff);
-
-        const days = [];
-        const current = new Date(startDate);
-        while (days.length < 42) {
-            days.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-        }
-
-        const weekHeaders = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-        return (
-            <div className="bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30">
-                    {weekHeaders.map(wh => (
-                        <div key={wh} className="p-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-r border-gray-100 dark:border-gray-700 last:border-none">
-                            {wh}
-                        </div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-7">
-                    {days.map((day, idx) => {
-                        const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-                        const isToday = isSameDay(day, new Date());
-                        const dayAppts = filteredAppointments
-                            .filter(a => isSameDay(new Date(a.startAt), day))
-                            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-
-                        return (
-                            <div
-                                key={idx}
-                                className={`min-h-[140px] p-2 border-r border-b border-gray-100 dark:border-gray-700 transition-all ${!isCurrentMonth ? 'bg-gray-100/50 dark:bg-gray-900/50 opacity-40' : 'bg-white dark:bg-gray-800'} ${isToday ? 'bg-orange-500/10 dark:bg-orange-500/5' : ''}`}
-                            >
-                                <div className="flex justify-end mb-2">
-                                    <span className={`text-[13px] font-black w-8 h-8 flex items-center justify-center rounded-xl shadow-sm ${isToday ? 'bg-orange-500 text-white shadow-lg' : 'text-secondary/60 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'}`}>
-                                        {day.getDate()}
-                                    </span>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {dayAppts.slice(0, 4).map(appt => {
-                                        const isSelected = selectedIds.includes(appt.id);
-                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                                        const isRecurring = appt.customer?.type === 'RECORRENTE';
-
-                                        return (
-                                            <div
-                                                key={appt.id}
-                                                onClick={() => handleOpenDetails(appt)}
-                                                className={`p-2 rounded-xl border-l-[6px] shadow-sm text-[10px] font-black uppercase truncate cursor-pointer hover:scale-[1.02] transition-all flex items-center gap-2 ${isSelected ? 'ring-2 ring-orange-500 border-orange-500 shadow-orange-500/20 bg-white dark:bg-gray-700' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:text-gray-300'}`}
-                                                style={!isSelected && appt.performer?.color ? {
-                                                    borderLeftColor: appt.performer.color,
-                                                    backgroundColor: `${appt.performer.color}08`,
-                                                    color: appt.performer.color
-                                                } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                            >
-                                                <span className="shrink-0 tabular-nums opacity-60">
-                                                    {new Date(appt.startAt).getHours()}:{new Date(appt.startAt).getMinutes().toString().padStart(2, '0')}
-                                                </span>
-                                                <span className="truncate">
-                                                    {appt.transport?.type === 'LEVA' ? 'L: ' : appt.transport?.type === 'TRAZ' ? 'T: ' : ''}
-                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
-                                                </span>
-                                                {isSelected && <CheckSquare size={12} className="ml-auto text-orange-500" />}
-                                            </div>
-                                        );
-                                    })}
-                                    {dayAppts.length > 4 && (
-                                        <p className="text-[10px] font-black text-orange-500 text-center mt-2 bg-orange-500/10 py-1 rounded-lg">+ {dayAppts.length - 4} mais</p>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
-
-    const renderCompactView = () => {
-        // Full-screen mobile layout using wrapper component
-        return (
-            <MobileCalendarCompactView
-                appointments={filteredAppointments}
-                isLoading={isLoading}
-                selectedDayDate={selectedDayDate}
-                onSelectDay={setSelectedDayDate}
-                onAppointmentClick={handleOpenDetails}
-                onCreateNew={handleCreateNew}
-                performers={performers}
-                selectedPerformerId={selectedPerformerId}
-                onPerformerChange={setSelectedPerformerId}
-                tab={tab}
-                onTabChange={(t) => { setTab(t); setSelectedIds([]); }}
-                isBulkMode={isBulkMode}
-                onBulkModeToggle={() => setIsBulkMode(!isBulkMode)}
-                selectedIds={selectedIds}
-                onBulkDelete={handleBulkDelete}
-                onBulkRestore={handleBulkRestore}
-            />
-        );
-    };
-
-
-    // COMPACT view renders as full-screen mobile layout
     if (view === 'COMPACT') {
         return (
             <>
-                {renderCompactView()}
-
-                {/* Modals still work in COMPACT mode */}
+                <MobileCalendarCompactView
+                    appointments={filteredAppointments}
+                    isLoading={isLoading}
+                    selectedDayDate={selectedDayDate}
+                    onSelectDay={actions.setSelectedDayDate}
+                    onAppointmentClick={actions.openDetailsModal}
+                    onCreateNew={() => actions.openCreateModal()}
+                    performers={performers}
+                    selectedPerformerId={selectedPerformerId}
+                    onPerformerChange={actions.setSelectedPerformerId}
+                    tab={tab}
+                    onTabChange={actions.setTab}
+                    isBulkMode={isBulkMode}
+                    onBulkModeToggle={() => actions.setIsBulkMode(!isBulkMode)}
+                    selectedIds={selectedIds}
+                    onBulkDelete={actions.bulkDelete}
+                    onBulkRestore={actions.bulkRestore}
+                />
+                <AgendaDebugPanel module="LOG" vm={{ ...state, filteredCount: filteredAppointments.length }} />
                 <AnimatePresence>
                     {isFormOpen && (
                         <AppointmentFormModal
                             isOpen={isFormOpen}
-                            onClose={() => { setIsFormOpen(false); setPreFillData(null); }}
-                            onSuccess={fetchAppointments}
-                            appointment={selectedAppointment}
+                            onClose={actions.closeModals}
+                            onSuccess={actions.refresh}
+                            appointment={selectedAppointment as any}
                             isCopy={isCopying}
                             preFill={preFillData}
                         />
                     )}
                 </AnimatePresence>
-
                 <AnimatePresence>
                     {isDetailsOpen && (
                         <AppointmentDetailsModal
                             isOpen={isDetailsOpen}
-                            onClose={() => setIsDetailsOpen(false)}
-                            onSuccess={fetchAppointments}
-                            appointment={selectedAppointment}
-                            onModify={handleModify}
-                            onCopy={handleCopy}
+                            onClose={actions.closeModals}
+                            onSuccess={actions.refresh}
+                            appointment={selectedAppointment as any}
+                            onModify={actions.openEditModal}
+                            onCopy={actions.openCopyModal}
                         />
                     )}
                 </AnimatePresence>
@@ -583,273 +351,105 @@ export default function AgendaLOG() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black flex">
+        <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden">
             <StaffSidebar />
 
-            <main className="flex-1 md:ml-64 p-4 md:p-8">
-                <header className="mb-8">
-                    <Breadcrumbs />
-                    <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 text-orange-500 font-black text-[10px] uppercase tracking-[0.3em] mb-4">
-                                <div className="h-[2px] w-6 bg-orange-500"></div>
-                                Logística & Transportes
-                            </div>
-                            <div className="flex items-center gap-6">
-                                <h1 className="text-4xl font-black text-secondary dark:text-white tracking-tight capitalize">
-                                    {view === 'DAY' ? selectedDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }) :
-                                        selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                                </h1>
-                                <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <button onClick={prevDate} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all text-gray-400 hover:text-orange-500">
-                                        <ChevronLeft size={20} />
-                                    </button>
-                                    <button onClick={setToday} className="px-6 py-2 text-[10px] font-black text-secondary dark:text-white hover:text-orange-500 uppercase tracking-[0.2em] transition-colors">
-                                        Hoje
-                                    </button>
-                                    <button onClick={nextDate} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all text-gray-400 hover:text-orange-500">
-                                        <ChevronRight size={20} />
-                                    </button>
-                                </div>
-                            </div>
+            <div className="flex-1 md:ml-64 h-full overflow-hidden">
+                <WebAgendaLayout
+                    appointments={filteredAppointments}
+                    selectedDate={selectedDate}
+                    onSelectedDateChange={actions.setSelectedDate}
+                    searchTerm={searchTerm}
+                    onSearchChange={actions.setSearchTerm}
+                    performers={performers}
+                    selectedPerformerId={selectedPerformerId}
+                    onPerformerChange={actions.setSelectedPerformerId}
+                    view={view}
+                    onViewChange={actions.setView}
+                    onCreateNew={() => actions.openCreateModal()}
+                    tab={tab}
+                    onTabChange={actions.setTab}
+                    isLoading={isLoading}
+                    onRefresh={actions.refresh}
+                    onAppointmentClick={actions.openDetailsModal}
+                    breadcrumb="7Pet > Agenda LOGÍSTICA"
+                >
+                    {view === 'KANBAN' && renderKanbanView()}
+                    {view === 'DAY' && renderDayView()}
+                    {view === 'WEEK' && renderWeekView()}
+                </WebAgendaLayout>
+            </div>
+
+            <AgendaDebugPanel module="LOG" vm={{ ...state, filteredCount: filteredAppointments.length }} />
+
+            {/* Bulk Actions Bar */}
+            <AnimatePresence>
+                {(selectedIds.length > 0 || isBulkMode) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
+                    >
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={actions.selectAll}
+                                className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                            >
+                                {selectedIds.length === filteredAppointments.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
+                            </button>
+                            <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
+                                <span className="bg-orange-500 px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-orange-500/20">{selectedIds.length}</span>
+                                itens prontos
+                            </p>
                         </div>
-
-                        {/* Performer Selector */}
-                        <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-2 rounded-[24px] border border-white dark:border-gray-700 shadow-xl shadow-black/5">
-                            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                                <Users size={16} className="text-orange-500/50" />
-                                <select
-                                    value={selectedPerformerId}
-                                    onChange={(e) => setSelectedPerformerId(e.target.value)}
-                                    className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-secondary dark:text-white focus:ring-0 cursor-pointer min-w-[150px] outline-none dark:bg-gray-800"
-                                >
-                                    <option value="ALL">Todos da Equipe</option>
-                                    {performers.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-2 rounded-[32px] border border-white dark:border-gray-700 shadow-xl shadow-black/5">
-                            <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                <button
-                                    onClick={() => { setTab('active'); setSelectedIds([]); }}
-                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-orange-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                                >
-                                    Ativos
-                                </button>
-                                <button
-                                    onClick={() => { setTab('trash'); setSelectedIds([]); }}
-                                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                                >
-                                    <Trash2 size={14} /> Lixeira
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-gray-700/50 p-2 rounded-[28px]">
-                                <button
-                                    onClick={fetchAppointments}
-                                    disabled={isLoading}
-                                    className="p-3 bg-white dark:bg-gray-800 text-gray-400 hover:text-orange-500 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
-                                    title="Atualizar Agenda"
-                                >
-                                    <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
-                                </button>
-
-                                <button
-                                    onClick={() => setIsBulkMode(!isBulkMode)}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-secondary dark:hover:text-white shadow-sm'}`}
-                                >
-                                    <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
-                                    <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
-                                </button>
-
-                                <div className="h-6 w-px bg-gray-200 mx-1"></div>
-
-                                {['COMPACT', 'KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
+                        <div className="h-10 w-px bg-white/10 ml-auto"></div>
+                        <div className="flex items-center gap-6">
+                            <button
+                                onClick={() => actions.setIsBulkMode(false)}
+                                className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
+                            >
+                                Cancelar
+                            </button>
+                            {tab === 'trash' ? (
+                                <>
                                     <button
-                                        key={v}
-                                        onClick={() => {
-                                            setView(v as ViewType);
-                                            setSelectedIds([]);
-                                            localStorage.setItem('agendaLOGView', v);
-                                        }}
-                                        className={`flex items-center gap-3 px-6 py-3 rounded-[22px] text-[10px] font-black transition-all ${view === v ? 'bg-white dark:bg-gray-800 text-orange-500 shadow-lg scale-[1.02]' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
+                                        onClick={actions.bulkRestore}
+                                        disabled={selectedIds.length === 0}
+                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                                     >
-                                        {v === 'COMPACT' ? <CalendarIcon size={14} /> :
-                                            v === 'KANBAN' ? <Layout size={14} /> :
-                                                v === 'DAY' ? <List size={14} /> :
-                                                    <CalendarIcon size={14} />}
-                                        <span className="uppercase tracking-widest">{v}</span>
+                                        Restaurar
                                     </button>
-                                ))}
-                            </div>
-                            {tab === 'active' && (
-                                <button
-                                    onClick={handleCreateNew}
-                                    className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-[26px] font-black shadow-lg shadow-orange-500/20 transition-all text-[11px] tracking-widest flex items-center gap-3 uppercase"
-                                >
-                                    <Plus size={18} strokeWidth={3} /> NOVO ITEM
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </header>
-
-                <AnimatePresence>
-                    {(selectedIds.length > 0 || isBulkMode) && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
-                        >
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={handleSelectAll}
-                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
-                                >
-                                    {selectedIds.length === filteredAppointments.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
-                                </button>
-                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                    <span className="bg-orange-500 px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-orange-500/20">{selectedIds.length}</span>
-                                    itens prontos
-                                </p>
-                            </div>
-                            <div className="h-10 w-px bg-white/10 ml-auto"></div>
-                            <div className="flex items-center gap-6">
-                                <button
-                                    onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
-                                    className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
-                                >
-                                    Cancelar
-                                </button>
-                                {tab === 'trash' ? (
-                                    <>
-                                        <button
-                                            onClick={handleBulkRestore}
-                                            disabled={selectedIds.length === 0}
-                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                        >
-                                            <RefreshCcw size={18} /> Restaurar
-                                        </button>
-                                        <button
-                                            onClick={handleBulkDelete}
-                                            disabled={selectedIds.length === 0}
-                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                        >
-                                            <Trash2 size={18} /> Excluir Permanente
-                                        </button>
-                                    </>
-                                ) : (
                                     <button
-                                        onClick={handleBulkDelete}
+                                        onClick={actions.bulkDelete}
                                         disabled={selectedIds.length === 0}
                                         className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                                     >
-                                        <Trash2 size={18} /> Mover para Lixeira
+                                        Excluir Permanente
                                     </button>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <div className="relative mb-8">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Pesquisar por tutor, pet ou destino..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-800 border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder:text-gray-300 dark:placeholder:text-gray-500 text-secondary dark:text-white"
-                    />
-                </div>
-
-                {isLoading ? (
-                    <div className="flex items-center justify-center py-40">
-                        <RefreshCcw className="animate-spin text-orange-500" size={48} />
-                    </div>
-                ) : (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {view === 'KANBAN' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {statusColumns.map((col) => (
-                                    <div key={col.key} className="flex flex-col h-[calc(100vh-320px)]">
-                                        <div className="flex items-center justify-between mb-5 px-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-3 h-3 rounded-full ${col.color} shadow-lg shadow-current/20`}></div>
-                                                <h3 className="font-black text-secondary dark:text-white uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
-                                            </div>
-                                            <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
-                                                {getColumnItems(col.key).length}
-                                            </span>
-                                        </div>
-                                        <div className="flex-1 bg-gray-50/50 dark:bg-gray-800/20 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200 dark:border-gray-700">
-                                            {getColumnItems(col.key).map((appt) => {
-                                                const isSelected = selectedIds.includes(appt.id);
-                                                const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                                                const isRecurring = appt.customer?.type === 'RECORRENTE';
-
-                                                return (
-                                                    <div
-                                                        key={appt.id}
-                                                        onClick={() => handleOpenDetails(appt)}
-                                                        className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-orange-500/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-orange-500/20 bg-white dark:bg-gray-700 border-orange-500/50 shadow-orange-500/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
-                                                        style={!isSelected && appt.performer?.color ? {
-                                                            borderLeftColor: appt.performer.color,
-                                                            backgroundColor: `${appt.performer.color}08`
-                                                        } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-4">
-                                                            <div className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary dark:text-gray-300 border border-gray-100 dark:border-gray-600 shadow-sm">
-                                                                <Clock size={12} className="text-orange-500" />
-                                                                {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                            </div>
-                                                            {(isBulkMode || isSelected) && (
-                                                                <button
-                                                                    onClick={(e) => toggleSelect(appt.id, e)}
-                                                                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
-                                                                >
-                                                                    <CheckSquare size={16} strokeWidth={3} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-orange-500 transition-colors truncate uppercase drop-shadow-sm leading-tight">
-                                                            {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                                            {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
-                                                        </h4>
-                                                        <p className="text-[11px] opacity-70 font-bold truncate mt-1 text-gray-500 dark:text-gray-400">{appt.customer.name}</p>
-                                                        <p className="text-[9px] font-black text-orange-600 dark:text-orange-400 mt-2 bg-orange-50 dark:bg-orange-500/10 p-1.5 rounded-lg border border-orange-100 dark:border-orange-500/20 truncate">
-                                                            {appt.transport?.origin} → {appt.transport?.destination}
-                                                        </p>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <>
-                                {view === 'COMPACT' && renderCompactView()}
-                                {view === 'DAY' && renderDayView()}
-                                {view === 'WEEK' && renderWeekView()}
-                                {view === 'MONTH' && renderMonthView()}
-                            </>
-                        )}
-                    </div>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={actions.bulkDelete}
+                                    disabled={selectedIds.length === 0}
+                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                >
+                                    Mover para Lixeira
+                                </button>
+                            )}
+                        </div>
+                    </motion.div>
                 )}
-            </main>
+            </AnimatePresence>
 
+            {/* Modals */}
             <AnimatePresence>
                 {isFormOpen && (
                     <AppointmentFormModal
                         isOpen={isFormOpen}
-                        onClose={() => { setIsFormOpen(false); setPreFillData(null); }}
-                        onSuccess={fetchAppointments}
-                        appointment={selectedAppointment}
+                        onClose={actions.closeModals}
+                        onSuccess={actions.refresh}
+                        appointment={selectedAppointment as any}
                         isCopy={isCopying}
                         preFill={preFillData}
                     />
@@ -860,11 +460,11 @@ export default function AgendaLOG() {
                 {isDetailsOpen && (
                     <AppointmentDetailsModal
                         isOpen={isDetailsOpen}
-                        onClose={() => setIsDetailsOpen(false)}
-                        onSuccess={fetchAppointments}
-                        appointment={selectedAppointment}
-                        onModify={handleModify}
-                        onCopy={handleCopy}
+                        onClose={actions.closeModals}
+                        onSuccess={actions.refresh}
+                        appointment={selectedAppointment as any}
+                        onModify={actions.openEditModal}
+                        onCopy={actions.openCopyModal}
                     />
                 )}
             </AnimatePresence>

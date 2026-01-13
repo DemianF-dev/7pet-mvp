@@ -28,7 +28,25 @@ export const getConversations = async (req: Request, res: Response) => {
             orderBy: { lastMessageAt: 'desc' }
         });
 
-        res.json(conversations);
+        const conversationsWithUnread = await Promise.all(conversations.map(async (conv) => {
+            const myParticipant = conv.participants.find(p => p.userId === userId);
+            const lastReadAt = myParticipant?.lastReadAt;
+
+            const unreadCount = await prisma.message.count({
+                where: {
+                    conversationId: conv.id,
+                    senderId: { not: userId },
+                    createdAt: lastReadAt ? { gt: lastReadAt } : undefined
+                }
+            });
+
+            return {
+                ...conv,
+                unreadCount
+            };
+        }));
+
+        res.json(conversationsWithUnread);
     } catch (error) {
         Logger.error('Error fetching conversations', error);
         res.status(500).json({ error: 'Failed to fetch conversations' });
@@ -281,5 +299,30 @@ export const sendAttention = async (req: Request, res: Response) => {
     } catch (error) {
         Logger.error('Error sending attention', error);
         res.status(500).json({ error: 'Failed to send attention' });
+    }
+};
+
+export const markAsRead = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params; // conversationId
+        // @ts-ignore
+        const userId = req.user?.id;
+
+        await prisma.participant.update({
+            where: {
+                userId_conversationId: {
+                    userId,
+                    conversationId: id
+                }
+            },
+            data: {
+                lastReadAt: new Date()
+            }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        Logger.error('Error marking conversation as read', error);
+        res.status(500).json({ error: 'Failed to mark as read' });
     }
 };

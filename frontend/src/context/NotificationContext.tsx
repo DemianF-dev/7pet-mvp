@@ -151,7 +151,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             toast.custom(
                 (t) => (
                     <div
-                        onClick={() => toast.dismiss(t.id)}
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            const url = notification.data?.url || (notification.type === 'chat' && notification.metadata?.chatId ? `/staff/chat?chatId=${notification.metadata.chatId}` : null);
+                            if (url) window.location.href = url;
+                        }}
                         className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer overflow-hidden`}
                     >
                         <div className={`w-2 ${notification.type === 'chat' ? 'bg-blue-500' : notification.type === 'quote' ? 'bg-green-500' : 'bg-primary'}`} />
@@ -200,7 +204,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             toast.custom(
                 (t) => (
                     <div
-                        onClick={() => toast.dismiss(t.id)}
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            if (message.conversationId) {
+                                window.location.href = `/staff/chat?chatId=${message.conversationId}`;
+                            } else {
+                                window.location.href = `/staff/chat`;
+                            }
+                        }}
                         className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer overflow-hidden`}
                     >
                         <div className="w-2 bg-blue-500" />

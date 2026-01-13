@@ -46,9 +46,33 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
         const handleMsg = (message: Message) => {
             if (message.conversationId !== conversationId) return;
             queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
+                // If we already have this message (by proper ID), ignore
                 if (old?.find(m => m.id === message.id)) return old;
+
+                // Check if we have a temp message with same content (optimistic) and replace it
+                // Logic: Find a temp message from 'me' with same content
+                const isMyMessage = message.senderId === user?.id;
+                if (isMyMessage) {
+                    const tempMsgIndex = old?.findIndex(m => m.id.startsWith('temp-') && m.content === message.content);
+                    if (tempMsgIndex !== undefined && tempMsgIndex !== -1 && old) {
+                        const newCache = [...old];
+                        newCache[tempMsgIndex] = message; // Swap temp for real
+                        return newCache;
+                    }
+                }
+
                 return [...(old || []), message];
             });
+
+            // If new message arrives and we are in the chat, mark as read immediately
+            api.post(`/chat/${conversationId}/read`).catch(() => { });
+            queryClient.setQueryData(['conversations'], (old: any) => {
+                if (!old) return old;
+                return old.map((conv: any) =>
+                    conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+                );
+            });
+
             // Force scroll to bottom
             setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
         };
@@ -61,20 +85,74 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
         }
     }, [conversationId, socket, queryClient]);
 
-    // Scroll on load
+    // Scroll on load and mark as read
     useEffect(() => {
         if (messages.length) {
             setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }), 50);
+
+            // Mark as read when conversation is opened/messages loaded
+            api.post(`/chat/${conversationId}/read`)
+                .then(() => {
+                    // Update the conversations list unread count optimistically
+                    queryClient.setQueryData(['conversations'], (old: any) => {
+                        if (!old) return old;
+                        return old.map((conv: any) =>
+                            conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+                        );
+                    });
+                })
+                .catch(err => console.error('Error marking as read:', err));
         }
-    }, [messages.length, conversationId]);
+    }, [messages.length, conversationId, queryClient]);
 
     const sendMutation = useMutation({
-        mutationFn: async () => {
-            return api.post(`/chat/${conversationId}/messages`, { content: msg });
+        mutationFn: async (content: string) => {
+            return api.post(`/chat/${conversationId}/messages`, { content });
         },
-        onSuccess: () => {
+        onMutate: async (newContent) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['messages', conversationId] });
+
+            // Snapshot the previous value
+            const previousMessages = queryClient.getQueryData<Message[]>(['messages', conversationId]);
+
+            // Optimistically update to the new value
+            const optimisticMessage: Message = {
+                id: `temp-${Date.now()}`,
+                content: newContent,
+                conversationId,
+                senderId: user?.id || 'me',
+                sender: { id: user?.id || 'me', name: user?.name, color: user?.color },
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
+                return [...(old || []), optimisticMessage];
+            });
+
+            // Scroll to bottom immediately
+            setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
+
+            return { previousMessages };
+        },
+        onError: (err, newContent, context) => {
+            if (context?.previousMessages) {
+                queryClient.setQueryData(['messages', conversationId], context.previousMessages);
+            }
+            alert('Falha ao enviar mensagem. Verifique a conexão.');
+        },
+        onSettled: () => {
+            // We don't necessarily need to invalidate immediately if socket handles the real update
+            // But it's good practice to ensure consistency
+            // queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+        },
+        onSuccess: (data) => {
             setMsg('');
-            setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
+            // Replace temp ID with real ID in cache if needed, but usually regex replacement or socket/invalidation handles it
+            queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
+                return old?.map(m => m.id.startsWith('temp-') && m.content === data.data.content ? data.data : m) || [];
+            });
         }
     });
 
@@ -188,7 +266,10 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                         onChange={e => setMsg(e.target.value)}
                         onKeyDown={e => {
                             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                if (msg.trim()) sendMutation.mutate();
+                                if (msg.trim()) {
+                                    sendMutation.mutate(msg);
+                                    setMsg(''); // Clear immediately for UX
+                                }
                             }
                         }}
                     />
@@ -198,8 +279,13 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                             <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"><Smile size={18} /></button>
                         </div>
                         <button
-                            disabled={!msg.trim() || sendMutation.isPending}
-                            onClick={() => sendMutation.mutate()}
+                            disabled={!msg.trim()} // || sendMutation.isPending -> Removed to allow rapid fire
+                            onClick={() => {
+                                if (msg.trim()) {
+                                    sendMutation.mutate(msg);
+                                    setMsg(''); // Clear immediately for UX
+                                }
+                            }}
                             className="p-2 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wide"
                         >
                             Enviar <Send size={14} />

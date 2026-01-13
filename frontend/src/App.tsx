@@ -70,6 +70,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWASettings from './components/PWASettings';
 
 import { NotificationProvider } from './context/NotificationContext';
+import { ServicesProvider } from './context/ServicesContext';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -124,79 +125,81 @@ function App() {
             <FeedbackWidget />
             <PWAInstallPrompt />
 
-            <NotificationProvider>
-                <AnimatePresence mode="sync" initial={false}>
-                    <Routes location={location} key={location.pathname}>
-                        <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
-                        <Route path="/client" element={<ClientEntry />} />
-                        <Route path="/client/entry" element={<PageTransition><ClientEntry /></PageTransition>} />
-                        <Route path="/client/login" element={<PageTransition><ClientLogin /></PageTransition>} />
-                        <Route path="/client/register" element={<PageTransition><ClientRegister /></PageTransition>} />
+            <ServicesProvider>
+                <NotificationProvider>
+                    <AnimatePresence mode="sync" initial={false}>
+                        <Routes location={location} key={location.pathname}>
+                            <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+                            <Route path="/client" element={<ClientEntry />} />
+                            <Route path="/client/entry" element={<PageTransition><ClientEntry /></PageTransition>} />
+                            <Route path="/client/login" element={<PageTransition><ClientLogin /></PageTransition>} />
+                            <Route path="/client/register" element={<PageTransition><ClientRegister /></PageTransition>} />
 
-                        {/* Client Routes */}
-                        <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} redirectTo="/client/login" />}>
-                            <Route path="/client/dashboard" element={<PageTransition><ClientDashboard /></PageTransition>} />
-                            <Route path="/client/pets" element={<LazyPage><PetList /></LazyPage>} />
-                            <Route path="/client/chat" element={<LazyPage><ClientChatPage /></LazyPage>} />
-                            <Route path="/client/profile" element={<LazyPage><ClientProfile /></LazyPage>} />
-                            <Route path="/client/schedule" element={<LazyPage><AppointmentBooking /></LazyPage>} />
-                            <Route path="/client/appointments" element={<LazyPage><AppointmentList /></LazyPage>} />
-                            <Route path="/client/quote-request" element={<LazyPage><QuoteRequest /></LazyPage>} />
-                            <Route path="/client/quotes" element={<LazyPage><QuoteList /></LazyPage>} />
-                            <Route path="/client/notifications" element={<LazyPage><NotificationList /></LazyPage>} />
-                            <Route path="/client/payments" element={<LazyPage><PaymentList /></LazyPage>} />
-                            <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
-                        </Route>
-
-
-
-
-                        {/* Colaborador Routes */}
-                        <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
-                        <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/staff/login" />}>
-                            <Route element={<AppShell />}>
-                                <Route path="/staff/dashboard" element={<StaffDashboard />} />
-                                <Route path="/staff/menu" element={<LazyPage><MobileMenuHub /></LazyPage>} />
-                                <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
-                                <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />
-                                <Route path="/staff/agenda-log" element={<LazyPage><AgendaLOG /></LazyPage>} />
-                                <Route path="/staff/transport" element={<LazyPage><TransportManager /></LazyPage>} />
-                                <Route path="/staff/quotes" element={<LazyPage><QuoteManager /></LazyPage>} />
-                                <Route path="/staff/quotes/:id" element={<LazyPage><QuoteEditor /></LazyPage>} />
-                                <Route path="/staff/customers" element={<LazyPage><CustomerManager /></LazyPage>} />
-                                <Route path="/staff/customers/:id" element={<LazyPage><CustomerDetail /></LazyPage>} />
-                                <Route path="/staff/services" element={<LazyPage><ServiceManager /></LazyPage>} />
-                                <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
-                                <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
-                                <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
-                                <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
-                                <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
-                                <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />
-                                <Route path="/staff/profile" element={<LazyPage><StaffProfile /></LazyPage>} />
-                                <Route path="/staff/support" element={<LazyPage><SupportTicketList /></LazyPage>} />
-                                <Route path="/staff/transport-config" element={<LazyPage><TransportConfig /></LazyPage>} />
-                                <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
-                                <Route path="/staff/chat" element={<LazyPage><ChatPage /></LazyPage>} />
-                                <Route path="/staff/feed" element={<LazyPage><FeedPage /></LazyPage>} />
-                                <Route path="/staff/my-hr" element={<LazyPage><MyHR /></LazyPage>} />
-                                <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
-                                <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
-                                <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
-
-                                {/* Pausa Module - Mini-games within AppShell for mobile nav */}
-                                <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
-                                <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
-                                <Route path="/pausa/coleira" element={<LazyPage><DesenroscaPage /></LazyPage>} />
-                                <Route path="/pausa/zen-espuma" element={<LazyPage><PauseZenEspuma /></LazyPage>} />
+                            {/* Client Routes */}
+                            <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} redirectTo="/client/login" />}>
+                                <Route path="/client/dashboard" element={<PageTransition><ClientDashboard /></PageTransition>} />
+                                <Route path="/client/pets" element={<LazyPage><PetList /></LazyPage>} />
+                                <Route path="/client/chat" element={<LazyPage><ClientChatPage /></LazyPage>} />
+                                <Route path="/client/profile" element={<LazyPage><ClientProfile /></LazyPage>} />
+                                <Route path="/client/schedule" element={<LazyPage><AppointmentBooking /></LazyPage>} />
+                                <Route path="/client/appointments" element={<LazyPage><AppointmentList /></LazyPage>} />
+                                <Route path="/client/quote-request" element={<LazyPage><QuoteRequest /></LazyPage>} />
+                                <Route path="/client/quotes" element={<LazyPage><QuoteList /></LazyPage>} />
+                                <Route path="/client/notifications" element={<LazyPage><NotificationList /></LazyPage>} />
+                                <Route path="/client/payments" element={<LazyPage><PaymentList /></LazyPage>} />
+                                <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
                             </Route>
-                        </Route>
 
 
-                        {/* Fallback */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                </AnimatePresence>
-            </NotificationProvider>
+
+
+                            {/* Colaborador Routes */}
+                            <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
+                            <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/staff/login" />}>
+                                <Route element={<AppShell />}>
+                                    <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                                    <Route path="/staff/menu" element={<LazyPage><MobileMenuHub /></LazyPage>} />
+                                    <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
+                                    <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />
+                                    <Route path="/staff/agenda-log" element={<LazyPage><AgendaLOG /></LazyPage>} />
+                                    <Route path="/staff/transport" element={<LazyPage><TransportManager /></LazyPage>} />
+                                    <Route path="/staff/quotes" element={<LazyPage><QuoteManager /></LazyPage>} />
+                                    <Route path="/staff/quotes/:id" element={<LazyPage><QuoteEditor /></LazyPage>} />
+                                    <Route path="/staff/customers" element={<LazyPage><CustomerManager /></LazyPage>} />
+                                    <Route path="/staff/customers/:id" element={<LazyPage><CustomerDetail /></LazyPage>} />
+                                    <Route path="/staff/services" element={<LazyPage><ServiceManager /></LazyPage>} />
+                                    <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
+                                    <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
+                                    <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
+                                    <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
+                                    <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
+                                    <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />
+                                    <Route path="/staff/profile" element={<LazyPage><StaffProfile /></LazyPage>} />
+                                    <Route path="/staff/support" element={<LazyPage><SupportTicketList /></LazyPage>} />
+                                    <Route path="/staff/transport-config" element={<LazyPage><TransportConfig /></LazyPage>} />
+                                    <Route path="/staff/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                                    <Route path="/staff/chat" element={<LazyPage><ChatPage /></LazyPage>} />
+                                    <Route path="/staff/feed" element={<LazyPage><FeedPage /></LazyPage>} />
+                                    <Route path="/staff/my-hr" element={<LazyPage><MyHR /></LazyPage>} />
+                                    <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
+                                    <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
+                                    <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
+
+                                    {/* Pausa Module - Mini-games within AppShell for mobile nav */}
+                                    <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
+                                    <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
+                                    <Route path="/pausa/coleira" element={<LazyPage><DesenroscaPage /></LazyPage>} />
+                                    <Route path="/pausa/zen-espuma" element={<LazyPage><PauseZenEspuma /></LazyPage>} />
+                                </Route>
+                            </Route>
+
+
+                            {/* Fallback */}
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                    </AnimatePresence>
+                </NotificationProvider>
+            </ServicesProvider>
         </ThemeProvider >
     );
 }

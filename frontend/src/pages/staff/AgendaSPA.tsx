@@ -1,59 +1,20 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-    Plus,
-    Calendar as CalendarIcon,
-    Layout,
-    List,
-    RefreshCcw,
     Clock,
-    Search,
-    ChevronLeft,
-    ChevronRight,
     CheckSquare,
     Square,
-    Trash2,
-    Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import StaffSidebar from '../../components/StaffSidebar';
-import api from '../../services/api';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
-import Breadcrumbs from '../../components/staff/Breadcrumbs';
-import BackButton from '../../components/BackButton';
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
 import WebAgendaLayout from '../../components/staff/calendar/WebAgendaLayout';
-
-interface Appointment {
-    id: string;
-    startAt: string;
-    status: string;
-    customerId: string;
-    customer: { name: string; phone?: string; user: { email: string }; type: string };
-    petId: string;
-    pet: { name: string; species: string; breed: string };
-    services?: { id: string; name: string; basePrice: number; duration: number }[];
-    service?: { name: string; basePrice: number; duration: number }; // Legacy
-    transport?: any;
-    deletedAt?: string;
-    performerId?: string;
-    performer?: { id: string; name: string; color?: string };
-    category?: string;
-    quote?: {
-        appointments?: { id: string; category: string; transport?: { type: string } }[];
-    };
-}
-
-type ViewType = 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT';
-type TabType = 'active' | 'trash';
-
-interface Staff {
-    id: string;
-    name: string;
-    role: string;
-    color?: string;
-}
+import { useAgendaViewModel } from '../../features/agenda/viewmodels/useAgendaViewModel';
+import { AgendaItem } from '../../features/agenda/domain/types';
+import AgendaDebugPanel from '../../features/agenda/dev/AgendaDebugPanel';
 
 const statusColumns = [
     { key: 'PENDENTE', label: 'Solicitados', color: 'bg-orange-500' },
@@ -64,201 +25,54 @@ const statusColumns = [
 
 export default function AgendaSPA() {
     const location = useLocation();
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [view, setView] = useState<ViewType>('MONTH');
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-    const [isCopying, setIsCopying] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedDayDate, setSelectedDayDate] = useState(new Date()); // For COMPACT view day selection
-    const [searchTerm, setSearchTerm] = useState('');
-    const [preFillData, setPreFillData] = useState<any>(null);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isBulkMode, setIsBulkMode] = useState(false);
-    const [tab, setTab] = useState<TabType>('active');
-    const [performers, setPerformers] = useState<Staff[]>([]);
-    const [selectedPerformerId, setSelectedPerformerId] = useState<string>('ALL');
+    const { state, actions } = useAgendaViewModel({ domain: 'SPA' });
 
-    useEffect(() => {
-        fetchPerformers();
-    }, []);
-
-    const fetchPerformers = async () => {
-        try {
-            const response = await api.get('/management/users');
-            const allUsers = response.data || [];
-            // Filter only staff (non-clients)
-            const staffMembers = allUsers.filter((u: any) => u.role !== 'CLIENTE');
-            setPerformers(staffMembers);
-        } catch (err) {
-            console.error('Erro ao buscar colaboradores:', err);
-        }
-    };
+    const {
+        appointments: filteredAppointments,
+        isLoading,
+        view,
+        selectedDate,
+        selectedDayDate,
+        searchTerm,
+        tab,
+        performers,
+        selectedPerformerId,
+        selectedIds,
+        isBulkMode,
+        isFormOpen,
+        isDetailsOpen,
+        selectedAppointment,
+        isCopying,
+        preFillData
+    } = state;
 
     useEffect(() => {
         if (location.state?.prefill) {
-            setPreFillData(location.state.prefill);
-            setIsFormOpen(true);
+            actions.openCreateModal(location.state.prefill);
             window.history.replaceState({}, document.title);
         }
-    }, [location]);
+    }, [location, actions]);
 
-    const fetchAppointments = async () => {
-        setIsLoading(true);
-        try {
-            const endpoint = tab === 'trash' ? '/appointments/trash' : '/appointments?category=SPA';
-            const response = await api.get(endpoint);
-            const rawData = Array.isArray(response.data) ? response.data : (response.data.data || []);
-            const data = tab === 'trash' ? rawData.filter((a: Appointment) => a.category === 'SPA') : rawData;
-            setAppointments(data);
-        } catch (err) {
-            console.error('Erro ao buscar agendamentos:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchAppointments();
-    }, [tab]);
-
-    // Mobile detection - default to COMPACT view on mobile
-    useEffect(() => {
-        const isMobile = window.innerWidth < 768;
-        const savedView = localStorage.getItem('agendaSPAView');
-
-        if (savedView && !isMobile) {
-            setView(savedView as ViewType);
-        } else if (isMobile && view !== 'COMPACT') {
-            setView('COMPACT');
-        }
-    }, []);
-
-
-
-    const toggleSelect = (id: string, e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
-        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-    };
-
-    const handleBulkDelete = async () => {
-        const action = tab === 'trash' ? 'excluir PERMANENTEMENTE' : 'mover para a lixeira';
-        if (!window.confirm(`ATENÇÃO: Deseja realmente ${action} os ${selectedIds.length} agendamentos selecionados?`)) return;
-        try {
-            if (tab === 'trash') {
-                // Permanent delete from trash
-                await api.post('/appointments/bulk-permanent', { ids: selectedIds });
-            } else {
-                // Soft delete - move to trash
-                await api.post('/appointments/bulk-delete', { ids: selectedIds });
-            }
-            fetchAppointments();
-            setSelectedIds([]);
-            setIsBulkMode(false);
-        } catch (err) {
-            alert('Erro ao processar agendamentos');
-        }
-    };
-
-    const handleBulkRestore = async () => {
-        if (!window.confirm(`Deseja restaurar ${selectedIds.length} agendamentos da lixeira?`)) return;
-        try {
-            await api.post('/appointments/bulk-restore', { ids: selectedIds });
-            fetchAppointments();
-            setSelectedIds([]);
-            setIsBulkMode(false);
-        } catch (err) {
-            alert('Erro ao restaurar agendamentos');
-        }
-    };
-
-    const handleOpenDetails = (appt: Appointment) => {
-        if (isBulkMode) {
-            toggleSelect(appt.id);
-            return;
-        }
-        setSelectedAppointment(appt);
-        setIsDetailsOpen(true);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedIds.length === filteredAppointments.length) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(filteredAppointments.map(a => a.id));
-        }
-    };
-
-    const handleModify = (appt: Appointment) => {
-        setIsDetailsOpen(false);
-        setSelectedAppointment(appt);
-        setIsCopying(false);
-        setIsFormOpen(true);
-    };
-
-    const handleCopy = (appt: Appointment) => {
-        setIsDetailsOpen(false);
-        setSelectedAppointment(appt);
-        setIsCopying(true);
-        setIsFormOpen(true);
-    };
-
-    const handleCreateNew = () => {
-        setSelectedAppointment(null);
-        setPreFillData(null);
-        setIsCopying(false);
-        setIsFormOpen(true);
-    };
-
+    // Helpers strictly for rendering
     const isSameDay = (date1: Date, date2: Date) => {
         return date1.getDate() === date2.getDate() &&
             date1.getMonth() === date2.getMonth() &&
             date1.getFullYear() === date2.getFullYear();
     };
 
-    const filteredAppointments = appointments.filter(a => {
-        const matchesGlobal = a.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (a.services && a.services.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
-            (a.service && a.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-        const matchesPerformer = selectedPerformerId === 'ALL' || a.performerId === selectedPerformerId;
-
-        return matchesGlobal && matchesPerformer;
-    });
-
-    // Filter appointments for selected day in COMPACT view
-    const dayAppointments = React.useMemo(() => {
-        if (view !== 'COMPACT') return [];
-
-        return filteredAppointments
-            .filter(a => isSameDay(new Date(a.startAt), selectedDayDate))
-            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-    }, [view, filteredAppointments, selectedDayDate]);
-
     const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
 
-    const nextDate = () => {
-        const d = new Date(selectedDate);
-        if (view === 'DAY') d.setDate(d.getDate() + 1);
-        else if (view === 'WEEK') d.setDate(d.getDate() + 7);
-        else d.setMonth(d.getMonth() + 1);
-        setSelectedDate(d);
+    const getWeekDays = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDay(); // 0 is Sunday
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+        const monday = new Date(d.setDate(diff));
+        return Array.from({ length: 6 }, (_, i) => { // Mon to Sat
+            const dayOfweek = new Date(monday);
+            dayOfweek.setDate(monday.getDate() + i);
+            return dayOfweek;
+        });
     };
-
-    const prevDate = () => {
-        const d = new Date(selectedDate);
-        if (view === 'DAY') d.setDate(d.getDate() - 1);
-        else if (view === 'WEEK') d.setDate(d.getDate() - 7);
-        else d.setMonth(d.getMonth() - 1);
-        setSelectedDate(d);
-    };
-
-    const setToday = () => setSelectedDate(new Date());
-
-
 
     const renderDayView = () => {
         const dayAppts = filteredAppointments
@@ -277,7 +91,6 @@ export default function AgendaSPA() {
                         {dayAppts.map(appt => {
                             const isCat = appt.pet.species?.toUpperCase().includes('GATO');
                             const isRecurring = appt.customer?.type === 'RECORRENTE';
-
                             const isSelected = selectedIds.includes(appt.id);
 
                             return (
@@ -286,7 +99,7 @@ export default function AgendaSPA() {
                                     layout
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => handleOpenDetails(appt)}
+                                    onClick={() => actions.openDetailsModal(appt)}
                                     className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 dark:border-gray-700 flex items-center gap-6 hover:shadow-2xl hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] ${isSelected ? 'ring-4 ring-primary/30 bg-primary/10 border-primary/40' : 'bg-white dark:bg-gray-800'}`}
                                     style={!isSelected && appt.performer?.color ? {
                                         borderLeftColor: appt.performer.color,
@@ -295,7 +108,7 @@ export default function AgendaSPA() {
                                 >
                                     {(isBulkMode || isSelected) && (
                                         <button
-                                            onClick={(e) => toggleSelect(appt.id, e)}
+                                            onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
                                             className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-md border-2 ${isSelected ? 'bg-primary text-white border-primary' : 'bg-white text-gray-300 border-gray-100'}`}
                                         >
                                             {isSelected ? <CheckSquare size={24} strokeWidth={3} /> : <Square size={24} strokeWidth={3} />}
@@ -358,18 +171,6 @@ export default function AgendaSPA() {
         );
     };
 
-    const getWeekDays = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay(); // 0 is Sunday
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
-        const monday = new Date(d.setDate(diff));
-        return Array.from({ length: 6 }, (_, i) => { // Mon to Sat
-            const dayOfweek = new Date(monday);
-            dayOfweek.setDate(monday.getDate() + i);
-            return dayOfweek;
-        });
-    };
-
     const renderWeekView = () => {
         const weekDays = getWeekDays(selectedDate);
         return (
@@ -402,7 +203,7 @@ export default function AgendaSPA() {
                                         return (
                                             <div
                                                 key={appt.id}
-                                                onClick={() => handleOpenDetails(appt)}
+                                                onClick={() => actions.openDetailsModal(appt)}
                                                 className={`p-4 rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${isSelected ? 'ring-4 ring-primary/20 bg-primary/5 border-primary/50' : 'bg-white dark:bg-gray-800 border-gray-50 dark:border-gray-700'}`}
                                                 style={!isSelected && appt.performer?.color ? {
                                                     borderLeftColor: appt.performer.color,
@@ -419,7 +220,7 @@ export default function AgendaSPA() {
                                                     </span>
                                                     {(isBulkMode || isSelected) && (
                                                         <button
-                                                            onClick={(e) => toggleSelect(appt.id, e)}
+                                                            onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
                                                             className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
                                                         >
                                                             <CheckSquare size={16} strokeWidth={3} />
@@ -445,119 +246,6 @@ export default function AgendaSPA() {
         );
     };
 
-
-    const renderMonthView = () => {
-        const firstDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-        const startDate = new Date(firstDayOfMonth);
-        const day = startDate.getDay();
-        const diff = (day === 0 ? -6 : 1) - day;
-        startDate.setDate(firstDayOfMonth.getDate() + diff);
-
-        const days = [];
-        const current = new Date(startDate);
-        while (days.length < 42) {
-            days.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-        }
-
-        const weekHeaders = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-        return (
-            <div className="bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30">
-                    {weekHeaders.map(wh => (
-                        <div key={wh} className="p-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-r border-gray-100 dark:border-gray-700 last:border-none">
-                            {wh}
-                        </div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-7">
-                    {days.map((day, idx) => {
-                        const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-                        const isToday = isSameDay(day, new Date());
-                        const dayAppts = filteredAppointments
-                            .filter(a => isSameDay(new Date(a.startAt), day))
-                            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-
-                        return (
-                            <div
-                                key={idx}
-                                className={`min-h-[140px] p-2 border-r border-b border-gray-100 dark:border-gray-700 transition-all ${!isCurrentMonth ? 'bg-gray-100/50 dark:bg-gray-900/50 opacity-40' : 'bg-white dark:bg-gray-800'} ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}`}
-                            >
-                                <div className="flex justify-end mb-2">
-                                    <span className={`text-[13px] font-black w-8 h-8 flex items-center justify-center rounded-xl shadow-sm ${isToday ? 'bg-primary text-white shadow-lg' : 'text-secondary/60 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'}`}>
-                                        {day.getDate()}
-                                    </span>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {dayAppts.slice(0, 4).map(appt => {
-                                        const isSelected = selectedIds.includes(appt.id);
-                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                                        const isRecurring = appt.customer?.type === 'RECORRENTE';
-
-                                        return (
-                                            <div
-                                                key={appt.id}
-                                                onClick={() => handleOpenDetails(appt)}
-                                                className={`p-2 rounded-xl border-l-[6px] shadow-sm text-[10px] font-black uppercase truncate cursor-pointer hover:scale-[1.02] transition-all flex items-center gap-2 ${isSelected ? 'ring-2 ring-primary border-primary shadow-primary/20 bg-white dark:bg-gray-700' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 dark:text-gray-300'}`}
-                                                style={!isSelected && appt.performer?.color ? {
-                                                    borderLeftColor: appt.performer.color,
-                                                    backgroundColor: `${appt.performer.color}15`,
-                                                    color: appt.performer.color
-                                                } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                            >
-                                                <span className="shrink-0 tabular-nums opacity-60">
-                                                    {new Date(appt.startAt).getHours()}:{new Date(appt.startAt).getMinutes().toString().padStart(2, '0')}
-                                                </span>
-                                                <span className="truncate flex items-center gap-1">
-                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
-                                                    {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
-                                                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                    )}
-                                                </span>
-                                                {isSelected && <CheckSquare size={12} className="ml-auto text-primary" />}
-                                            </div>
-                                        );
-                                    })}
-                                    {dayAppts.length > 4 && (
-                                        <p className="text-[10px] font-black text-primary text-center mt-2 bg-primary/10 py-1 rounded-lg">+ {dayAppts.length - 4} mais</p>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
-
-    const renderCompactView = () => {
-        // Full-screen mobile layout using wrapper component
-        return (
-            <MobileCalendarCompactView
-                appointments={filteredAppointments}
-                isLoading={isLoading}
-                selectedDayDate={selectedDayDate}
-                onSelectDay={setSelectedDayDate}
-                onAppointmentClick={handleOpenDetails}
-                onCreateNew={handleCreateNew}
-                performers={performers}
-                selectedPerformerId={selectedPerformerId}
-                onPerformerChange={setSelectedPerformerId}
-                tab={tab}
-                onTabChange={(t) => { setTab(t); setSelectedIds([]); }}
-                isBulkMode={isBulkMode}
-                onBulkModeToggle={() => setIsBulkMode(!isBulkMode)}
-                selectedIds={selectedIds}
-                onBulkDelete={handleBulkDelete}
-                onBulkRestore={handleBulkRestore}
-            />
-        );
-    };
-
-
-
     const renderKanbanView = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
             {statusColumns.map((col) => (
@@ -580,7 +268,7 @@ export default function AgendaSPA() {
                             return (
                                 <div
                                     key={appt.id}
-                                    onClick={() => handleOpenDetails(appt)}
+                                    onClick={() => actions.openDetailsModal(appt)}
                                     className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-primary/20 bg-white dark:bg-gray-700 border-primary/50 shadow-primary/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
                                     style={!isSelected && appt.performer?.color ? {
                                         borderLeftColor: appt.performer.color,
@@ -594,7 +282,7 @@ export default function AgendaSPA() {
                                         </div>
                                         {(isBulkMode || isSelected) && (
                                             <button
-                                                onClick={(e) => toggleSelect(appt.id, e)}
+                                                onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
                                                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-600 border shadow-md ${isSelected ? 'bg-primary text-white border-primary' : 'text-gray-300 dark:text-gray-400 border-gray-100 dark:border-gray-500'}`}
                                             >
                                                 <CheckSquare size={16} strokeWidth={3} />
@@ -621,14 +309,32 @@ export default function AgendaSPA() {
     if (view === 'COMPACT') {
         return (
             <>
-                {renderCompactView()}
+                <MobileCalendarCompactView
+                    appointments={filteredAppointments}
+                    isLoading={isLoading}
+                    selectedDayDate={selectedDayDate}
+                    onSelectDay={actions.setSelectedDayDate}
+                    onAppointmentClick={actions.openDetailsModal}
+                    onCreateNew={() => actions.openCreateModal()}
+                    performers={performers}
+                    selectedPerformerId={selectedPerformerId}
+                    onPerformerChange={actions.setSelectedPerformerId}
+                    tab={tab}
+                    onTabChange={actions.setTab}
+                    isBulkMode={isBulkMode}
+                    onBulkModeToggle={() => actions.setIsBulkMode(!isBulkMode)}
+                    selectedIds={selectedIds}
+                    onBulkDelete={actions.bulkDelete}
+                    onBulkRestore={actions.bulkRestore}
+                />
+                <AgendaDebugPanel module="SPA" vm={{ ...state, filteredCount: filteredAppointments.length }} />
                 <AnimatePresence>
                     {isFormOpen && (
                         <AppointmentFormModal
                             isOpen={isFormOpen}
-                            onClose={() => { setIsFormOpen(false); setPreFillData(null); }}
-                            onSuccess={fetchAppointments}
-                            appointment={selectedAppointment}
+                            onClose={actions.closeModals}
+                            onSuccess={actions.refresh}
+                            appointment={selectedAppointment as any}
                             isCopy={isCopying}
                             preFill={preFillData}
                         />
@@ -638,11 +344,11 @@ export default function AgendaSPA() {
                     {isDetailsOpen && (
                         <AppointmentDetailsModal
                             isOpen={isDetailsOpen}
-                            onClose={() => setIsDetailsOpen(false)}
-                            onSuccess={fetchAppointments}
-                            appointment={selectedAppointment}
-                            onModify={handleModify}
-                            onCopy={handleCopy}
+                            onClose={actions.closeModals}
+                            onSuccess={actions.refresh}
+                            appointment={selectedAppointment as any}
+                            onModify={actions.openEditModal}
+                            onCopy={actions.openCopyModal}
                         />
                     )}
                 </AnimatePresence>
@@ -660,23 +366,21 @@ export default function AgendaSPA() {
                 <WebAgendaLayout
                     appointments={filteredAppointments}
                     selectedDate={selectedDate}
-                    onSelectedDateChange={setSelectedDate}
+                    onSelectedDateChange={actions.setSelectedDate}
                     searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
+                    onSearchChange={actions.setSearchTerm}
                     performers={performers}
                     selectedPerformerId={selectedPerformerId}
-                    onPerformerChange={setSelectedPerformerId}
+                    onPerformerChange={actions.setSelectedPerformerId}
                     view={view}
-                    onViewChange={(v) => {
-                        setView(v);
-                        localStorage.setItem('agendaSPAView', v);
-                    }}
-                    onCreateNew={handleCreateNew}
+                    onViewChange={actions.setView}
+                    onCreateNew={() => actions.openCreateModal()}
                     tab={tab}
-                    onTabChange={(t) => { setTab(t); setSelectedIds([]); }}
+                    onTabChange={actions.setTab}
                     isLoading={isLoading}
-                    onRefresh={fetchAppointments}
-                    onAppointmentClick={handleOpenDetails}
+                    onRefresh={actions.refresh}
+                    onAppointmentClick={actions.openDetailsModal}
+                    breadcrumb="7Pet > Agenda SPA"
                 >
                     {view === 'KANBAN' && renderKanbanView()}
                     {view === 'DAY' && renderDayView()}
@@ -685,13 +389,14 @@ export default function AgendaSPA() {
             </div>
 
             {/* Modals for Desktop */}
+            <AgendaDebugPanel module="SPA" vm={{ ...state, filteredCount: filteredAppointments.length }} />
             <AnimatePresence>
                 {isFormOpen && (
                     <AppointmentFormModal
                         isOpen={isFormOpen}
-                        onClose={() => { setIsFormOpen(false); setPreFillData(null); }}
-                        onSuccess={fetchAppointments}
-                        appointment={selectedAppointment}
+                        onClose={actions.closeModals}
+                        onSuccess={actions.refresh}
+                        appointment={selectedAppointment as any}
                         isCopy={isCopying}
                         preFill={preFillData}
                     />
@@ -702,11 +407,11 @@ export default function AgendaSPA() {
                 {isDetailsOpen && (
                     <AppointmentDetailsModal
                         isOpen={isDetailsOpen}
-                        onClose={() => setIsDetailsOpen(false)}
-                        onSuccess={fetchAppointments}
-                        appointment={selectedAppointment}
-                        onModify={handleModify}
-                        onCopy={handleCopy}
+                        onClose={actions.closeModals}
+                        onSuccess={actions.refresh}
+                        appointment={selectedAppointment as any}
+                        onModify={actions.openEditModal}
+                        onCopy={actions.openCopyModal}
                     />
                 )}
             </AnimatePresence>

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Plus, X, Users, Trash2, CheckSquare } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -5,21 +6,7 @@ import CalendarCompactHeader from './CalendarCompactHeader';
 import MonthGridCompact from './MonthGridCompact';
 import DayAgendaList from './DayAgendaList';
 
-interface Appointment {
-    id: string;
-    startAt: string;
-    status: string;
-    customer: { name: string; type?: string };
-    pet: { name: string; species?: string };
-    services?: { id: string; name: string }[];
-    service?: { name: string };
-    performer?: { color?: string };
-    performerId?: string;
-    transport?: { type?: string; origin?: string; destination?: string };
-    quote?: {
-        appointments?: { category: string }[];
-    };
-}
+import { AgendaItem } from '../../../features/agenda/domain/types';
 
 interface Staff {
     id: string;
@@ -28,11 +15,11 @@ interface Staff {
 }
 
 interface MobileCalendarCompactViewProps {
-    appointments: Appointment[];
+    appointments: AgendaItem[];
     isLoading: boolean;
     selectedDayDate: Date;
     onSelectDay: (date: Date) => void;
-    onAppointmentClick: (appt: Appointment) => void;
+    onAppointmentClick: (appt: AgendaItem) => void;
     onCreateNew: () => void;
     // Filter state
     performers: Staff[];
@@ -76,7 +63,7 @@ export default function MobileCalendarCompactView({
     };
 
     // Filter appointments for selected day
-    const dayAppointments = useMemo(() => {
+    const dayAgendaItems = useMemo(() => {
         return appointments
             .filter(a => isSameDay(new Date(a.startAt), selectedDayDate))
             .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
@@ -125,7 +112,7 @@ export default function MobileCalendarCompactView({
             </div>
 
             {/* ========================================
-                SCROLLABLE: Day Appointments List
+                SCROLLABLE: Day AgendaItems List
                ======================================== */}
             <div
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-[var(--color-bg-secondary)]"
@@ -133,7 +120,7 @@ export default function MobileCalendarCompactView({
             >
                 <DayAgendaList
                     selectedDate={selectedDayDate}
-                    appointments={dayAppointments}
+                    appointments={dayAgendaItems}
                     isLoading={isLoading}
                     onAppointmentClick={onAppointmentClick}
                     onCreateNew={onCreateNew}

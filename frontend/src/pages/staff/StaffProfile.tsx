@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
     User, Mail, Lock, Phone, MapPin, Save,
     ShieldCheck, Calendar, FileText, ClipboardList,
-    Fingerprint, Smartphone, Check, Briefcase
+    Fingerprint, Smartphone, Check, Briefcase, Activity
 } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 import { DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../constants/divisions';
@@ -483,6 +483,70 @@ const StaffProfile: React.FC = () => {
                                 </a>
                             </div>
                         </div>
+
+                        {/* Developer Settings (Restricted) */}
+                        {user?.email === 'oidemianf@gmail.com' && (
+                            <div className="lg:col-span-3">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-slate-900 rounded-[32px] shadow-sm border border-slate-800 overflow-hidden"
+                                >
+                                    <div className="p-6 border-b border-slate-800 flex items-center gap-3 bg-slate-900">
+                                        <div className="p-2 bg-slate-800 rounded-xl shadow-sm text-green-400">
+                                            <Activity size={20} />
+                                        </div>
+                                        <h3 className="font-bold text-white tracking-tight">Developer Settings</h3>
+                                        <span className="ml-auto px-2 py-1 bg-red-900/30 text-red-400 text-[10px] font-black uppercase rounded tracking-widest border border-red-900">
+                                            Master Access Only
+                                        </span>
+                                    </div>
+                                    <div className="p-6 md:p-8">
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex-1">
+                                                <h4 className="text-white font-bold mb-1">Agenda Debug Panel</h4>
+                                                <p className="text-slate-400 text-sm mb-2">
+                                                    Habilita o painel flutuante de debug nas telas de Agenda (SPA/LOG).
+                                                    Útil para monitorar performance de API, filtros ativos e estado da View.
+                                                </p>
+                                                <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 bg-black/30 w-fit px-2 py-1 rounded">
+                                                    <span>Shortcut:</span>
+                                                    <kbd className="bg-slate-700 text-white px-1 rounded">Ctrl</kbd> +
+                                                    <kbd className="bg-slate-700 text-white px-1 rounded">Shift</kbd> +
+                                                    <kbd className="bg-slate-700 text-white px-1 rounded">D</kbd>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = localStorage.getItem('agenda_debug_enabled') === '1';
+                                                        if (current) {
+                                                            localStorage.setItem('agenda_debug_enabled', '0');
+                                                            toast.success('Debug Panel DESATIVADO. Recarregue a página.');
+                                                        } else {
+                                                            localStorage.setItem('agenda_debug_enabled', '1');
+                                                            toast.success('Debug Panel ATIVADO. Recarregue a página.');
+                                                        }
+                                                        window.location.reload();
+                                                    }}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'bg-green-500' : 'bg-slate-700'
+                                                        }`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'translate-x-6' : 'translate-x-1'
+                                                            }`}
+                                                    />
+                                                </button>
+                                                <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">
+                                                    {localStorage.getItem('agenda_debug_enabled') === '1' ? 'ATIVADO' : 'DESATIVADO'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
                     </form>
                 </div>
             </div>
@@ -492,3 +556,4 @@ const StaffProfile: React.FC = () => {
 };
 
 export default StaffProfile;
+

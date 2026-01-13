@@ -42,6 +42,7 @@ interface WebAgendaToolbarProps {
     onTabChange: (tab: TabType) => void;
     isLoading: boolean;
     onRefresh: () => void;
+    breadcrumb?: string;
 }
 
 export default function WebAgendaToolbar({
@@ -60,7 +61,9 @@ export default function WebAgendaToolbar({
     tab,
     onTabChange,
     isLoading,
-    onRefresh
+
+    onRefresh,
+    breadcrumb = '7Pet > Agenda SPA'
 }: WebAgendaToolbarProps) {
 
     const monthName = selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -73,7 +76,7 @@ export default function WebAgendaToolbar({
                 {/* LEFT: Context & Nav */}
                 <div className="flex items-center gap-6">
                     <div className="flex flex-col">
-                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">7Pet &gt; Agenda SPA</span>
+                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">{breadcrumb}</span>
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-black text-gray-800 dark:text-white capitalize leading-none">
                                 {capitalizedMonth}
