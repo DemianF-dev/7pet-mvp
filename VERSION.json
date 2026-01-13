@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260113-1415",
+  "version": "BETA20260113-1433",
   "stage": "BETA",
-  "timestamp": "2026-01-13T14:15:32.000Z",
-  "commit": "22ea915",
-  "buildNumber": 64,
-  "releaseNotes": "Auto-generated from commit: feat: chat unread signals, deep-linking from notifications and user access fixes"
+  "timestamp": "2026-01-13T14:33:29.000Z",
+  "commit": "d46ed11",
+  "buildNumber": 65,
+  "releaseNotes": "Auto-generated from commit: feat: chat management (delete, add participant, transfer) and share options"
 }
