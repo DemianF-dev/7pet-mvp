@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260114-0432",
+  "version": "BETA20260114-0442",
   "stage": "BETA",
-  "timestamp": "2026-01-14T04:32:06.000Z",
-  "commit": "8d35b4d",
-  "buildNumber": 71,
-  "releaseNotes": "Auto-generated from commit: Fix Vercel build errors: Resolve JSX syntax issues, TS types, and duplicate identifiers"
+  "timestamp": "2026-01-14T04:42:43.000Z",
+  "commit": "a60a647",
+  "buildNumber": 72,
+  "releaseNotes": "Auto-generated from commit: Fix Vite PWA config: remove missing assets from includeAssets"
 }
