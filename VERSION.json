@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260114-0442",
+  "version": "BETA20260114-0451",
   "stage": "BETA",
-  "timestamp": "2026-01-14T04:42:43.000Z",
-  "commit": "a60a647",
-  "buildNumber": 72,
-  "releaseNotes": "Auto-generated from commit: Fix Vite PWA config: remove missing assets from includeAssets"
+  "timestamp": "2026-01-14T04:51:31.000Z",
+  "commit": "b1a780f",
+  "buildNumber": 73,
+  "releaseNotes": "Auto-generated from commit: Fix build: remove uninstalled dependencies from manualChunks"
 }
