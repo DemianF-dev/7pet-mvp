@@ -345,6 +345,7 @@ export default function QuoteRequest() {
     }
 
     return (
+        <>
             <main className="p-6 md:p-10 max-w-5xl">
                 <header className="mb-10">
                     <div className="flex items-center gap-4 mb-4">
@@ -495,5 +496,6 @@ export default function QuoteRequest() {
                     />
                 )}
             </AnimatePresence>
+        </>
     );
 }

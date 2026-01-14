@@ -75,7 +75,7 @@ import PWASettings from './components/PWASettings';
 
 import { NotificationProvider } from './context/NotificationContext';
 import { ServicesProvider } from './context/ServicesContext';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Helper component to wrap lazy pages with Suspense

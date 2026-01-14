@@ -12,6 +12,7 @@ interface Notification {
     createdAt: string;
     type: 'chat' | 'quote' | 'system' | 'appointment';
     data?: any;
+    metadata?: any;
 }
 
 interface NotificationContextType {

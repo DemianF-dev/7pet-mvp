@@ -29,7 +29,7 @@ export interface GameState {
         pileIndex?: number; // Index for tableau or foundation
         cardIndex?: number; // Index of card in pile
     } | null;
-    moveHistory: Move[];  // For undo functionality
+    moveHistory: GameState[];  // For undo functionality
     moves: number;        // Total moves made
     isPaused: boolean;
 }

@@ -21,7 +21,6 @@ import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
-import BackButton from '../../components/BackButton';
 
 interface Appointment {
     id: string;
@@ -497,7 +496,8 @@ export default function ServiceKanban() {
 
 
     return (
-        <main className="p-4 md:p-8">
+        <>
+            <main className="p-4 md:p-8">
                 <header className="mb-6">
                     <Breadcrumbs />
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -830,6 +830,6 @@ export default function ServiceKanban() {
                     />
                 )}
             </AnimatePresence>
-        </div >
+        </>
     );
 }

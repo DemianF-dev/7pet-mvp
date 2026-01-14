@@ -23,6 +23,7 @@ import { BarChart3, Calendar, Play, Lightbulb, Undo2, Settings, Trophy, Clock, Z
 
 interface PacienciaGameProps {
     onWin?: () => void;
+    reducedMotion?: boolean;
 }
 
 const STORAGE_KEY = '7pet_paciencia_saved_game';
@@ -42,7 +43,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
     });
 
     const [time, setTime] = useState(0);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<any>(null);
 
     // Save game state
     useEffect(() => {
@@ -77,7 +78,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
     };
 
     const recordMove = useCallback((prev: GameState, newState: Partial<GameState>) => {
-        const { moveHistory, ...stateToSave } = prev;
+        // Save state snapshot but reset history to avoid recursion
+        const stateToSave: GameState = { ...prev, moveHistory: [] };
         return {
             ...prev,
             ...newState,

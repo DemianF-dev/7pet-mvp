@@ -115,6 +115,8 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     const [additionalGuardians, setAdditionalGuardians] = useState<Guardian[]>([]);
     const [internalNotes, setInternalNotes] = useState('');
     const [type, setType] = useState('AVULSO');
+    const [recurringFrequency, setRecurringFrequency] = useState('');
+    const [recurrenceDiscount, setRecurrenceDiscount] = useState<number>(0);
     const [showCelebration, setShowCelebration] = useState(false);
     const [seqId, setSeqId] = useState<number | null>(null);
     const [pets, setPets] = useState<Pet[]>([]);
