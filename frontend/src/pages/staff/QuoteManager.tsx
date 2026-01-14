@@ -17,7 +17,6 @@ import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import { getQuoteStatusColor } from '../../utils/statusColors';
 import CascadeDeleteModal from '../../components/modals/CascadeDeleteModal';
@@ -244,451 +243,447 @@ export default function QuoteManager() {
     const getStatusColor = (status: string) => getQuoteStatusColor(status);
 
     return (
-        <div className="min-h-screen flex">
-            <StaffSidebar />
-
-            <main className="flex-1 md:ml-64 p-6 md:p-10 pb-28 md:pb-10">
-                <header className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-                    <div className="flex-1">
-                        <Breadcrumbs />
-                        <BackButton className="mb-4 ml-[-1rem]" />
-                        <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
-                            <div className="h-[2px] w-6 bg-primary"></div>
-                            RECEPÇÃO & VENDAS
-                        </div>
-                        <h1 className="text-4xl font-black text-secondary dark:text-white tracking-tight">Orçamentos</h1>
+        <main className="p-6 md:p-10 pb-28 md:pb-10">
+            <header className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+                <div className="flex-1">
+                    <Breadcrumbs />
+                    <BackButton className="mb-4 ml-[-1rem]" />
+                    <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
+                        <div className="h-[2px] w-6 bg-primary"></div>
+                        RECEPÇÃO & VENDAS
                     </div>
+                    <h1 className="text-4xl font-black text-secondary dark:text-white tracking-tight">Orçamentos</h1>
+                </div>
 
-                    <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                    <button
+                        onClick={handleBatchBill}
+                        className="bg-orange-500 text-white px-6 py-4 rounded-[20px] font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20"
+                        title="Faturar Orçamentos Pendentes"
+                    >
+                        <DollarSign size={18} />
+                        Faturamento Lote
+                    </button>
+
+                    <button
+                        onClick={() => navigate('/staff/transport-config')}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-[20px] text-gray-400 hover:text-indigo-600 shadow-sm hover:shadow-lg transition-all active:scale-95 border border-gray-100 dark:border-gray-700"
+                        title="Configurações de Preços"
+                    >
+                        <Settings size={20} />
+                    </button>
+
+                    <button
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                        disabled={isFetching}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 border border-gray-100 dark:border-gray-700"
+                        title="Atualizar Lista"
+                    >
+                        <RefreshCcw size={20} className={isFetching ? 'animate-spin' : ''} />
+                    </button>
+
+                    <button
+                        onClick={() => setIsManualQuoteModalOpen(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold shadow-md shadow-blue-200"
+                    >
+                        <Plus size={18} />
+                        Novo Orçamento
+                    </button>
+
+                    <button
+                        onClick={() => setIsBulkMode(!isBulkMode)}
+                        className={`flex items-center gap-2 px-6 py-6 rounded-[32px] text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-secondary dark:hover:text-white shadow-sm border border-gray-100 dark:border-gray-700'}`}
+                    >
+                        <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
+                        <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
+                    </button>
+
+                    <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <button
-                            onClick={handleBatchBill}
-                            className="bg-orange-500 text-white px-6 py-4 rounded-[20px] font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20"
-                            title="Faturar Orçamentos Pendentes"
+                            onClick={() => { setView('active'); setSelectedIds([]); }}
+                            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                         >
-                            <DollarSign size={18} />
-                            Faturamento Lote
+                            Ativos
                         </button>
-
                         <button
-                            onClick={() => navigate('/staff/transport-config')}
-                            className="bg-white dark:bg-gray-800 p-4 rounded-[20px] text-gray-400 hover:text-indigo-600 shadow-sm hover:shadow-lg transition-all active:scale-95 border border-gray-100 dark:border-gray-700"
-                            title="Configurações de Preços"
+                            onClick={() => { setView('history'); setSelectedIds([]); }}
+                            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                         >
-                            <Settings size={20} />
+                            <Archive size={14} className="inline mr-2" /> Histórico
                         </button>
-
                         <button
-                            onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
-                            disabled={isFetching}
-                            className="bg-white dark:bg-gray-800 p-4 rounded-[20px] text-gray-400 hover:text-primary shadow-sm hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 border border-gray-100 dark:border-gray-700"
-                            title="Atualizar Lista"
+                            onClick={() => { setView('trash'); setSelectedIds([]); }}
+                            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
                         >
-                            <RefreshCcw size={20} className={isFetching ? 'animate-spin' : ''} />
-                        </button>
-
-                        <button
-                            onClick={() => setIsManualQuoteModalOpen(true)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold shadow-md shadow-blue-200"
-                        >
-                            <Plus size={18} />
-                            Novo Orçamento
-                        </button>
-
-                        <button
-                            onClick={() => setIsBulkMode(!isBulkMode)}
-                            className={`flex items-center gap-2 px-6 py-6 rounded-[32px] text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-secondary dark:hover:text-white shadow-sm border border-gray-100 dark:border-gray-700'}`}
-                        >
-                            <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
-                            <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
-                        </button>
-
-                        <div className="flex bg-white dark:bg-gray-800 p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                            <button
-                                onClick={() => { setView('active'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'active' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                            >
-                                Ativos
-                            </button>
-                            <button
-                                onClick={() => { setView('history'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                            >
-                                <Archive size={14} className="inline mr-2" /> Histórico
-                            </button>
-                            <button
-                                onClick={() => { setView('trash'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary dark:hover:text-white'}`}
-                            >
-                                <Trash2 size={14} className="inline mr-2" /> Lixeira
-                            </button>
-                        </div>
-                    </div>
-                </header>
-
-                <AnimatePresence>
-                    {(selectedIds.length > 0 || isBulkMode) && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 50 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
-                        >
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={handleSelectAll}
-                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
-                                >
-                                    {selectedIds.length === filteredQuotes.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
-                                </button>
-                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                    <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
-                                    itens no total
-                                </p>
-                            </div>
-                            <div className="h-10 w-px bg-white/10 ml-auto"></div>
-                            <div className="flex items-center gap-6">
-                                <button
-                                    onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
-                                    className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleBulkDelete}
-                                    disabled={selectedIds.length === 0}
-                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                >
-                                    <Trash2 size={18} /> Apagar Agora
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Buscar por cliente ou ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white dark:bg-gray-800 border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold text-secondary dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600"
-                        />
-                    </div>
-
-                    <div className="flex bg-white dark:bg-gray-800 rounded-[32px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="flex items-center px-6 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-                            <Filter size={18} className="text-gray-400" />
-                        </div>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-transparent border-none py-4 px-6 text-xs font-black uppercase tracking-widest text-secondary dark:text-gray-300 focus:ring-0 min-w-[200px] appearance-none cursor-pointer dark:bg-gray-800"
-                        >
-                            <option value="ALL">Todos os Status</option>
-                            {statuses.map(s => (
-                                <option key={s} value={s}>{s}</option>
-                            ))}
-                        </select>
-                        <button
-                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                            className={`px-6 py-4 border-l border-gray-100 dark:border-gray-700 transition-all ${showAdvancedFilters ? 'bg-primary text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-400'}`}
-                        >
-                            <Filter size={18} />
+                            <Trash2 size={14} className="inline mr-2" /> Lixeira
                         </button>
                     </div>
                 </div>
+            </header>
 
-                <AnimatePresence>
-                    {showAdvancedFilters && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden mb-8"
-                        >
-                            <div className="bg-white dark:bg-gray-800 rounded-[32px] p-8 shadow-sm border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Inicial</label>
-                                    <input
-                                        type="date"
-                                        value={dateRange.start}
-                                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Final</label>
-                                    <input
-                                        type="date"
-                                        value={dateRange.end}
-                                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor Mínimo</label>
-                                    <input
-                                        type="number"
-                                        placeholder="R$ 0,00"
-                                        value={valueRange.min || ''}
-                                        onChange={(e) => setValueRange({ ...valueRange, min: parseFloat(e.target.value) || 0 })}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white placeholder:text-gray-400"
-                                    />
-                                </div>
-                                <div className="space-y-2 flex flex-col justify-end">
-                                    <button
-                                        onClick={() => {
-                                            setDateRange({ start: '', end: '' });
-                                            setValueRange({ min: 0, max: 0 });
-                                            setSearchTerm('');
-                                            setStatusFilter('ALL');
-                                        }}
-                                        className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
-                                    >
-                                        Limpar Filtros
-                                    </button>
-                                </div>
+            <AnimatePresence>
+                {(selectedIds.length > 0 || isBulkMode) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
+                    >
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleSelectAll}
+                                className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                            >
+                                {selectedIds.length === filteredQuotes.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
+                            </button>
+                            <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
+                                <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
+                                itens no total
+                            </p>
+                        </div>
+                        <div className="h-10 w-px bg-white/10 ml-auto"></div>
+                        <div className="flex items-center gap-6">
+                            <button
+                                onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
+                                className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleBulkDelete}
+                                disabled={selectedIds.length === 0}
+                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                            >
+                                <Trash2 size={18} /> Apagar Agora
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Buscar por cliente ou ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-white dark:bg-gray-800 border-none rounded-[32px] pl-16 pr-8 py-5 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 transition-all font-bold text-secondary dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600"
+                    />
+                </div>
+
+                <div className="flex bg-white dark:bg-gray-800 rounded-[32px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="flex items-center px-6 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                        <Filter size={18} className="text-gray-400" />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-transparent border-none py-4 px-6 text-xs font-black uppercase tracking-widest text-secondary dark:text-gray-300 focus:ring-0 min-w-[200px] appearance-none cursor-pointer dark:bg-gray-800"
+                    >
+                        <option value="ALL">Todos os Status</option>
+                        {statuses.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                        className={`px-6 py-4 border-l border-gray-100 dark:border-gray-700 transition-all ${showAdvancedFilters ? 'bg-primary text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-400'}`}
+                    >
+                        <Filter size={18} />
+                    </button>
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {showAdvancedFilters && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden mb-8"
+                    >
+                        <div className="bg-white dark:bg-gray-800 rounded-[32px] p-8 shadow-sm border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Inicial</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.start}
+                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white"
+                                />
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Data Final</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.end}
+                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor Mínimo</label>
+                                <input
+                                    type="number"
+                                    placeholder="R$ 0,00"
+                                    value={valueRange.min || ''}
+                                    onChange={(e) => setValueRange({ ...valueRange, min: parseFloat(e.target.value) || 0 })}
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-3 text-xs font-bold text-secondary dark:text-white placeholder:text-gray-400"
+                                />
+                            </div>
+                            <div className="space-y-2 flex flex-col justify-end">
+                                <button
+                                    onClick={() => {
+                                        setDateRange({ start: '', end: '' });
+                                        setValueRange({ min: 0, max: 0 });
+                                        setSearchTerm('');
+                                        setStatusFilter('ALL');
+                                    }}
+                                    className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                                >
+                                    Limpar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                <div className="bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                            <tr>
-                                <th className="px-8 py-6 w-12">
-                                    {(isBulkMode || selectedIds.length > 0) && (
-                                        <button
-                                            onClick={handleSelectAll}
-                                            className="text-gray-300 hover:text-primary transition-colors"
-                                        >
-                                            {selectedIds.length > 0 && selectedIds.length === filteredQuotes.length ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
-                                        </button>
-                                    )}
-                                </th>
-                                <th className="px-8 py-6">Cliente / Pet</th>
-                                <th className="px-8 py-6 text-center">Data / Tipo</th>
-                                <th className="px-8 py-6 text-center">Status</th>
-                                <th className="px-8 py-6 text-right">Total</th>
-                                <th className="px-8 py-6 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-                            {isLoading ? (
-                                Array.from({ length: 5 }).map((_, i) => (
-                                    <tr key={i}>
-                                        <td className="px-8 py-6"><Skeleton variant="rounded" className="h-6 w-6" /></td>
-                                        <td className="px-8 py-6">
-                                            <div className="space-y-2">
-                                                <Skeleton variant="text" className="h-4 w-32" />
-                                                <Skeleton variant="text" className="h-3 w-48 opacity-50" />
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <Skeleton variant="text" className="h-3 w-20" />
-                                                <Skeleton variant="text" className="h-3 w-16 opacity-50" />
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex justify-center">
-                                                <Skeleton variant="rounded" className="h-6 w-24" />
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex justify-end">
-                                                <Skeleton variant="text" className="h-5 w-16" />
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex justify-end gap-2">
-                                                <Skeleton variant="circular" className="h-8 w-8" />
-                                                <Skeleton variant="circular" className="h-8 w-8" />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (filteredQuotes || []).length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-8 py-32 text-center">
-                                        <div className="bg-gray-50 dark:bg-gray-900 rounded-[40px] p-20 border-2 border-dashed border-gray-100 dark:border-gray-700">
-                                            <Archive className="mx-auto text-gray-200 dark:text-gray-700 mb-4" size={64} />
-                                            <p className="text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest text-xs">Nenhum orçamento encontrado nesta visualização.</p>
+            <div className="bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                        <tr>
+                            <th className="px-8 py-6 w-12">
+                                {(isBulkMode || selectedIds.length > 0) && (
+                                    <button
+                                        onClick={handleSelectAll}
+                                        className="text-gray-300 hover:text-primary transition-colors"
+                                    >
+                                        {selectedIds.length > 0 && selectedIds.length === filteredQuotes.length ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
+                                    </button>
+                                )}
+                            </th>
+                            <th className="px-8 py-6">Cliente / Pet</th>
+                            <th className="px-8 py-6 text-center">Data / Tipo</th>
+                            <th className="px-8 py-6 text-center">Status</th>
+                            <th className="px-8 py-6 text-right">Total</th>
+                            <th className="px-8 py-6 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <tr key={i}>
+                                    <td className="px-8 py-6"><Skeleton variant="rounded" className="h-6 w-6" /></td>
+                                    <td className="px-8 py-6">
+                                        <div className="space-y-2">
+                                            <Skeleton variant="text" className="h-4 w-32" />
+                                            <Skeleton variant="text" className="h-3 w-48 opacity-50" />
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <Skeleton variant="text" className="h-3 w-20" />
+                                            <Skeleton variant="text" className="h-3 w-16 opacity-50" />
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex justify-center">
+                                            <Skeleton variant="rounded" className="h-6 w-24" />
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        <div className="flex justify-end">
+                                            <Skeleton variant="text" className="h-5 w-16" />
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex justify-end gap-2">
+                                            <Skeleton variant="circular" className="h-8 w-8" />
+                                            <Skeleton variant="circular" className="h-8 w-8" />
                                         </div>
                                     </td>
                                 </tr>
-                            ) : (filteredQuotes || []).map(quote => quote && (
-                                <QuoteTableRow
-                                    key={quote.id}
-                                    quote={quote}
-                                    view={view}
-                                    isBulkMode={isBulkMode}
-                                    isSelected={selectedIds.includes(quote.id)}
-                                    onToggleSelect={toggleSelect}
-                                    onViewCustomer={setViewCustomerData}
-                                    onViewDetails={(id) => navigate(`/staff/quotes/${id}`)}
-                                    onDuplicate={handleDuplicate}
-                                    onShare={handleShare}
-                                    onDelete={handleDelete}
-                                    onPermanentDelete={handlePermanentDelete}
-                                    onRestore={handleRestore}
-                                    onReactivate={handleReactivate}
-                                    onSchedule={handleSchedule}
-                                    onViewAppointment={async (q) => {
-                                        if (!q || !q.appointments) return;
-                                        const appts = Array.isArray(q.appointments) ? q.appointments : [];
+                            ))
+                        ) : (filteredQuotes || []).length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="px-8 py-32 text-center">
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-[40px] p-20 border-2 border-dashed border-gray-100 dark:border-gray-700">
+                                        <Archive className="mx-auto text-gray-200 dark:text-gray-700 mb-4" size={64} />
+                                        <p className="text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest text-xs">Nenhum orçamento encontrado nesta visualização.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (filteredQuotes || []).map(quote => quote && (
+                            <QuoteTableRow
+                                key={quote.id}
+                                quote={quote}
+                                view={view}
+                                isBulkMode={isBulkMode}
+                                isSelected={selectedIds.includes(quote.id)}
+                                onToggleSelect={toggleSelect}
+                                onViewCustomer={setViewCustomerData}
+                                onViewDetails={(id) => navigate(`/staff/quotes/${id}`)}
+                                onDuplicate={handleDuplicate}
+                                onShare={handleShare}
+                                onDelete={handleDelete}
+                                onPermanentDelete={handlePermanentDelete}
+                                onRestore={handleRestore}
+                                onReactivate={handleReactivate}
+                                onSchedule={handleSchedule}
+                                onViewAppointment={async (q) => {
+                                    if (!q || !q.appointments) return;
+                                    const appts = Array.isArray(q.appointments) ? q.appointments : [];
 
-                                        if (appts.length === 1) {
+                                    if (appts.length === 1) {
+                                        try {
+                                            const res = await api.get(`/appointments/${appts[0].id}`);
+                                            setViewAppointmentData(res.data);
+                                            setSelectedAppointmentId(appts[0].id);
+                                        } catch (err) {
+                                            console.error('Erro ao buscar agendamento', err);
+                                            alert('Erro ao carregar detalhes do agendamento');
+                                        }
+                                    } else if (appts.length > 1) {
+                                        setAppointmentSelectionQuote(q);
+                                    }
+                                }}
+                            />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Edit Modal (Removed to avoid nesting - now using direct page navigation) */}
+
+            <AppointmentFormModal
+                isOpen={isAppointmentModalOpen}
+                onClose={() => setIsAppointmentModalOpen(false)}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                preFill={preFillData}
+            />
+
+            <AppointmentDetailsModal
+                isOpen={!!selectedAppointmentId}
+                onClose={() => setSelectedAppointmentId(null)}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                appointment={viewAppointmentData}
+                onModify={() => { }}
+                onCopy={() => { }}
+                onOpenCustomer={(customerId) => setViewCustomerData(customerId)}
+            />
+
+            <AnimatePresence>
+                {viewCustomerData && (
+                    <CustomerDetailsModal
+                        isOpen={!!viewCustomerData}
+                        onClose={() => setViewCustomerData(null)}
+                        customerId={viewCustomerData}
+                        onUpdate={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Manual Quote Modal */}
+            <ManualQuoteModal
+                isOpen={isManualQuoteModalOpen}
+                onClose={() => setIsManualQuoteModalOpen(false)}
+                onSuccess={(newQuote) => {
+                    queryClient.invalidateQueries({ queryKey: ['quotes'] });
+                    setSelectedQuoteId(newQuote.id);
+                }}
+            />
+
+            <CascadeDeleteModal
+                isOpen={!!selectedQuoteForDelete}
+                onClose={() => setSelectedQuoteForDelete(null)}
+                quoteId={selectedQuoteForDelete || ''}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+            />
+
+            {/* Appointment Selection Modal (For Multi-Apppointment Quotes) */}
+            <AnimatePresence>
+                {appointmentSelectionQuote && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white dark:bg-gray-800 rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
+                        >
+                            <button
+                                onClick={() => setAppointmentSelectionQuote(null)}
+                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 text-gray-400"
+                            >
+                                <X size={24} />
+                            </button>
+
+                            <h2 className="text-2xl font-black text-secondary dark:text-white mb-2">Selecionar Agendamento</h2>
+                            <p className="text-gray-400 font-medium mb-8">Esta solicitação gerou múltiplos agendamentos. Qual você deseja visualizar?</p>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                {Object.values(
+                                    (appointmentSelectionQuote.appointments || []).reduce((acc: any, curr) => {
+                                        const existing = acc[curr.category || 'UNK'];
+                                        if (!existing) {
+                                            acc[curr.category || 'UNK'] = curr;
+                                        } else {
+                                            const score = (s: string) => s === 'CONFIRMADO' ? 3 : (s === 'PENDENTE' || s === 'AGENDADO') ? 2 : 1;
+                                            const currScore = score(curr.status);
+                                            const existingScore = score(existing.status);
+
+                                            if (currScore > existingScore) {
+                                                acc[curr.category || 'UNK'] = curr;
+                                            } else if (currScore === existingScore) {
+                                                if (new Date(curr.startAt || 0) > new Date(existing.startAt || 0)) {
+                                                    acc[curr.category || 'UNK'] = curr;
+                                                }
+                                            }
+                                        }
+                                        return acc;
+                                    }, {})
+                                ).map((appt: any) => (
+                                    <button
+                                        key={appt.id}
+                                        onClick={async () => {
                                             try {
-                                                const res = await api.get(`/appointments/${appts[0].id}`);
+                                                const res = await api.get(`/appointments/${appt.id}`);
                                                 setViewAppointmentData(res.data);
-                                                setSelectedAppointmentId(appts[0].id);
+                                                setSelectedAppointmentId(appt.id);
+                                                setAppointmentSelectionQuote(null);
                                             } catch (err) {
                                                 console.error('Erro ao buscar agendamento', err);
                                                 alert('Erro ao carregar detalhes do agendamento');
                                             }
-                                        } else if (appts.length > 1) {
-                                            setAppointmentSelectionQuote(q);
-                                        }
-                                    }}
-                                />
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Edit Modal (Removed to avoid nesting - now using direct page navigation) */}
-
-                <AppointmentFormModal
-                    isOpen={isAppointmentModalOpen}
-                    onClose={() => setIsAppointmentModalOpen(false)}
-                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
-                    preFill={preFillData}
-                />
-
-                <AppointmentDetailsModal
-                    isOpen={!!selectedAppointmentId}
-                    onClose={() => setSelectedAppointmentId(null)}
-                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
-                    appointment={viewAppointmentData}
-                    onModify={() => { }}
-                    onCopy={() => { }}
-                    onOpenCustomer={(customerId) => setViewCustomerData(customerId)}
-                />
-
-                <AnimatePresence>
-                    {viewCustomerData && (
-                        <CustomerDetailsModal
-                            isOpen={!!viewCustomerData}
-                            onClose={() => setViewCustomerData(null)}
-                            customerId={viewCustomerData}
-                            onUpdate={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
-                        />
-                    )}
-                </AnimatePresence>
-
-                {/* Manual Quote Modal */}
-                <ManualQuoteModal
-                    isOpen={isManualQuoteModalOpen}
-                    onClose={() => setIsManualQuoteModalOpen(false)}
-                    onSuccess={(newQuote) => {
-                        queryClient.invalidateQueries({ queryKey: ['quotes'] });
-                        setSelectedQuoteId(newQuote.id);
-                    }}
-                />
-
-                <CascadeDeleteModal
-                    isOpen={!!selectedQuoteForDelete}
-                    onClose={() => setSelectedQuoteForDelete(null)}
-                    quoteId={selectedQuoteForDelete || ''}
-                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
-                />
-
-                {/* Appointment Selection Modal (For Multi-Apppointment Quotes) */}
-                <AnimatePresence>
-                    {appointmentSelectionQuote && (
-                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white dark:bg-gray-800 rounded-[40px] p-8 w-full max-w-lg shadow-2xl relative"
-                            >
-                                <button
-                                    onClick={() => setAppointmentSelectionQuote(null)}
-                                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 text-gray-400"
-                                >
-                                    <X size={24} />
-                                </button>
-
-                                <h2 className="text-2xl font-black text-secondary dark:text-white mb-2">Selecionar Agendamento</h2>
-                                <p className="text-gray-400 font-medium mb-8">Esta solicitação gerou múltiplos agendamentos. Qual você deseja visualizar?</p>
-
-                                <div className="grid grid-cols-1 gap-4">
-                                    {Object.values(
-                                        (appointmentSelectionQuote.appointments || []).reduce((acc: any, curr) => {
-                                            const existing = acc[curr.category || 'UNK'];
-                                            if (!existing) {
-                                                acc[curr.category || 'UNK'] = curr;
-                                            } else {
-                                                const score = (s: string) => s === 'CONFIRMADO' ? 3 : (s === 'PENDENTE' || s === 'AGENDADO') ? 2 : 1;
-                                                const currScore = score(curr.status);
-                                                const existingScore = score(existing.status);
-
-                                                if (currScore > existingScore) {
-                                                    acc[curr.category || 'UNK'] = curr;
-                                                } else if (currScore === existingScore) {
-                                                    if (new Date(curr.startAt || 0) > new Date(existing.startAt || 0)) {
-                                                        acc[curr.category || 'UNK'] = curr;
-                                                    }
-                                                }
-                                            }
-                                            return acc;
-                                        }, {})
-                                    ).map((appt: any) => (
-                                        <button
-                                            key={appt.id}
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await api.get(`/appointments/${appt.id}`);
-                                                    setViewAppointmentData(res.data);
-                                                    setSelectedAppointmentId(appt.id);
-                                                    setAppointmentSelectionQuote(null);
-                                                } catch (err) {
-                                                    console.error('Erro ao buscar agendamento', err);
-                                                    alert('Erro ao carregar detalhes do agendamento');
-                                                }
-                                            }}
-                                            className="flex items-center gap-4 p-5 rounded-3xl border-2 border-dashed border-gray-100 hover:border-primary hover:bg-primary/5 transition-all group text-left"
-                                        >
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${appt.category === 'LOGISTICA' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                                                <Calendar size={24} />
+                                        }}
+                                        className="flex items-center gap-4 p-5 rounded-3xl border-2 border-dashed border-gray-100 hover:border-primary hover:bg-primary/5 transition-all group text-left"
+                                    >
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${appt.category === 'LOGISTICA' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                                            <Calendar size={24} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-extrabold text-secondary dark:text-white text-lg group-hover:text-primary transition-colors font-black">
+                                                {appt.category === 'LOGISTICA' ? 'Transporte / Logística' : 'Banho & Tosa (SPA)'}
+                                            </h4>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${getStatusColor(appt.status)}`}>
+                                                    {appt.status}
+                                                </span>
+                                                <span className="text-xs font-bold text-gray-400">
+                                                    {new Date(appt.startAt!).toLocaleDateString('pt-BR')}
+                                                </span>
                                             </div>
-                                            <div>
-                                                <h4 className="font-extrabold text-secondary dark:text-white text-lg group-hover:text-primary transition-colors font-black">
-                                                    {appt.category === 'LOGISTICA' ? 'Transporte / Logística' : 'Banho & Tosa (SPA)'}
-                                                </h4>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${getStatusColor(appt.status)}`}>
-                                                        {appt.status}
-                                                    </span>
-                                                    <span className="text-xs font-bold text-gray-400">
-                                                        {new Date(appt.startAt!).toLocaleDateString('pt-BR')}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
-            </main >
-        </div >
+        </main >
     );
 }

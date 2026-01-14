@@ -19,13 +19,14 @@ import {
     Briefcase,
     Phone,
     FileText,
+    Users,
     RotateCcw,
     Unlock
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { PERMISSION_MODULES } from '../../constants/permissions'; // Import unified permissions
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import StaffSidebar from '../../components/StaffSidebar';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
@@ -62,20 +63,10 @@ interface UserData {
     isEligible?: boolean;
     isSupportAgent?: boolean;
     active?: boolean;
+    pauseMenuEnabled?: boolean;
+    allowedGames?: any;
 }
 
-const MODULES = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'kanban', label: 'Agendamentos' },
-    { id: 'transport', label: 'Logística' },
-    { id: 'quotes', label: 'Orçamentos' },
-    { id: 'customers', label: 'Clientes' },
-    { id: 'services', label: 'Serviços' },
-    { id: 'billing', label: 'Financeiro' },
-    { id: 'management', label: 'Gestão' },
-    { id: 'reports', label: 'Relatórios' },
-    { id: 'users', label: 'Usuários' }
-];
 
 export default function UserManager() {
     const [users, setUsers] = useState<UserData[]>([]);
@@ -115,7 +106,9 @@ export default function UserManager() {
         isEligible: false,
         isSupportAgent: false,
         active: true,
-        isCustomRole: false
+        isCustomRole: false,
+        pauseMenuEnabled: false,
+        allowedGames: [] as string[]
     });
 
     const [rolePermissions, setRolePermissions] = useState<{ role: string, label?: string, permissions: string }[]>([]);
@@ -140,10 +133,113 @@ export default function UserManager() {
     const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
     const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
 
+    // --- LOAD INITIAL DATA ---
+    const fetchUsers = async () => {
+        setIsLoading(true);
+        try {
+            const res = await api.get(`/management/users${tab === 'trash' ? '?trash=true' : ''}`);
+            setUsers(res.data);
+            await fetchRoleConfigs();
+        } catch (err) {
+            console.error('Error fetching data:', err);
+            toast.error('Erro ao carregar dados.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleOpenCustomerDetail = (cid: string) => {
         setViewCustomerId(cid);
         setIsCustomerModalVisible(true);
     };
+
+    // --- EFFECT: Fetch Permissions & Users on Mount ---
+    useEffect(() => {
+        fetchUsers();
+        fetchRoleConfigs();
+    }, [searchParams, filterDivision, sortBy, sortOrder, tab]);
+
+    // --- EFFECT: Sync Editing State when Role/Permissions Change ---
+    useEffect(() => {
+        const current = rolePermissions.find(rp => rp.role === selectedConfigRole);
+        if (current) {
+            setEditingRoleLabel(current.label || current.role);
+            try {
+                setEditingRolePerms(typeof current.permissions === 'string' ? JSON.parse(current.permissions) : current.permissions);
+            } catch (e) { setEditingRolePerms([]); }
+            setHasRoleChanges(false);
+        }
+    }, [selectedConfigRole, rolePermissions]);
+
+    const fetchRoleConfigs = async () => {
+        try {
+            const { data } = await api.get('/management/roles');
+            setRolePermissions(data);
+        } catch (error) {
+            console.error('Error fetching role permissions:', error);
+        }
+    };
+
+    const handleSaveRoleConfig = async () => {
+        try {
+            if (!editingRoleLabel) return;
+
+            // Optimistic update
+            const updatedRoles = rolePermissions.map(rp =>
+                rp.role === selectedConfigRole
+                    ? { ...rp, label: editingRoleLabel, permissions: JSON.stringify(editingRolePerms) }
+                    : rp
+            );
+
+            const exists = rolePermissions.find(rp => rp.role === selectedConfigRole);
+            if (!exists) {
+                updatedRoles.push({
+                    role: selectedConfigRole,
+                    label: editingRoleLabel,
+                    permissions: JSON.stringify(editingRolePerms)
+                });
+            }
+
+            setRolePermissions(updatedRoles);
+
+            await api.put(`/management/roles/${selectedConfigRole}`, {
+                label: editingRoleLabel,
+                permissions: editingRolePerms
+            });
+
+            toast.success('Configurações do cargo salvas!');
+            setHasRoleChanges(false);
+        } catch (error) {
+            console.error(error);
+            toast.error('Erro ao salvar configurações do cargo.');
+        }
+    };
+
+    const handleRoleChange = (role: string) => {
+        const isCliente = role === 'CLIENTE';
+
+        let newPerms: string[] = [];
+
+        if (!isCliente) {
+            const roleConfig = rolePermissions.find(rp => rp.role === role);
+            if (roleConfig && roleConfig.permissions) {
+                try {
+                    newPerms = typeof roleConfig.permissions === 'string'
+                        ? JSON.parse(roleConfig.permissions)
+                        : roleConfig.permissions;
+                } catch (e) { console.error('Error parsing perms', e); }
+            }
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            role,
+            division: isCliente ? 'CLIENTE' : (prev.division === 'CLIENTE' ? 'COMERCIAL' : prev.division),
+            permissions: isCliente ? [] : newPerms,
+            isCustomRole: false
+        }));
+    };
+
 
     const togglePasswordVisibility = (id: string) => {
         setVisiblePasswordIds(prev =>
@@ -151,36 +247,6 @@ export default function UserManager() {
         );
     };
 
-    const fetchUsers = async () => {
-        setIsLoading(true);
-        try {
-            const res = await api.get(`/management/users${tab === 'trash' ? '?trash=true' : ''}`);
-            setUsers(res.data);
-
-            const roleRes = await api.get('/management/roles/permissions');
-            setRolePermissions(roleRes.data);
-
-            // Sync local editing state
-            const current = roleRes.data.find((rp: any) => rp.role === selectedConfigRole);
-            if (current) {
-                setEditingRoleLabel(current.label || current.role);
-                setEditingRolePerms(JSON.parse(current.permissions));
-                setHasRoleChanges(false);
-            }
-        } catch (err) {
-            console.error('Error fetching data:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MASTER' ||
-            currentUser?.division === 'DIRETORIA' || currentUser?.division === 'ADMIN';
-        if (isStaff) {
-            fetchUsers();
-        }
-    }, [currentUser, tab]);
 
     // Deep Link Logic
     useEffect(() => {
@@ -199,14 +265,6 @@ export default function UserManager() {
         }
     }, [isLoading, users, searchParams]);
 
-    useEffect(() => {
-        const current = rolePermissions.find(rp => rp.role === selectedConfigRole);
-        if (current) {
-            setEditingRoleLabel(current.label || current.role);
-            setEditingRolePerms(JSON.parse(current.permissions));
-            setHasRoleChanges(false);
-        }
-    }, [selectedConfigRole, rolePermissions]);
 
     const handleOpenUser = (user: UserData) => {
         setSelectedUser(user);
@@ -234,7 +292,9 @@ export default function UserManager() {
             isEligible: user.isEligible !== undefined ? user.isEligible : false,
             isSupportAgent: user.isSupportAgent !== undefined ? user.isSupportAgent : false,
             active: user.active !== undefined ? user.active : true,
-            isCustomRole: user.role ? !['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER', 'OPERACIONAL', 'SPA'].includes(user.role.toUpperCase()) : false
+            isCustomRole: user.role ? user.role.toUpperCase() !== 'MASTER' : false,
+            pauseMenuEnabled: user.pauseMenuEnabled || false,
+            allowedGames: Array.isArray(user.allowedGames) ? user.allowedGames : []
         });
         setIsModalOpen(true);
         setShowModalPassword(false);
@@ -261,7 +321,9 @@ export default function UserManager() {
             isEligible: false,
             isSupportAgent: false,
             active: true,
-            isCustomRole: false
+            isCustomRole: false,
+            pauseMenuEnabled: false,
+            allowedGames: []
         });
         setIsModalOpen(true);
     };
@@ -396,54 +458,60 @@ export default function UserManager() {
 
     const handleCreateRole = async () => {
         if (!newRoleData.slug || !newRoleData.label) {
-            alert('Slug e Nome do cargo são obrigatórios');
+            toast.error('Código e Nome do cargo são obrigatórios');
             return;
         }
-        const slug = newRoleData.slug.toUpperCase().replace(/\s+/g, '_');
+        const slug = newRoleData.slug.toUpperCase().trim().replace(/\s+/g, '_');
         try {
-            await api.put(`/management/roles/${slug}/permissions`, {
+            await api.put(`/management/roles/${slug}`, {
                 label: newRoleData.label,
-                permissions: JSON.stringify([])
+                permissions: []
             });
             setNewRoleData({ slug: '', label: '' });
             setIsAddingRole(false);
-            fetchUsers();
+            await fetchRoleConfigs();
             toast.success('Novo cargo criado!');
         } catch (err) {
-            alert('Erro ao criar cargo');
+            console.error(err);
+            toast.error('Erro ao criar cargo');
         }
     };
 
     const handleDeleteRole = async (roleSlug: string) => {
-        if (['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER', 'OPERACIONAL', 'SPA'].includes(roleSlug.toUpperCase())) {
-            alert('Este cargo é protegido pelo sistema.');
+        const upRole = roleSlug.toUpperCase();
+        if (upRole === 'MASTER') {
+            toast.error('O cargo MASTER é vitalício e não pode ser excluído.');
             return;
         }
-        if (!window.confirm(`Tem certeza que deseja excluir o cargo ${roleSlug}? Usuários vinculados podem perder acesso.`)) return;
+
+        // Check if there are users with this role
+        const affectedUsers = users.filter(u => u.role?.toUpperCase() === upRole);
+
+        let confirmMsg = `Tem certeza que deseja excluir o cargo ${roleSlug}?`;
+        if (affectedUsers.length > 0) {
+            confirmMsg = `⚠️ ATENÇÃO: Existem ${affectedUsers.length} usuário(s) utilizando o cargo "${roleSlug}".\n\n` +
+                `Se você excluir este cargo, esses colaboradores PERDERÃO TODO O ACESSO ao sistema imediatamente.\n\n` +
+                `Você terá que atribuir um novo cargo manualmente para cada um deles.\n\n` +
+                `Deseja prosseguir com a exclusão definitiva?`;
+        }
+
+        if (!window.confirm(confirmMsg)) return;
+
         try {
             await api.delete(`/management/roles/${roleSlug}`);
-            if (selectedConfigRole === roleSlug) setSelectedConfigRole('OPERACIONAL');
-            fetchUsers();
-            toast.success('Cargo excluído');
+            if (selectedConfigRole === roleSlug) {
+                const firstAvailable = rolePermissions.find(rp => rp.role !== roleSlug);
+                setSelectedConfigRole(firstAvailable?.role || 'OPERACIONAL');
+            }
+            await fetchRoleConfigs();
+            toast.success('Cargo excluído com sucesso');
         } catch (err) {
-            alert('Erro ao excluir cargo');
+            console.error(err);
+            toast.error('Erro ao excluir cargo');
         }
     };
 
-    const handleSaveRoleConfig = async () => {
-        if (!window.confirm(`Deseja salvar as alterações para o cargo ${editingRoleLabel}?`)) return;
-        try {
-            await api.put(`/management/roles/${selectedConfigRole}/permissions`, {
-                label: editingRoleLabel,
-                permissions: JSON.stringify(editingRolePerms)
-            });
-            toast.success('Configurações de cargo salvas!');
-            setHasRoleChanges(false);
-            fetchUsers();
-        } catch (err) {
-            toast.error('Erro ao salvar configurações do cargo');
-        }
-    };
+
 
     const togglePermission = (moduleId: string) => {
         setFormData(prev => {
@@ -488,16 +556,15 @@ export default function UserManager() {
 
     if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'MASTER' && currentUser?.division !== 'DIRETORIA' && currentUser?.division !== 'ADMIN') {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-center">
+            <div className="flex flex-col items-center justify-center p-20 text-center">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white p-12 rounded-[48px] shadow-2xl max-w-md border border-gray-100"
                 >
-                    <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mx-auto mb-8">
-                        <Shield size={48} />
+                    <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mb-8 mx-auto shadow-xl shadow-red-500/10">
+                        <Lock size={40} />
                     </div>
-                    <h2 className="text-3xl font-black text-secondary mb-4">Acesso Restrito</h2>
+                    <h2 className="text-3xl font-black text-secondary mb-4 uppercase tracking-tight">Acesso Restrito</h2>
                     <p className="text-gray-400 font-bold mb-10 leading-relaxed">
                         Esta área é exclusiva para administradores. <br />
                         Seu nível atual de acesso não permite gerenciar usuários.
@@ -509,310 +576,306 @@ export default function UserManager() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <StaffSidebar />
-
-            <main className="flex-1 md:ml-64 p-6 md:p-10 pb-28 md:pb-10">
-                <header className="mb-10">
-                    <Breadcrumbs />
-                    <BackButton className="mb-4 ml-[-1rem]" />
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                            <h1 className="text-4xl font-extrabold text-secondary tracking-tight">Gestão de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Acessos</span></h1>
-                            <p className="text-gray-500 mt-3 font-medium">Controle total sobre usuários, permissões e hierarquias.</p>
-                        </div>
-
-                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
-                            <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
-                                <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setIsRoleModalOpen(true)}
-                                    className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-secondary transition-colors group flex items-center gap-2"
-                                >
-                                    <Lock size={18} className="text-gray-400 group-hover:text-secondary" />
-                                    <span className="text-xs font-bold pr-2">Cargos</span>
-                                </button>
-                                <button
-                                    onClick={handleAddNewUser}
-                                    className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
-                                >
-                                    <Plus size={16} />
-                                    Novo Usuário
-                                </button>
-                            </div>
-                        </div>
+        <main className="p-6 md:p-10 pb-28 md:pb-10">
+            <header className="mb-10">
+                <Breadcrumbs />
+                <BackButton className="mb-4 ml-[-1rem]" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-4xl font-extrabold text-secondary tracking-tight">Gestão de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Acessos</span></h1>
+                        <p className="text-gray-500 mt-3 font-medium">Controle total sobre usuários, permissões e hierarquias.</p>
                     </div>
 
-                    {/* Tabs Active/Trash */}
-                    <div className="mt-8 flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 w-fit">
-                        <button
-                            onClick={() => { setTab('active'); setSelectedIds([]); }}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            Ativos
-                        </button>
-                        <button
-                            onClick={() => { setTab('trash'); setSelectedIds([]); }}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
-                        >
-                            <Trash size={14} /> Lixeira
-                        </button>
-                    </div>
-                </header>
-
-                <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
-                        <div className="relative">
-                            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Buscar colaboradores..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-12 pr-4 py-3 bg-white border border-transparent rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-medium"
-                            />
+                    <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
+                        <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
+                            <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
                         </div>
-
-                        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar flex-1 min-w-0">
-                            {[
-                                { division: 'ALL', label: 'Todos', color: 'bg-gray-200 text-gray-700' },
-                                { division: DIVISIONS.SPA, label: DIVISION_LABELS.SPA, color: getDivisionBgClass(DIVISIONS.SPA) + ' ' + getDivisionTextClass(DIVISIONS.SPA) },
-                                { division: DIVISIONS.COMERCIAL, label: DIVISION_LABELS.COMERCIAL, color: getDivisionBgClass(DIVISIONS.COMERCIAL) + ' ' + getDivisionTextClass(DIVISIONS.COMERCIAL) },
-                                { division: DIVISIONS.LOGISTICA, label: DIVISION_LABELS.LOGISTICA, color: getDivisionBgClass(DIVISIONS.LOGISTICA) + ' ' + getDivisionTextClass(DIVISIONS.LOGISTICA) },
-                                { division: DIVISIONS.GERENCIA, label: DIVISION_LABELS.GERENCIA, color: getDivisionBgClass(DIVISIONS.GERENCIA) + ' ' + getDivisionTextClass(DIVISIONS.GERENCIA) },
-                                { division: DIVISIONS.DIRETORIA, label: DIVISION_LABELS.DIRETORIA, color: getDivisionBgClass(DIVISIONS.DIRETORIA) + ' ' + getDivisionTextClass(DIVISIONS.DIRETORIA) },
-                                { division: DIVISIONS.ADMIN, label: DIVISION_LABELS.ADMIN, color: getDivisionBgClass(DIVISIONS.ADMIN) + ' ' + getDivisionTextClass(DIVISIONS.ADMIN) },
-                            ].map(filter => (
-                                <button
-                                    key={filter.division}
-                                    onClick={() => setFilterDivision(filter.division)}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
-                                        ? filter.color + ' shadow-md'
-                                        : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
-                                        }`}
-                                >
-                                    {filter.label}
-                                </button>
-                            ))}
-                        </div>
-
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={fetchUsers}
-                                className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-primary transition-all shadow-sm group active:rotate-180 duration-500"
-                                title="Recarregar Lista"
+                                onClick={() => setIsRoleModalOpen(true)}
+                                className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-secondary transition-colors group flex items-center gap-2"
                             >
-                                <RotateCcw size={16} className={isLoading ? 'animate-spin text-primary' : ''} />
+                                <Lock size={18} className="text-gray-400 group-hover:text-secondary" />
+                                <span className="text-xs font-bold pr-2">Cargos</span>
                             </button>
-
                             <button
-                                onClick={() => setSortBy(prev => prev === 'name' ? 'date' : prev === 'date' ? 'id' : 'name')}
-                                className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm flex items-center gap-2"
+                                onClick={handleAddNewUser}
+                                className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
                             >
-                                <ArrowUpDown size={16} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{sortBy === 'name' ? 'Nome' : sortBy === 'date' ? 'Data' : 'ID'}</span>
-                            </button>
-
-                            <button
-                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm"
-                            >
-                                <Filter size={16} className={sortOrder === 'desc' ? 'rotate-180' : ''} />
+                                <Plus size={16} />
+                                Novo Usuário
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    {/* Bulk Action Bar */}
-                    <AnimatePresence>
-                        {selectedIds.length > 0 && (
-                            <motion.div
-                                initial={{ y: 50, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: 50, opacity: 0 }}
-                                className="px-8 pb-6 flex items-center gap-6"
+                {/* Tabs Active/Trash */}
+                <div className="mt-8 flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 w-fit">
+                    <button
+                        onClick={() => { setTab('active'); setSelectedIds([]); }}
+                        className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                    >
+                        Ativos
+                    </button>
+                    <button
+                        onClick={() => { setTab('trash'); setSelectedIds([]); }}
+                        className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                    >
+                        <Trash size={14} /> Lixeira
+                    </button>
+                </div>
+            </header>
+
+            <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
+                    <div className="relative">
+                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Buscar colaboradores..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-12 pr-4 py-3 bg-white border border-transparent rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-medium"
+                        />
+                    </div>
+
+                    <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar flex-1 min-w-0">
+                        {[
+                            { division: 'ALL', label: 'Todos', color: 'bg-gray-200 text-gray-700' },
+                            { division: DIVISIONS.SPA, label: DIVISION_LABELS.SPA, color: getDivisionBgClass(DIVISIONS.SPA) + ' ' + getDivisionTextClass(DIVISIONS.SPA) },
+                            { division: DIVISIONS.COMERCIAL, label: DIVISION_LABELS.COMERCIAL, color: getDivisionBgClass(DIVISIONS.COMERCIAL) + ' ' + getDivisionTextClass(DIVISIONS.COMERCIAL) },
+                            { division: DIVISIONS.LOGISTICA, label: DIVISION_LABELS.LOGISTICA, color: getDivisionBgClass(DIVISIONS.LOGISTICA) + ' ' + getDivisionTextClass(DIVISIONS.LOGISTICA) },
+                            { division: DIVISIONS.GERENCIA, label: DIVISION_LABELS.GERENCIA, color: getDivisionBgClass(DIVISIONS.GERENCIA) + ' ' + getDivisionTextClass(DIVISIONS.GERENCIA) },
+                            { division: DIVISIONS.DIRETORIA, label: DIVISION_LABELS.DIRETORIA, color: getDivisionBgClass(DIVISIONS.DIRETORIA) + ' ' + getDivisionTextClass(DIVISIONS.DIRETORIA) },
+                            { division: DIVISIONS.ADMIN, label: DIVISION_LABELS.ADMIN, color: getDivisionBgClass(DIVISIONS.ADMIN) + ' ' + getDivisionTextClass(DIVISIONS.ADMIN) },
+                        ].map(filter => (
+                            <button
+                                key={filter.division}
+                                onClick={() => setFilterDivision(filter.division)}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
+                                    ? filter.color + ' shadow-md'
+                                    : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
+                                    }`}
                             >
-                                <div className="bg-secondary text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-4 flex-1">
-                                    <span className="bg-primary text-white text-xs font-black w-7 h-7 rounded-full flex items-center justify-center">
-                                        {selectedIds.length}
-                                    </span>
-                                    <p className="text-sm font-bold">Usuários Selecionados</p>
-                                    <div className="h-6 w-px bg-white/20 ml-auto"></div>
-                                    <button
-                                        onClick={handleBulkDelete}
-                                        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
-                                    >
-                                        <Trash2 size={14} /> EXCLUIR EM MASSA
-                                    </button>
-                                    <button
-                                        onClick={() => setSelectedIds([])}
-                                        className="text-white/50 hover:text-white text-xs font-bold"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <div className="h-6 w-px bg-white/20"></div>
-                                    {tab === 'trash' && (
-                                        <button
-                                            onClick={handleBulkRestore}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
-                                        >
-                                            <RotateCcw size={14} /> RESTAURAR SELECIONADOS
-                                        </button>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                {filter.label}
+                            </button>
+                        ))}
+                    </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest w-12">
-                                        <input
-                                            type="checkbox"
-                                            checked={filteredUsers.length > 0 && selectedIds.length === filteredUsers.length}
-                                            onChange={handleSelectAll}
-                                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                                        />
-                                    </th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Departamento</th>
-                                    {isMaster && (
-                                        <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</th>
-                                    )}
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cadastro</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {filteredUsers.map((u) => {
-                                    const isSelected = selectedIds.includes(u.id);
-                                    return (
-                                        <tr key={u.id} className={`hover:bg-gray-50/50 transition-colors group ${isSelected ? 'bg-primary/5' : ''}`}>
-                                            <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => toggleSelect(u.id)}
-                                                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                                                />
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div
-                                                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
-                                                        style={u.color ? { backgroundColor: u.color, color: 'white' } : undefined}
-                                                    >
-                                                        {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-black text-secondary text-sm">
-                                                                {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
-                                                            </span>
-                                                            <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
-                                                                {u.division === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
-                                                        {u.document && (
-                                                            <span className="text-[10px] text-primary font-black mt-1 flex items-center gap-1">
-                                                                <FileText size={10} /> {u.document}
-                                                            </span>
-                                                        )}
-                                                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={fetchUsers}
+                            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-primary transition-all shadow-sm group active:rotate-180 duration-500"
+                            title="Recarregar Lista"
+                        >
+                            <RotateCcw size={16} className={isLoading ? 'animate-spin text-primary' : ''} />
+                        </button>
+
+                        <button
+                            onClick={() => setSortBy(prev => prev === 'name' ? 'date' : prev === 'date' ? 'id' : 'name')}
+                            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm flex items-center gap-2"
+                        >
+                            <ArrowUpDown size={16} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">{sortBy === 'name' ? 'Nome' : sortBy === 'date' ? 'Data' : 'ID'}</span>
+                        </button>
+
+                        <button
+                            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm"
+                        >
+                            <Filter size={16} className={sortOrder === 'desc' ? 'rotate-180' : ''} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Bulk Action Bar */}
+                <AnimatePresence>
+                    {selectedIds.length > 0 && (
+                        <motion.div
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 50, opacity: 0 }}
+                            className="px-8 pb-6 flex items-center gap-6"
+                        >
+                            <div className="bg-secondary text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-4 flex-1">
+                                <span className="bg-primary text-white text-xs font-black w-7 h-7 rounded-full flex items-center justify-center">
+                                    {selectedIds.length}
+                                </span>
+                                <p className="text-sm font-bold">Usuários Selecionados</p>
+                                <div className="h-6 w-px bg-white/20 ml-auto"></div>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                >
+                                    <Trash2 size={14} /> EXCLUIR EM MASSA
+                                </button>
+                                <button
+                                    onClick={() => setSelectedIds([])}
+                                    className="text-white/50 hover:text-white text-xs font-bold"
+                                >
+                                    Cancelar
+                                </button>
+                                <div className="h-6 w-px bg-white/20"></div>
+                                {tab === 'trash' && (
+                                    <button
+                                        onClick={handleBulkRestore}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                    >
+                                        <RotateCcw size={14} /> RESTAURAR SELECIONADOS
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest w-12">
+                                    <input
+                                        type="checkbox"
+                                        checked={filteredUsers.length > 0 && selectedIds.length === filteredUsers.length}
+                                        onChange={handleSelectAll}
+                                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                </th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Colaborador</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Departamento</th>
+                                {isMaster && (
+                                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</th>
+                                )}
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cadastro</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {filteredUsers.map((u) => {
+                                const isSelected = selectedIds.includes(u.id);
+                                return (
+                                    <tr key={u.id} className={`hover:bg-gray-50/50 transition-colors group ${isSelected ? 'bg-primary/5' : ''}`}>
+                                        <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleSelect(u.id)}
+                                                className="rounded border-gray-300 text-primary focus:ring-primary"
+                                            />
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-4">
+                                                <div
+                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
+                                                    style={u.color ? { backgroundColor: u.color, color: 'white' } : undefined}
+                                                >
+                                                    {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
                                                 </div>
-                                            </td>
-                                            <td className="px-8 py-6 text-center">
-                                                {u.division !== 'CLIENTE' ? (
-                                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${u.isEligible !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                        {u.isEligible !== false ? 'Disponível' : 'Bloqueado'}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">-</span>
-                                                )}
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-1">
+                                                <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
-                                                        <div
-                                                            className={`w-3 h-3 rounded-full ${getDivisionBgClass(u.division || u.role || 'CLIENTE')}`}
-                                                            title={DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role}
-                                                        />
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
-                                                            {DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role || 'N/A'}
+                                                        <span className="font-black text-secondary text-sm">
+                                                            {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
+                                                        </span>
+                                                        <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
+                                                            {u.division === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
                                                         </span>
                                                     </div>
-                                                    {u.role && u.division && (
-                                                        <span className="text-[9px] font-bold text-gray-400 ml-1 uppercase tracking-tight">
-                                                            Cargo: {u.role}
+                                                    <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
+                                                    {u.document && (
+                                                        <span className="text-[10px] text-primary font-black mt-1 flex items-center gap-1">
+                                                            <FileText size={10} /> {u.document}
                                                         </span>
                                                     )}
                                                 </div>
-                                            </td>
-                                            {
-                                                isMaster && (
-                                                    <td className="px-8 py-6">
-                                                        <div className="flex items-center gap-3">
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            {u.division !== 'CLIENTE' ? (
+                                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${u.isEligible !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                    {u.isEligible !== false ? 'Disponível' : 'Bloqueado'}
+                                                </div>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className={`w-3 h-3 rounded-full ${getDivisionBgClass(u.division || u.role || 'CLIENTE')}`}
+                                                        title={DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role}
+                                                    />
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
+                                                        {DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role || 'N/A'}
+                                                    </span>
+                                                </div>
+                                                {u.role && u.division && (
+                                                    <span className="text-[9px] font-bold text-gray-400 ml-1 uppercase tracking-tight">
+                                                        Cargo: {u.role}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        {
+                                            isMaster && (
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                togglePasswordVisibility(u.id);
+                                                            }}
+                                                            className={`p-1.5 rounded-lg transition-all ${visiblePasswordIds.includes(u.id) ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400 hover:text-secondary'}`}
+                                                            title={visiblePasswordIds.includes(u.id) ? "Ocultar Senha" : "Ver Senha"}
+                                                        >
+                                                            {visiblePasswordIds.includes(u.id) ? <Unlock size={14} /> : <Lock size={14} />}
+                                                        </button>
+                                                        <span className={`text-[11px] font-black tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
+                                                            {visiblePasswordIds.includes(u.id) ? (u.plainPassword || 'SEM SENHA') : '••••••••'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            )
+                                        }
+                                        <td className="px-8 py-6 text-xs font-bold text-gray-400">
+                                            {new Date(u.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {tab === 'trash' ? (
+                                                    <button onClick={() => handleRestoreUser(u)} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all" title="Restaurar Usuário">
+                                                        <RotateCcw size={18} />
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        {u.customer?.id && (
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    togglePasswordVisibility(u.id);
+                                                                    handleOpenCustomerDetail(u.customer!.id);
                                                                 }}
-                                                                className={`p-1.5 rounded-lg transition-all ${visiblePasswordIds.includes(u.id) ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400 hover:text-secondary'}`}
-                                                                title={visiblePasswordIds.includes(u.id) ? "Ocultar Senha" : "Ver Senha"}
+                                                                className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition-all flex items-center justify-center"
+                                                                title="Ver Perfil de Cliente Completo (Popup)"
                                                             >
-                                                                {visiblePasswordIds.includes(u.id) ? <Unlock size={14} /> : <Lock size={14} />}
+                                                                <User size={18} />
                                                             </button>
-                                                            <span className={`text-[11px] font-black tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
-                                                                {visiblePasswordIds.includes(u.id) ? (u.plainPassword || 'SEM SENHA') : '••••••••'}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                )
-                                            }
-                                            <td className="px-8 py-6 text-xs font-bold text-gray-400">
-                                                {new Date(u.createdAt).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-8 py-6 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {tab === 'trash' ? (
-                                                        <button onClick={() => handleRestoreUser(u)} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all" title="Restaurar Usuário">
-                                                            <RotateCcw size={18} />
+                                                        )}
+                                                        <button onClick={() => handleOpenUser(u)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-all">
+                                                            <ChevronRight size={18} />
                                                         </button>
-                                                    ) : (
-                                                        <>
-                                                            {u.customer?.id && (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleOpenCustomerDetail(u.customer!.id);
-                                                                    }}
-                                                                    className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition-all flex items-center justify-center"
-                                                                    title="Ver Perfil de Cliente Completo (Popup)"
-                                                                >
-                                                                    <User size={18} />
-                                                                </button>
-                                                            )}
-                                                            <button onClick={() => handleOpenUser(u)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-all">
-                                                                <ChevronRight size={18} />
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
-            </main >
+            </div>
 
             <AnimatePresence>
                 {isModalOpen && (
@@ -932,21 +995,12 @@ export default function UserManager() {
                                             <div className="flex gap-2">
                                                 <select
                                                     value={(formData as any).isCustomRole ? 'CUSTOM' : formData.role || 'OPERACIONAL'}
-                                                    onChange={async (e) => {
+                                                    onChange={(e) => {
                                                         const val = e.target.value;
                                                         if (val === 'CUSTOM') {
                                                             setFormData({ ...formData, role: '', isCustomRole: true } as any);
                                                         } else {
-                                                            const isCliente = val === 'CLIENTE';
-                                                            const newPermissions = isCliente ? [] : JSON.parse(rolePermissions.find(rp => rp.role === val)?.permissions || '[]');
-
-                                                            setFormData({
-                                                                ...formData,
-                                                                role: val,
-                                                                division: isCliente ? 'CLIENTE' : (formData.division === 'CLIENTE' ? 'COMERCIAL' : formData.division),
-                                                                isCustomRole: false,
-                                                                permissions: newPermissions
-                                                            } as any);
+                                                            handleRoleChange(val);
                                                         }
                                                     }}
                                                     className="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 font-bold text-secondary"
@@ -1158,7 +1212,7 @@ export default function UserManager() {
                                 <div className="space-y-4">
                                     <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase"><Lock size={14} /> Permissões Específicas</h4>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {MODULES.map(m => (
+                                        {PERMISSION_MODULES.map(m => (
                                             <label key={m.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
                                                 <input
                                                     type="checkbox"
@@ -1171,6 +1225,62 @@ export default function UserManager() {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* GAMIFICATION / PAUSE MENU (DEV ONLY) */}
+                                {currentUser?.email === 'oidemianf@gmail.com' && (
+                                    <div className="pt-4 border-t border-gray-50 mt-4 space-y-3">
+                                        <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
+                                            <Shield size={14} /> Gamification & Privilégios (Dev Only)
+                                        </h4>
+                                        <label className="flex items-center gap-3 p-4 bg-purple-50 rounded-2xl cursor-pointer hover:bg-purple-100 transition-colors border border-purple-200">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.pauseMenuEnabled}
+                                                onChange={e => setFormData({ ...formData, pauseMenuEnabled: e.target.checked })}
+                                                className="w-5 h-5 rounded-lg text-purple-600 focus:ring-purple-600 transition-all"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-sm font-black text-purple-700 uppercase tracking-tight">Habilitar Menu PAUSA</div>
+                                                <div className="text-[10px] font-bold text-purple-600/70">Libera acesso aos mini-games e atividades de pausa.</div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.pauseMenuEnabled ? 'bg-purple-200 text-purple-800' : 'bg-gray-100 text-gray-400'}`}>
+                                                {formData.pauseMenuEnabled ? 'LIBERADO' : 'BLOQUEADO'}
+                                            </div>
+                                        </label>
+
+                                        {formData.pauseMenuEnabled && (
+                                            <div className="space-y-2 mt-2 pl-4 border-l-2 border-purple-100">
+                                                <h5 className="text-[10px] font-bold text-gray-400 uppercase">Jogos Permitidos</h5>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {[
+                                                        { id: 'paciencia-pet', label: 'Paciência Pet' },
+                                                        { id: 'zen-espuma', label: 'Zen Pad — Espuma' },
+                                                        { id: 'coleira', label: 'Desenrosca a Coleira' }
+                                                    ].map(game => {
+                                                        const allowed = Array.isArray(formData.allowedGames) ? formData.allowedGames : [];
+                                                        const isAllowed = allowed.includes(game.id);
+                                                        return (
+                                                            <label key={game.id} className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isAllowed}
+                                                                    onChange={() => {
+                                                                        const newGames = isAllowed
+                                                                            ? allowed.filter((g: string) => g !== game.id)
+                                                                            : [...allowed, game.id];
+                                                                        setFormData({ ...formData, allowedGames: newGames });
+                                                                    }}
+                                                                    className="rounded text-purple-600 focus:ring-purple-500"
+                                                                />
+                                                                <span className="text-xs font-medium text-gray-600">{game.label}</span>
+                                                            </label>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
@@ -1188,9 +1298,8 @@ export default function UserManager() {
                             </div>
                         </motion.div>
                     </>
-                )
-                }
-            </AnimatePresence >
+                )}
+            </AnimatePresence>
 
             {/* Modal de Configuração de Cargos (Top-Left) */}
             <AnimatePresence>
@@ -1225,8 +1334,8 @@ export default function UserManager() {
                                                 >
                                                     {rp.label || rp.role}
                                                 </button>
-                                                {!['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER', 'OPERACIONAL', 'SPA'].includes(rp.role) && (
-                                                    <div onClick={() => handleDeleteRole(rp.role)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-transform cursor-pointer shadow-lg"><X size={10} /></div>
+                                                {rp.role.toUpperCase() !== 'MASTER' && (
+                                                    <div onClick={() => handleDeleteRole(rp.role)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-transform cursor-pointer shadow-lg z-10"><X size={10} /></div>
                                                 )}
                                             </div>
                                         ))}
@@ -1256,7 +1365,7 @@ export default function UserManager() {
                                         <div>
                                             <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4">Módulos Liberados por Padrão</h4>
                                             <div className="grid grid-cols-2 gap-4">
-                                                {MODULES.map(m => {
+                                                {PERMISSION_MODULES.map(m => {
                                                     const active = editingRolePerms.includes(m.id);
                                                     return (
                                                         <div
@@ -1275,14 +1384,52 @@ export default function UserManager() {
                                                     );
                                                 })}
                                             </div>
+                                            <div className="pt-8 border-t border-gray-100">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Usuários Vinculados ({users.filter(u => u.role?.toUpperCase() === selectedConfigRole?.toUpperCase()).length})</h4>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    {users.filter(u => u.role?.toUpperCase() === selectedConfigRole?.toUpperCase()).length > 0 ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {users.filter(u => u.role?.toUpperCase() === selectedConfigRole?.toUpperCase()).map(user => (
+                                                                <div key={user.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-100/50 group hover:bg-white hover:shadow-lg transition-all">
+                                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-lg" style={{ backgroundColor: user.color || '#3B82F6' }}>
+                                                                        {user.name?.substring(0, 2).toUpperCase()}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-bold text-secondary text-sm truncate">{user.name}</p>
+                                                                        <p className="text-[10px] font-bold text-gray-400 truncate uppercase">{user.email}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-10 rounded-[32px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
+                                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-300 mb-4">
+                                                                <Users size={20} />
+                                                            </div>
+                                                            <p className="text-sm font-bold text-gray-400">Nenhum colaborador vinculado a este cargo</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="p-8 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
                                     <p className="text-[10px] font-extra-bold text-gray-400 uppercase tracking-widest">{hasRoleChanges ? '⚠ Você tem alterações não salvas' : '✅ Configurações salvas'}</p>
-                                    <div className="flex gap-4">
-                                        <button onClick={() => setIsRoleModalOpen(false)} className="font-bold text-gray-400">Fechar</button>
+                                    <div className="flex gap-4 items-center">
+                                        {selectedConfigRole?.toUpperCase() !== 'MASTER' && (
+                                            <button
+                                                onClick={() => handleDeleteRole(selectedConfigRole)}
+                                                className="px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 transition-all flex items-center gap-2"
+                                            >
+                                                <Trash2 size={14} /> Excluir Cargo
+                                            </button>
+                                        )}
+                                        <button onClick={() => setIsRoleModalOpen(false)} className="font-bold text-gray-400 px-4">Fechar</button>
                                         <button
                                             onClick={handleSaveRoleConfig}
                                             disabled={!hasRoleChanges}
@@ -1296,15 +1443,13 @@ export default function UserManager() {
                         </>
                     )
                 }
-            </AnimatePresence >
-            {/* MODAL DE DETALHES DO CLIENTE (POPUP SINGLE PAGE) */}
-            < CustomerDetailsModal
+            </AnimatePresence>
+            <CustomerDetailsModal
                 isOpen={isCustomerModalVisible}
                 onClose={() => setIsCustomerModalVisible(false)}
                 customerId={viewCustomerId}
                 onUpdate={fetchUsers}
             />
-        </div >
+        </main>
     );
 }
-

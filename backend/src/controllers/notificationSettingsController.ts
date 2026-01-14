@@ -25,13 +25,21 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
         const { enabled, frequency, allowedRoles, minInterval } = req.body;
         const userId = (req as any).user.id;
 
-        const updated = await prisma.notificationSettings.update({
+        const updated = await prisma.notificationSettings.upsert({
             where: { notificationType: type },
-            data: {
+            update: {
                 enabled,
                 frequency,
                 allowedRoles: allowedRoles ? JSON.stringify(allowedRoles) : undefined,
                 minInterval,
+                updatedBy: userId
+            },
+            create: {
+                notificationType: type,
+                enabled: enabled !== undefined ? enabled : true,
+                frequency: frequency || 'IMMEDIATE',
+                allowedRoles: allowedRoles ? JSON.stringify(allowedRoles) : '[]',
+                minInterval: minInterval || 0,
                 updatedBy: userId
             }
         });

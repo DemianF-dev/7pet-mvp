@@ -22,6 +22,7 @@ import ConfirmModal from './ConfirmModal';
 import ThemeToggle from './ThemeToggle';
 import { useNotification } from '../context/NotificationContext';
 import { createContext, useContext } from 'react';
+import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
 import { APP_VERSION } from '../constants/version';
 
 const SidebarContext = createContext({ isCollapsed: false });
@@ -38,6 +39,7 @@ export default function Sidebar() {
         const saved = localStorage.getItem('client-sidebar-collapsed');
         return saved === 'true';
     });
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         localStorage.setItem('client-sidebar-collapsed', String(isCollapsed));
@@ -48,6 +50,24 @@ export default function Sidebar() {
             document.body.classList.remove('sidebar-collapsed');
         }
     }, [isCollapsed]);
+
+    // Preserve scroll position
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const savedScroll = sessionStorage.getItem('client-sidebar-scroll');
+        if (savedScroll) {
+            container.scrollTop = parseInt(savedScroll, 10);
+        }
+
+        const handleScroll = () => {
+            sessionStorage.setItem('client-sidebar-scroll', String(container.scrollTop));
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
@@ -60,52 +80,95 @@ export default function Sidebar() {
         navigate('/');
     };
 
+    const checkPermission = (module: string) => {
+        if (!user) return false;
+        if (user.role === 'MASTER') return true;
+
+        let perms: string[] | null = null;
+        if (user.permissions) {
+            if (Array.isArray(user.permissions)) {
+                perms = user.permissions;
+            } else if (typeof user.permissions === 'string') {
+                try {
+                    perms = JSON.parse(user.permissions);
+                } catch (e) { perms = null; }
+            }
+        }
+
+        if (perms !== null) {
+            return perms.includes(module);
+        }
+
+        const roleDefaults = DEFAULT_PERMISSIONS_BY_ROLE[user.role || 'CLIENTE'] || [];
+        return roleDefaults.includes(module);
+    };
+
     const menuItems = (
         <SidebarContext.Provider value={{ isCollapsed }}>
             <nav className="flex-1 space-y-2">
-                <SidebarItem
-                    icon={<LayoutDashboard size={20} />}
-                    label="Dashboard"
-                    active={location.pathname === '/client/dashboard'}
-                    onClick={() => { navigate('/client/dashboard'); setIsOpen(false); }}
-                />
-                <SidebarItem
-                    icon={<Dog size={20} />}
-                    label="Meus Pets"
-                    active={location.pathname === '/client/pets'}
-                    onClick={() => { navigate('/client/pets'); setIsOpen(false); }}
-                />
-                <SidebarItem
-                    icon={<Calendar size={20} />}
-                    label="Agendamentos"
-                    active={location.pathname === '/client/appointments'}
-                    onClick={() => { navigate('/client/appointments'); setIsOpen(false); }}
-                />
-                <SidebarItem
-                    icon={<FileText size={20} />}
-                    label="Orçamentos"
-                    active={location.pathname === '/client/quotes'}
-                    onClick={() => { navigate('/client/quotes'); setIsOpen(false); }}
-                />
-                <SidebarItem
-                    icon={<User size={20} />}
-                    label="Meu Perfil"
-                    active={location.pathname === '/client/profile'}
-                    onClick={() => { navigate('/client/profile'); setIsOpen(false); }}
-                />
-                <SidebarItem
-                    icon={<CreditCard size={20} />}
-                    label="Pagamentos"
-                    active={location.pathname === '/client/payments'}
-                    onClick={() => { navigate('/client/payments'); setIsOpen(false); }}
-                />
-                <SidebarItem
-                    icon={<Bell size={20} />}
-                    label="Notificações"
-                    active={location.pathname === '/client/notifications'}
-                    onClick={() => { navigate('/client/notifications'); setIsOpen(false); }}
-                    badge={unreadCount}
-                />
+                {checkPermission('client-dashboard') && (
+                    <SidebarItem
+                        id="sidemenu-dashboard"
+                        icon={<LayoutDashboard size={20} />}
+                        label="Dashboard"
+                        active={location.pathname === '/client/dashboard'}
+                        onClick={() => { navigate('/client/dashboard'); setIsOpen(false); }}
+                    />
+                )}
+                {checkPermission('client-pets') && (
+                    <SidebarItem
+                        id="sidemenu-pets"
+                        icon={<Dog size={20} />}
+                        label="Meus Pets"
+                        active={location.pathname === '/client/pets'}
+                        onClick={() => { navigate('/client/pets'); setIsOpen(false); }}
+                    />
+                )}
+                {checkPermission('client-appointments') && (
+                    <SidebarItem
+                        id="sidemenu-agendamentos"
+                        icon={<Calendar size={20} />}
+                        label="Agendamentos"
+                        active={location.pathname === '/client/appointments'}
+                        onClick={() => { navigate('/client/appointments'); setIsOpen(false); }}
+                    />
+                )}
+                {checkPermission('client-quotes') && (
+                    <SidebarItem
+                        id="sidemenu-orçamentos"
+                        icon={<FileText size={20} />}
+                        label="Orçamentos"
+                        active={location.pathname === '/client/quotes'}
+                        onClick={() => { navigate('/client/quotes'); setIsOpen(false); }}
+                    />
+                )}
+                {checkPermission('profile') && (
+                    <SidebarItem
+                        id="sidemenu-meu-perfil"
+                        icon={<User size={20} />}
+                        label="Meu Perfil"
+                        active={location.pathname === '/client/profile'}
+                        onClick={() => { navigate('/client/profile'); setIsOpen(false); }}
+                    />
+                )}
+                {checkPermission('client-payments') && (
+                    <SidebarItem
+                        id="sidemenu-pagamentos"
+                        icon={<CreditCard size={20} />}
+                        label="Pagamentos"
+                        active={location.pathname === '/client/payments'}
+                        onClick={() => { navigate('/client/payments'); setIsOpen(false); }}
+                    />
+                )}
+                {checkPermission('notifications') && (
+                    <SidebarItem
+                        icon={<Bell size={20} />}
+                        label="Notificações"
+                        active={location.pathname === '/client/notifications'}
+                        onClick={() => { navigate('/client/notifications'); setIsOpen(false); }}
+                        badge={unreadCount}
+                    />
+                )}
                 <SidebarItem
                     icon={<Gamepad2 size={20} />}
                     label="Pausa"
@@ -215,21 +278,17 @@ export default function Sidebar() {
                 <div className="mb-4">
                     <button
                         onClick={toggleCollapse}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-primary/10 text-gray-400 hover:text-primary transition-all"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-primary/10 text-gray-400 hover:text-primary transition-all mx-auto"
                         aria-label={isCollapsed ? 'Expandir menu' : 'Retrair menu'}
                     >
-                        {isCollapsed ? (
-                            <ChevronRight size={18} />
-                        ) : (
-                            <>
-                                <ChevronLeft size={18} />
-                                <span className="text-xs font-medium">Retrair</span>
-                            </>
-                        )}
+                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                 </div>
 
-                {menuItems}
+                {/* Scrollable Menu Area */}
+                <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar">
+                    {menuItems}
+                </div>
 
 
                 <div className="pt-6 border-t border-gray-100">
@@ -281,12 +340,13 @@ export default function Sidebar() {
     );
 }
 
-function SidebarItem({ icon, label, active = false, onClick, badge }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number }) {
+function SidebarItem({ icon, label, active = false, onClick, badge, id }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number, id?: string }) {
     const { isCollapsed } = useContext(SidebarContext);
 
     return (
         <button
             onClick={onClick}
+            id={id}
             className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl cursor-pointer transition-all w-full text-left relative ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:bg-gray-50 hover:text-secondary'
                 }`}
             aria-label={`Navegar para ${label}`}

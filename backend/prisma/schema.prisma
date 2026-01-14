@@ -40,6 +40,8 @@ model User {
   isEligible              Boolean                      @default(false)
   active                  Boolean                      @default(true)
   isSupportAgent          Boolean                      @default(false)
+  pauseMenuEnabled        Boolean                      @default(false)
+  allowedGames            Json?                        @default("[]")
   assignedAppointments    Appointment[]                @relation("AppointmentPerformer")
   authenticators          Authenticator[]
   bugReports              BugReport[]
@@ -829,4 +831,65 @@ enum TransportType {
 enum AppointmentCategory {
   SPA
   LOGISTICA
+}
+
+// ============================================
+// SCHEDULED NOTIFICATION SYSTEM
+// ============================================
+
+// Scheduled notification rule/template
+model ScheduledNotification {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  scheduleType    String
+  cronExpression  String?
+  intervalMinutes Int?
+  scheduledAt     DateTime?
+  timezone        String    @default("America/Sao_Paulo")
+
+  targetType    String
+  targetRoles   Json?  @default("[]")
+  targetUserIds Json?  @default("[]")
+
+  title            String
+  body             String
+  notificationType String @default("INFO")
+
+  conditions Json?
+
+  enabled  Boolean @default(true)
+  priority Int     @default(0)
+
+  lastExecutedAt  DateTime?
+  nextExecutionAt DateTime?
+  executionCount  Int       @default(0)
+  failureCount    Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  executions NotificationExecution[]
+
+  @@index([enabled, nextExecutionAt])
+  @@index([scheduleType])
+  @@index([createdAt])
+}
+
+model NotificationExecution {
+  id                      String                @id @default(uuid())
+  scheduledNotificationId String
+  scheduledNotification   ScheduledNotification @relation(fields: [scheduledNotificationId], references: [id], onDelete: Cascade)
+
+  executedAt     DateTime @default(now())
+  recipientCount Int
+  successCount   Int
+  failureCount   Int
+
+  metadata Json?
+
+  @@index([scheduledNotificationId, executedAt])
+  @@index([executedAt])
 }

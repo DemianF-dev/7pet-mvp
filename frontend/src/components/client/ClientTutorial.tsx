@@ -204,26 +204,53 @@ export default function ClientTutorial() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
             {/* Spotlight Mask */}
             <AnimatePresence>
-                {targetRect && (
+                {isTutorialActive && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] pointer-events-auto"
+                        className="fixed inset-0 z-[100] pointer-events-auto overflow-hidden"
                     >
-                        <div className="absolute bg-secondary/80 backdrop-blur-[2px] transition-all duration-500" style={{ top: 0, left: 0, right: 0, height: targetRect.top - 8 }} />
-                        <div className="absolute bg-secondary/80 backdrop-blur-[2px] transition-all duration-500" style={{ top: targetRect.bottom + 8, left: 0, right: 0, bottom: 0 }} />
-                        <div className="absolute bg-secondary/80 backdrop-blur-[2px] transition-all duration-500" style={{ top: targetRect.top - 8, left: 0, width: targetRect.left - 8, height: targetRect.height + 16 }} />
-                        <div className="absolute bg-secondary/80 backdrop-blur-[2px] transition-all duration-500" style={{ top: targetRect.top - 8, right: 0, left: targetRect.right + 8, height: targetRect.height + 16 }} />
+                        {targetRect ? (
+                            <svg className="w-full h-full">
+                                <defs>
+                                    <mask id="spotlight-mask">
+                                        <rect width="100%" height="100%" fill="white" />
+                                        <rect
+                                            x={targetRect.left - 8}
+                                            y={targetRect.top - 8}
+                                            width={targetRect.width + 16}
+                                            height={targetRect.height + 16}
+                                            rx="16"
+                                            fill="black"
+                                            className="transition-all duration-500"
+                                        />
+                                    </mask>
+                                </defs>
+                                <rect
+                                    width="100%"
+                                    height="100%"
+                                    fill="rgba(15, 23, 42, 0.8)"
+                                    mask="url(#spotlight-mask)"
+                                    style={{
+                                        backdropFilter: 'blur(2px)',
+                                        WebkitBackdropFilter: 'blur(2px)'
+                                    }}
+                                    onClick={() => handleDismiss(false)}
+                                    className="cursor-pointer"
+                                />
+                            </svg>
+                        ) : (
+                            <div
+                                onClick={() => handleDismiss(false)}
+                                className="w-full h-full flex items-center justify-center bg-secondary/40 cursor-pointer"
+                                style={{
+                                    backdropFilter: 'blur(8px)',
+                                    WebkitBackdropFilter: 'blur(8px)'
+                                }}
+                            />
+                        )}
                     </motion.div>
-                )}
-                {!targetRect && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-secondary/40 backdrop-blur-sm z-[100] pointer-events-auto"
-                    />
                 )}
             </AnimatePresence>
 
@@ -231,10 +258,10 @@ export default function ClientTutorial() {
             <AnimatePresence mode="wait">
                 <motion.div
                     key={tutorialStep}
-                    initial={{ opacity: 0, scale: 0.9, y: 50, x: targetRect ? 0 : 0 }}
+                    initial={{ opacity: 0, scale: 0.9, y: 50 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 50 }}
-                    className={`fixed z-[101] pointer-events-auto bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border border-white/20 transition-all duration-500 ${targetRect ? 'bottom-10 right-10 w-[380px]' : 'w-[450px] relative'}`}
+                    className={`z-[101] pointer-events-auto bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border border-white/20 transition-all duration-500 ${targetRect ? 'fixed bottom-10 right-10 w-[380px]' : 'w-[450px] relative'}`}
                 >
                     {currentStep.image && (
                         <div className="h-40 relative">

@@ -7,7 +7,6 @@ import {
     Square,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import StaffSidebar from '../../components/StaffSidebar';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
@@ -358,35 +357,30 @@ export default function AgendaSPA() {
 
     // DESKTOP LAYOUT (WebArenaLayout)
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden">
-            {/* Sidebar is kept, but layout is managed side-by-side */}
-            <StaffSidebar />
-
-            <div className="flex-1 md:ml-64 h-full overflow-hidden">
-                <WebAgendaLayout
-                    appointments={filteredAppointments}
-                    selectedDate={selectedDate}
-                    onSelectedDateChange={actions.setSelectedDate}
-                    searchTerm={searchTerm}
-                    onSearchChange={actions.setSearchTerm}
-                    performers={performers}
-                    selectedPerformerId={selectedPerformerId}
-                    onPerformerChange={actions.setSelectedPerformerId}
-                    view={view}
-                    onViewChange={actions.setView}
-                    onCreateNew={() => actions.openCreateModal()}
-                    tab={tab}
-                    onTabChange={actions.setTab}
-                    isLoading={isLoading}
-                    onRefresh={actions.refresh}
-                    onAppointmentClick={actions.openDetailsModal}
-                    breadcrumb="7Pet > Agenda SPA"
-                >
-                    {view === 'KANBAN' && renderKanbanView()}
-                    {view === 'DAY' && renderDayView()}
-                    {view === 'WEEK' && renderWeekView()}
-                </WebAgendaLayout>
-            </div>
+        <>
+            <WebAgendaLayout
+                appointments={filteredAppointments}
+                selectedDate={selectedDate}
+                onSelectedDateChange={actions.setSelectedDate}
+                searchTerm={searchTerm}
+                onSearchChange={actions.setSearchTerm}
+                performers={performers}
+                selectedPerformerId={selectedPerformerId}
+                onPerformerChange={actions.setSelectedPerformerId}
+                view={view}
+                onViewChange={actions.setView}
+                onCreateNew={() => actions.openCreateModal()}
+                tab={tab}
+                onTabChange={actions.setTab}
+                isLoading={isLoading}
+                onRefresh={actions.refresh}
+                onAppointmentClick={actions.openDetailsModal}
+                breadcrumb="7Pet > Agenda SPA"
+            >
+                {view === 'KANBAN' && renderKanbanView()}
+                {view === 'DAY' && renderDayView()}
+                {view === 'WEEK' && renderWeekView()}
+            </WebAgendaLayout>
 
             {/* Modals for Desktop */}
             <AgendaDebugPanel module="SPA" vm={{ ...state, filteredCount: filteredAppointments.length }} />
@@ -415,6 +409,6 @@ export default function AgendaSPA() {
                     />
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
 }

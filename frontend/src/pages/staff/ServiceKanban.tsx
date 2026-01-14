@@ -21,7 +21,7 @@ import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
-import StaffSidebar from '../../components/StaffSidebar';
+import BackButton from '../../components/BackButton';
 
 interface Appointment {
     id: string;
@@ -497,10 +497,7 @@ export default function ServiceKanban() {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <StaffSidebar />
-
-            <main className="flex-1 md:ml-64 p-4 md:p-8">
+        <main className="p-4 md:p-8">
                 <header className="mb-6">
                     <Breadcrumbs />
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

@@ -4,6 +4,8 @@ import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from './context/SocketContext';
+import { useAuthStore } from './store/authStore';
+import api from './services/api';
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/ui/PageTransition';
 import PageLoader from './components/PageLoader';
@@ -57,6 +59,8 @@ const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
 
 // ⚡ LAYOUT SYSTEM - Shell for mobile/desktop
 import AppShell from './layouts/AppShell';
+import ClientAppShell from './layouts/ClientAppShell';
+import DynamicPausaLayout from './layouts/DynamicPausaLayout';
 
 // ⚡ PAUSA MODULE - Mini-games (lazy loaded)
 const PausaPage = lazy(() => import('./pages/pausa/PausaPage'));
@@ -87,6 +91,7 @@ function App() {
 
     const queryClient = useQueryClient();
     const { socket } = useSocket();
+    const { user, updateUser } = useAuthStore();
 
     // 🔄 PWA Auto-Update Detection
     useServiceWorkerUpdate();
@@ -110,12 +115,31 @@ function App() {
             }
         };
 
+        const handlePermissionsUpdate = async (data: any) => {
+            if (import.meta.env.DEV) console.log('🔐 Permissões atualizadas via socket:', data);
+            try {
+                // Fetch the absolute latest user data to be sure
+                const response = await api.get('/auth/me');
+                if (response.data) {
+                    updateUser(response.data);
+                    toast.success('Suas permissões foram atualizadas por um administrador.', {
+                        icon: '🔐',
+                        duration: 5000
+                    });
+                }
+            } catch (err) {
+                console.error('Erro ao atualizar permissões via socket:', err);
+            }
+        };
+
         socket.on('chat:new_message', handleNewMessage);
         socket.on('notification:new', handleNotification);
+        socket.on('USER_PERMISSIONS_UPDATED', handlePermissionsUpdate);
 
         return () => {
             socket.off('chat:new_message', handleNewMessage);
             socket.off('notification:new', handleNotification);
+            socket.off('USER_PERMISSIONS_UPDATED', handlePermissionsUpdate);
         };
     }, [socket, queryClient]);
 
@@ -137,17 +161,19 @@ function App() {
 
                             {/* Client Routes */}
                             <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} redirectTo="/client/login" />}>
-                                <Route path="/client/dashboard" element={<PageTransition><ClientDashboard /></PageTransition>} />
-                                <Route path="/client/pets" element={<LazyPage><PetList /></LazyPage>} />
-                                <Route path="/client/chat" element={<LazyPage><ClientChatPage /></LazyPage>} />
-                                <Route path="/client/profile" element={<LazyPage><ClientProfile /></LazyPage>} />
-                                <Route path="/client/schedule" element={<LazyPage><AppointmentBooking /></LazyPage>} />
-                                <Route path="/client/appointments" element={<LazyPage><AppointmentList /></LazyPage>} />
-                                <Route path="/client/quote-request" element={<LazyPage><QuoteRequest /></LazyPage>} />
-                                <Route path="/client/quotes" element={<LazyPage><QuoteList /></LazyPage>} />
-                                <Route path="/client/notifications" element={<LazyPage><NotificationList /></LazyPage>} />
-                                <Route path="/client/payments" element={<LazyPage><PaymentList /></LazyPage>} />
-                                <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                                <Route element={<ClientAppShell />}>
+                                    <Route path="/client/dashboard" element={<ClientDashboard />} />
+                                    <Route path="/client/pets" element={<LazyPage><PetList /></LazyPage>} />
+                                    <Route path="/client/chat" element={<LazyPage><ClientChatPage /></LazyPage>} />
+                                    <Route path="/client/profile" element={<LazyPage><ClientProfile /></LazyPage>} />
+                                    <Route path="/client/schedule" element={<LazyPage><AppointmentBooking /></LazyPage>} />
+                                    <Route path="/client/appointments" element={<LazyPage><AppointmentList /></LazyPage>} />
+                                    <Route path="/client/quote-request" element={<LazyPage><QuoteRequest /></LazyPage>} />
+                                    <Route path="/client/quotes" element={<LazyPage><QuoteList /></LazyPage>} />
+                                    <Route path="/client/notifications" element={<LazyPage><NotificationList /></LazyPage>} />
+                                    <Route path="/client/payments" element={<LazyPage><PaymentList /></LazyPage>} />
+                                    <Route path="/client/settings" element={<PageTransition><PWASettings /></PageTransition>} />
+                                </Route>
                             </Route>
 
 
@@ -184,8 +210,12 @@ function App() {
                                     <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
                                     <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
                                     <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
+                                </Route>
+                            </Route>
 
-                                    {/* Pausa Module - Mini-games within AppShell for mobile nav */}
+                            {/* Pausa Module - Accessible to all authenticated users (staff and clients) */}
+                            <Route element={<ProtectedRoute allowedRoles={['CLIENTE', 'OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/" />}>
+                                <Route element={<DynamicPausaLayout />}>
                                     <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
                                     <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
                                     <Route path="/pausa/coleira" element={<LazyPage><DesenroscaPage /></LazyPage>} />

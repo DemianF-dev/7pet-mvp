@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Menu, MessageSquare, Search, PlusCircle, Video, Phone, MoreVertical, Paperclip, Smile, Send } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import StaffSidebar from '../../components/StaffSidebar';
+
 import ConversationList from '../../components/chat/ConversationList';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { Conversation } from '../../types/chat';
@@ -75,10 +75,8 @@ export default function ChatPage() {
     });
 
     return (
-        <div className="flex bg-gray-50 dark:bg-gray-900 min-h-screen">
-            <StaffSidebar />
-
-            <main className="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden">
+        <>
+            <main className="flex flex-col h-screen overflow-hidden">
                 {/* Header (Bitrix Style) */}
                 <div className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 shrink-0 z-20">
                     <div className="flex items-center gap-3">
@@ -203,7 +201,7 @@ export default function ChatPage() {
                     </div>
                 )
             }
-        </div >
+        </>
     );
 }
 

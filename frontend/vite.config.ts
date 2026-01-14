@@ -121,5 +121,24 @@ export default defineConfig({
         host: true, // Listen on all addresses
         port: 5173,
         strictPort: true, // Fail if port is in use
+    },
+    build: {
+        outDir: 'dist',
+        sourcemap: false,
+        minify: 'esbuild',
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'react-router-dom'],
+                    ui: ['@headlessui/react', '@heroicons/react', 'framer-motion', 'lucide-react'],
+                    charts: ['recharts'],
+                    utils: ['date-fns', 'axios', 'zod'],
+                    state: ['zustand', '@tanstack/react-query']
+                }
+            }
+        }
+    },
+    esbuild: {
+        drop: ['console', 'debugger']
     }
 })

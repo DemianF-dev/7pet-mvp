@@ -39,9 +39,10 @@ router.post('/users/:id/restore', managementController.restoreUser);
 router.put('/users/:id/role', managementController.updateUserRole);
 
 // Role Permissions
-router.get('/roles/permissions', managementController.listRolePermissions);
-router.put('/roles/:role/permissions', managementController.updateRolePermissions);
-router.delete('/roles/:role', managementController.deleteRole);
+// Role Permissions
+router.get('/roles', managementController.getRoleConfigs);
+router.put('/roles/:role', managementController.updateRoleConfig);
+router.delete('/roles/:role', managementController.deleteRoleConfig);
 
 // Audit Logs
 router.get('/audit/:entityType/:entityId', auditController.getLogs);

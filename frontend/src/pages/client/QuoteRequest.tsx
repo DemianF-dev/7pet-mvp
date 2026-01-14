@@ -9,7 +9,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Sidebar from '../../components/Sidebar';
+
 import BackButton from '../../components/BackButton';
 import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -324,34 +324,28 @@ export default function QuoteRequest() {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-gray-50 flex">
-                <Sidebar />
-                <main className="flex-1 md:ml-64 p-6 md:p-10 flex items-center justify-center">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center bg-white p-12 rounded-[48px] shadow-sm max-w-lg border border-gray-50"
-                    >
-                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
-                            <CheckCircle2 size={40} />
-                        </div>
-                        <h2 className="text-3xl font-black text-secondary mb-4">Solicitação Enviada!</h2>
-                        <p className="text-gray-500 mb-8">Nossa equipe analisará seu pedido e enviará o orçamento em breve. Você pode acompanhar o status na lista de orçamentos.</p>
-                        <div className="flex flex-col gap-3">
-                            <button onClick={() => navigate('/client/quotes')} className="btn-primary w-full py-4">Ver Meus Orçamentos</button>
-                            <button onClick={() => navigate('/client/dashboard')} className="text-gray-400 font-bold hover:text-secondary transition-colors">Voltar ao Início</button>
-                        </div>
-                    </motion.div>
-                </main>
-            </div>
+            <main className="p-6 md:p-10 flex items-center justify-center">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center bg-white p-12 rounded-[48px] shadow-sm max-w-lg border border-gray-50"
+                >
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
+                        <CheckCircle2 size={40} />
+                    </div>
+                    <h2 className="text-3xl font-black text-secondary mb-4">Solicitação Enviada!</h2>
+                    <p className="text-gray-500 mb-8">Nossa equipe analisará seu pedido e enviará o orçamento em breve. Você pode acompanhar o status na lista de orçamentos.</p>
+                    <div className="flex flex-col gap-3">
+                        <button onClick={() => navigate('/client/quotes')} className="btn-primary w-full py-4">Ver Meus Orçamentos</button>
+                        <button onClick={() => navigate('/client/dashboard')} className="text-gray-400 font-bold hover:text-secondary transition-colors">Voltar ao Início</button>
+                    </div>
+                </motion.div>
+            </main>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <Sidebar />
-
-            <main className="flex-1 md:ml-64 p-6 md:p-10 max-w-5xl">
+            <main className="p-6 md:p-10 max-w-5xl">
                 <header className="mb-10">
                     <div className="flex items-center gap-4 mb-4">
                         {(step === 2 || step === 3) && (
@@ -501,6 +495,5 @@ export default function QuoteRequest() {
                     />
                 )}
             </AnimatePresence>
-        </div>
     );
 }

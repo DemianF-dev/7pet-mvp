@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     LayoutDashboard,
     MessageCircle,
@@ -25,9 +25,11 @@ import {
     Briefcase,
     Gamepad2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    History
 } from 'lucide-react';
 
+import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import ThemeToggle from './ThemeToggle';
@@ -54,6 +56,7 @@ export default function StaffSidebar() {
         const saved = localStorage.getItem('staff-sidebar-collapsed');
         return saved === 'true';
     });
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         localStorage.setItem('staff-sidebar-collapsed', String(isCollapsed));
@@ -64,6 +67,24 @@ export default function StaffSidebar() {
             document.body.classList.remove('sidebar-collapsed');
         }
     }, [isCollapsed]);
+
+    // Preserve scroll position
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const savedScroll = sessionStorage.getItem('staff-sidebar-scroll');
+        if (savedScroll) {
+            container.scrollTop = parseInt(savedScroll, 10);
+        }
+
+        const handleScroll = () => {
+            sessionStorage.setItem('staff-sidebar-scroll', String(container.scrollTop));
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
@@ -77,42 +98,31 @@ export default function StaffSidebar() {
     const checkPermission = (module: string) => {
         if (!user) return false;
 
-        // Master user has access to everything
+        // Master always has access
         if (user.role === 'MASTER') return true;
 
-        // 1. If user has specific permission override, use it
+        // 1. Check if user has explicit permission array
+        let perms: string[] | null = null;
         if (user.permissions) {
-            let perms: string[] = [];
             if (Array.isArray(user.permissions)) {
                 perms = user.permissions;
             } else if (typeof user.permissions === 'string') {
                 try {
                     perms = JSON.parse(user.permissions);
-                } catch (e) { perms = []; }
+                } catch (e) { perms = null; }
             }
+        }
 
-            if (perms.includes(module)) return true;
-            // If granular permissions exist (and are not empty) but this module isn't in it, strictly deny.
-            if (perms.length > 0) return false;
+        // 2. If explicit permissions exist, use them STRICTLY
+        // If the array exists (even if empty), we rely on it.
+        // If it's null/undefined, we fall back to role defaults.
+        if (perms !== null) {
+            return perms.includes(module);
         }
 
         // 3. Fallback to Role Defaults
-        switch (module) {
-            case 'dashboard': return user.role !== 'SPA';
-            case 'quotes': return user.role !== 'SPA';
-            case 'agenda-spa': return true; // All staff can access
-            case 'agenda-log': return true; // All staff can access
-            case 'kanban': return true; // All staff - keeping for compatibility
-            case 'transport': return user.role !== 'SPA';
-            case 'customers': return user.role !== 'SPA';
-            case 'services': return true; // All staff including SPA
-            case 'billing': return user.role !== 'SPA';
-            case 'reports': return user.role === 'GESTAO' || user.role === 'ADMIN';
-            case 'management': return user.role === 'GESTAO' || user.role === 'ADMIN';
-            case 'users': return user.role === 'ADMIN';
-            case 'transport-config': return user.role === 'GESTAO' || user.role === 'ADMIN';
-            default: return false;
-        }
+        const roleDefaults = DEFAULT_PERMISSIONS_BY_ROLE[user.role || 'CLIENTE'] || [];
+        return roleDefaults.includes(module);
     };
 
     const menuItems = (
@@ -129,20 +139,25 @@ export default function StaffSidebar() {
                 )}
 
                 {/* 1.1 Bate-papo */}
-                <SidebarItem
-                    icon={<MessageCircle size={20} />}
-                    label="Bate-papo"
-                    active={location.pathname === '/staff/chat'}
-                    onClick={() => { navigate('/staff/chat'); setIsOpen(false); }}
-                />
+                {/* 1.1 Bate-papo */}
+                {checkPermission('chat') && (
+                    <SidebarItem
+                        icon={<MessageCircle size={20} />}
+                        label="Bate-papo"
+                        active={location.pathname === '/staff/chat'}
+                        onClick={() => { navigate('/staff/chat'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 1.2 Mural */}
-                <SidebarItem
-                    icon={<MessageSquare size={20} />}
-                    label="Mural"
-                    active={location.pathname === '/staff/feed'}
-                    onClick={() => { navigate('/staff/feed'); setIsOpen(false); }}
-                />
+                {checkPermission('feed') && (
+                    <SidebarItem
+                        icon={<MessageSquare size={20} />}
+                        label="Mural"
+                        active={location.pathname === '/staff/feed'}
+                        onClick={() => { navigate('/staff/feed'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 2. Orçamentos */}
                 {checkPermission('quotes') && (
@@ -154,21 +169,25 @@ export default function StaffSidebar() {
                     />
                 )}
 
-                {/* 3. Agenda SPA - Always visible to all staff */}
-                <SidebarItem
-                    icon={<Sparkles size={20} />}
-                    label="Agenda SPA"
-                    active={location.pathname === '/staff/agenda-spa'}
-                    onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
-                />
+                {/* 3. Agenda SPA */}
+                {checkPermission('agenda-spa') && (
+                    <SidebarItem
+                        icon={<Sparkles size={20} />}
+                        label="Agenda SPA"
+                        active={location.pathname === '/staff/agenda-spa'}
+                        onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
+                    />
+                )}
 
-                {/* 4. Agenda LOG - Always visible to all staff */}
-                <SidebarItem
-                    icon={<Truck size={20} />}
-                    label="Agenda LOG"
-                    active={location.pathname === '/staff/agenda-log'}
-                    onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
-                />
+                {/* 4. Agenda LOG */}
+                {checkPermission('agenda-log') && (
+                    <SidebarItem
+                        icon={<Truck size={20} />}
+                        label="Agenda LOG"
+                        active={location.pathname === '/staff/agenda-log'}
+                        onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 5. Clientes */}
                 {checkPermission('customers') && (
@@ -253,74 +272,90 @@ export default function StaffSidebar() {
                 )}
 
                 {/* 10.1 RH - Gestão/Admin only */}
-                {checkPermission('management') && (
+                {(checkPermission('hr-collaborators') || checkPermission('hr-pay-periods')) && (
                     <>
                         <div className="mt-4 mb-2 px-4">
                             <p className="text-xs font-black text-muted uppercase tracking-widest">RH</p>
                         </div>
-                        <SidebarItem
-                            icon={<Users size={20} />}
-                            label="Colaboradores"
-                            active={location.pathname === '/staff/hr/collaborators'}
-                            onClick={() => { navigate('/staff/hr/collaborators'); setIsOpen(false); }}
-                        />
-                        <SidebarItem
-                            icon={<Briefcase size={20} />}
-                            label="Fechamentos"
-                            active={location.pathname === '/staff/hr/pay-periods'}
-                            onClick={() => { navigate('/staff/hr/pay-periods'); setIsOpen(false); }}
-                        />
+                        {checkPermission('hr-collaborators') && (
+                            <SidebarItem
+                                icon={<Users size={20} />}
+                                label="Colaboradores"
+                                active={location.pathname === '/staff/hr/collaborators'}
+                                onClick={() => { navigate('/staff/hr/collaborators'); setIsOpen(false); }}
+                            />
+                        )}
+                        {checkPermission('hr-pay-periods') && (
+                            <SidebarItem
+                                icon={<Briefcase size={20} />}
+                                label="Fechamentos"
+                                active={location.pathname === '/staff/hr/pay-periods'}
+                                onClick={() => { navigate('/staff/hr/pay-periods'); setIsOpen(false); }}
+                            />
+                        )}
                     </>
                 )}
 
                 {/* 11. Chamados Técnicos */}
-                <SidebarItem
-                    icon={<AlertTriangle size={20} />}
-                    label="Chamados Técnicos"
-                    active={location.pathname === '/staff/support'}
-                    onClick={() => { navigate('/staff/support'); setIsOpen(false); }}
-                />
+                {checkPermission('support') && (
+                    <SidebarItem
+                        icon={<AlertTriangle size={20} />}
+                        label="Chamados Técnicos"
+                        active={location.pathname === '/staff/support'}
+                        onClick={() => { navigate('/staff/support'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 11. Notificações */}
-                <SidebarItem
-                    icon={<Bell size={20} />}
-                    label="Notificações"
-                    active={location.pathname === '/staff/notifications'}
-                    onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
-                    badge={unreadCount}
-                />
+                {checkPermission('notifications') && (
+                    <SidebarItem
+                        icon={<Bell size={20} />}
+                        label="Notificações"
+                        active={location.pathname === '/staff/notifications'}
+                        onClick={() => { navigate('/staff/notifications'); setIsOpen(false); }}
+                        badge={unreadCount}
+                    />
+                )}
 
                 {/* 12. Meu Perfil */}
-                <SidebarItem
-                    icon={<UserIcon size={20} />}
-                    label="Meu Perfil"
-                    active={location.pathname === '/staff/profile'}
-                    onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
-                />
+                {checkPermission('profile') && (
+                    <SidebarItem
+                        icon={<UserIcon size={20} />}
+                        label="Meu Perfil"
+                        active={location.pathname === '/staff/profile'}
+                        onClick={() => { navigate('/staff/profile'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 12.1 Meu RH - Self-service ponto/produção */}
-                <SidebarItem
-                    icon={<Clock size={20} />}
-                    label="Meu RH"
-                    active={location.pathname === '/staff/my-hr'}
-                    onClick={() => { navigate('/staff/my-hr'); setIsOpen(false); }}
-                />
+                {checkPermission('my-hr') && (
+                    <SidebarItem
+                        icon={<Clock size={20} />}
+                        label="Meu RH"
+                        active={location.pathname === '/staff/my-hr'}
+                        onClick={() => { navigate('/staff/my-hr'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 12.2 Pausa - Mini-games */}
-                <SidebarItem
-                    icon={<Gamepad2 size={20} />}
-                    label="Pausa"
-                    active={location.pathname.startsWith('/pausa')}
-                    onClick={() => { navigate('/pausa'); setIsOpen(false); }}
-                />
+                {user?.pauseMenuEnabled && (
+                    <SidebarItem
+                        icon={<Gamepad2 size={20} />}
+                        label="Pausa"
+                        active={location.pathname.startsWith('/pausa')}
+                        onClick={() => { navigate('/pausa'); setIsOpen(false); }}
+                    />
+                )}
 
                 {/* 13. Configurações PWA */}
-                <SidebarItem
-                    icon={<Smartphone size={20} />}
-                    label="Configurações do App"
-                    active={location.pathname === '/staff/settings'}
-                    onClick={() => { navigate('/staff/settings'); setIsOpen(false); }}
-                />
+                {checkPermission('settings') && (
+                    <SidebarItem
+                        icon={<Smartphone size={20} />}
+                        label="Configurações do App"
+                        active={location.pathname === '/staff/settings'}
+                        onClick={() => { navigate('/staff/settings'); setIsOpen(false); }}
+                    />
+                )}
             </nav>
         </SidebarContext.Provider>
     );
@@ -420,22 +455,15 @@ export default function StaffSidebar() {
                 <div className={`flex-none ${isCollapsed ? 'px-4 pb-2' : 'px-6 pb-2'}`}>
                     <button
                         onClick={toggleCollapse}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-fill-secondary hover:bg-accent/20 text-body-secondary hover:text-accent transition-all"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent/10 text-body-secondary hover:text-accent transition-all mx-auto"
                         aria-label={isCollapsed ? 'Expandir menu' : 'Retrair menu'}
                     >
-                        {isCollapsed ? (
-                            <ChevronRight size={18} />
-                        ) : (
-                            <>
-                                <ChevronLeft size={18} />
-                                <span className="text-xs font-medium">Retrair</span>
-                            </>
-                        )}
+                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                 </div>
 
                 {/* Scrollable Menu Area */}
-                <div className={`flex-1 overflow-y-auto ${isCollapsed ? 'px-2 py-4' : 'px-6 py-4'} custom-scrollbar`}>
+                <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isCollapsed ? 'px-2 py-4' : 'px-6 py-4'} custom-scrollbar`}>
                     {menuItems}
                 </div>
 

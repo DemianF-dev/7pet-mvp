@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
-import StaffSidebar from '../../components/StaffSidebar';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
@@ -819,26 +818,21 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <StaffSidebar />
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
-                <header className="mb-10">
-                    <Breadcrumbs />
-                    <BackButton className="mb-4 ml-[-1rem]" />
-                </header>
-                {content}
-                <RecurrenceCelebrationModal
-                    isOpen={showCelebration}
-                    onClose={() => setShowCelebration(false)}
-                    onConfirm={(freq, discount) => {
-                        setType('RECORRENTE');
-                        setRecurringFrequency(freq);
-                        setRecurrenceDiscount(discount);
-                        setShowCelebration(false);
-                        toast.success('Cliente promovido a Recorrente!');
-                    }}
-                />
-            </main>
-        </div>
+        <main className="p-6 md:p-10 pb-28 md:pb-10">
+            <Breadcrumbs />
+            <BackButton className="mb-4 ml-[-1rem]" />
+            {content}
+            <RecurrenceCelebrationModal
+                isOpen={showCelebration}
+                onClose={() => setShowCelebration(false)}
+                onConfirm={(freq, discount) => {
+                    setType('RECORRENTE');
+                    setRecurringFrequency(freq);
+                    setRecurrenceDiscount(discount);
+                    setShowCelebration(false);
+                    toast.success('Cliente promovido a Recorrente!');
+                }}
+            />
+        </main>
     );
 }

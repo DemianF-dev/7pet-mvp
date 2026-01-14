@@ -62,13 +62,13 @@ export default function ClientChatPage() {
     });
 
     return (
-        <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col overflow-hidden">
+        <div className="h-[calc(100vh-64px)] md:h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col overflow-hidden">
             {/* Modern Header */}
             <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/client/dashboard')}
-                        className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-700 hover:scale-105"
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-700 hover:scale-105 md:hidden"
                     >
                         <ArrowLeft size={20} />
                     </button>
@@ -188,8 +188,8 @@ export default function ClientChatPage() {
                                 <button
                                     onClick={() => setModalTab('support')}
                                     className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 ${modalTab === 'support'
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     🎧 Atendimento
@@ -197,8 +197,8 @@ export default function ClientChatPage() {
                                 <button
                                     onClick={() => setModalTab('financial')}
                                     className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 ${modalTab === 'financial'
-                                            ? 'bg-green-600 text-white shadow-lg shadow-green-500/25'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-green-600 text-white shadow-lg shadow-green-500/25'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     💰 Financeiro
@@ -233,8 +233,8 @@ export default function ClientChatPage() {
                                                     {agent.name}
                                                 </span>
                                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-1 ${modalTab === 'financial'
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-blue-100 text-blue-700'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-blue-100 text-blue-700'
                                                     }`}>
                                                     {agent.role === 'ADMIN' || agent.role === 'GESTAO' ? 'Gestão' : 'Especialista'}
                                                 </span>

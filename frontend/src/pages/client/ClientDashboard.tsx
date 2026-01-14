@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
-import Sidebar from '../../components/Sidebar';
 import api from '../../services/api';
 import Skeleton from '../../components/Skeleton';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
@@ -50,13 +49,13 @@ export default function ClientDashboard() {
     });
 
     const quickActions = [
-        { title: 'Meus Dados', icon: <User className="text-secondary" />, desc: 'Editar perfil e preferências', color: 'bg-gray-100', link: '/client/profile' },
-        { title: 'Fale com a Equipe', icon: <MessageCircle className="text-blue-500" />, desc: 'Tire dúvidas e suporte', color: 'bg-blue-50', link: '/client/chat', badge: 'Novo' },
-        { title: 'Agendar Serviço', icon: <Calendar className="text-primary" />, desc: 'Banho, tosa e spa', color: 'bg-primary-light', link: '/client/schedule' },
-        { title: 'Agendar Transporte', icon: <MapPin className="text-blue-500" />, desc: 'Táxi Dog (Busca e Leva)', color: 'bg-blue-50', link: '/client/schedule' },
-        { title: 'Meus Pets', icon: <Dog className="text-orange-500" />, desc: 'Gerencie seus melhores amigos', color: 'bg-orange-50', link: '/client/pets', badge: data?.petCount ? `${data.petCount} Cadastrados` : 'Nenhum' },
-        { title: 'Solicitar Orçamento', icon: <FileText className="text-purple-500" />, desc: 'Novo pedido personalizado', color: 'bg-purple-50', link: '/client/quotes', badge: data?.recentQuotes?.length ? `${data.recentQuotes.length} Pedidos` : undefined },
-        { title: 'Pagamentos', icon: <CreditCard className="text-emerald-500" />, desc: 'Histórico de faturas', color: 'bg-emerald-50', link: '/client/payments', badge: 'Em dia' },
+        { id: 'tour-meus-dados', title: 'Meus Dados', icon: <User className="text-secondary" />, desc: 'Editar perfil e preferências', color: 'bg-gray-100', link: '/client/profile' },
+        { id: 'tour-chat', title: 'Fale com a Equipe', icon: <MessageCircle className="text-blue-500" />, desc: 'Tire dúvidas e suporte', color: 'bg-blue-50', link: '/client/chat', badge: 'Novo' },
+        { id: 'tour-agendar-servico', title: 'Agendar Serviço', icon: <Calendar className="text-primary" />, desc: 'Banho, tosa e spa', color: 'bg-primary-light', link: '/client/schedule' },
+        { id: 'tour-agendar-transporte', title: 'Agendar Transporte', icon: <MapPin className="text-blue-500" />, desc: 'Táxi Dog (Busca e Leva)', color: 'bg-blue-50', link: '/client/schedule' },
+        { id: 'tour-meus-pets', title: 'Meus Pets', icon: <Dog className="text-orange-500" />, desc: 'Gerencie seus melhores amigos', color: 'bg-orange-50', link: '/client/pets', badge: data?.petCount ? `${data.petCount} Cadastrados` : 'Nenhum' },
+        { id: 'tour-solicitar-orcamento', title: 'Solicitar Orçamento', icon: <FileText className="text-purple-500" />, desc: 'Novo pedido personalizado', color: 'bg-purple-50', link: '/client/quotes', badge: data?.recentQuotes?.length ? `${data.recentQuotes.length} Pedidos` : undefined },
+        { id: 'tour-pagamentos', title: 'Pagamentos', icon: <CreditCard className="text-emerald-500" />, desc: 'Histórico de faturas', color: 'bg-emerald-50', link: '/client/payments', badge: 'Em dia' },
     ];
 
     const nextAppt = data?.nextAppointment;
@@ -74,7 +73,7 @@ export default function ClientDashboard() {
     if (error && !isLoading) {
         console.error('Dashboard error:', error);
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center p-8">
                 <div className="text-center p-8 bg-white rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold text-red-600 mb-4">Erro ao carregar o dashboard</h2>
                     <p className="text-gray-700 mb-6">Não foi possível carregar as informações do seu painel. Por favor, tente novamente mais tarde.</p>
@@ -90,8 +89,7 @@ export default function ClientDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <Sidebar />
+        <>
             <Suspense fallback={
                 <div className="w-full flex justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -100,7 +98,7 @@ export default function ClientDashboard() {
                 <ClientTutorial />
             </Suspense>
 
-            <main className="flex-1 md:ml-64 p-4 md:p-6 lg:p-8">
+            <main className="p-4 md:p-6 lg:p-8">
                 <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-6">
                     <div>
                         <DashboardGreeting
@@ -158,6 +156,7 @@ export default function ClientDashboard() {
                             >
                                 <SpotlightCard
                                     onClick={() => navigate(action.link)}
+                                    id={action.id}
                                     className="p-5 flex flex-col justify-between hover:border-primary/30 cursor-pointer group h-full text-left"
                                     spotlightColor="rgba(var(--color-primary-rgb), 0.15)"
                                 >
@@ -233,6 +232,6 @@ export default function ClientDashboard() {
                     </div>
                 </section>
             </main>
-        </div>
+        </>
     );
 }

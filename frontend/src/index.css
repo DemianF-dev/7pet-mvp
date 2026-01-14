@@ -136,8 +136,10 @@ body {
   }
 
   /* Fix sidebar margin on mobile - no margin when sidebar is overlay */
-  main.flex-1 {
+  main.flex-1,
+  .main-content-layout {
     margin-left: 0 !important;
+    padding-left: 0 !important;
   }
 
   /* Cards and containers should be full width - but NOT calendar grids */
@@ -204,10 +206,29 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Fix button wrapping */
-  .flex.gap-4 {
-    flex-wrap: wrap;
-  }
+    /* Fix button wrapping */
+    .flex.gap-4 {
+        flex-wrap: wrap;
+    }
+}
+
+/* =========================================
+   SIDEBAR LAYOUT & PERSISTENCE
+   ========================================= */
+.main-content-layout {
+    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    min-height: 100vh;
+}
+
+@media (min-width: 769px) {
+    .main-content-layout {
+        padding-left: 16rem; /* Default w-64 */
+    }
+
+    body.sidebar-collapsed .main-content-layout {
+        padding-left: 5rem; /* Collapsed w-20 */
+    }
 }
 
 /* =========================================

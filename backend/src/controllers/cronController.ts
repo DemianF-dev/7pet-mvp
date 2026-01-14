@@ -13,7 +13,7 @@
  */
 
 import { Request, Response } from 'express';
-import { runScheduledNotifications } from '../services/notificationService';
+import { executeScheduledChecks } from '../schedulers/notificationScheduler';
 import Logger from '../lib/logger';
 
 export async function cronNotifications(req: Request, res: Response) {
@@ -28,7 +28,7 @@ export async function cronNotifications(req: Request, res: Response) {
 
     try {
         Logger.info('[Cron] Starting scheduled notifications...');
-        await runScheduledNotifications();
+        await executeScheduledChecks();
 
         res.status(200).json({
             success: true,

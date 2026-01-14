@@ -3,6 +3,7 @@ import prisma from '../lib/prisma';
 import { AppointmentStatus, InvoiceStatus } from '@prisma/client';
 import * as appointmentService from '../services/appointmentService';
 import bcrypt from 'bcryptjs';
+import { socketService } from '../services/socketService';
 
 const getNextStaffId = async (role: string) => {
     if (role === 'CLIENTE') {
@@ -503,6 +504,14 @@ export const updateUser = async (req: Request, res: Response) => {
         if (active !== undefined) updateData.active = active;
         if (division !== undefined) updateData.division = division;
 
+        // DEV ONLY: Gamification & Pause Menu Access
+        // Only oidemianf@gmail.com can enable/disable games for users
+        const DEV_EMAIL = 'oidemianf@gmail.com';
+        if (currentUser.email === DEV_EMAIL) {
+            if (req.body.pauseMenuEnabled !== undefined) updateData.pauseMenuEnabled = req.body.pauseMenuEnabled;
+            if (req.body.allowedGames !== undefined) updateData.allowedGames = req.body.allowedGames;
+        }
+
         if (role !== undefined) {
             // RULE: Only Master can promote to Admin or Master
             if ((role === 'ADMIN' || role === 'MASTER') && !isMaster(currentUser)) {
@@ -556,6 +565,13 @@ export const updateUser = async (req: Request, res: Response) => {
             include: { customer: true }
         });
 
+        if (permissions !== undefined || role !== undefined) {
+            socketService.notifyUser(id, 'USER_PERMISSIONS_UPDATED', {
+                permissions: updatedUser?.permissions,
+                role: updatedUser?.role
+            });
+        }
+
         res.json(updatedUser);
     } catch (error) {
         console.error('Update user error:', error);
@@ -590,40 +606,87 @@ export const deleteUser = async (req: Request, res: Response) => {
         // Allow Master to delete ANYONE (including hard delete if needed)
         // Check if there are related records that forbid deletion, or use DELETE instead of UPDATE deletedAt
         // For compliance with "I want him to leave", we should probably hard delete or ensure he can't login.
-        // But soft delete also prevents login usually?
-        // Let's implement HARD DELETE for cleanup as requested ("fique apenas oidemianf").
 
-        // However, Prisma might have constraints.
-        // Let's try soft delete first, BUT strict check:
-        // if user is 'oidemianf@gmail.com', protect it.
-        const MASTER_EMAIL = 'oidemianf@gmail.com'; // This should be imported or defined top-level
-        if (targetUser.email === MASTER_EMAIL) {
-            return res.status(403).json({ error: 'Você não pode excluir a conta Master principal.' });
-        }
-
-        // Use soft delete by default, but if the user explicitly wants "Excluir" maybe they mean gone?
-        // But soft delete is safer.
-        // Wait, if "Deu erro", maybe it was because of `deletedAt` unique constraint? (Unlikely)
-
-        // Let's assume the user wants it GONE.
-        // But if there are FKs, we fail.
-        // Let's do Soft Delete, but verify why it failed.
-
-        // Use soft delete BUT rename email to release it for future use
-        // This solves "Deu erro" if they try to add the person again later
         await prisma.user.update({
             where: { id },
             data: {
                 deletedAt: new Date(),
-                active: false,
-                email: `deleted_${Date.now()}_${targetUser.email}`,
-                googleId: targetUser.googleId ? `deleted_${Date.now()}_${targetUser.googleId}` : null
+                active: false
             }
         });
-        res.status(204).send();
+
+        res.json({ message: 'Usuário excluído com sucesso' });
     } catch (error) {
         console.error('Delete user error:', error);
-        res.status(500).json({ error: 'Erro ao excluir usuário. Verifique se existem registros vinculados.' });
+        res.status(500).json({ error: 'Erro ao excluir usuário' });
+    }
+};
+
+export const getRoleConfigs = async (req: Request, res: Response) => {
+    try {
+        const configs = await prisma.rolePermission.findMany({
+            orderBy: { role: 'asc' }
+        });
+        res.json(configs);
+    } catch (error) {
+        console.error('Error fetching role configs:', error);
+        res.status(500).json({ error: 'Erro ao buscar configurações de cargo' });
+    }
+};
+
+export const updateRoleConfig = async (req: Request, res: Response) => {
+    try {
+        const { role } = req.params;
+        const { label, permissions } = req.body;
+        const currentUser = (req as any).user;
+
+        if (!isMaster(currentUser) && (role.toUpperCase() === 'MASTER' || (isAdmin(currentUser) && role.toUpperCase() === 'ADMIN'))) {
+            return res.status(403).json({ error: 'Você não tem permissão para alterar as permissões de este cargo.' });
+        }
+
+        const updated = await prisma.rolePermission.upsert({
+            where: { role: role.toUpperCase() },
+            update: {
+                label,
+                permissions: Array.isArray(permissions) ? JSON.stringify(permissions) : permissions,
+                updatedAt: new Date()
+            },
+            create: {
+                role: role.toUpperCase(),
+                label: label || role,
+                permissions: Array.isArray(permissions) ? JSON.stringify(permissions) : permissions,
+                updatedAt: new Date()
+            }
+        });
+
+        res.json(updated);
+    } catch (error) {
+        console.error('Error updating role config:', error);
+        res.status(500).json({ error: 'Erro ao atualizar configuração de cargo' });
+    }
+};
+
+export const deleteRoleConfig = async (req: Request, res: Response) => {
+    try {
+        const { role } = req.params;
+        const currentUser = (req as any).user;
+
+        if (!isMaster(currentUser) && !isAdmin(currentUser)) {
+            return res.status(403).json({ error: 'Acesso negado.' });
+        }
+
+        if (role.toUpperCase() === 'MASTER') {
+            return res.status(400).json({ error: 'O cargo MASTER é vitalício e não pode ser excluído.' });
+        }
+
+        await prisma.rolePermission.delete({
+            where: { role: role.toUpperCase() }
+        });
+
+        res.json({ message: 'Cargo excluído com sucesso' });
+    } catch (error) {
+        console.error('Error deleting role config:', error);
+        res.status(500).json({ error: 'Erro ao excluir cargo' });
     }
 };
 
@@ -635,13 +698,13 @@ export const restoreUser = async (req: Request, res: Response) => {
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        if (isRestricted(targetUser.email) && !isRestricted(currentUserProfile?.email)) {
+        if (isRestricted(targetUser.email) && !isMaster(currentUserProfile)) {
             return res.status(403).json({ error: 'Acesso negado: este perfil é restrito.' });
         }
 
         await prisma.user.update({
             where: { id },
-            data: { deletedAt: null }
+            data: { deletedAt: null, active: true }
         });
         res.status(204).send();
     } catch (error) {
@@ -650,43 +713,3 @@ export const restoreUser = async (req: Request, res: Response) => {
     }
 };
 
-export const listRolePermissions = async (req: Request, res: Response) => {
-    try {
-        const perms = await prisma.rolePermission.findMany();
-        res.json(perms);
-    } catch (error) {
-        console.error('Error in listRolePermissions:', error);
-        res.status(500).json({ error: 'Erro ao listar permissões por cargo', details: error instanceof Error ? error.message : String(error) });
-    }
-};
-
-export const updateRolePermissions = async (req: Request, res: Response) => {
-    try {
-        const { role } = req.params;
-        const { permissions, label } = req.body;
-
-        const perms = await prisma.rolePermission.upsert({
-            where: { role },
-            update: { permissions, label },
-            create: { role, permissions, label: label || role, updatedAt: new Date() }
-        });
-        res.json(perms);
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao salvar permissões por cargo' });
-    }
-};
-
-export const deleteRole = async (req: Request, res: Response) => {
-    try {
-        const { role } = req.params;
-        if (['ADMIN', 'GESTAO', 'CLIENTE', 'MASTER'].includes(role.toUpperCase())) {
-            return res.status(400).json({ error: 'Não é possível excluir cargos do sistema.' });
-        }
-        await prisma.rolePermission.delete({
-            where: { role }
-        });
-        res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao excluir cargo' });
-    }
-};

@@ -19,7 +19,7 @@ import {
     FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import StaffSidebar from '../../components/StaffSidebar';
+
 import api from '../../services/api';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import BackButton from '../../components/BackButton';
@@ -886,15 +886,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black flex">
-            <StaffSidebar />
-            <main className="flex-1 md:ml-64 p-6 md:p-10">
-                {content}
-                {auditModal}
-                {customerModal}
-                {appointmentDetailsModal}
-                {appointmentSelectionModal}
-            </main>
-        </div>
+        <main className="p-6 md:p-10">
+            {content}
+            {auditModal}
+            {customerModal}
+            {appointmentDetailsModal}
+            {appointmentSelectionModal}
+        </main>
     );
 }

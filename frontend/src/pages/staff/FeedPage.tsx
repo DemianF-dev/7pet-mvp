@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Send, MessageCircle, Heart, MoreHorizontal, User, Calendar, CheckSquare, TrendingUp, Paperclip, Smile, Search } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import StaffSidebar from '../../components/StaffSidebar';
+
 
 // Types
 interface Post {
@@ -96,10 +96,8 @@ export default function FeedPage() {
     };
 
     return (
-        <div className="flex bg-gray-50 dark:bg-gray-900 min-h-screen">
-            <StaffSidebar />
-
-            <main className="w-full md:ml-64 p-0 md:p-10 pb-32 overflow-x-hidden flex-1">
+        <>
+            <main className="w-full p-0 md:p-10 pb-32 overflow-x-hidden">
                 <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8">
 
                     {/* Main Feed Area (8 columns) */}
@@ -252,7 +250,7 @@ export default function FeedPage() {
                     setActiveTab('mensagem');
                 }}
             />
-        </div>
+        </>
     );
 }
 

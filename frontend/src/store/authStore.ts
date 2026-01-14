@@ -41,6 +41,8 @@ interface User {
     createdAt?: string;
     color?: string;
     permissions?: string[];
+    pauseMenuEnabled?: boolean;
+    allowedGames?: any; // Json type
 }
 
 interface AuthState {

@@ -1,14 +1,16 @@
 import { Outlet } from 'react-router-dom';
+import StaffSidebar from '../components/StaffSidebar';
 
 /**
- * Desktop shell layout - passthrough wrapper.
- * 
- * On desktop, pages already manage their own layouts including StaffSidebar.
- * This shell is a passthrough that simply renders the page content.
- * 
- * Future: If we want to centralize sidebar management, pages would need
- * to be refactored to not include their own sidebars.
+ * Desktop shell layout - Provides a persistent sidebar for staff routes.
  */
 export default function DesktopShell() {
-    return <Outlet />;
+    return (
+        <div className="min-h-screen">
+            <StaffSidebar />
+            <div className="main-content-layout bg-[var(--color-bg-primary)]">
+                <Outlet />
+            </div>
+        </div>
+    );
 }
