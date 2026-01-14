@@ -12,7 +12,15 @@ import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
 import CustomerFinancialSection from '../../components/staff/CustomerFinancialSection';
 import CustomerAlertsSection from '../../components/staff/CustomerAlertsSection';
+import { Award, Star, Heart, Zap, Trophy } from 'lucide-react';
 
+interface Appreciation {
+    id: string;
+    badgeType: string;
+    comment: string | null;
+    createdAt: string;
+    sender: { name: string };
+}
 interface Guardian {
     name: string;
     phone: string;
@@ -42,6 +50,36 @@ interface Pet {
     groomingAdapter: string;
     groomingScissors: string;
     groomingNotes: string;
+
+    // Migration fields from Bitrix24
+    sex?: string;
+    size?: string;
+    birthDate?: string;
+    hasSpecialNeeds?: boolean;
+    specialNeedsDescription?: string;
+    isCastrated?: boolean;
+    hasOwnTrousseau?: boolean;
+    favoriteToy?: string;
+    habits?: string;
+    nightHabits?: string;
+    feedingType?: string;
+    allowsTreats?: boolean;
+    socialWithAnimals?: boolean;
+    socialWithHumans?: boolean;
+    walkingFrequency?: string;
+    authorityCommand?: string;
+    takesMedication?: boolean;
+    medicationDetails?: string;
+    medicationAllergies?: string;
+    parasiteControlUpToDate?: boolean;
+    vaccinesUpToDate?: boolean;
+    knowsHotelOrDaycare?: boolean;
+    usedToBeingAway?: boolean;
+    timeWithPet?: string;
+    relationshipOrigin?: string;
+    handlingPreference?: string;
+    photoUrl?: string;
+
     isNew?: boolean;
     isExpanded?: boolean;
 }
@@ -77,16 +115,31 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     const [additionalGuardians, setAdditionalGuardians] = useState<Guardian[]>([]);
     const [internalNotes, setInternalNotes] = useState('');
     const [type, setType] = useState('AVULSO');
-    const [recurringFrequency, setRecurringFrequency] = useState('');
-    const [recurrenceDiscount, setRecurrenceDiscount] = useState(0);
     const [showCelebration, setShowCelebration] = useState(false);
     const [seqId, setSeqId] = useState<number | null>(null);
     const [pets, setPets] = useState<Pet[]>([]);
+
+    // Migration fields from Bitrix24
+    const [legacyBitrixId, setLegacyBitrixId] = useState('');
+    const [cpf, setCpf] = useState('');
+    const [billingPreference, setBillingPreference] = useState('');
+    const [billingOther, setBillingOther] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('');
+    const [legacyCreatedAt, setLegacyCreatedAt] = useState('');
+    const [legacySource, setLegacySource] = useState('');
+    const [negotiationDiscount, setNegotiationDiscount] = useState<number>(0);
+    const [isActive, setIsActive] = useState(true);
+    const [secondaryGuardianBirthday, setSecondaryGuardianBirthday] = useState('');
+    const [discoverySourceDetail, setDiscoverySourceDetail] = useState('');
 
     // New Fields
     const [riskLevel, setRiskLevel] = useState('Nivel 1');
     const [isBlocked, setIsBlocked] = useState(false);
     const [canRequestQuotes, setCanRequestQuotes] = useState(true);
+    const [appreciations, setAppreciations] = useState<Appreciation[]>([]);
+    const [isAssigningBadge, setIsAssigningBadge] = useState(false);
+    const [selectedBadge, setSelectedBadge] = useState('TOP_WORKER');
+    const [badgeComment, setBadgeComment] = useState('');
 
     useEffect(() => {
         if (id && id !== 'new') {
@@ -95,6 +148,49 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             setLoading(false);
         }
     }, [id]);
+
+    useEffect(() => {
+        if (id && id !== 'new') {
+            fetchAppreciations();
+        }
+    }, [id]);
+
+
+    const fetchAppreciations = async () => {
+        if (!id || id === 'new') return;
+        try {
+            // First get the customer to find the userId
+            const customerResp = await api.get(`/customers/${id}`);
+            const userId = customerResp.data.userId;
+
+            if (userId) {
+                const resp = await api.get(`/appreciations/user/${userId}`);
+                setAppreciations(resp.data);
+            }
+        } catch (e) {
+            console.error('Error fetching appreciations', e);
+            // Don't block page load if appreciations fail
+            setAppreciations([]);
+        }
+    };
+
+
+    const handleAssignBadge = async () => {
+        if (!id) return;
+        try {
+            await api.post('/appreciations', {
+                badgeType: selectedBadge,
+                receiverId: id,
+                comment: badgeComment
+            });
+            toast.success('Insígnia atribuída com sucesso!');
+            setIsAssigningBadge(false);
+            setBadgeComment('');
+            fetchAppreciations();
+        } catch (e) {
+            toast.error('Erro ao atribuir insígnia');
+        }
+    };
 
     const fetchCustomer = async () => {
         try {
@@ -127,6 +223,19 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             setIsBlocked(data.isBlocked || false);
             setCanRequestQuotes(data.canRequestQuotes ?? true);
 
+            // Migration fields
+            setLegacyBitrixId(data.legacyBitrixId || '');
+            setCpf(data.cpf || '');
+            setBillingPreference(data.billingPreference || '');
+            setBillingOther(data.billingOther || '');
+            setPaymentMethod(data.paymentMethod || '');
+            setLegacyCreatedAt(data.legacyCreatedAt ? new Date(data.legacyCreatedAt).toISOString().split('T')[0] : '');
+            setLegacySource(data.legacySource || '');
+            setNegotiationDiscount(data.negotiationDiscount || 0);
+            setIsActive(data.isActive ?? true);
+            setSecondaryGuardianBirthday(data.secondaryGuardianBirthday ? new Date(data.secondaryGuardianBirthday).toISOString().split('T')[0] : '');
+            setDiscoverySourceDetail(data.discoverySourceDetail || '');
+
             // Load pets
             if (data.pets && Array.isArray(data.pets)) {
                 setPets(data.pets.map((p: any) => ({
@@ -144,6 +253,36 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     groomingAdapter: p.groomingAdapter || '',
                     groomingScissors: p.groomingScissors || '',
                     groomingNotes: p.groomingNotes || '',
+
+                    // Migration pet fields
+                    sex: p.sex || '',
+                    size: p.size || '',
+                    birthDate: p.birthDate ? new Date(p.birthDate).toISOString().split('T')[0] : '',
+                    hasSpecialNeeds: p.hasSpecialNeeds || false,
+                    specialNeedsDescription: p.specialNeedsDescription || '',
+                    isCastrated: p.isCastrated || false,
+                    hasOwnTrousseau: p.hasOwnTrousseau || false,
+                    favoriteToy: p.favoriteToy || '',
+                    habits: p.habits || '',
+                    nightHabits: p.nightHabits || '',
+                    feedingType: p.feedingType || '',
+                    allowsTreats: p.allowsTreats ?? true,
+                    socialWithAnimals: p.socialWithAnimals || false,
+                    socialWithHumans: p.socialWithHumans || false,
+                    walkingFrequency: p.walkingFrequency || '',
+                    authorityCommand: p.authorityCommand || '',
+                    takesMedication: p.takesMedication || false,
+                    medicationDetails: p.medicationDetails || '',
+                    medicationAllergies: p.medicationAllergies || '',
+                    parasiteControlUpToDate: p.parasiteControlUpToDate || false,
+                    vaccinesUpToDate: p.vaccinesUpToDate || false,
+                    knowsHotelOrDaycare: p.knowsHotelOrDaycare || false,
+                    usedToBeingAway: p.usedToBeingAway || false,
+                    timeWithPet: p.timeWithPet || '',
+                    relationshipOrigin: p.relationshipOrigin || '',
+                    handlingPreference: p.handlingPreference || '',
+                    photoUrl: p.photoUrl || '',
+
                     isExpanded: false
                 })));
             }
@@ -181,7 +320,19 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                 recurrenceDiscount,
                 riskLevel,
                 isBlocked,
-                canRequestQuotes
+                canRequestQuotes,
+                // Migration fields
+                legacyBitrixId,
+                cpf,
+                billingPreference,
+                billingOther,
+                paymentMethod,
+                legacyCreatedAt,
+                legacySource,
+                negotiationDiscount,
+                isActive,
+                secondaryGuardianBirthday,
+                discoverySourceDetail
             };
 
             console.log('💾 Salvando cliente com payload:', JSON.stringify(payload, null, 2));
@@ -229,8 +380,9 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
 
     const content = (
-        <>
-            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="max-w-[1400px] mx-auto">
+            {/* Header com breadcrumbs simplificados ou nada se for Bitrix-style */}
+            <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     {isModal && onClose && (
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors -ml-2">
@@ -328,8 +480,83 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             {/* CUSTOMER ALERTS - Show active alerts banner */}
             {id !== 'new' && <CustomerAlertsSection customerId={id} />}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
+            {/* NEW BITRIX-STYLE MAIN LAYOUT */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                {/* LEFT SIDEBAR: PROFILE & BADGES */}
+                <aside className="lg:col-span-3 space-y-6 sticky top-6">
+                    {/* Profile Card */}
+                    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center">
+                        <div className="w-24 h-24 bg-primary/10 rounded-[32px] flex items-center justify-center mb-4 relative group overflow-hidden">
+                            {id === 'new' ? <User size={40} className="text-primary" /> : <span className="text-3xl font-black text-primary">{firstName[0]}{lastName[0]}</span>}
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <Plus size={20} className="text-white" />
+                            </div>
+                        </div>
+                        <h2 className="text-xl font-black text-secondary">{firstName} {lastName}</h2>
+                        {seqId && <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">CL-{String(seqId).padStart(4, '0')}</p>}
+
+                        <div className="grid grid-cols-2 gap-2 w-full mt-6">
+                            <button className="flex flex-col items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 rounded-2xl transition-all group">
+                                <MessageSquare size={18} className="text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-[9px] font-black text-blue-600 uppercase">Chat</span>
+                            </button>
+                            <button className="flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 rounded-2xl transition-all group">
+                                <Phone size={18} className="text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-[9px] font-black text-indigo-600 uppercase">Ligar</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* BADGES SECTION */}
+                    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Trophy size={14} /> Apreciações
+                            </h3>
+                            {id !== 'new' && (
+                                <button
+                                    onClick={() => setIsAssigningBadge(true)}
+                                    className="p-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {appreciations.length > 0 ? appreciations.map(app => (
+                                <div key={app.id} title={`${app.badgeType}: ${app.comment || ''}`} className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center border border-amber-100 cursor-help hover:scale-110 transition-transform shadow-sm">
+                                    {app.badgeType === 'THANK_YOU' && <Heart size={20} className="text-red-500 fill-red-500" />}
+                                    {app.badgeType === 'TEAM_WORK' && <Users size={20} className="text-blue-500" />}
+                                    {app.badgeType === 'ACHIEVEMENT' && <Trophy size={20} className="text-amber-500 fill-amber-500" />}
+                                    {app.badgeType === 'TOP_WORKER' && <Star size={20} className="text-amber-500 fill-amber-500" />}
+                                    {app.badgeType === 'ENERGY' && <Zap size={20} className="text-yellow-500 fill-yellow-500" />}
+                                </div>
+                            )) : (
+                                <p className="text-[10px] text-gray-400 italic font-bold">Nenhuma insignia atribuída ainda.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* QUICK STATS */}
+                    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Resumo</h3>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end">
+                                <span className="text-[10px] font-bold text-gray-400">Total Gastos</span>
+                                <span className="text-sm font-black text-secondary">R$ 1.240,00</span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <span className="text-[10px] font-bold text-gray-400">Pets Ativos</span>
+                                <span className="text-sm font-black text-secondary">{pets.length}</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* MAIN CONTENT AREA */}
+                <div className="lg:col-span-9 space-y-6">
                     {/* IDENTIFICATION */}
                     <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
                         <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -486,6 +713,84 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                 </div>
                             ))}
                             <button onClick={() => setExtraAddresses([...extraAddresses, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Endereço</button>
+                        </div>
+                    </section>
+
+                    {/* MIGRATION & BILLING INFO */}
+                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Shield size={16} /> Faturamento & Histórico (Bitrix24)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">ID Bitrix24</label>
+                                <input
+                                    type="text"
+                                    value={legacyBitrixId}
+                                    readOnly
+                                    className="w-full bg-gray-100 border border-gray-100 rounded-2xl px-5 py-4 text-gray-500 font-bold outline-none cursor-not-allowed"
+                                    placeholder="N/A"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF (Bitrix)</label>
+                                <input
+                                    type="text"
+                                    value={cpf}
+                                    onChange={e => setCpf(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="CPF importado"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Preferência de Faturamento</label>
+                                <input
+                                    type="text"
+                                    value={billingPreference}
+                                    onChange={e => setBillingPreference(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="Ex: Mensal, Por serviço..."
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Método de Pagamento</label>
+                                <input
+                                    type="text"
+                                    value={paymentMethod}
+                                    onChange={e => setPaymentMethod(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="Ex: PIX, Cartão..."
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">% Desconto Negociação</label>
+                                <input
+                                    type="number"
+                                    value={negotiationDiscount}
+                                    onChange={e => setNegotiationDiscount(parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    placeholder="0%"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Criado em (Migração)</label>
+                                <input
+                                    type="date"
+                                    value={legacyCreatedAt}
+                                    readOnly
+                                    className="w-full bg-gray-100 border border-gray-100 rounded-2xl px-5 py-3 text-gray-500 font-bold outline-none cursor-not-allowed"
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-6 space-y-2">
+                            <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Detalhes da Origem</label>
+                            <input
+                                type="text"
+                                value={discoverySourceDetail}
+                                onChange={e => setDiscoverySourceDetail(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                placeholder="Mais detalhes sobre como conheceu..."
+                            />
                         </div>
                     </section>
 
@@ -649,10 +954,82 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                 </div>
                                             </div>
 
-                                            {/* Health */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <input value={pet.healthIssues} onChange={e => { const u = [...pets]; u[idx].healthIssues = e.target.value; setPets(u); }} placeholder="Problemas de saúde" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
                                                 <input value={pet.allergies} onChange={e => { const u = [...pets]; u[idx].allergies = e.target.value; setPets(u); }} placeholder="Alergias" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                            </div>
+
+                                            {/* Advanced Migration Pet Details */}
+                                            <div className="bg-gray-100/50 p-6 rounded-3xl border border-gray-200 space-y-4">
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Info size={14} /> Ficha Completa (Migração)</h4>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Sexo</label>
+                                                        <select value={pet.sex} onChange={e => { const u = [...pets]; u[idx].sex = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
+                                                            <option value="">Selecione</option>
+                                                            <option value="MACHO">Macho</option>
+                                                            <option value="FEMEA">Fêmea</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Porte</label>
+                                                        <select value={pet.size} onChange={e => { const u = [...pets]; u[idx].size = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
+                                                            <option value="">Selecione</option>
+                                                            <option value="P">Pequeno</option>
+                                                            <option value="M">Médio</option>
+                                                            <option value="G">Grande</option>
+                                                            <option value="GG">Gigante</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Nascimento</label>
+                                                        <input type="date" value={pet.birthDate} onChange={e => { const u = [...pets]; u[idx].birthDate = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Alimentação</label>
+                                                        <input value={pet.feedingType} onChange={e => { const u = [...pets]; u[idx].feedingType = e.target.value; setPets(u); }} placeholder="Tipo" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos / Manias</label>
+                                                        <textarea value={pet.habits} onChange={e => { const u = [...pets]; u[idx].habits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="O que ele faz?" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos Noturnos</label>
+                                                        <textarea value={pet.nightHabits} onChange={e => { const u = [...pets]; u[idx].nightHabits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="Como ele dorme?" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.isCastrated} onChange={e => { const u = [...pets]; u[idx].isCastrated = e.target.checked; setPets(u); }} /> Castrado</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.hasOwnTrousseau} onChange={e => { const u = [...pets]; u[idx].hasOwnTrousseau = e.target.checked; setPets(u); }} /> Enxoval Próprio</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.hasSpecialNeeds} onChange={e => { const u = [...pets]; u[idx].hasSpecialNeeds = e.target.checked; setPets(u); }} /> Nec. Especiais</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.takesMedication} onChange={e => { const u = [...pets]; u[idx].takesMedication = e.target.checked; setPets(u); }} /> Medicamento</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.vaccinesUpToDate} onChange={e => { const u = [...pets]; u[idx].vaccinesUpToDate = e.target.checked; setPets(u); }} /> Vacinas em dia</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.parasiteControlUpToDate} onChange={e => { const u = [...pets]; u[idx].parasiteControlUpToDate = e.target.checked; setPets(u); }} /> Vermífugo/Antipulgas</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.socialWithAnimals} onChange={e => { const u = [...pets]; u[idx].socialWithAnimals = e.target.checked; setPets(u); }} /> Social (Pets)</label>
+                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.allowsTreats} onChange={e => { const u = [...pets]; u[idx].allowsTreats = e.target.checked; setPets(u); }} /> Aceita Petisco</label>
+                                                </div>
+
+                                                {(pet.hasSpecialNeeds || pet.takesMedication) && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                                        {pet.hasSpecialNeeds && <input value={pet.specialNeedsDescription} onChange={e => { const u = [...pets]; u[idx].specialNeedsDescription = e.target.value; setPets(u); }} placeholder="Detalhes nec. especiais..." className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />}
+                                                        {pet.takesMedication && <input value={pet.medicationDetails} onChange={e => { const u = [...pets]; u[idx].medicationDetails = e.target.value; setPets(u); }} placeholder="Detalhes medicação..." className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />}
+                                                    </div>
+                                                )}
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Tratativa / Autoridade</label>
+                                                        <input value={pet.authorityCommand} onChange={e => { const u = [...pets]; u[idx].authorityCommand = e.target.value; setPets(u); }} placeholder="Ex: Comando 'Não'" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Tempo com Pet / Origem</label>
+                                                        <input value={pet.timeWithPet} onChange={e => { const u = [...pets]; u[idx].timeWithPet = e.target.value; setPets(u); }} placeholder="Ex: 5 anos" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {/* Grooming Details */}
@@ -795,7 +1172,61 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     </section>
                 </div>
             </div>
-        </>
+
+            {/* ASSIGN BADGE MODAL */}
+            {isAssigningBadge && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[40px] w-full max-w-md p-8 shadow-2xl">
+                        <h3 className="text-2xl font-black text-secondary tracking-tight mb-6">Atribuir <span className="text-primary">Insígnia</span></h3>
+
+                        <div className="grid grid-cols-3 gap-3 mb-8">
+                            {[
+                                { id: 'THANK_YOU', icon: Heart, label: 'Vlw!', color: 'text-red-500' },
+                                { id: 'TEAM_WORK', icon: Users, label: 'Equipe', color: 'text-blue-500' },
+                                { id: 'TOP_WORKER', icon: Star, label: 'Top', color: 'text-amber-500' },
+                                { id: 'ACHIEVEMENT', icon: Trophy, label: 'Meta', color: 'text-amber-500' },
+                                { id: 'ENERGY', icon: Zap, label: 'Uau!', color: 'text-yellow-500' },
+                            ].map(b => (
+                                <button
+                                    key={b.id}
+                                    onClick={() => setSelectedBadge(b.id)}
+                                    className={`flex flex-col items-center gap-2 p-4 rounded-3xl border transition-all ${selectedBadge === b.id ? 'bg-primary/5 border-primary shadow-lg scale-105' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
+                                >
+                                    <b.icon size={24} className={selectedBadge === b.id ? b.color : ''} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">{b.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="space-y-4 mb-8">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Comentário (Opcional)</label>
+                            <textarea
+                                value={badgeComment}
+                                onChange={e => setBadgeComment(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 text-sm font-bold resize-none focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                rows={3}
+                                placeholder="Por que este colaborador merece esta insignia?"
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setIsAssigningBadge(false)}
+                                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleAssignBadge}
+                                className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 
     if (isModal) {

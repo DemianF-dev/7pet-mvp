@@ -19,7 +19,36 @@ const petSchema = z.object({
     hasMattedFur: z.boolean().optional(),
     preferences: z.string().optional(),
     customerId: z.string().uuid().optional(), // Optional for staff to specify
-});
+
+    // Migration fields from Bitrix24
+    sex: z.string().optional().nullable(),
+    size: z.string().optional().nullable(),
+    birthDate: z.string().optional().nullable(),
+    hasSpecialNeeds: z.boolean().optional().nullable(),
+    specialNeedsDescription: z.string().optional().nullable(),
+    isCastrated: z.boolean().optional().nullable(),
+    hasOwnTrousseau: z.boolean().optional().nullable(),
+    favoriteToy: z.string().optional().nullable(),
+    habits: z.string().optional().nullable(),
+    nightHabits: z.string().optional().nullable(),
+    feedingType: z.string().optional().nullable(),
+    allowsTreats: z.boolean().optional().nullable(),
+    socialWithAnimals: z.boolean().optional().nullable(),
+    socialWithHumans: z.boolean().optional().nullable(),
+    walkingFrequency: z.string().optional().nullable(),
+    authorityCommand: z.string().optional().nullable(),
+    takesMedication: z.boolean().optional().nullable(),
+    medicationDetails: z.string().optional().nullable(),
+    medicationAllergies: z.string().optional().nullable(),
+    parasiteControlUpToDate: z.boolean().optional().nullable(),
+    vaccinesUpToDate: z.boolean().optional().nullable(),
+    knowsHotelOrDaycare: z.boolean().optional().nullable(),
+    usedToBeingAway: z.boolean().optional().nullable(),
+    timeWithPet: z.string().optional().nullable(),
+    relationshipOrigin: z.string().optional().nullable(),
+    handlingPreference: z.string().optional().nullable(),
+    photoUrl: z.string().optional().nullable(),
+}).passthrough();
 
 export const create = async (req: any, res: Response) => {
     try {
@@ -31,6 +60,11 @@ export const create = async (req: any, res: Response) => {
             data.customerId = req.user.customer.id;
         } else if (!data.customerId) {
             return res.status(400).json({ error: 'customerId é obrigatório para colaboradores' });
+        }
+
+        // Convert dates
+        if (data.birthDate) {
+            (data as any).birthDate = new Date(data.birthDate);
         }
 
         const pet = await petService.create(data);
@@ -87,9 +121,20 @@ export const update = async (req: any, res: Response) => {
             return res.status(403).json({ error: 'Acesso negado' });
         }
 
-        const updatedPet = await petService.update(req.params.id, req.body);
+        const data = petSchema.partial().parse(req.body);
+
+        // Convert dates
+        if (data.birthDate) {
+            (data as any).birthDate = new Date(data.birthDate);
+        }
+
+        const updatedPet = await petService.update(req.params.id, data);
         res.json(updatedPet);
     } catch (error: any) {
+        console.error('ERRO AO ATUALIZAR PET:', error);
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Dados inválidos', details: error.issues });
+        }
         res.status(400).json({ error: error.message });
     }
 };

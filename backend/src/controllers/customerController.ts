@@ -32,6 +32,18 @@ const customerSchema = z.object({
     secondaryGuardianPhone: z.string().optional().nullable(),
     secondaryGuardianEmail: z.string().optional().nullable(),
     secondaryGuardianAddress: z.string().optional().nullable(),
+    // Migration fields from Bitrix24
+    legacyBitrixId: z.string().optional().nullable(),
+    cpf: z.string().optional().nullable(),
+    billingPreference: z.string().optional().nullable(),
+    billingOther: z.string().optional().nullable(),
+    paymentMethod: z.string().optional().nullable(),
+    legacyCreatedAt: z.string().optional().nullable(), // Will be converted to Date
+    legacySource: z.string().optional().nullable(),
+    negotiationDiscount: z.number().optional().nullable(),
+    isActive: z.boolean().optional().nullable(),
+    secondaryGuardianBirthday: z.string().optional().nullable(), // Will be converted to Date
+    discoverySourceDetail: z.string().optional().nullable(),
 }).passthrough(); // Allow additional fields
 
 export const customerController = {
@@ -50,7 +62,8 @@ export const customerController = {
                     deletedAt: null,
                     OR: [
                         { name: { contains: q, mode: 'insensitive' } },
-                        { phone: { contains: q, mode: 'insensitive' } }
+                        { phone: { contains: q, mode: 'insensitive' } },
+                        { legacyBitrixId: { contains: q, mode: 'insensitive' } }
                     ]
                 },
                 include: {
@@ -508,6 +521,24 @@ export const customerController = {
                 }
                 if (cleanedBody.riskLevel !== undefined) {
                     customerUpdateData.riskLevel = cleanedBody.riskLevel;
+                }
+
+                // Migration fields
+                if (data.legacyBitrixId !== undefined) customerUpdateData.legacyBitrixId = data.legacyBitrixId;
+                if (data.cpf !== undefined) customerUpdateData.cpf = data.cpf;
+                if (data.billingPreference !== undefined) customerUpdateData.billingPreference = data.billingPreference;
+                if (data.billingOther !== undefined) customerUpdateData.billingOther = data.billingOther;
+                if (data.paymentMethod !== undefined) customerUpdateData.paymentMethod = data.paymentMethod;
+                if (data.legacySource !== undefined) customerUpdateData.legacySource = data.legacySource;
+                if (data.negotiationDiscount !== undefined) customerUpdateData.negotiationDiscount = data.negotiationDiscount;
+                if (data.isActive !== undefined) customerUpdateData.isActive = data.isActive ?? true;
+                if (data.discoverySourceDetail !== undefined) customerUpdateData.discoverySourceDetail = data.discoverySourceDetail;
+
+                if (data.legacyCreatedAt !== undefined) {
+                    customerUpdateData.legacyCreatedAt = data.legacyCreatedAt ? new Date(data.legacyCreatedAt) : null;
+                }
+                if (data.secondaryGuardianBirthday !== undefined) {
+                    customerUpdateData.secondaryGuardianBirthday = data.secondaryGuardianBirthday ? new Date(data.secondaryGuardianBirthday) : null;
                 }
 
                 const updated = await tx.customer.update({

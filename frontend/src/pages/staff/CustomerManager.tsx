@@ -30,6 +30,7 @@ interface Customer {
     email?: string;
     address?: string;
     type: 'AVULSO' | 'RECORRENTE';
+    legacyBitrixId?: string;
     internalNotes?: string;
     recurrenceDiscount?: number;
     user: {
@@ -130,7 +131,8 @@ export default function CustomerManager() {
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone?.includes(searchTerm) ||
-        c.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        c.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.legacyBitrixId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (

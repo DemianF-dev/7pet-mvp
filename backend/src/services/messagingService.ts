@@ -55,7 +55,7 @@ export const messagingService = {
             include: { customer: true }
         });
 
-        if (!user) return notification;
+        if (!user) return null;
 
         // Cast communicationPrefs to string array with fallback
         const prefsRaw = user.customer?.communicationPrefs as any;
@@ -73,24 +73,18 @@ export const messagingService = {
             await this.sendEmail(user.email, title, message);
         }
 
-        // 4. Trigger Push Notifications (ALWAYS if subscription exists, or check pref)
+        // 4. Trigger Push Notifications & Store in History (Single source of truth)
         try {
-            await createNotification(userId, {
+            return await createNotification(userId, {
                 title,
                 body: message,
                 type: type,
-                data: { notificationId: notification.id }
+                data: { generatedBy: 'messagingService' }
             });
         } catch (error) {
-            console.error('[MessagingService] Erro ao disparar Push Notification:', error);
+            console.error('[MessagingService] Erro ao disparar notificação unificada:', error);
+            return null;
         }
-
-        return createNotification(userId, {
-            title,
-            body: message,
-            type: type,
-            data: { generatedBy: 'messagingService' }
-        });
     }
 };
 

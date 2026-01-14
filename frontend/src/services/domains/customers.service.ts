@@ -8,6 +8,7 @@ export interface Customer {
     email?: string;
     address?: string;
     type: 'AVULSO' | 'RECORRENTE';
+    legacyBitrixId?: string; // New migration field
     internalNotes?: string;
     recurrenceDiscount?: number;
     user: {

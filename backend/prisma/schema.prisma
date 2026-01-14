@@ -58,6 +58,10 @@ model User {
   staffProfile            StaffProfile?
   notificationPreferences UserNotificationPreference[]
 
+  // Appreciations logic
+  appreciationsSent     Appreciation[] @relation("AppreciationSent")
+  appreciationsReceived Appreciation[] @relation("AppreciationReceived")
+
   @@index([email])
   @@index([division])
   @@index([firstName])
@@ -78,47 +82,62 @@ model Authenticator {
 }
 
 model Customer {
-  id                       String                 @id @default(uuid())
-  userId                   String                 @unique
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
   name                     String
   phone                    String?
   address                  String?
-  noShowCount              Int                    @default(0)
-  isBlocked                Boolean                @default(false)
-  requiresPrepayment       Boolean                @default(false)
-  createdAt                DateTime               @default(now())
-  updatedAt                DateTime               @updatedAt
-  type                     String                 @default("AVULSO")
+  noShowCount              Int       @default(0)
+  isBlocked                Boolean   @default(false)
+  requiresPrepayment       Boolean   @default(false)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  type                     String    @default("AVULSO")
   recurringFrequency       String?
-  discountPercentage       Float                  @default(0.0)
+  discountPercentage       Float     @default(0.0)
   internalNotes            String?
-  balance                  Float                  @default(0.0)
+  balance                  Float     @default(0.0)
   secondaryGuardianAddress String?
   secondaryGuardianEmail   String?
   secondaryGuardianName    String?
   secondaryGuardianPhone   String?
-  additionalGuardians      Json?                  @default("[]")
+  additionalGuardians      Json?     @default("[]")
   communicationOther       Json?
-  communicationPrefs       Json?                  @default("[]")
+  communicationPrefs       Json?     @default("[]")
   discoverySource          String?
   recurrenceDiscount       Float?
   recurrenceFrequency      String?
   deletedAt                DateTime?
-  canRequestQuotes         Boolean                @default(true)
-  riskLevel                String?                @default("Nivel 1")
-  appointments             Appointment[]
-  user                     User                   @relation(fields: [userId], references: [id])
-  alerts                   CustomerAlert[]
-  financialTransactions    FinancialTransaction[]
-  invoices                 Invoice[]
-  pets                     Pet[]
-  quotes                   Quote[]
+  canRequestQuotes         Boolean   @default(true)
+  riskLevel                String?   @default("Nivel 1")
+
+  // Migration fields from Bitrix24
+  legacyBitrixId            String?   @unique
+  cpf                       String?
+  billingPreference         String?
+  billingOther              String?
+  paymentMethod             String?
+  legacyCreatedAt           DateTime?
+  legacySource              String?
+  negotiationDiscount       Float?
+  isActive                  Boolean   @default(true)
+  secondaryGuardianBirthday DateTime?
+  discoverySourceDetail     String?
+
+  appointments          Appointment[]
+  user                  User                   @relation(fields: [userId], references: [id])
+  alerts                CustomerAlert[]
+  financialTransactions FinancialTransaction[]
+  invoices              Invoice[]
+  pets                  Pet[]
+  quotes                Quote[]
 
   @@index([userId])
   @@index([type])
   @@index([deletedAt])
   @@index([name])
   @@index([userId], map: "idx_customer_userid")
+  @@index([legacyBitrixId])
 }
 
 model FinancialTransaction {
@@ -162,7 +181,7 @@ model CustomerAlert {
 }
 
 model Pet {
-  id               String        @id @default(uuid())
+  id               String   @id @default(uuid())
   customerId       String
   name             String
   species          String
@@ -171,27 +190,57 @@ model Pet {
   observations     String?
   preferences      String?
   coatType         String?
-  usesPerfume      Boolean       @default(false)
-  usesOrnaments    Boolean       @default(false)
-  marketingConsent Boolean       @default(false)
+  usesPerfume      Boolean  @default(false)
+  usesOrnaments    Boolean  @default(false)
+  marketingConsent Boolean  @default(false)
   temperament      String?
-  firstTime        Boolean       @default(false)
+  firstTime        Boolean  @default(false)
   age              String?
   healthIssues     String?
   allergies        String?
-  hasKnots         Boolean       @default(false)
-  hasMattedFur     Boolean       @default(false)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  usedToGrooming   Boolean       @default(true)
+  hasKnots         Boolean  @default(false)
+  hasMattedFur     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  usedToGrooming   Boolean  @default(true)
   groomingAdapter  String?
   groomingHeight   String?
   groomingMachine  String?
   groomingNotes    String?
   groomingScissors String?
-  appointments     Appointment[]
-  customer         Customer      @relation(fields: [customerId], references: [id])
-  quotes           Quote[]
+
+  // Migration fields from Bitrix24
+  sex                     String?
+  size                    String?
+  birthDate               DateTime?
+  hasSpecialNeeds         Boolean   @default(false)
+  specialNeedsDescription String?
+  isCastrated             Boolean?
+  hasOwnTrousseau         Boolean   @default(false)
+  favoriteToy             String?
+  habits                  String?
+  nightHabits             String?
+  feedingType             String?
+  allowsTreats            Boolean   @default(true)
+  socialWithAnimals       Boolean?
+  socialWithHumans        Boolean?
+  walkingFrequency        String?
+  authorityCommand        String?
+  takesMedication         Boolean   @default(false)
+  medicationDetails       String?
+  medicationAllergies     String?
+  parasiteControlUpToDate Boolean?
+  vaccinesUpToDate        Boolean?
+  knowsHotelOrDaycare     Boolean?
+  usedToBeingAway         Boolean?
+  timeWithPet             String?
+  relationshipOrigin      String?
+  handlingPreference      String?
+  photoUrl                String?
+
+  appointments Appointment[]
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  quotes       Quote[]
 
   @@index([customerId])
   @@index([customerId], map: "idx_pet_customerid")
@@ -892,4 +941,19 @@ model NotificationExecution {
 
   @@index([scheduledNotificationId, executedAt])
   @@index([executedAt])
+}
+
+model Appreciation {
+  id         String   @id @default(uuid())
+  badgeType  String // e.g., "THANK_YOU", "TEAM_WORK", "ACHIEVEMENT"
+  senderId   String
+  receiverId String
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("AppreciationSent", fields: [senderId], references: [id])
+  receiver User @relation("AppreciationReceived", fields: [receiverId], references: [id])
+
+  @@index([receiverId])
+  @@index([senderId])
 }
