@@ -130,9 +130,9 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     vendor: ['react', 'react-dom', 'react-router-dom'],
-                    ui: ['@headlessui/react', '@heroicons/react', 'framer-motion', 'lucide-react'],
+                    ui: ['framer-motion', 'lucide-react'],
                     charts: ['recharts'],
-                    utils: ['date-fns', 'axios', 'zod'],
+                    utils: ['axios'],
                     state: ['zustand', '@tanstack/react-query']
                 }
             }
