@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Edit2, Check, X, DollarSign, Truck, Scissors, HeadphonesIcon, Settings2, FileText, Search, ArrowLeft, Filter, Shield } from 'lucide-react';
+import { Users, Plus, Edit2, Check, X, DollarSign, Truck, Scissors, HeadphonesIcon, Settings2, FileText, Search, ArrowLeft, Filter, Shield, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -56,6 +56,11 @@ export default function StaffProfiles() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDept, setFilterDept] = useState<string | null>(null);
 
+    // Delete Confirmation
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [profileToDelete, setProfileToDelete] = useState<StaffProfile | null>(null);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
     // Form state
     const [formData, setFormData] = useState({
         userId: '',
@@ -72,8 +77,11 @@ export default function StaffProfiles() {
 
     useEffect(() => {
         fetchProfiles();
-        fetchAvailableUsers();
     }, []);
+
+    useEffect(() => {
+        fetchAvailableUsers();
+    }, [profiles]);
 
     const fetchProfiles = async () => {
         try {
@@ -89,13 +97,19 @@ export default function StaffProfiles() {
 
     const fetchAvailableUsers = async () => {
         try {
-            const res = await api.get('/management/users?role=OPERACIONAL,GESTAO,ADMIN,SPA,MASTER');
+            const res = await api.get('/management/users');
             // Backend returns an array directly
             const usersList = Array.isArray(res.data) ? res.data : (res.data.users || []);
 
-            // Filter out users that already have staff profiles
+            // Filter out users that already have staff profiles AND filter out clients
             const existingUserIds = profiles.map(p => p.userId);
-            setAvailableUsers(usersList.filter((u: User) => !existingUserIds.includes(u.id)));
+            const staffOnly = usersList.filter((u: any) =>
+                !existingUserIds.includes(u.id) &&
+                u.division !== 'CLIENTE' &&
+                u.role !== 'CLIENTE'
+            );
+
+            setAvailableUsers(staffOnly);
         } catch (error) {
             console.error('Erro ao carregar usuários:', error);
         }
@@ -122,7 +136,7 @@ export default function StaffProfiles() {
 
             setShowModal(false);
             resetForm();
-            fetchProfiles();
+            await fetchProfiles();
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Erro ao salvar');
         }
@@ -166,6 +180,33 @@ export default function StaffProfiles() {
         if (!config) return null;
         const Icon = config.icon;
         return <Icon size={20} className={config.color} />;
+    };
+
+    const handleDeleteClick = (profile: StaffProfile, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setProfileToDelete(profile);
+        setDeleteConfirmText('');
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deleteConfirmText !== 'EXCLUIR') {
+            toast.error('Digite EXCLUIR para confirmar');
+            return;
+        }
+
+        if (!profileToDelete) return;
+
+        try {
+            await api.delete(`/hr/staff-profiles/${profileToDelete.id}`);
+            toast.success('Perfil de colaborador excluído com sucesso');
+            setShowDeleteModal(false);
+            setProfileToDelete(null);
+            setDeleteConfirmText('');
+            await fetchProfiles();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Erro ao excluir perfil');
+        }
     };
 
     const handleToggleActive = async (profile: StaffProfile, e: React.MouseEvent) => {
@@ -365,6 +406,14 @@ export default function StaffProfiles() {
                                 >
                                     <Edit2 size={18} className="text-muted" />
                                 </button>
+
+                                <button
+                                    onClick={(e) => handleDeleteClick(profile, e)}
+                                    title="Excluir Perfil de Colaborador"
+                                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <Trash2 size={18} className="text-error" />
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -552,6 +601,91 @@ export default function StaffProfiles() {
                                 className="w-full btn-primary py-4 font-black uppercase tracking-wider"
                             >
                                 {editingProfile ? 'Salvar Alterações' : 'Cadastrar Colaborador'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && profileToDelete && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-elevated p-8 max-w-md w-full">
+                        <div className="flex items-center justify-center mb-6">
+                            <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+                                <AlertTriangle size={32} className="text-error" />
+                            </div>
+                        </div>
+
+                        <h2 className="text-2xl font-black text-heading text-center mb-3">
+                            Excluir Perfil de Colaborador
+                        </h2>
+
+                        <div className="bg-error/5 border-2 border-error/20 rounded-xl p-4 mb-6">
+                            <p className="text-sm text-body-secondary text-center mb-2">
+                                Você está prestes a excluir o perfil de:
+                            </p>
+                            <p className="text-lg font-bold text-heading text-center">
+                                {profileToDelete.user.name}
+                            </p>
+                            <p className="text-xs text-muted text-center mt-1">
+                                {profileToDelete.user.email}
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div className="flex items-start gap-3 text-sm text-body-secondary">
+                                <AlertTriangle size={16} className="text-error mt-0.5 flex-shrink-0" />
+                                <p>
+                                    <strong className="text-error">ATENÇÃO:</strong> Esta ação não pode ser desfeita. O histórico de pagamentos e dados do RH serão removidos permanentemente.
+                                </p>
+                            </div>
+
+                            <div className="flex items-start gap-3 text-sm text-body-secondary">
+                                <AlertTriangle size={16} className="text-error mt-0.5 flex-shrink-0" />
+                                <p>
+                                    O usuário <strong>{profileToDelete.user.name}</strong> não será excluído do sistema, apenas seu perfil de colaborador no RH.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                Digite "EXCLUIR" para confirmar (em maiúsculas)
+                            </label>
+                            <input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                placeholder="EXCLUIR"
+                                className="w-full surface-input px-4 py-3 text-heading font-mono text-center text-lg"
+                                autoFocus
+                            />
+                            {deleteConfirmText && deleteConfirmText !== 'EXCLUIR' && (
+                                <p className="text-xs text-error mt-2 text-center font-bold">
+                                    Digite exatamente "EXCLUIR" em maiúsculas
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setProfileToDelete(null);
+                                    setDeleteConfirmText('');
+                                }}
+                                className="flex-1 px-6 py-3 rounded-xl font-bold bg-fill-secondary text-body-secondary hover:bg-fill-tertiary transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={deleteConfirmText !== 'EXCLUIR'}
+                                className="flex-1 px-6 py-3 rounded-xl font-black bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                <Trash2 size={18} />
+                                Excluir Definitivamente
                             </button>
                         </div>
                     </div>

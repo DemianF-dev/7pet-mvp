@@ -15,7 +15,7 @@ export const getGlobalSettings = async (req: Request, res: Response) => {
         res.json(settings);
     } catch (error) {
         Logger.error('[NotifController] Error fetching global settings:', error);
-        res.status(500).json({ error: 'Erro ao buscar configurações' });
+        res.status(500).json({ error: (error as Error).message || 'Erro ao buscar configurações' });
     }
 };
 
@@ -211,38 +211,60 @@ export const getNotificationStats = async (req: Request, res: Response) => {
 
 export const getAllUsersWithPreferences = async (req: Request, res: Response) => {
     try {
-        const { role, division } = req.query;
+        const { role, division, search, page = '1', limit = '30' } = req.query;
+        const pageNum = parseInt(page as string);
+        const limitNum = parseInt(limit as string);
+        const skip = (pageNum - 1) * limitNum;
 
-        const users = await prisma.user.findMany({
-            where: {
-                deletedAt: null,
-                active: true,
-                ...(role ? { role: role as string } : {}),
-                ...(division ? { division: division as string } : {})
-            },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: true,
-                division: true,
-                notificationPreferences: {
-                    select: {
-                        notificationType: true,
-                        enabled: true,
-                        channels: true
+        const where = {
+            deletedAt: null,
+            active: true,
+            ...(role ? { role: role as string } : {}),
+            ...(division ? { division: division as string } : {}),
+            ...(search ? {
+                OR: [
+                    { name: { contains: search as string, mode: 'insensitive' } },
+                    { email: { contains: search as string, mode: 'insensitive' } }
+                ]
+            } : {})
+        };
+
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    role: true,
+                    division: true,
+                    notificationPreferences: {
+                        select: {
+                            notificationType: true,
+                            enabled: true,
+                            channels: true
+                        }
                     }
-                }
-            },
-            orderBy: [
-                { role: 'asc' },
-                { name: 'asc' }
-            ]
-        });
+                },
+                orderBy: [
+                    { role: 'asc' },
+                    { name: 'asc' }
+                ],
+                skip,
+                take: limitNum
+            }),
+            prisma.user.count({ where })
+        ]);
 
-        res.json(users);
+        res.json({
+            users,
+            total,
+            page: pageNum,
+            limit: limitNum,
+            pages: Math.ceil(total / limitNum)
+        });
     } catch (error) {
         Logger.error('[NotifController] Error fetching users with preferences:', error);
-        res.status(500).json({ error: 'Erro ao buscar usuários' });
+        res.status(500).json({ error: (error as Error).message || 'Erro ao buscar usuários' });
     }
 };

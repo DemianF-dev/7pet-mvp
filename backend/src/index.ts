@@ -39,6 +39,10 @@ import cronRoutes from './routes/cronRoutes';
 import feedRoutes from './routes/feedRoutes';
 import chatRoutes from './routes/chatRoutes';
 import hrRoutes from './routes/hrRoutes';
+import timeTrackingRoutes from './routes/timeTrackingRoutes';
+import marketingRoutes from './routes/marketingRoutes';
+import goalRoutes from './routes/goalRoutes';
+import packageRoutes from './routes/packageRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -75,6 +79,8 @@ app.use(limiter); // 🛡️ Rate limiting enabled for security
 
 // 📊 MONITORING - Capture all requests (must be before other middlewares)
 app.use(metricsMiddleware);
+
+app.get('/heartbeat', (req, res) => res.json({ status: 'live', time: new Date().toISOString() }));
 
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -144,6 +150,7 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/staff', staffRoutes);
 app.use('/management', managementRoutes);
 app.use('/invoices', invoiceRoutes);
+app.use('/goals', goalRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/notification-settings', notificationSettingsRoutes);
 app.use('/appreciations', appreciationRoutes);
@@ -156,6 +163,9 @@ app.use('/cron', cronRoutes);
 app.use('/feed', feedRoutes);
 app.use('/chat', chatRoutes);
 app.use('/hr', hrRoutes);
+app.use('/time-tracking', timeTrackingRoutes);
+app.use('/marketing', marketingRoutes);
+app.use('/packages', packageRoutes);
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 startNotificationScheduler();
@@ -164,12 +174,13 @@ app.get('/', (req, res) => {
     res.send('🚀 7Pet API está Ativa!');
 });
 
+import versionInfo from '../../VERSION.json';
+
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
-        version: '0.1.0-beta',
-        stage: 'production',
-        timestamp: new Date().toISOString()
+        ...versionInfo,
+        serverTime: new Date().toISOString()
     });
 });
 

@@ -616,6 +616,93 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                         Período: {localAppointment.transport.requestedPeriod === 'MORNING' ? 'Manhã' : localAppointment.transport.requestedPeriod === 'AFTERNOON' ? 'Tarde' : 'Noite'}
                                     </div>
                                 </div>
+
+                                {/* Logistics Status Actions */}
+                                {localAppointment.category === 'LOGISTICA' && (
+                                    <div className="mt-6 pt-6 border-t border-orange-200/50">
+                                        <p className="text-[10px] text-orange-600 font-black uppercase tracking-widest mb-4">Atualizar Status da Viagem</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('Confirmar execução total da logística?')) {
+                                                        try {
+                                                            await api.patch(`/appointments/${localAppointment.id}/logistics-status`, { status: 'EXECUTED' });
+                                                            toast.success('Logística concluída!');
+                                                            refreshData();
+                                                            onSuccess();
+                                                        } catch (err) { toast.error('Erro ao atualizar'); }
+                                                    }
+                                                }}
+                                                className="p-3 bg-green-500 text-white rounded-2xl text-[10px] font-black uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-green-500/20"
+                                            >
+                                                Executado
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        await api.patch(`/appointments/${localAppointment.id}/logistics-status`, { status: 'DELAYED' });
+                                                        toast.success('Status marcado como ATRASADO. Novo lembrete em 30min.');
+                                                        refreshData();
+                                                    } catch (err) { toast.error('Erro ao atualizar'); }
+                                                }}
+                                                className="p-3 bg-yellow-500 text-white rounded-2xl text-[10px] font-black uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-yellow-500/20"
+                                            >
+                                                Atrasado
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('O veículo chegou a sair para o endereço? (Taxa de Largada será aplicada)')) {
+                                                        try {
+                                                            await api.patch(`/appointments/${localAppointment.id}/logistics-status`, { status: 'CANCELED_WITH_TRAVEL' });
+                                                            toast.success('Cancelado com Viagem (Largada)');
+                                                            refreshData();
+                                                            onSuccess();
+                                                        } catch (err) { toast.error('Erro ao atualizar'); }
+                                                    }
+                                                }}
+                                                className="p-3 bg-orange-600 text-white rounded-2xl text-[10px] font-black uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-orange-600/20"
+                                            >
+                                                Cancelado c/ Viagem
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('Confirmar reagendamento da logística?')) {
+                                                        try {
+                                                            await api.patch(`/appointments/${localAppointment.id}/logistics-status`, { status: 'RESCHEDULE' });
+                                                            toast.success('Marcado para reagendar.');
+                                                            refreshData();
+                                                        } catch (err) { toast.error('Erro ao atualizar'); }
+                                                    }
+                                                }}
+                                                className="p-3 bg-indigo-500 text-white rounded-2xl text-[10px] font-black uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-indigo-500/20"
+                                            >
+                                                Reagendar
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('Cancelar sem custo de deslocamento?')) {
+                                                        try {
+                                                            await api.patch(`/appointments/${localAppointment.id}/logistics-status`, { status: 'CANCELED_WITHOUT_TRAVEL' });
+                                                            toast.success('Cancelado sem custo');
+                                                            refreshData();
+                                                            onSuccess();
+                                                        } catch (err) { toast.error('Erro ao atualizar'); }
+                                                    }
+                                                }}
+                                                className="p-3 bg-gray-500 text-white rounded-2xl text-[10px] font-black uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-gray-500/20"
+                                            >
+                                                Cancelado s/ Viagem
+                                            </button>
+                                        </div>
+                                        {localAppointment.logisticsStatus && (
+                                            <div className="mt-4 p-3 bg-white/50 rounded-xl border border-orange-200/30 text-center">
+                                                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">
+                                                    Status Atual: <span className="font-black underline">{localAppointment.logisticsStatus}</span>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

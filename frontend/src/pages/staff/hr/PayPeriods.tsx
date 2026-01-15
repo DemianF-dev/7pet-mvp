@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, DollarSign, Calculator, Lock, FileText, Plus, Check, X, Loader2, RefreshCw } from 'lucide-react';
+import { Calendar, DollarSign, Calculator, Lock, Unlock, FileText, Plus, Check, X, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import api from '../../../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -29,6 +29,12 @@ export default function PayPeriods() {
     const [selectedPeriod, setSelectedPeriod] = useState<PayPeriod | null>(null);
     const [generating, setGenerating] = useState(false);
     const [closing, setClosing] = useState(false);
+
+    // Reopen state
+    const [showReopenModal, setShowReopenModal] = useState(false);
+    const [reopenPeriodId, setReopenPeriodId] = useState<string | null>(null);
+    const [reopenConfirmation, setReopenConfirmation] = useState('');
+    const [reopening, setReopening] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -99,6 +105,31 @@ export default function PayPeriods() {
             toast.error(error.response?.data?.error || 'Erro ao fechar período');
         } finally {
             setClosing(false);
+        }
+    };
+
+    const confirmReopen = (periodId: string) => {
+        setReopenPeriodId(periodId);
+        setReopenConfirmation('');
+        setShowReopenModal(true);
+    };
+
+    const handleReopen = async () => {
+        if (!reopenPeriodId) return;
+        if (reopenConfirmation !== 'REABRIR') return;
+
+        setReopening(true);
+        try {
+            await api.post(`/hr/pay-periods/${reopenPeriodId}/reopen`);
+            toast.success('Período reaberto com sucesso!');
+            setShowReopenModal(false);
+            setReopenConfirmation('');
+            setReopenPeriodId(null);
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Erro ao reabrir período. Verifique suas permissões.');
+        } finally {
+            setReopening(false);
         }
     };
 
@@ -195,6 +226,16 @@ export default function PayPeriods() {
                                             </button>
                                         </div>
                                     )}
+
+                                    {period.status === 'closed' && (
+                                        <button
+                                            onClick={() => confirmReopen(period.id)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-destructive/10 text-destructive rounded-xl text-sm font-medium hover:bg-destructive/20"
+                                        >
+                                            <Unlock size={16} />
+                                            Reabrir
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Statements Summary */}
@@ -217,6 +258,31 @@ export default function PayPeriods() {
                                     <p className="text-sm text-muted mt-4 pt-4 border-t border-border">
                                         Nenhum cálculo gerado. Clique em "Gerar Cálculos" para processar.
                                     </p>
+                                )}
+
+                                {/* Individual Statements List */}
+                                {period.statements.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-border">
+                                        <h4 className="text-sm font-bold text-heading mb-3">Colaboradores ({period.statements.length})</h4>
+                                        <div className="space-y-2">
+                                            {period.statements.map((stmt: any) => (
+                                                <div
+                                                    key={stmt.id}
+                                                    onClick={() => window.location.href = `/staff/hr/pay-statements/${stmt.id}`}
+                                                    className="surface-input p-3 rounded-lg cursor-pointer hover:bg-accent/10 transition-colors flex items-center justify-between"
+                                                >
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-heading">{stmt.staff?.user?.name || 'N/A'}</p>
+                                                        <p className="text-xs text-muted">{stmt.staff?.department?.toUpperCase() || 'N/A'}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-accent">{formatCurrency(stmt.totalDue)}</p>
+                                                        <p className="text-xs text-muted">Ver detalhes →</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         );
@@ -288,6 +354,56 @@ export default function PayPeriods() {
                             >
                                 Criar Período
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reopen Confirmation Modal */}
+            {showReopenModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-elevated p-8 max-w-sm w-full border border-destructive/20">
+                        <div className="flex flex-col items-center text-center mb-6">
+                            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
+                                <Unlock size={32} />
+                            </div>
+                            <h2 className="text-xl font-black text-heading">Reabrir Período?</h2>
+                            <p className="text-body-secondary mt-2 text-sm">
+                                <AlertTriangle className="inline-block w-4 h-4 mr-1 text-warning" />
+                                <strong>Atenção Diretoria:</strong> Reabrir um período permite modificações que podem afetar pagamentos já processados.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block text-left">
+                                    Confirmação de Segurança
+                                </label>
+                                <p className="text-xs text-muted mb-2 text-left">Digite <strong>REABRIR</strong> para confirmar.</p>
+                                <input
+                                    type="text"
+                                    value={reopenConfirmation}
+                                    onChange={e => setReopenConfirmation(e.target.value)}
+                                    placeholder="Digite REABRIR"
+                                    className="w-full surface-input px-4 py-3 text-heading font-bold border-destructive/50 focus:border-destructive"
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowReopenModal(false)}
+                                    className="flex-1 py-3 px-4 rounded-xl font-bold bg-surface hover:bg-surface-hover text-body transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleReopen}
+                                    disabled={reopenConfirmation !== 'REABRIR' || reopening}
+                                    className="flex-1 py-3 px-4 rounded-xl font-bold bg-destructive text-white hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {reopening ? <Loader2 size={18} className="animate-spin" /> : 'Confirmar'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

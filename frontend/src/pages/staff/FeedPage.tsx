@@ -183,8 +183,8 @@ export default function FeedPage() {
                         <WidgetCard title="Próximos Eventos" icon={<Calendar size={18} className="text-blue-500" />}>
                             {widgetsLoading ? <div className="h-20 animate-pulse bg-gray-100 rounded" /> : (
                                 <div className="space-y-3">
-                                    {widgets?.nextAppointments?.length === 0 && <p className="text-xs text-gray-400">Sem eventos próximos.</p>}
-                                    {widgets?.nextAppointments?.map((apt: any) => (
+                                    {((widgets?.nextAppointments || []).length === 0) && <p className="text-xs text-gray-400">Sem eventos próximos.</p>}
+                                    {(widgets?.nextAppointments || []).map((apt: any) => (
                                         <div key={apt.id} className="flex gap-3 items-start group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 p-2 rounded-lg -mx-2 transition">
                                             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg flex flex-col items-center justify-center shrink-0 border border-blue-100 dark:border-blue-800">
                                                 <span className="text-[10px] uppercase font-bold">{new Date(apt.startAt).toLocaleString('pt-BR', { month: 'short' })}</span>
@@ -218,7 +218,7 @@ export default function FeedPage() {
                         <WidgetCard title="Posts mais populares" icon={<TrendingUp size={18} className="text-purple-500" />}>
                             {widgetsLoading ? <div className="h-20 animate-pulse bg-gray-100 rounded" /> : (
                                 <div className="space-y-4">
-                                    {widgets?.popularPosts?.map((post: Post) => (
+                                    {(widgets?.popularPosts || []).map((post: Post) => (
                                         <div key={post.id} className="flex gap-3 items-start">
                                             <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0" style={{ backgroundColor: post.author.color }}>
                                             </div>
@@ -226,12 +226,13 @@ export default function FeedPage() {
                                                 <div className="text-xs font-bold text-blue-600 mb-0.5">{post.author.name}</div>
                                                 <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{post.content}</p>
                                                 <div className="flex gap-2 mt-1 text-[10px] text-gray-400">
-                                                    <span>{post.reactions.length} likes</span>
-                                                    <span>{post.comments.length} coments</span>
+                                                    <span>{(post.reactions || []).length} likes</span>
+                                                    <span>{(post.comments || []).length} coments</span>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
+                                    {(!widgets?.popularPosts || widgets.popularPosts.length === 0) && <p className="text-xs text-gray-400">Nenhuma postagem popular.</p>}
                                 </div>
                             )}
                         </WidgetCard>
@@ -403,23 +404,23 @@ function PostCard({ post }: { post: Post }) {
                 <div className="flex items-center gap-6 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <button
                         onClick={() => likeMutation.mutate()}
-                        className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors ${hasLiked ? 'text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
+                        className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors ${(post.reactions || []).some(r => r.authorId === user?.id) ? 'text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
                     >
-                        <Heart size={16} fill={hasLiked ? 'currentColor' : 'none'} />
-                        Curtir {post.reactions.length > 0 && <span className="bg-pink-50 text-pink-600 px-1.5 py-0.5 rounded-full text-[10px] ml-1">{post.reactions.length}</span>}
+                        <Heart size={16} fill={(post.reactions || []).some(r => r.authorId === user?.id) ? 'currentColor' : 'none'} />
+                        Curtir {post.reactions?.length > 0 && <span className="bg-pink-50 text-pink-600 px-1.5 py-0.5 rounded-full text-[10px] ml-1">{post.reactions.length}</span>}
                     </button>
                     <button
                         onClick={() => setShowComments(!showComments)}
                         className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-blue-500 transition-colors"
                     >
-                        <MessageCircle size={16} /> Comentar {post.comments.length > 0 && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full text-[10px] ml-1">{post.comments.length}</span>}
+                        <MessageCircle size={16} /> Comentar {post.comments?.length > 0 && <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full text-[10px] ml-1">{post.comments.length}</span>}
                     </button>
                 </div>
             </div>
 
-            {(showComments || post.comments.length > 0) && (
+            {(showComments || (post.comments || []).length > 0) && (
                 <div className="bg-gray-50 dark:bg-gray-900/30 p-4 border-t border-gray-100 dark:border-gray-700">
-                    {post.comments.map(c => (
+                    {(post.comments || []).map(c => (
                         <div key={c.id} className="mb-3 flex gap-3 group/comment">
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold shrink-0">
                                 {c.author.name?.[0].toUpperCase()}

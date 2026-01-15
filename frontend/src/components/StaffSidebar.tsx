@@ -26,7 +26,8 @@ import {
     Gamepad2,
     ChevronLeft,
     ChevronRight,
-    History
+    History,
+    Target
 } from 'lucide-react';
 
 import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
@@ -38,6 +39,7 @@ import ConfirmModal from './ConfirmModal';
 import { createContext, useContext } from 'react';
 import { useInMobileShell } from '../context/MobileShellContext';
 import { APP_VERSION } from '../constants/version';
+import SystemStatusModal from './SystemStatusModal';
 
 const SidebarContext = createContext({ isCollapsed: false });
 
@@ -48,10 +50,14 @@ export default function StaffSidebar() {
 
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, logout } = useAuthStore();
+    const user = useAuthStore((state) => state.user);
+    const logout = useAuthStore((state) => state.logout); // Keep logout accessible
+    console.log('[StaffSidebar] User:', user?.email, 'Role:', user?.role);
+    const isMaster = (u: any) => u?.role === 'MASTER';
     const { unreadCount } = useNotification();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem('staff-sidebar-collapsed');
         return saved === 'true';
@@ -249,6 +255,16 @@ export default function StaffSidebar() {
                     />
                 )}
 
+                {/* 9.1 Estratégia */}
+                {checkPermission('strategy') && (
+                    <SidebarItem
+                        icon={<Target size={20} />}
+                        label="Estratégia"
+                        active={location.pathname === '/staff/strategy'}
+                        onClick={() => { navigate('/staff/strategy'); setIsOpen(false); }}
+                    />
+                )}
+
 
 
                 {/* 9.1 Config Transporte */}
@@ -267,7 +283,11 @@ export default function StaffSidebar() {
                         icon={<Users size={20} />}
                         label="Usuários"
                         active={location.pathname === '/staff/users'}
-                        onClick={() => { navigate('/staff/users'); setIsOpen(false); }}
+                        onClick={() => {
+                            console.log('[StaffSidebar] Navigating to /staff/users');
+                            navigate('/staff/users');
+                            setIsOpen(false);
+                        }}
                     />
                 )}
 
@@ -472,7 +492,11 @@ export default function StaffSidebar() {
                     {!isCollapsed && (
                         <div className="mb-4 px-2">
                             <ThemeToggle />
-                            <p className="text-[10px] text-white/40 text-center font-mono mt-2">
+                            <p
+                                className="text-[10px] text-white/40 text-center font-mono mt-2 cursor-pointer hover:text-white/60 transition-colors"
+                                onClick={() => setIsStatusModalOpen(true)}
+                                title="Ver Diagnóstico do Sistema"
+                            >
                                 {APP_VERSION}
                             </p>
                         </div>
@@ -512,6 +536,11 @@ export default function StaffSidebar() {
                 description="Tem certeza que deseja encerrar sua sessão? Você precisará fazer login novamente para acessar o sistema."
                 confirmText="Sair Agora"
                 confirmColor="bg-red-500"
+            />
+
+            <SystemStatusModal
+                isOpen={isStatusModalOpen}
+                onClose={() => setIsStatusModalOpen(false)}
             />
         </>
     );

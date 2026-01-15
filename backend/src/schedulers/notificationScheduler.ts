@@ -7,7 +7,8 @@ import { notificationService } from '../services/notificationService';
 const NOTIF_TYPES = {
     DAILY_REVIEW: 'SYSTEM_DAILY_REVIEW',
     REMINDER_24H: 'SYSTEM_APPOINTMENT_REMINDER_24H',
-    REMINDER_1H: 'SYSTEM_APPOINTMENT_REMINDER_1H'
+    REMINDER_1H: 'SYSTEM_APPOINTMENT_REMINDER_1H',
+    LOGISTICS_REMINDER: 'SYSTEM_LOGISTICS_STATUS_REMINDER'
 };
 
 export const runNotificationScheduler = () => {
@@ -84,6 +85,9 @@ export async function executeScheduledChecks() {
     if (reminder1hConfig.enabled) {
         await check1hReminders();
     }
+
+    // 5. Logistics Status Reminders (15m post-service + 30m follow-ups)
+    await checkLogisticsStatusReminders();
 }
 
 async function check24hReminders() {
@@ -149,5 +153,71 @@ async function check1hReminders() {
             data: { notified1h: true } as any
         });
         Logger.info(`[Scheduler] Sent 1h reminder for Appt ${appt.id}`);
+    }
+}
+
+async function checkLogisticsStatusReminders() {
+    const now = new Date();
+
+    // 1. Initial 15m reminder for appointments that just finished
+    // We look for LOGISTICA appointments that ended more than 15m ago, have no logisticsStatus, and haven't been reminded yet
+    const fifteenMinsAgo = new Date(now.getTime() - 15 * 60 * 1000);
+
+    const pendingInitial = await prisma.appointment.findMany({
+        where: {
+            category: 'LOGISTICA',
+            status: { in: ['CONFIRMADO', 'EM_ATENDIMENTO'] },
+            logisticsStatus: null,
+            logisticsLastRemindedAt: null,
+            // Simple logic: if startAt + ~30m (average trip) is more than 15m ago. 
+            // In a real scenario, we might use a more precise 'endTime' if available.
+            startAt: { lte: new Date(fifteenMinsAgo.getTime() - 30 * 60 * 1000) }
+        } as any,
+        include: { performer: true, pet: true }
+    });
+
+    for (const appt of pendingInitial as any[]) {
+        if (!appt.performerId) continue;
+
+        await messagingService.notifyUser(
+            appt.performerId,
+            'Atualização de Status Necessária',
+            `O serviço de ${appt.pet?.name || 'logística'} finalizou há 15min. Por favor, informe o status (Executado, Atrasado, etc).`,
+            'LOGISTICS_REMINDER'
+        );
+
+        await prisma.appointment.update({
+            where: { id: appt.id },
+            data: { logisticsLastRemindedAt: now } as any
+        });
+        Logger.info(`[Scheduler] Sent initial logistics reminder for Appt ${appt.id}`);
+    }
+
+    // 2. 30m follow-up for 'DELAYED' status
+    const thirtyMinsAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    const pendingFollowUp = await prisma.appointment.findMany({
+        where: {
+            category: 'LOGISTICA',
+            logisticsStatus: 'DELAYED',
+            logisticsLastRemindedAt: { lte: thirtyMinsAgo }
+        } as any,
+        include: { performer: true, pet: true }
+    });
+
+    for (const appt of pendingFollowUp as any[]) {
+        if (!appt.performerId) continue;
+
+        await messagingService.notifyUser(
+            appt.performerId,
+            'Lembrete de Atraso',
+            `O serviço de ${appt.pet?.name || 'logística'} continua marcado como 'Atrasado'. Alguma atualização?`,
+            'LOGISTICS_REMINDER'
+        );
+
+        await prisma.appointment.update({
+            where: { id: appt.id },
+            data: { logisticsLastRemindedAt: now } as any
+        });
+        Logger.info(`[Scheduler] Sent follow-up logistics reminder for Appt ${appt.id}`);
     }
 }

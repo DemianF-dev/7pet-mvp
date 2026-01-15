@@ -12,6 +12,9 @@ router.use(authenticate);
 // Publicly available to staff for selection (but still filtered in controller if needed)
 router.get('/users', authorize(['ADMIN', 'GESTAO', 'OPERACIONAL', 'SPA', 'LOGISTICA', 'COMERCIAL']), managementController.listUsers);
 
+// Lightweight master verification
+router.get('/master/verify', managementController.verifyMaster);
+
 // Restricted actions - ADMIN division OR MASTER role
 router.use((req, res, next) => {
     const user = (req as any).user;

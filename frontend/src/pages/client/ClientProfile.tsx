@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Save, ShieldCheck, CreditCard, Calendar, Star, TrendingDown, Fingerprint, Smartphone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Mail, Save, ShieldCheck, CreditCard, Calendar, Star, TrendingDown, Fingerprint, Smartphone, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -8,6 +9,7 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
 export default function ClientProfile() {
+    const navigate = useNavigate();
     const { user, setAuth, updateUser, setTutorial, token } = useAuthStore();
     const [firstName, setFirstName] = useState(user?.firstName || '');
     const [lastName, setLastName] = useState(user?.lastName || '');
@@ -349,6 +351,27 @@ export default function ClientProfile() {
                                         className="input-field mt-2 text-sm"
                                     />
                                 )}
+                            </div>
+
+                            {/* App Installation / Settings */}
+                            <div className="space-y-4 pt-6 border-t border-gray-100">
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Configurações do Dispositivo</label>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/client/settings')}
+                                    className="w-full flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-2xl hover:bg-primary/10 transition-all group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                                            <Smartphone className="text-primary" size={20} />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-secondary">Baixar App e Notificações</p>
+                                            <p className="text-[10px] text-gray-400">Instale na tela inicial e receba alertas</p>
+                                        </div>
+                                    </div>
+                                    <Download size={18} className="text-primary opacity-50 group-hover:opacity-100" />
+                                </button>
                             </div>
 
                             {/* Additional Guardians Section */}

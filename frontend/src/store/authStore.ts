@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useDevCockpitStore } from './devCockpitStore';
 
 interface User {
     id: string;
@@ -95,6 +96,7 @@ export const useAuthStore = create<AuthState>()(
             },
             logout: () => {
                 localStorage.removeItem('7pet-token');
+                useDevCockpitStore.getState().lock();
                 set({ user: null, token: null, isTutorialActive: false, tutorialStep: 0 });
             },
         }),

@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameModule, GameOptions } from '../../types/game.types';
 import GameLoader from './GameLoader';
+import GameError from './GameError';
 import toast from 'react-hot-toast';
 
 interface GameHostProps {
@@ -71,36 +72,52 @@ export default function GameHost({ gameLoader, options, className }: GameHostPro
         // Load and mount the game
         async function loadGame() {
             try {
-                // Wait for container to be fully mounted
-                await new Promise(resolve => setTimeout(resolve, 200));
+                console.log('[GameHost] Starting game load...');
 
-                // Retry logic: wait up to 1 second for container
+                // Wait for container to be fully mounted
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Retry logic: wait up to 3 seconds for container
                 let retries = 0;
-                while (retries < 10 && (!containerRef.current || !mounted)) {
+                const maxRetries = 30; // 3 seconds total
+
+                while (retries < maxRetries && (!containerRef.current || !mounted)) {
+                    console.log(`[GameHost] Waiting for container... retry ${retries + 1}/${maxRetries}`);
                     await new Promise(resolve => setTimeout(resolve, 100));
                     retries++;
                 }
 
-                if (!mounted || !containerRef.current) {
-                    console.error('GameHost: Container not available after retries');
+                if (!mounted) {
+                    console.error('[GameHost] Component unmounted during load');
+                    return;
+                }
+
+                if (!containerRef.current) {
+                    console.error('[GameHost] Container not available after retries');
                     setError('Erro ao inicializar container do jogo');
                     setIsLoading(false);
                     return;
                 }
 
+                console.log('[GameHost] Container ready, loading module...');
                 const module = await gameLoader();
 
-                if (!mounted || !containerRef.current) return;
+                if (!mounted || !containerRef.current) {
+                    console.log('[GameHost] Component unmounted after module load');
+                    return;
+                }
 
+                console.log('[GameHost] Module loaded, mounting game...');
                 const gameInstance = module.default;
                 gameModuleRef.current = gameInstance;
                 loadedRef.current = true;
 
                 // Mount the game
                 gameInstance.mount(containerRef.current, gameOptions);
+                console.log('[GameHost] Game mounted successfully');
                 setIsLoading(false);
             } catch (err) {
-                console.error('Failed to load game:', err);
+                console.error('[GameHost] Failed to load game:', err);
                 setError('Erro ao carregar o jogo. Tente novamente.');
                 setIsLoading(false);
                 toast.error('Erro ao carregar o jogo');
@@ -161,17 +178,21 @@ export default function GameHost({ gameLoader, options, className }: GameHostPro
         };
     }, []);
 
+    const handleRetry = useCallback(() => {
+        setError(null);
+        setIsLoading(true);
+        loadedRef.current = false;
+        // Force re-mount by triggering dependency
+        window.location.reload();
+    }, []);
+
     if (error) {
         return (
-            <div className="page-container">
-                <div className="page-content">
-                    <div className="empty-state">
-                        <div className="empty-state-icon">❌</div>
-                        <h2 className="empty-state-title">Erro ao carregar jogo</h2>
-                        <p className="empty-state-description">{error}</p>
-                    </div>
-                </div>
-            </div>
+            <GameError
+                error={error}
+                onRetry={handleRetry}
+                onBack={() => window.history.back()}
+            />
         );
     }
 

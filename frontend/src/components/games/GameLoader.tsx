@@ -1,110 +1,47 @@
-/**
- * GameLoader - Premium loading skeleton for games
- * 
- * Displayed while a game module is being lazy loaded.
- * Uses design system tokens for consistency.
- */
-
-import '../../styles/design-system-base.css';
-
 export default function GameLoader() {
     return (
-        <div className="page-container">
-            <div className="page-content">
-                {/* Header skeleton */}
-                <div className="page-header">
-                    <div
-                        className="skeleton"
-                        style={{
-                            width: '200px',
-                            height: '32px',
-                            marginBottom: 'var(--space-2)'
-                        }}
-                    />
-                    <div
-                        className="skeleton"
-                        style={{
-                            width: '300px',
-                            height: '20px'
-                        }}
-                    />
-                </div>
-
-                {/* Game area skeleton */}
-                <div className="card card-padding-lg">
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 'var(--space-6)',
-                        minHeight: '500px'
-                    }}>
-                        {/* Top row skeleton (deck, waste, foundations) */}
-                        <div style={{
-                            display: 'flex',
-                            gap: 'var(--space-4)',
-                            flexWrap: 'wrap'
-                        }}>
-                            {[...Array(6)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="skeleton"
-                                    style={{
-                                        width: '80px',
-                                        height: '112px',
-                                        borderRadius: 'var(--radius-lg)'
-                                    }}
+        <div className="w-full h-full flex items-center justify-center p-4 animate-pulse">
+            <div className="w-full max-w-[980px]">
+                <div className="rounded-3xl border p-5 md:p-6"
+                    style={{
+                        backgroundColor: 'var(--color-bg-surface)',
+                        borderColor: 'var(--color-border)'
+                    }}
+                >
+                    <div className="flex flex-col gap-4">
+                        {/* HUD Skeleton */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex justify-between items-center">
+                                <div className="h-8 w-20 rounded-xl"
+                                    style={{ backgroundColor: 'var(--color-fill-tertiary)' }}
                                 />
-                            ))}
+                                <div className="flex gap-2">
+                                    <div className="h-7 w-16 rounded-full"
+                                        style={{ backgroundColor: 'var(--color-fill-tertiary)' }}
+                                    />
+                                    <div className="h-7 w-24 rounded-full"
+                                        style={{ backgroundColor: 'var(--color-fill-tertiary)' }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="h-12 rounded-2xl"
+                                style={{ backgroundColor: 'var(--color-fill-tertiary)' }}
+                            />
                         </div>
 
-                        {/* Bottom row skeleton (tableau) */}
-                        <div style={{
-                            display: 'flex',
-                            gap: 'var(--space-3)',
-                            flexWrap: 'wrap'
-                        }}>
-                            {[...Array(7)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="skeleton"
-                                    style={{
-                                        width: '80px',
-                                        height: '200px',
-                                        borderRadius: 'var(--radius-lg)'
-                                    }}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Button row skeleton */}
-                        <div style={{
-                            display: 'flex',
-                            gap: 'var(--space-3)',
-                            marginTop: 'auto'
-                        }}>
-                            {[...Array(2)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="skeleton"
-                                    style={{
-                                        width: '120px',
-                                        height: '40px',
-                                        borderRadius: 'var(--radius-md)'
-                                    }}
-                                />
-                            ))}
+                        {/* Grid Skeleton */}
+                        <div className="flex items-center justify-center py-4">
+                            <div className="w-full max-w-[500px] aspect-square grid grid-cols-8 gap-2">
+                                {Array.from({ length: 64 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="rounded-2xl"
+                                        style={{ backgroundColor: 'var(--color-fill-tertiary)' }}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                {/* Loading text */}
-                <div style={{
-                    textAlign: 'center',
-                    marginTop: 'var(--space-6)',
-                    color: 'var(--color-text-tertiary)',
-                    fontSize: 'var(--font-size-footnote)'
-                }}>
-                    Carregando jogo...
                 </div>
             </div>
         </div>

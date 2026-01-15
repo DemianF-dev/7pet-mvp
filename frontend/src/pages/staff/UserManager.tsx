@@ -24,6 +24,7 @@ import {
     Unlock
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useSocket } from '../../context/SocketContext';
 import { PERMISSION_MODULES } from '../../constants/permissions'; // Import unified permissions
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -65,10 +66,12 @@ interface UserData {
     active?: boolean;
     pauseMenuEnabled?: boolean;
     allowedGames?: any;
+    isOnline?: boolean;
 }
 
 
 export default function UserManager() {
+    console.log('[UserManager] Component rendering...');
     const [users, setUsers] = useState<UserData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +84,8 @@ export default function UserManager() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const { user: currentUser } = useAuthStore();
+    const { socket } = useSocket();
+
     // STRICT ROLE CHECK (Not just email)
     const isMaster = currentUser?.role === 'MASTER';
 
@@ -125,6 +130,10 @@ export default function UserManager() {
     // Bulk Selection
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+    // Pagination
+    const [itemsPerPage, setItemsPerPage] = useState(50);
+    const [currentPage, setCurrentPage] = useState(1);
+
     // Password Visibility
     const [visiblePasswordIds, setVisiblePasswordIds] = useState<string[]>([]);
     const [showModalPassword, setShowModalPassword] = useState(false);
@@ -133,15 +142,44 @@ export default function UserManager() {
     const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
     const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
 
+    // --- REALTIME STATUS UPDATES ---
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleStatusUpdate = (data: { userId: string, status: 'online' | 'offline' }) => {
+            // console.log(`[UserManager] User status update: ${data.userId} is ${data.status}`);
+            setUsers(prevUsers => prevUsers.map(u =>
+                u.id === data.userId ? { ...u, isOnline: data.status === 'online' } : u
+            ));
+
+            // Also update selectedUser if open
+            if (selectedUser && selectedUser.id === data.userId) {
+                setSelectedUser(prev => prev ? { ...prev, isOnline: data.status === 'online' } : null);
+            }
+        };
+
+        socket.on('user_status', handleStatusUpdate);
+
+        return () => {
+            socket.off('user_status', handleStatusUpdate);
+        };
+    }, [socket, selectedUser]);
+
     // --- LOAD INITIAL DATA ---
     const fetchUsers = async () => {
         setIsLoading(true);
         try {
             const res = await api.get(`/management/users${tab === 'trash' ? '?trash=true' : ''}`);
-            setUsers(res.data);
+            console.log('[UserManager] Users fetched:', res.data?.length || 0);
+            if (Array.isArray(res.data)) {
+                setUsers(res.data);
+            } else {
+                console.error('[UserManager] API returned non-array:', res.data);
+                setUsers([]);
+            }
             await fetchRoleConfigs();
         } catch (err) {
-            console.error('Error fetching data:', err);
+            console.error('[UserManager] Error fetching data:', err);
             toast.error('Erro ao carregar dados.');
         } finally {
             setIsLoading(false);
@@ -174,9 +212,10 @@ export default function UserManager() {
     const fetchRoleConfigs = async () => {
         try {
             const { data } = await api.get('/management/roles');
+            console.log('[UserManager] Role configs fetched:', data.length);
             setRolePermissions(data);
         } catch (error) {
-            console.error('Error fetching role permissions:', error);
+            console.error('[UserManager] Error fetching role permissions:', error);
         }
     };
 
@@ -270,8 +309,11 @@ export default function UserManager() {
         setSelectedUser(user);
         let permissions: string[] = [];
         try {
-            if (user.permissions) permissions = JSON.parse(user.permissions);
+            if (user.permissions) permissions = typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions;
         } catch (e) { console.error("Error parsing permissions", e); }
+
+        // Check if role is standard or custom
+        const isStandardRole = user.role === 'MASTER' || user.role === 'CLIENTE' || rolePermissions.some(rp => rp.role === user.role);
 
         setFormData({
             firstName: user.firstName || '',
@@ -292,7 +334,7 @@ export default function UserManager() {
             isEligible: user.isEligible !== undefined ? user.isEligible : false,
             isSupportAgent: user.isSupportAgent !== undefined ? user.isSupportAgent : false,
             active: user.active !== undefined ? user.active : true,
-            isCustomRole: user.role ? user.role.toUpperCase() !== 'MASTER' : false,
+            isCustomRole: user.role ? !isStandardRole : false,
             pauseMenuEnabled: user.pauseMenuEnabled || false,
             allowedGames: Array.isArray(user.allowedGames) ? user.allowedGames : []
         });
@@ -356,14 +398,24 @@ export default function UserManager() {
                 email: payload.email
             });
 
+            let savedUser;
             if (selectedUser) {
-                await api.put(`/management/users/${selectedUser.id}`, payload);
+                const res = await api.put(`/management/users/${selectedUser.id}`, payload);
+                savedUser = res.data;
             } else {
                 if (!formData.email || !formData.password) {
                     alert('E-mail e senha são obrigatórios para novos usuários');
                     return;
                 }
-                await api.post('/management/users', payload);
+                const res = await api.post('/management/users', payload);
+                savedUser = res.data;
+            }
+
+            // Sync with AuthStore if updating current user
+            if (savedUser && currentUser && savedUser.id === currentUser.id) {
+                const { updateUser } = useAuthStore.getState();
+                updateUser(savedUser);
+                toast.success('Seu perfil foi atualizado!');
             }
 
             toast.success('Usuário salvo com sucesso!');
@@ -429,7 +481,13 @@ export default function UserManager() {
     };
 
     const handleSelectAll = () => {
-        setSelectedIds(filteredUsers.length === selectedIds.length ? [] : filteredUsers.map(u => u.id));
+        const currentPageIds = filteredUsers.map(u => u.id);
+        const allSelected = currentPageIds.every(id => selectedIds.includes(id));
+        if (allSelected) {
+            setSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)));
+        } else {
+            setSelectedIds(prev => [...new Set([...prev, ...currentPageIds])]);
+        }
     };
 
     const handleBulkDelete = async () => {
@@ -453,6 +511,61 @@ export default function UserManager() {
             setSelectedIds([]);
         } catch (error) {
             toast.error('Erro ao excluir usuários');
+        }
+    };
+
+    const handleBulkStatusChange = async (action: 'available' | 'blockQuotes' | 'blockSystem') => {
+        const actionLabels = {
+            available: 'Marcar como Disponível',
+            blockQuotes: 'Bloquear Orçamentos',
+            blockSystem: 'Bloquear Acesso ao Sistema'
+        };
+
+        if (!window.confirm(`Deseja ${actionLabels[action]} para ${selectedIds.length} usuário(s)?`)) return;
+
+        try {
+            const updates = selectedIds.map(async (id) => {
+                const user = users.find(u => u.id === id);
+                if (!user) return;
+
+                const payload: any = {};
+
+                if (action === 'available') {
+                    payload.isEligible = true;
+                    if (user.division === 'CLIENTE') {
+                        payload.customer = {
+                            ...user.customer,
+                            canRequestQuotes: true,
+                            isBlocked: false
+                        };
+                    }
+                } else if (action === 'blockQuotes') {
+                    if (user.division === 'CLIENTE') {
+                        payload.customer = {
+                            ...user.customer,
+                            canRequestQuotes: false
+                        };
+                    }
+                } else if (action === 'blockSystem') {
+                    if (user.division === 'CLIENTE') {
+                        payload.customer = {
+                            ...user.customer,
+                            isBlocked: true
+                        };
+                    } else {
+                        payload.isEligible = false;
+                    }
+                }
+
+                return api.put(`/management/users/${id}`, payload);
+            });
+
+            await Promise.all(updates);
+            toast.success(`${selectedIds.length} usuário(s) atualizado(s)!`);
+            await fetchUsers();
+            setSelectedIds([]);
+        } catch (error) {
+            toast.error('Erro ao atualizar usuários');
         }
     };
 
@@ -525,7 +638,7 @@ export default function UserManager() {
         });
     };
 
-    const filteredUsers = users
+    const allFilteredUsers = users
         .filter(u => {
             const matchesSearch = u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -554,7 +667,30 @@ export default function UserManager() {
             return sortOrder === 'desc' ? -comparison : comparison;
         });
 
-    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'MASTER' && currentUser?.division !== 'DIRETORIA' && currentUser?.division !== 'ADMIN') {
+    // Pagination logic
+    const totalPages = Math.ceil(allFilteredUsers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const filteredUsers = allFilteredUsers.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterDivision, sortBy, sortOrder, tab]);
+
+    const canAccess = currentUser?.role?.toUpperCase() === 'ADMIN' ||
+        currentUser?.role?.toUpperCase() === 'MASTER' ||
+        currentUser?.division?.toUpperCase() === 'DIRETORIA' ||
+        currentUser?.division?.toUpperCase() === 'ADMIN';
+
+    console.log('[UserManager] Render check:', {
+        email: currentUser?.email,
+        role: currentUser?.role,
+        division: currentUser?.division,
+        canAccess
+    });
+
+    if (!canAccess) {
         return (
             <div className="flex flex-col items-center justify-center p-20 text-center">
                 <motion.div
@@ -671,6 +807,20 @@ export default function UserManager() {
                             <RotateCcw size={16} className={isLoading ? 'animate-spin text-primary' : ''} />
                         </button>
 
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1);
+                            }}
+                            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-600 hover:border-primary transition-colors shadow-sm text-xs font-bold cursor-pointer"
+                        >
+                            <option value={30}>30 por página</option>
+                            <option value={50}>50 por página</option>
+                            <option value={100}>100 por página</option>
+                            <option value={200}>200 por página</option>
+                        </select>
+
                         <button
                             onClick={() => setSortBy(prev => prev === 'name' ? 'date' : prev === 'date' ? 'id' : 'name')}
                             className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm flex items-center gap-2"
@@ -688,46 +838,67 @@ export default function UserManager() {
                     </div>
                 </div>
 
-                {/* Bulk Action Bar */}
-                <AnimatePresence>
-                    {selectedIds.length > 0 && (
-                        <motion.div
-                            initial={{ y: 50, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 50, opacity: 0 }}
-                            className="px-8 pb-6 flex items-center gap-6"
-                        >
-                            <div className="bg-secondary text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-4 flex-1">
-                                <span className="bg-primary text-white text-xs font-black w-7 h-7 rounded-full flex items-center justify-center">
-                                    {selectedIds.length}
-                                </span>
-                                <p className="text-sm font-bold">Usuários Selecionados</p>
-                                <div className="h-6 w-px bg-white/20 ml-auto"></div>
+                {selectedIds.length > 0 && (
+                    <motion.div
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 50, opacity: 0 }}
+                        className="px-8 pb-6 flex items-center gap-6"
+                    >
+                        <div className="bg-secondary text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-4 flex-1">
+                            <span className="bg-primary text-white text-xs font-black w-7 h-7 rounded-full flex items-center justify-center">
+                                {selectedIds.length}
+                            </span>
+                            <p className="text-sm font-bold">Usuários Selecionados</p>
+                            <div className="h-6 w-px bg-white/20 ml-auto"></div>
+
+                            <button
+                                onClick={() => handleBulkStatusChange('available')}
+                                className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                            >
+                                <Check size={14} /> DISPONÍVEL
+                            </button>
+
+                            <button
+                                onClick={() => handleBulkStatusChange('blockQuotes')}
+                                className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                            >
+                                <Lock size={14} /> BLOQUEAR ORÇAMENTO
+                            </button>
+
+                            <button
+                                onClick={() => handleBulkStatusChange('blockSystem')}
+                                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                            >
+                                <Shield size={14} /> BLOQUEAR SISTEMA
+                            </button>
+
+                            <div className="h-6 w-px bg-white/20"></div>
+
+                            <button
+                                onClick={handleBulkDelete}
+                                className="bg-red-700 hover:bg-red-800 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                            >
+                                <Trash2 size={14} /> EXCLUIR
+                            </button>
+                            <button
+                                onClick={() => setSelectedIds([])}
+                                className="text-white/50 hover:text-white text-xs font-bold"
+                            >
+                                Cancelar
+                            </button>
+                            <div className="h-6 w-px bg-white/20"></div>
+                            {tab === 'trash' && (
                                 <button
-                                    onClick={handleBulkDelete}
-                                    className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                    onClick={handleBulkRestore}
+                                    className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
                                 >
-                                    <Trash2 size={14} /> EXCLUIR EM MASSA
+                                    <RotateCcw size={14} /> RESTAURAR SELECIONADOS
                                 </button>
-                                <button
-                                    onClick={() => setSelectedIds([])}
-                                    className="text-white/50 hover:text-white text-xs font-bold"
-                                >
-                                    Cancelar
-                                </button>
-                                <div className="h-6 w-px bg-white/20"></div>
-                                {tab === 'trash' && (
-                                    <button
-                                        onClick={handleBulkRestore}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
-                                    >
-                                        <RotateCcw size={14} /> RESTAURAR SELECIONADOS
-                                    </button>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -782,6 +953,15 @@ export default function UserManager() {
                                                         </span>
                                                     </div>
                                                     <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
+
+                                                    {/* Online Status */}
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <div className={`w-2 h-2 rounded-full ${u.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-gray-300'}`}></div>
+                                                        <span className={`text-[10px] font-black uppercase tracking-tight ${u.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
+                                                            {u.isOnline ? 'Online agora' : 'Offline'}
+                                                        </span>
+                                                    </div>
+
                                                     {u.document && (
                                                         <span className="text-[10px] text-primary font-black mt-1 flex items-center gap-1">
                                                             <FileText size={10} /> {u.document}
@@ -875,6 +1055,82 @@ export default function UserManager() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination and Total Count */}
+                <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="text-sm font-bold text-secondary">
+                            Exibindo <span className="text-primary">{startIndex + 1}</span> a <span className="text-primary">{Math.min(endIndex, allFilteredUsers.length)}</span> de <span className="text-primary">{allFilteredUsers.length}</span> usuários
+                        </div>
+                        {filterDivision !== 'ALL' || searchTerm ? (
+                            <div className="text-xs font-bold text-gray-400">
+                                (Total no sistema: {users.length})
+                            </div>
+                        ) : null}
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                Primeira
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                ‹
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum;
+                                    if (totalPages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageNum = totalPages - 4 + i;
+                                    } else {
+                                        pageNum = currentPage - 2 + i;
+                                    }
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === pageNum
+                                                ? 'bg-primary text-white shadow-lg scale-110'
+                                                : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                ›
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(totalPages)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                Última
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <AnimatePresence>
@@ -895,7 +1151,15 @@ export default function UserManager() {
                         >
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                                 <div>
-                                    <h3 className="text-xl font-black text-secondary">{selectedUser ? 'Editar Perfil' : 'Novo Colaborador'}</h3>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-xl font-black text-secondary">{selectedUser ? 'Editar Perfil' : 'Novo Colaborador'}</h3>
+                                        {selectedUser && (
+                                            <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase flex items-center gap-1 ${selectedUser.isOnline ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${selectedUser.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                                                {selectedUser.isOnline ? 'Online' : 'Offline'}
+                                            </div>
+                                        )}
+                                    </div>
                                     <p className="text-sm font-bold text-gray-400">{formData.email || 'Cadastre os dados abaixo'}</p>
                                 </div>
                                 <X size={24} className="cursor-pointer text-gray-400" onClick={() => setIsModalOpen(false)} />
@@ -1254,6 +1518,7 @@ export default function UserManager() {
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {[
                                                         { id: 'paciencia-pet', label: 'Paciência Pet' },
+                                                        { id: 'petmatch', label: 'Pet Match' },
                                                         { id: 'zen-espuma', label: 'Zen Pad — Espuma' },
                                                         { id: 'coleira', label: 'Desenrosca a Coleira' }
                                                     ].map(game => {
@@ -1450,6 +1715,6 @@ export default function UserManager() {
                 customerId={viewCustomerId}
                 onUpdate={fetchUsers}
             />
-        </main>
+        </main >
     );
 }

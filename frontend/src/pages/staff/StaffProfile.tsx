@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
@@ -6,12 +7,15 @@ import { motion } from 'framer-motion';
 import {
     User, Mail, Lock, Phone, MapPin, Save,
     ShieldCheck, Calendar, FileText, ClipboardList,
-    Fingerprint, Smartphone, Check, Briefcase, Activity
+    Fingerprint, Smartphone, Check, Briefcase, Activity, Download
 } from 'lucide-react';
 import { DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../constants/divisions';
 import BackButton from '../../components/BackButton';
+import { MasterGate } from '../../components/security/MasterGate';
+import { DevCockpitPanel } from '../../components/staff/dev/DevCockpitPanel';
 
 const StaffProfile: React.FC = () => {
+    const navigate = useNavigate();
     const { user, updateUser } = useAuthStore();
     const [loading, setLoading] = useState(false);
 
@@ -462,6 +466,39 @@ const StaffProfile: React.FC = () => {
                             </div>
                         </motion.div>
 
+                        {/* App Installation / Settings */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden"
+                        >
+                            <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
+                                <div className="p-2 bg-white rounded-xl shadow-sm text-indigo-600">
+                                    <Smartphone size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 tracking-tight">Instalação e Notificações</h3>
+                            </div>
+                            <div className="p-6">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/staff/settings')}
+                                    className="w-full flex items-center justify-between p-4 bg-indigo-50 border border-indigo-100 rounded-2xl hover:bg-indigo-100 transition-all group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                                            <Download className="text-indigo-600" size={20} />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-slate-800">Baixar App Native</p>
+                                            <p className="text-[10px] text-slate-400">Instale na tela inicial</p>
+                                        </div>
+                                    </div>
+                                    <Smartphone size={18} className="text-indigo-600 opacity-50 group-hover:opacity-100" />
+                                </button>
+                            </div>
+                        </motion.div>
+
                         {/* Support card */}
                         <div className="bg-indigo-900 rounded-[32px] p-8 text-white shadow-2xl shadow-indigo-200 overflow-hidden relative group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000"></div>
@@ -481,70 +518,14 @@ const StaffProfile: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Developer Settings (Restricted) */}
-                    {user?.email === 'oidemianf@gmail.com' && (
-                        <div className="lg:col-span-3">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-slate-900 rounded-[32px] shadow-sm border border-slate-800 overflow-hidden"
-                            >
-                                <div className="p-6 border-b border-slate-800 flex items-center gap-3 bg-slate-900">
-                                    <div className="p-2 bg-slate-800 rounded-xl shadow-sm text-green-400">
-                                        <Activity size={20} />
-                                    </div>
-                                    <h3 className="font-bold text-white tracking-tight">Developer Settings</h3>
-                                    <span className="ml-auto px-2 py-1 bg-red-900/30 text-red-400 text-[10px] font-black uppercase rounded tracking-widest border border-red-900">
-                                        Master Access Only
-                                    </span>
-                                </div>
-                                <div className="p-6 md:p-8">
-                                    <div className="flex items-start gap-4">
-                                        <div className="flex-1">
-                                            <h4 className="text-white font-bold mb-1">Agenda Debug Panel</h4>
-                                            <p className="text-slate-400 text-sm mb-2">
-                                                Habilita o painel flutuante de debug nas telas de Agenda (SPA/LOG).
-                                                Útil para monitorar performance de API, filtros ativos e estado da View.
-                                            </p>
-                                            <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 bg-black/30 w-fit px-2 py-1 rounded">
-                                                <span>Shortcut:</span>
-                                                <kbd className="bg-slate-700 text-white px-1 rounded">Ctrl</kbd> +
-                                                <kbd className="bg-slate-700 text-white px-1 rounded">Shift</kbd> +
-                                                <kbd className="bg-slate-700 text-white px-1 rounded">D</kbd>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const current = localStorage.getItem('agenda_debug_enabled') === '1';
-                                                    if (current) {
-                                                        localStorage.setItem('agenda_debug_enabled', '0');
-                                                        toast.success('Debug Panel DESATIVADO. Recarregue a página.');
-                                                    } else {
-                                                        localStorage.setItem('agenda_debug_enabled', '1');
-                                                        toast.success('Debug Panel ATIVADO. Recarregue a página.');
-                                                    }
-                                                    window.location.reload();
-                                                }}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'bg-green-500' : 'bg-slate-700'
-                                                    }`}
-                                            >
-                                                <span
-                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'translate-x-6' : 'translate-x-1'
-                                                        }`}
-                                                />
-                                            </button>
-                                            <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">
-                                                {localStorage.getItem('agenda_debug_enabled') === '1' ? 'ATIVADO' : 'DESATIVADO'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
                 </form>
+
+                {/* Developer Settings (Restricted) - Moved OUT of the form and grid to use full width */}
+                <MasterGate>
+                    <div className="mt-12 w-full">
+                        <DevCockpitPanel />
+                    </div>
+                </MasterGate>
             </div>
         </main>
     );

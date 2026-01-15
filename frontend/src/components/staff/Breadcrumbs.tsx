@@ -22,6 +22,7 @@ const routeConfig: { [key: string]: string } = {
     'kanban': 'Quadro de Serviços',
     'agenda-spa': 'Agenda SPA',
     'agenda-log': 'Agenda Logística',
+    'marketing': 'Marketing Hub',
 };
 
 const Breadcrumbs: React.FC = () => {

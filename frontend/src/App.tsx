@@ -55,7 +55,10 @@ const MyHR = lazy(() => import('./pages/staff/MyHR'));
 const StaffProfiles = lazy(() => import('./pages/staff/hr/StaffProfiles'));
 const StaffProfileDetails = lazy(() => import('./pages/staff/hr/StaffProfileDetails'));
 const PayPeriods = lazy(() => import('./pages/staff/hr/PayPeriods'));
+const PayStatementDetail = lazy(() => import('./pages/staff/hr/PayStatementDetail'));
 const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
+const MarketingCenter = lazy(() => import('./pages/staff/marketing/MarketingCenter'));
+const StrategyManager = lazy(() => import('./pages/staff/StrategyManager'));
 
 // ⚡ LAYOUT SYSTEM - Shell for mobile/desktop
 import AppShell from './layouts/AppShell';
@@ -67,6 +70,7 @@ const PausaPage = lazy(() => import('./pages/pausa/PausaPage'));
 const PacienciaPage = lazy(() => import('./pages/pausa/PacienciaPage'));
 const DesenroscaPage = lazy(() => import('./pages/pausa/DesenroscaPage'));
 const PauseZenEspuma = lazy(() => import('./pages/pausa/PauseZenEspuma'));
+const PetMatchPage = lazy(() => import('./pages/pausa/PetMatchPage'));
 
 import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -197,6 +201,8 @@ function App() {
                                     <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
                                     <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
                                     <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
+                                    <Route path="/staff/marketing" element={<LazyPage><MarketingCenter /></LazyPage>} />
+                                    <Route path="/staff/strategy" element={<LazyPage><StrategyManager /></LazyPage>} />
                                     <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
                                     <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
                                     <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />
@@ -210,6 +216,7 @@ function App() {
                                     <Route path="/staff/hr/collaborators" element={<LazyPage><StaffProfiles /></LazyPage>} />
                                     <Route path="/staff/hr/collaborators/:id" element={<LazyPage><StaffProfileDetails /></LazyPage>} />
                                     <Route path="/staff/hr/pay-periods" element={<LazyPage><PayPeriods /></LazyPage>} />
+                                    <Route path="/staff/hr/pay-statements/:statementId" element={<LazyPage><PayStatementDetail /></LazyPage>} />
                                 </Route>
                             </Route>
 
@@ -219,6 +226,7 @@ function App() {
                                     <Route path="/pausa" element={<LazyPage><PausaPage /></LazyPage>} />
                                     <Route path="/pausa/paciencia-pet" element={<LazyPage><PacienciaPage /></LazyPage>} />
                                     <Route path="/pausa/coleira" element={<LazyPage><DesenroscaPage /></LazyPage>} />
+                                    <Route path="/pausa/petmatch" element={<LazyPage><PetMatchPage /></LazyPage>} />
                                     <Route path="/pausa/zen-espuma" element={<LazyPage><PauseZenEspuma /></LazyPage>} />
                                 </Route>
                             </Route>

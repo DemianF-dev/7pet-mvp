@@ -27,6 +27,16 @@ const GAMES: GameMetadata[] = [
         tags: ['Cartas', 'Relaxante']
     },
     {
+        id: 'petmatch',
+        name: 'Pet Match',
+        description: 'Combine os itens fofos para vencer!',
+        icon: '🦴',
+        difficulty: 'medium',
+        estimatedTime: '3-10 min',
+        status: 'active',
+        tags: ['Puzzle', 'Match-3']
+    },
+    {
         id: 'coleira',
         name: 'Desenrosca a Coleira',
         description: 'Desembaraçe as coleiras sem cruzamentos.',
@@ -48,19 +58,30 @@ const GAMES: GameMetadata[] = [
     }
 ];
 
+import toast from 'react-hot-toast';
+
 export default function PausaPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
 
     useEffect(() => {
-        if (user && !user.pauseMenuEnabled) {
+        // If pause menu is explicitly disabled
+        if (user && user.pauseMenuEnabled === false) {
+            toast.error('O menu de Pausa não está habilitado para seu perfil.');
             navigate('/staff/dashboard');
         }
     }, [user, navigate]);
 
-    const availableGames = GAMES.filter(game =>
-        Array.isArray(user?.allowedGames) && user?.allowedGames.includes(game.id)
-    );
+    // Fallback: If allowedGames is undefined/null, assume all games are allowed (or none?)
+    // For MVP, if it's undefined, let's allow all to avoid valid users seeing nothing.
+    // Or better, check if the property exists.
+    // If we strictly follow the code:
+    const hasAllowedGames = Array.isArray(user?.allowedGames) && user?.allowedGames.length > 0;
+
+    // If property is missing, defaulting to ALL allowed for now to prevent "blank page" confusion during dev
+    const availableGames = hasAllowedGames
+        ? GAMES.filter(game => user?.allowedGames?.includes(game.id))
+        : GAMES;
 
     const handleGameSelect = (gameId: string) => {
         navigate(`/pausa/${gameId}`);

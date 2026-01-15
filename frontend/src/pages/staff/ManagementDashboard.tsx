@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     DollarSign,
     Users,
@@ -11,7 +12,8 @@ import {
     RefreshCw,
     Clock,
     Calendar,
-    CheckCircle2
+    CheckCircle2,
+    Bell
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -95,6 +97,7 @@ interface ManagementKPIs {
 export default function ManagementDashboard() {
     const [kpis, setKpis] = useState<ManagementKPIs | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const isMaster = user?.role === 'MASTER';
 
@@ -197,6 +200,14 @@ export default function ManagementDashboard() {
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                             <span className="text-sm font-bold text-secondary">Dados em tempo real</span>
                         </div>
+
+                        <button
+                            onClick={() => navigate('/staff/marketing')}
+                            className="bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-lg border border-blue-500 flex items-center gap-2 hover:bg-blue-700 transition-all font-bold text-sm"
+                        >
+                            <Bell size={18} />
+                            Marketing Center
+                        </button>
                     </div>
                 </div>
             </header>

@@ -1,22 +1,21 @@
+import versionInfo from '../../../VERSION.json';
+
 // System version configuration
 // Format: NAME+YEAR+MONTH+DAY-TIME
-// Example: BETA20260112-02:41
+// Example: BETA20260112-0241
 
-// Get current date parts
-const now = new Date();
-const year = now.getFullYear();
-const month = String(now.getMonth() + 1).padStart(2, '0');
-const day = String(now.getDate()).padStart(2, '0');
-const hours = String(now.getHours()).padStart(2, '0');
-const minutes = String(now.getMinutes()).padStart(2, '0');
+/**
+ * Detailed version information from VERSION.json
+ */
+export const SYSTEM_INFO = {
+    version: versionInfo.version,
+    stage: versionInfo.stage,
+    timestamp: versionInfo.timestamp,
+    commit: versionInfo.commit,
+    buildNumber: versionInfo.buildNumber,
+    releaseNotes: versionInfo.releaseNotes
+};
 
-// Generate static version string for build time
-// In a real build pipeline, this might be replaced by env vars, 
-// but for this MVP we define it explicitly here.
-// User requested specific format: BETA20260112-##:##
-
-// Manually setting to match the user's "current moment" request context
-// 2026-01-12 02:41
-export const APP_VERSION = `BETA20260112-02:41`;
+export const APP_VERSION = versionInfo.version;
 
 export default APP_VERSION;

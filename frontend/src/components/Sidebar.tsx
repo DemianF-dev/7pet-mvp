@@ -24,6 +24,7 @@ import { useNotification } from '../context/NotificationContext';
 import { createContext, useContext } from 'react';
 import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
 import { APP_VERSION } from '../constants/version';
+import SystemStatusModal from './SystemStatusModal';
 
 const SidebarContext = createContext({ isCollapsed: false });
 
@@ -33,6 +34,7 @@ export default function Sidebar() {
     const { user, logout } = useAuthStore();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const mobileAsideRef = useRef<HTMLElement>(null);
     const { unreadCount } = useNotification();
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -296,7 +298,11 @@ export default function Sidebar() {
                     {!isCollapsed && (
                         <div className="mb-4 px-2">
                             <ThemeToggle />
-                            <p className="text-[10px] text-gray-400 text-center font-mono mt-2">
+                            <p
+                                className="text-[10px] text-gray-400 text-center font-mono mt-2 cursor-pointer hover:text-gray-600 transition-colors"
+                                onClick={() => setIsStatusModalOpen(true)}
+                                title="Ver Diagnóstico do Sistema"
+                            >
                                 {APP_VERSION}
                             </p>
                         </div>
@@ -335,6 +341,11 @@ export default function Sidebar() {
                 description="Tem certeza que deseja encerrar sua sessão? Você precisará fazer login novamente para acessar seus dados."
                 confirmText="Sair Agora"
                 confirmColor="bg-red-500"
+            />
+
+            <SystemStatusModal
+                isOpen={isStatusModalOpen}
+                onClose={() => setIsStatusModalOpen(false)}
             />
         </>
     );

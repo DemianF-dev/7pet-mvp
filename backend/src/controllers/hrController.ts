@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import hrService from '../services/hrService';
+import timeTrackingService from '../services/timeTrackingService';
 
 // ============================================
 // STAFF PROFILES
@@ -339,6 +340,23 @@ export async function closePayPeriod(req: Request, res: Response) {
     }
 }
 
+export async function reopenPayPeriod(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user?.id;
+
+        const period = await hrService.reopenPayPeriod(id, userId);
+
+        // Revert any hour bank processing associated with this period
+        await timeTrackingService.revertHourBankProcessing(id, userId);
+
+        res.json(period);
+    } catch (error: any) {
+        console.error('Erro ao reabrir período:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // ============================================
 // PAY ADJUSTMENTS
 // ============================================
@@ -639,5 +657,6 @@ export default {
     getPayStatements,
     getPayStatement,
     getMyPayStatements,
-    getReceiptHtml
+    getReceiptHtml,
+    reopenPayPeriod
 };

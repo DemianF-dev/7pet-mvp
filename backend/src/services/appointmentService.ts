@@ -280,7 +280,6 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
     // -------------------------------------------------------------------------
     if (status === AppointmentStatus.FINALIZADO && updated.performerId) {
         try {
-            // Get staff profile
             const staff = await hrService.getStaffProfileByUserId(updated.performerId);
 
             if (staff && staff.isActive) {
@@ -295,7 +294,6 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
                         });
                     }
 
-                    // If it was only a SPA but had no services in the list, record a generic one?
                     if (updated.services.length === 0) {
                         await hrService.createServiceExecution({
                             appointmentId: updated.id,
@@ -307,12 +305,10 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
 
                 // Record Transport production if it's LOGISTICA
                 if (updated.category === 'LOGISTICA' || updated.transport) {
-                    // check if already has legs to avoid duplicates
                     const existingLegs = await hrService.getTransportLegExecutions({ staffId: staff.id });
                     const apptLegs = existingLegs.filter(l => l.appointmentId === updated.id);
 
                     if (apptLegs.length === 0) {
-                        // Record legs
                         await hrService.createTransportLegExecution({
                             appointmentId: updated.id,
                             staffId: staff.id,
@@ -331,6 +327,97 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
             }
         } catch (hrError) {
             console.error('[AppointmentService] Error recording HR production:', hrError);
+        }
+    }
+
+    return updated;
+};
+
+export const updateLogisticsStatus = async (id: string, logisticsStatus: string, userId?: string, reason?: string) => {
+    const previous = await get(id);
+    const updated = await prisma.appointment.update({
+        where: { id },
+        data: { logisticsStatus },
+        include: {
+            customer: { include: { user: true } },
+            pet: true,
+            transport: true,
+            performer: true
+        }
+    });
+
+    if (userId) {
+        await auditService.log({
+            entityType: 'Appointment',
+            entityId: id,
+            action: 'UPDATE_LOGISTICS',
+            performedBy: userId,
+            previousData: { logisticsStatus: previous?.logisticsStatus },
+            newData: { logisticsStatus: updated.logisticsStatus },
+            reason: reason || `Alteração de status logístico para ${logisticsStatus}`
+        });
+    }
+
+    // HR INTEGRATION for Logistics status
+    if (updated.performerId) {
+        try {
+            const staff = await hrService.getStaffProfileByUserId(updated.performerId);
+            if (staff && staff.isActive) {
+                if (logisticsStatus === 'EXECUTED') {
+                    // Record full commission (Leva + Traz)
+                    const existingLegs = await hrService.getTransportLegExecutions({ staffId: staff.id });
+                    const apptLegs = existingLegs.filter(l => l.appointmentId === updated.id);
+
+                    if (apptLegs.length === 0) {
+                        await hrService.createTransportLegExecution({
+                            appointmentId: updated.id,
+                            staffId: staff.id,
+                            legType: 'pickup',
+                            notes: `Logística Executada - Agendamento #${updated.seqId}`
+                        });
+                        await hrService.createTransportLegExecution({
+                            appointmentId: updated.id,
+                            staffId: staff.id,
+                            legType: 'dropoff',
+                            notes: `Logística Executada - Agendamento #${updated.seqId}`
+                        });
+                    }
+
+                    if (updated.category === 'LOGISTICA') {
+                        await prisma.appointment.update({
+                            where: { id: updated.id },
+                            data: { status: 'FINALIZADO' }
+                        });
+                    }
+                } else if (logisticsStatus === 'CANCELED_WITH_TRAVEL') {
+                    // Record only 'LARGADA' fee
+                    // We'll mark it as 'pickup' for simplicity, or we should ensure hrService knows it's a fixed fee
+                    await hrService.createTransportLegExecution({
+                        appointmentId: updated.id,
+                        staffId: staff.id,
+                        legType: 'pickup',
+                        notes: `Cancelado com Viagem (Taxa de Largada) - Agendamento #${updated.seqId}`
+                    });
+
+                    await prisma.appointment.update({
+                        where: { id: updated.id },
+                        data: { status: 'CANCELADO' }
+                    });
+                } else if (logisticsStatus === 'CANCELED_WITHOUT_TRAVEL') {
+                    await prisma.appointment.update({
+                        where: { id: updated.id },
+                        data: { status: 'CANCELADO' }
+                    });
+                } else if (logisticsStatus === 'RESCHEDULE') {
+                    // Reset standard status to PENDENTE to allow rescheduling
+                    await prisma.appointment.update({
+                        where: { id: updated.id },
+                        data: { status: 'PENDENTE' }
+                    });
+                }
+            }
+        } catch (hrError) {
+            console.error('[AppointmentService] Error recording HR logistics production:', hrError);
         }
     }
 

@@ -5,121 +5,199 @@ import { AppointmentStatus, QuoteStatus } from '@prisma/client';
 export const staffController = {
     async getDashboardMetrics(req: Request, res: Response) {
         try {
-            const today = new Date();
+            const now = new Date();
+            const today = new Date(now);
             today.setHours(0, 0, 0, 0);
 
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
-            // 1. Today's appointments (already good)
-            const todayAppointments = await prisma.appointment.count({
-                where: {
-                    startAt: {
-                        gte: today,
-                        lt: tomorrow
-                    },
-                    status: {
-                        notIn: ['CANCELADO', 'NO_SHOW']
-                    },
-                    deletedAt: null
-                }
-            });
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
 
-            // 2. NEW Quotes only (just SOLICITADO - fresh incoming)
-            const newQuotes = await prisma.quote.count({
-                where: {
-                    status: 'SOLICITADO',
-                    deletedAt: null
-                }
-            });
+            const startOfMonth = new Date(today);
+            startOfMonth.setDate(1);
 
-            // 2b. Support Tickets (New & Pending)
-            const newTicketsCount = await prisma.bugReport.count({
-                where: { status: 'SOLICITADO' }
-            });
-
-            const pendingTicketsCount = await prisma.bugReport.count({
-                where: { status: 'EM_ANDAMENTO' }
-            });
-
-            // 3. Today's Transports only (not all active)
-            const todayTransports = await prisma.transportDetails.count({
-                where: {
-                    appointment: {
-                        startAt: {
-                            gte: today,
-                            lt: tomorrow
-                        },
-                        deletedAt: null
-                    },
-                    status: {
-                        notIn: ['ENTREGUE', 'CANCELADO', 'CONCLUIDO']
-                    }
-                }
-            });
-
-            // 4. Overdue items needing attention
-            const threeDaysAgo = new Date(today);
+            const threeDaysAgo = new Date(now);
             threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-            // Quotes sent but no response in 3+ days
-            const overdueQuotes = await prisma.quote.count({
-                where: {
-                    status: 'ENVIADO',
-                    updatedAt: { lt: threeDaysAgo },
-                    deletedAt: null
-                }
-            });
+            console.log('[getDashboardMetrics] Starting basic counts...');
+            // 1. Basic Counts
+            const [
+                todayAppointments,
+                newQuotes,
+                newTicketsCount,
+                pendingTicketsCount,
+                todayTransports,
+                recurrentClients,
+                totalClientsServedData,
+                totalPetsServedData,
+                rejectedQuotes,
+                noResponseQuotes,
+                todaySpaCount
+            ] = await Promise.all([
+                // Today's appointments
+                prisma.appointment.count({
+                    where: {
+                        startAt: { gte: today, lt: tomorrow },
+                        status: { notIn: ['CANCELADO', 'NO_SHOW'] },
+                        deletedAt: null
+                    }
+                }),
+                // NEW Quotes
+                prisma.quote.count({
+                    where: { status: 'SOLICITADO' as any, deletedAt: null }
+                }),
+                // Support Tickets
+                prisma.bugReport.count({ where: { status: 'SOLICITADO' } }),
+                prisma.bugReport.count({ where: { status: 'EM_ANDAMENTO' } }),
+                // Today's Transports
+                prisma.transportDetails.count({
+                    where: {
+                        appointment: {
+                            startAt: { gte: today, lt: tomorrow },
+                            deletedAt: null
+                        },
+                        status: { notIn: ['CANCELADO'] }
+                    }
+                }),
+                // Recurrent Clients
+                prisma.customer.count({
+                    where: { type: 'RECORRENTE', deletedAt: null }
+                }),
+                // Total Clients Served (Active)
+                prisma.appointment.groupBy({
+                    by: ['customerId'],
+                    where: {
+                        status: 'FINALIZADO' as any,
+                        deletedAt: null
+                    }
+                }),
+                // Total Pets Served
+                prisma.appointment.groupBy({
+                    by: ['petId'],
+                    where: {
+                        status: 'FINALIZADO' as any,
+                        deletedAt: null
+                    }
+                }),
+                // Rejected Quotes
+                prisma.quote.count({
+                    where: { status: 'REJEITADO' as any, deletedAt: null }
+                }),
+                // Quotes Sent with No Response (3+ days)
+                prisma.quote.count({
+                    where: {
+                        status: 'ENVIADO' as any,
+                        updatedAt: { lt: threeDaysAgo },
+                        deletedAt: null
+                    }
+                }),
+                // Today's SPA services
+                prisma.appointment.count({
+                    where: {
+                        startAt: { gte: today, lt: tomorrow },
+                        category: 'SPA' as any,
+                        status: { notIn: ['CANCELADO', 'NO_SHOW'] },
+                        deletedAt: null
+                    }
+                })
+            ]);
+            console.log('[getDashboardMetrics] Basic counts finished');
 
-            // Appointments coming soon but not confirmed
-            const nextWeek = new Date(today);
-            nextWeek.setDate(nextWeek.getDate() + 7);
+            console.log('[getDashboardMetrics] Starting revenue counts...');
+            // 2. Revenue (Faturamento)
+            // Note: Using Invoice as the source of truth for revenue
+            const [revenueDay, revenueWeek, revenueMonth] = await Promise.all([
+                prisma.invoice.aggregate({
+                    _sum: { amount: true },
+                    where: {
+                        createdAt: { gte: today, lt: tomorrow },
+                        // FIX: status 'CANCELADO' does not exist in InvoiceStatus enum
+                        // status: { not: 'CANCELADO' }, 
+                        deletedAt: null
+                    }
+                }),
+                prisma.invoice.aggregate({
+                    _sum: { amount: true },
+                    where: {
+                        createdAt: { gte: startOfWeek, lt: tomorrow },
+                        // status: { not: 'CANCELADO' },
+                        deletedAt: null
+                    }
+                }),
+                prisma.invoice.aggregate({
+                    _sum: { amount: true },
+                    where: {
+                        createdAt: { gte: startOfMonth, lt: tomorrow },
+                        // status: { not: 'CANCELADO' },
+                        deletedAt: null
+                    }
+                })
+            ]);
+            console.log('[getDashboardMetrics] Revenue counts finished');
 
+            // 3. Overdue items (Legacy logic kept for compatibility)
             const unconfirmedSoon = await prisma.appointment.count({
                 where: {
                     startAt: {
                         gte: today,
-                        lt: nextWeek
+                        lt: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
                     },
                     status: 'PENDENTE',
                     deletedAt: null
                 }
             });
 
-            const overdueItems = overdueQuotes + unconfirmedSoon;
-
-            // 5. Appointments by status for Kanban (next 7 days)
+            // 4. Status distribution for Kanban (next 7 days)
             const statusCounts = await prisma.appointment.groupBy({
                 by: ['status'],
                 where: {
                     startAt: {
                         gte: today,
-                        lt: nextWeek
+                        lt: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
                     },
                     deletedAt: null
                 },
                 _count: true
             });
 
-            // Map Prisma groupBy result to ensure _count is a number for the frontend
             const safeStatusCounts = statusCounts.map(item => ({
                 status: item.status,
-                // @ts-ignore - Prisma types can be tricky with groupBy
+                // @ts-ignore
                 _count: typeof item._count === 'number' ? item._count : (item._count as any)?._all || 0
             }));
 
             return res.json({
+                // Original metrics
                 todayAppointments,
                 newQuotes,
                 todayTransports,
-                overdueItems,
+                overdueItems: noResponseQuotes + unconfirmedSoon,
                 statusCounts: safeStatusCounts,
                 newTickets: newTicketsCount,
-                pendingTickets: pendingTicketsCount
+                pendingTickets: pendingTicketsCount,
+
+                // New requested metrics
+                recurrentClients,
+                totalClientsServed: totalClientsServedData.length,
+                totalPetsServed: totalPetsServedData.length,
+                todaySpaCount,
+                rejectedQuotes,
+                noResponseQuotes,
+                revenue: {
+                    day: revenueDay._sum.amount || 0,
+                    week: revenueWeek._sum.amount || 0,
+                    month: revenueMonth._sum.amount || 0
+                }
             });
         } catch (error) {
             console.error('Error fetching staff metrics:', error);
-            return res.status(500).json({ error: 'Internal server error' });
+            // Return detailed error message if possible to help debugging from frontend
+            return res.status(500).json({
+                error: (error as Error).message || 'Internal server error',
+                details: error
+            });
         }
     },
 

@@ -4,7 +4,7 @@ import Logger from '../lib/logger';
 
 class SocketService {
     private io: Server | null = null;
-    private userSockets: Map<string, string> = new Map(); // userId -> socketId
+    private userSockets: Map<string, Set<string>> = new Map(); // userId -> Set<socketId>
 
     initialize(httpServer: HttpServer) {
         this.io = new Server(httpServer, {
@@ -20,15 +20,29 @@ class SocketService {
             // Basic auth handshake or queryparam
             const userId = socket.handshake.query.userId as string;
             if (userId) {
-                this.userSockets.set(userId, socket.id);
+                if (!this.userSockets.has(userId)) {
+                    this.userSockets.set(userId, new Set());
+                    // Notify everyone that this user came online
+                    this.io?.emit('user_status', { userId, status: 'online' });
+                }
+                this.userSockets.get(userId)?.add(socket.id);
+
                 socket.join(`user:${userId}`);
-                Logger.info(`👤 User ${userId} linked to socket ${socket.id}`);
+                Logger.info(`👤 User ${userId} linked to socket ${socket.id}. Online: ${this.userSockets.get(userId)?.size} sessions.`);
             }
 
             socket.on('disconnect', () => {
                 Logger.info(`🔌 Socket disconnected: ${socket.id}`);
                 if (userId) {
-                    this.userSockets.delete(userId);
+                    const userSessions = this.userSockets.get(userId);
+                    if (userSessions) {
+                        userSessions.delete(socket.id);
+                        if (userSessions.size === 0) {
+                            this.userSockets.delete(userId);
+                            // Notify everyone that this user went offline
+                            this.io?.emit('user_status', { userId, status: 'offline' });
+                        }
+                    }
                 }
             });
 
@@ -61,6 +75,10 @@ class SocketService {
     notifyChat(conversationId: string, event: string, data: any) {
         Logger.info(`🔔 Socket: Emitting ${event} to chat:${conversationId}`);
         this.io?.to(`chat:${conversationId}`).emit(event, data);
+    }
+
+    isUserOnline(userId: string): boolean {
+        return this.userSockets.has(userId) && (this.userSockets.get(userId)?.size || 0) > 0;
     }
 
     emit(event: string, data: any) {

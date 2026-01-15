@@ -20,6 +20,7 @@ export const PERMISSION_MODULES = [
     { id: 'hr-pay-periods', label: 'RH - Fechamentos' },
     { id: 'support', label: 'Chamados Técnicos' },
     { id: 'my-hr', label: 'Meu RH' },
+    { id: 'strategy', label: 'Estratégia' },
 
     // === CLIENT PERMISSIONS ===
     { id: 'client-dashboard', label: 'Dashboard (Cliente)' },
@@ -40,7 +41,7 @@ export const PERMISSION_MODULES = [
 // Fallback defaults if permission array is empty or undefined
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<string, string[]> = {
     'MASTER': PERMISSION_MODULES.map(m => m.id),
-    'ADMIN': PERMISSION_MODULES.filter(m => !m.id.startsWith('client-')).map(m => m.id),
+    'ADMIN': [...PERMISSION_MODULES.filter(m => !m.id.startsWith('client-')).map(m => m.id), 'strategy'],
     'GESTAO': [
         'dashboard', 'chat', 'feed', 'quotes', 'agenda-spa', 'agenda-log',
         'customers', 'services', 'products', 'billing', 'reports', 'management',

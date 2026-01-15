@@ -291,7 +291,8 @@ export async function getTransportLegExecutions(filters: {
                 include: {
                     pet: true,
                     customer: true,
-                    transport: true
+                    transport: true,
+                    quote: { select: { id: true, seqId: true, totalAmount: true } }
                 }
             }
         },
@@ -349,6 +350,32 @@ export async function closePayPeriod(periodId: string, userId: string) {
             status: 'closed',
             closedById: userId,
             closedAt: new Date()
+        }
+    });
+}
+
+export async function reopenPayPeriod(periodId: string, userId: string) {
+    const period = await prisma.payPeriod.findUnique({ where: { id: periodId } });
+    if (!period) throw new Error('Período não encontrado');
+    if (period.status !== 'closed') throw new Error('Período não está fechado');
+
+    // Log audit
+    await prisma.hrAuditLog.create({
+        data: {
+            actorUserId: userId,
+            action: 'pay_period.reopen',
+            entityType: 'PayPeriod',
+            entityId: periodId,
+            metaJson: { reason: 'Reabertura manual pela diretoria' }
+        }
+    });
+
+    return prisma.payPeriod.update({
+        where: { id: periodId },
+        data: {
+            status: 'draft',
+            closedById: null,
+            closedAt: null
         }
     });
 }
@@ -534,6 +561,18 @@ async function calculateStaffStatement(
             const quote = leg.appointment?.quote;
             if (!quote) continue;
 
+            const isLargada = leg.notes?.includes('Largada') || leg.appointment?.logisticsStatus === 'CANCELED_WITH_TRAVEL';
+
+            if (isLargada) {
+                // FIXED LARGADA FEE RULE
+                // Get from settings or use a default (e.g. 1.50 as seen in schema default)
+                // For simplicity and speed, let's use a common value or check staff rate
+                const largadaFee = staff.perLegRate || 1.50;
+                totalCommission += largadaFee;
+                logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId} - TAXA DE LARGADA (Canceled with travel). Comm ${largadaFee.toFixed(2)}`);
+                continue;
+            }
+
             // Find items related to transport
             const transportItems = quote.items.filter(i =>
                 i.description.toLowerCase().includes('transporte') ||
@@ -542,11 +581,6 @@ async function calculateStaffStatement(
             );
 
             const totalTransportPrice = transportItems.reduce((sum, item) => sum + item.price, 0);
-
-            // Determine legs count in quote (Leva e Traz = 2, others = 1)
-            // If quote.transportType is unavailable, guess based on Appointment?
-            // Appointment doesn't say. Quote does.
-            // If totalTransportPrice > 0
 
             let legsCount = 1;
             if (quote.transportType === 'ROUND_TRIP') {
@@ -563,12 +597,34 @@ async function calculateStaffStatement(
 
             totalCommission += driverCommission;
 
-            logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId}, Type ${quote.transportType} (${legsCount} legs). TotalPrice ${totalTransportPrice}. LegGross ${grossValuePerLeg.toFixed(2)}. Net ${netValuePerLeg.toFixed(2)}. Comm ${driverCommission.toFixed(2)}`);
+            logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId}, Type ${quote.transportType} (${legsCount} legs). TotalPrice ${totalTransportPrice}. LegGross ${grossValuePerLeg.toFixed(2)}. Net ${netValuePerLeg.toFixed(2)}. Comm ${driverCommission.toFixed(2)} - Pet: ${leg.appointment?.pet?.name}, Client: ${leg.appointment?.customer?.name}`);
         }
 
         baseTotal = totalCommission;
         details.calculationLogs = logs;
         details.totalCommission = totalCommission;
+
+        // Add detailed production list for transparency
+        details.productionDetails = legs.map(leg => {
+            const quote = leg.appointment?.quote;
+            const transportItems = quote?.items.filter(i =>
+                i.description.toLowerCase().includes('transporte') ||
+                i.description.toLowerCase().includes('leva') ||
+                i.description.toLowerCase().includes('traz')
+            ) || [];
+            const totalTransportPrice = transportItems.reduce((sum, item) => sum + item.price, 0);
+
+            return {
+                date: leg.completedAt,
+                quoteSeqId: quote?.seqId,
+                petName: leg.appointment?.pet?.name,
+                customerName: leg.appointment?.customer?.name,
+                legType: leg.legType,
+                isLargada: leg.notes?.includes('Largada'),
+                totalTTM: totalTransportPrice,
+                notes: leg.notes
+            };
+        });
 
     } else if (staff.payModel === 'per_leg') {
         // Legacy/Generic Per Leg Model (if not Transport Department)
@@ -598,6 +654,81 @@ async function calculateStaffStatement(
         baseTotal = totalFromCustomValues + (legsWithoutValue * (staff.perLegRate || 0));
         details.legsWithCustomValue = legsWithValue;
         details.legsWithDefaultRate = legsWithoutValue;
+    } else if (staff.payModel === 'fixed') {
+        // --- FIXED SALARY MODEL WITH PRORATING ---
+        // Uses dailyRate as monthly fixed salary
+        // Prorates if staff started/ended mid-period
+
+        const monthlySalary = staff.dailyRate || 0;
+        details.monthlySalary = monthlySalary;
+
+        // Calculate total days in period
+        const periodStart = new Date(period.startDate);
+        const periodEnd = new Date(period.endDate);
+        const totalDaysInPeriod = Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        // Get staff hiring info
+        const staffProfile = await prisma.staffProfile.findUnique({
+            where: { id: staff.id },
+            select: { hiringDate: true, isActive: true }
+        });
+
+        let effectiveStartDate = periodStart;
+        let effectiveEndDate = periodEnd;
+        let needsProrating = false;
+
+        // Check if staff started during this period
+        if (staffProfile?.hiringDate) {
+            const hiringDate = new Date(staffProfile.hiringDate);
+            if (hiringDate > periodStart && hiringDate <= periodEnd) {
+                effectiveStartDate = hiringDate;
+                needsProrating = true;
+                details.proratingReason = 'Contratação no meio do período';
+            }
+        }
+
+        // Calculate worked days in period
+        const workedDays = Math.ceil((effectiveEndDate.getTime() - effectiveStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        details.totalDaysInPeriod = totalDaysInPeriod;
+        details.workedDaysInPeriod = workedDays;
+        details.effectiveStartDate = effectiveStartDate;
+        details.effectiveEndDate = effectiveEndDate;
+
+        if (needsProrating) {
+            // Prorated calculation
+            baseTotal = (monthlySalary / totalDaysInPeriod) * workedDays;
+            details.prorated = true;
+            details.prorateMultiplier = workedDays / totalDaysInPeriod;
+        } else {
+            // Full salary
+            baseTotal = monthlySalary;
+            details.prorated = false;
+        }
+
+        // Add benefits
+        const transportBenefit = (staff.transportVoucher || 0) * workedDays;
+        const mealBenefit = (staff.mealVoucher || 0) * workedDays;
+        const otherBenefit = (staff.otherBenefits || 0) * workedDays;
+
+        baseTotal += transportBenefit + mealBenefit + otherBenefit;
+
+        details.breakdown = {
+            salaryBase: needsProrating ? (monthlySalary / totalDaysInPeriod) * workedDays : monthlySalary,
+            transportTotal: transportBenefit,
+            mealTotal: mealBenefit,
+            benefitsTotal: otherBenefit
+        };
+
+        // Get attendance for reference (não afeta cálculo no fixo, apenas para auditoria)
+        const attendanceDays = await prisma.attendanceRecord.count({
+            where: {
+                staffId: staff.id,
+                date: { gte: period.startDate, lte: period.endDate },
+                status: { in: ['ok', 'adjusted'] }
+            }
+        });
+        details.attendanceDaysForReference = attendanceDays;
     }
 
     // Calculate adjustments
@@ -684,6 +815,7 @@ export default {
     createPayPeriod,
     getPayPeriods,
     closePayPeriod,
+    reopenPayPeriod,
     createPayAdjustment,
     getPayAdjustments,
     generatePayStatements,

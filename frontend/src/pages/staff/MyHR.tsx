@@ -40,7 +40,11 @@ interface TransportLeg {
     completedAt: string;
     legType: 'pickup' | 'dropoff';
     notes: string | null;
-    appointment: { pet: { name: string } } | null;
+    appointment: {
+        pet: { name: string },
+        customer: { name: string },
+        quote: { seqId: string, totalAmount: number } | null
+    } | null;
 }
 
 
@@ -350,19 +354,45 @@ export default function MyHR() {
                                     ))}
 
                                     {transportLegs.map(leg => (
-                                        <div key={leg.id} className="surface-card p-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-info/10 text-info rounded-full flex items-center justify-center">
-                                                    <Calendar size={20} />
+                                        <div key={leg.id} className="surface-card p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-info/10 text-info rounded-full flex items-center justify-center">
+                                                        <Calendar size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-heading text-sm">
+                                                            {leg.legType === 'pickup' ? 'Leva (Busca)' : 'Traz (Entrega)'}
+                                                            {leg.notes?.includes('Largada') && <span className="ml-2 text-[10px] text-orange-500 font-black tracking-widest bg-orange-50 px-2 py-0.5 rounded-md">LARGADA</span>}
+                                                        </p>
+                                                        <p className="text-xs text-muted">
+                                                            {formatDate(leg.completedAt)} • {new Date(leg.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </div>
                                                 </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] font-black uppercase bg-info/10 text-info px-2 py-1 rounded-md">Logística</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 mt-2 pt-3 border-t border-gray-100 dark:border-gray-700/50">
                                                 <div>
-                                                    <p className="font-bold text-heading text-sm">{leg.legType === 'pickup' ? 'Leva (Busca)' : 'Traz (Entrega)'}</p>
-                                                    <p className="text-xs text-muted">{leg.appointment?.pet?.name} • {formatDate(leg.completedAt)}</p>
+                                                    <p className="text-[10px] text-muted font-bold uppercase tracking-wider mb-0.5">Pet / Cliente</p>
+                                                    <p className="text-xs font-bold text-heading truncate">
+                                                        {leg.appointment?.pet?.name || '-'} / {leg.appointment?.customer?.name || '-'}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] text-muted font-bold uppercase tracking-wider mb-0.5">Orçamento / Valor</p>
+                                                    <p className="text-xs font-bold text-heading">
+                                                        #{leg.appointment?.quote?.seqId || '---'} • R$ {leg.appointment?.quote?.totalAmount?.toFixed(2) || '0.00'}
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] font-black uppercase bg-fill-secondary px-2 py-1 rounded-md">Logística</span>
-                                            </div>
+
+                                            {leg.notes && (
+                                                <p className="mt-2 text-[10px] text-muted italic">obs: {leg.notes}</p>
+                                            )}
                                         </div>
                                     ))}
                                 </>

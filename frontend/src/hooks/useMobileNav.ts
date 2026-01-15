@@ -11,6 +11,7 @@ import {
     Menu,
     LucideIcon
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export interface NavTabConfig {
     id: string;
@@ -46,11 +47,17 @@ export function useMobileNav() {
         setPinnedIds(prev => {
             if (prev.includes(id)) {
                 // Don't allow less than 2 tabs
-                if (prev.length <= 2) return prev;
+                if (prev.length <= 2) {
+                    toast.error('Mínimo de 2 abas necessárias');
+                    return prev;
+                }
                 return prev.filter(i => i !== id);
             } else {
                 // Don't allow more than 6 tabs
-                if (prev.length >= 6) return prev;
+                if (prev.length >= 6) {
+                    toast.error('Máximo de 6 abas atingido');
+                    return prev;
+                }
                 return [...prev, id];
             }
         });

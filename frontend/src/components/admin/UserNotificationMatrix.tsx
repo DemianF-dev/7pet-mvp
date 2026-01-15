@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { Card } from '../ui/Card';
+import { ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
 import './UserNotificationMatrix.css';
 
 interface UserWithPreferences {
@@ -26,22 +27,44 @@ const NOTIFICATION_TYPES = [
 export const UserNotificationMatrix = () => {
     const [users, setUsers] = useState<UserWithPreferences[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState({ role: '', division: '' });
+    const [filter, setFilter] = useState({ role: '', division: '', search: '' });
     const [changes, setChanges] = useState<Map<string, Map<string, boolean>>>(new Map());
 
+    // Pagination State
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 30,
+        total: 0,
+        pages: 0
+    });
+
     useEffect(() => {
-        loadUsers();
+        setPagination(prev => ({ ...prev, page: 1 }));
+        loadUsers(1, pagination.limit);
     }, [filter]);
 
-    const loadUsers = async () => {
+    useEffect(() => {
+        loadUsers(pagination.page, pagination.limit);
+    }, [pagination.page, pagination.limit]);
+
+    const loadUsers = async (page: number, limit: number) => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
             if (filter.role) params.append('role', filter.role);
             if (filter.division) params.append('division', filter.division);
+            if (filter.search) params.append('search', filter.search);
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
 
             const response = await api.get(`/notification-settings/users?${params.toString()}`);
-            setUsers(response.data);
+            setUsers(response.data.users);
+            setPagination({
+                page: response.data.page,
+                limit: response.data.limit,
+                total: response.data.total,
+                pages: response.data.pages
+            });
         } catch (error) {
             console.error('Erro ao carregar usuários:', error);
         } finally {
@@ -99,7 +122,7 @@ export const UserNotificationMatrix = () => {
 
             alert(`✅ ${updates.length} preferências atualizadas com sucesso!`);
             setChanges(new Map());
-            loadUsers();
+            loadUsers(pagination.page, pagination.limit);
         } catch (error) {
             console.error('Erro ao salvar alterações:', error);
             alert('❌ Erro ao salvar alterações');
@@ -127,6 +150,15 @@ export const UserNotificationMatrix = () => {
                     <h3>🔔 Matriz de Notificações por Usuário</h3>
 
                     <div className="filters">
+                        <div className="search-box">
+                            <input
+                                type="text"
+                                placeholder="Buscar colaborador..."
+                                value={filter.search || ''}
+                                onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                            />
+                        </div>
+
                         <select
                             value={filter.role}
                             onChange={(e) => setFilter({ ...filter, role: e.target.value })}
@@ -192,6 +224,48 @@ export const UserNotificationMatrix = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="matrix-footer">
+                    <div className="pagination-info">
+                        Total: <strong>{pagination.total}</strong> usuários
+                    </div>
+
+                    <div className="pagination-controls">
+                        <div className="limit-selector">
+                            <span>Ver:</span>
+                            <select
+                                value={pagination.limit}
+                                onChange={(e) => setPagination(p => ({ ...p, limit: Number(e.target.value), page: 1 }))}
+                            >
+                                <option value={30}>30</option>
+                                <option value={50}>50</option>
+                                <option value={100}>100</option>
+                                <option value={200}>200</option>
+                            </select>
+                        </div>
+
+                        <div className="page-navigation">
+                            <button
+                                disabled={pagination.page <= 1}
+                                onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
+                                className="nav-btn"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <span className="page-indicator">
+                                {pagination.page} / {pagination.pages || 1}
+                            </span>
+                            <button
+                                disabled={pagination.page >= pagination.pages}
+                                onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
+                                className="nav-btn"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {hasChanges() && (

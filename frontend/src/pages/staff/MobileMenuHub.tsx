@@ -27,6 +27,7 @@ import MobileNavSettings from '../../components/mobile/MobileNavSettings';
 import { AnimatePresence } from 'framer-motion';
 import { DIVISION_LABELS } from '../../constants/divisions';
 import { APP_VERSION } from '../../constants/version';
+import SystemStatusModal from '../../components/SystemStatusModal';
 
 /**
  * Menu section configuration
@@ -54,6 +55,7 @@ export default function MobileMenuHub() {
     const { unreadCount } = useNotification();
     const { user, logout } = useAuthStore();
     const [isNavSettingsOpen, setIsNavSettingsOpen] = useState(false);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
     // Official Role/Division Label
     const officialRole = useMemo(() => {
@@ -93,6 +95,7 @@ export default function MobileMenuHub() {
                 { id: 'transport-config', label: 'Config. Transporte', icon: Settings, path: '/staff/transport-config' },
                 { id: 'collaborators', label: 'Colaboradores', icon: Users, path: '/staff/hr/collaborators' },
                 { id: 'management', label: 'Dashboard Gestão', icon: BarChart3, path: '/staff/management' },
+                { id: 'marketing', label: 'Marketing / Avisos', icon: Bell, path: '/staff/marketing' },
                 { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/staff/reports' },
                 { id: 'users', label: 'Usuários', icon: Users, path: '/staff/users' },
             ],
@@ -216,9 +219,12 @@ export default function MobileMenuHub() {
 
             {/* Version Info */}
             <div className="py-4 text-center">
-                <p className="text-[10px] text-[var(--color-text-tertiary)] font-mono opacity-50">
+                <button
+                    onClick={() => setIsStatusModalOpen(true)}
+                    className="text-[10px] text-[var(--color-text-tertiary)] font-mono opacity-50 active:opacity-100 transition-opacity"
+                >
                     {APP_VERSION}
-                </p>
+                </button>
             </div>
 
             {/* Bottom Spacer for Scrolling */}
@@ -232,6 +238,11 @@ export default function MobileMenuHub() {
                     />
                 )}
             </AnimatePresence>
+
+            <SystemStatusModal
+                isOpen={isStatusModalOpen}
+                onClose={() => setIsStatusModalOpen(false)}
+            />
         </div>
     );
 }

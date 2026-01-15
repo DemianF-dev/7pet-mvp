@@ -44,6 +44,7 @@ router.post('/pay-periods', authorize(['GESTAO', 'ADMIN', 'MASTER']), hrControll
 router.get('/pay-periods', authorize(['GESTAO', 'ADMIN', 'MASTER']), hrController.getPayPeriods);
 router.post('/pay-periods/:id/generate', authorize(['GESTAO', 'ADMIN', 'MASTER']), hrController.generatePayStatements);
 router.post('/pay-periods/:id/close', authorize(['GESTAO', 'ADMIN', 'MASTER']), hrController.closePayPeriod);
+router.post('/pay-periods/:id/reopen', authorize(['ADMIN', 'MASTER']), hrController.reopenPayPeriod);
 
 // ============================================
 // PAY ADJUSTMENTS - Gestão/Admin only
