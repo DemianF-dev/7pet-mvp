@@ -19,7 +19,7 @@ import {
 } from './game-logic';
 import Card from './components/Card';
 import toast from 'react-hot-toast';
-import { BarChart3, Calendar, Play, Lightbulb, Undo2, Settings, Trophy, Clock, Zap } from 'lucide-react';
+import { Lightbulb, Undo2, Settings, Trophy, Clock, Zap, RotateCcw } from 'lucide-react';
 
 interface PacienciaGameProps {
     onWin?: () => void;
@@ -254,7 +254,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
     };
 
     // Refactored Move Logic for reuse (Click + Drag)
-    const handleMoveToFoundation = (card: CardType, source: string, pileIndex?: number, cardIndex?: number) => {
+    const handleMoveToFoundation = useCallback((card: CardType, source: string, pileIndex?: number, cardIndex?: number) => {
         setGameState(prev => {
             const newState = { ...prev };
             const foundation = prev.foundations[card.suit];
@@ -272,9 +272,9 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             newState.selected = null;
             return recordMove(prev, newState);
         });
-    };
+    }, [recordMove]);
 
-    const handleMoveToTableau = (cards: CardType[], targetColIdx: number, source: string, sourcePileIdx?: number, sourceCardIdx?: number) => {
+    const handleMoveToTableau = useCallback((cards: CardType[], targetColIdx: number, source: string, sourcePileIdx?: number, sourceCardIdx?: number) => {
         setGameState(prev => {
             const newState = { ...prev };
             const targetPile = prev.tableau[targetColIdx];
@@ -292,7 +292,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             newState.selected = null;
             return recordMove(prev, newState);
         });
-    };
+    }, [recordMove]);
 
 
     const lastClickRef = useRef<{ time: number; source: string; pileIndex?: number; cardIndex?: number } | null>(null);
@@ -506,8 +506,8 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             </div>
 
             {/* Game Area - Centered & Contained */}
-            <div className="relative flex-1 overflow-visible w-full max-w-[500px] mx-auto z-0 touch-none">
-                <div className="absolute inset-0 px-2 py-4">
+            <div className="relative flex-1 overflow-visible w-full max-w-lg mx-auto z-0 touch-none">
+                <div className="absolute inset-0 p-1">
                     {/* Top Row: Foundations + Deck */}
                     <div className="flex justify-between items-start mb-4 gap-2 h-[15vw] max-h-[80px]">
                         {/* Foundations - 2x2 Grid for cuteness/compactness or horizontal depending on preference. Keeping horizontal for standard gameplay but styling it cute. */}
@@ -663,9 +663,9 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 )
             }
 
-            {/* Bottom Floating Action Bar - Moved UP to avoid mobile nav overlap */}
-            <div className="absolute bottom-28 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex gap-1 z-40">
-                <ActionBtn icon={<Play size={20} className="fill-emerald-500 text-emerald-600" />} label="Novo" onClick={handleNewGame} />
+            {/* Bottom Floating Action Bar - Adjusted position */}
+            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex gap-1 z-40">
+                <ActionBtn icon={<RotateCcw size={20} className="text-emerald-600" />} label="Novo Jogo" onClick={handleNewGame} />
                 <div className="w-px h-8 bg-gray-200 my-auto mx-1" />
                 <ActionBtn icon={<Lightbulb size={20} className="fill-yellow-400 text-yellow-500" />} label="Dica" onClick={handleHint} />
                 <ActionBtn icon={<Undo2 size={20} className="text-blue-500" />} label="Voltar" onClick={handleUndo} disabled={!gameState.moveHistory?.length} />
