@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260115-0332",
+  "version": "BETA20260115-0407",
   "stage": "BETA",
-  "timestamp": "2026-01-15T03:32:37.000Z",
-  "commit": "61d614a",
-  "buildNumber": 74,
-  "releaseNotes": "Auto-generated from commit: feat: implement recurring package system (backend, frontend, schema, migrations)"
+  "timestamp": "2026-01-15T04:07:23.000Z",
+  "commit": "a404fe9",
+  "buildNumber": 75,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
