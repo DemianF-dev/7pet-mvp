@@ -1,8 +1,8 @@
 {
-  "version": "STABLE20260116-1236",
-  "stage": "STABLE",
-  "timestamp": "2026-01-16T15:36:15.000Z",
-  "commit": "a404fe9",
-  "buildNumber": 76,
-  "releaseNotes": "Release 1.0.0-PROD: Sistema pronto para produção com auditoria completa, segurança robusta e layout premium."
+  "version": "BETA20260116-1240",
+  "stage": "BETA",
+  "timestamp": "2026-01-16T12:40:04.000Z",
+  "commit": "439bb27",
+  "buildNumber": 77,
+  "releaseNotes": "Auto-generated from commit: feat: release STABLE1.0.0-PROD with full audit system and security enhancements"
 }
