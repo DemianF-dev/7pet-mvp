@@ -86,8 +86,8 @@ export default function UserManager() {
     const { user: currentUser } = useAuthStore();
     const { socket } = useSocket();
 
-    // STRICT ROLE CHECK (Not just email)
-    const isMaster = currentUser?.role === 'MASTER';
+    // STRICT ROLE CHECK (Email + Role)
+    const isMaster = currentUser?.role === 'MASTER' || currentUser?.email === 'oidemianf@gmail.com';
 
 
 
@@ -371,40 +371,65 @@ export default function UserManager() {
     };
 
     const handleSaveUser = async () => {
-        const msg = selectedUser ? 'Deseja salvar as alterações neste usuário?' : 'Deseja criar este novo colaborador?';
-        if (!window.confirm(msg)) return;
+        // REMOVED window.confirm as it might be blocked in some environments
+        // const msg = selectedUser ? 'Deseja salvar as alterações neste usuário?' : 'Deseja criar este novo colaborador?';
+        // if (!window.confirm(msg)) return;
+
+        // Visual feedback immediately
+        const toastId = toast.loading('Salvando dados...');
+
         try {
+            console.log('[UserManager] handleSaveUser START', { selectedUser, formData });
+
+            // Validate Payload Preparation
+            const finalPermissions = JSON.stringify(formData.permissions);
+
             const payload = {
                 ...formData,
                 isEligible: formData.division === 'CLIENTE' ? false : formData.isEligible,
-                permissions: JSON.stringify(formData.permissions)
+                permissions: finalPermissions
             };
 
-            // Se for um cargo customizado, criar a entrada de permissões para que apareça no seletor no futuro
+            // Custom Role Registration
             if ((formData as any).isCustomRole && formData.role) {
                 try {
+                    console.log('[UserManager] Registering custom role:', formData.role);
                     await api.put(`/management/roles/${formData.role.toUpperCase()}/permissions`, {
                         label: formData.role,
-                        permissions: JSON.stringify(formData.permissions)
+                        permissions: finalPermissions
                     });
                 } catch (e) {
                     console.error("Erro ao registrar novo cargo:", e);
+                    // Non-critical
                 }
             }
 
-            console.log('💾 Salvando usuário com divisão:', {
+            console.log('💾 Sending Payload:', {
                 division: payload.division,
                 role: payload.role,
-                email: payload.email
+                email: payload.email,
+                permissionsLen: payload.permissions?.length
             });
 
             let savedUser;
             if (selectedUser) {
-                const res = await api.put(`/management/users/${selectedUser.id}`, payload);
+                console.log('[UserManager] Updating existing user:', selectedUser.id);
+                // Important: Ensure we don't send customer object if not needed, as it might conflict
+                const cleanPayload = { ...payload };
+                delete (cleanPayload as any).customer; // Handle customer updates separately or via specific fields
+
+                // If customer specific fields are present in formData.customer, include them in a clean way
+                if ((formData as any).customer) {
+                    (cleanPayload as any).customer = (formData as any).customer;
+                }
+
+                const res = await api.put(`/management/users/${selectedUser.id}`, cleanPayload);
                 savedUser = res.data;
             } else {
+                console.log('[UserManager] Creating new user');
                 if (!formData.email || !formData.password) {
-                    alert('E-mail e senha são obrigatórios para novos usuários');
+                    toast.dismiss(toastId);
+                    toast.error('E-mail e senha são obrigatórios para novos usuários');
                     return;
                 }
                 const res = await api.post('/management/users', payload);
@@ -415,18 +440,17 @@ export default function UserManager() {
             if (savedUser && currentUser && savedUser.id === currentUser.id) {
                 const { updateUser } = useAuthStore.getState();
                 updateUser(savedUser);
-                toast.success('Seu perfil foi atualizado!');
+                toast.success('Seu perfil foi atualizado!', { id: 'profile-update' });
             }
 
-            toast.success('Usuário salvo com sucesso!');
+            toast.success('Usuário salvo com sucesso!', { id: toastId });
             setIsModalOpen(false);
             fetchUsers();
+
         } catch (err: any) {
-            console.error('Erro ao salvar usuário:', err);
-            console.error('Detalhes do erro:', err.response?.data);
-            const errorMsg = err.response?.data?.details || err.response?.data?.error || 'Erro ao salvar usuário';
-            toast.error(errorMsg);
-            alert(`Erro ao salvar: ${errorMsg}`);
+            console.error('Erro ao salvar usuário (CATCH):', err);
+            const errorMsg = err.response?.data?.details || err.response?.data?.error || err.message || 'Erro desconhecido ao salvar';
+            toast.error(`Erro: ${errorMsg}`, { id: toastId });
         }
     };
 
@@ -727,13 +751,15 @@ export default function UserManager() {
                             <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setIsRoleModalOpen(true)}
-                                className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-secondary transition-colors group flex items-center gap-2"
-                            >
-                                <Lock size={18} className="text-gray-400 group-hover:text-secondary" />
-                                <span className="text-xs font-bold pr-2">Cargos</span>
-                            </button>
+                            {isMaster && (
+                                <button
+                                    onClick={() => setIsRoleModalOpen(true)}
+                                    className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-secondary transition-colors group flex items-center gap-2"
+                                >
+                                    <Lock size={18} className="text-gray-400 group-hover:text-secondary" />
+                                    <span className="text-xs font-bold pr-2">Cargos</span>
+                                </button>
+                            )}
                             <button
                                 onClick={handleAddNewUser}
                                 className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
@@ -1149,6 +1175,13 @@ export default function UserManager() {
                             exit={{ x: '100%' }}
                             className="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl z-[80] flex flex-col"
                         >
+                            {/* Protection Message */}
+                            {selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster && (
+                                <div className="bg-red-500 text-white p-3 text-center text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                    <Shield size={14} /> Somente o Master pode editar perfis Administrativos ou Master
+                                </div>
+                            )}
+
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                                 <div>
                                     <div className="flex items-center gap-3">
@@ -1550,13 +1583,21 @@ export default function UserManager() {
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
                                 {selectedUser && (
-                                    <button onClick={handleDeleteUser} className="flex items-center gap-2 text-red-500 font-black text-xs hover:underline">
+                                    <button
+                                        onClick={handleDeleteUser}
+                                        disabled={selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster}
+                                        className="flex items-center gap-2 text-red-500 font-black text-xs hover:underline disabled:opacity-30 disabled:no-underline"
+                                    >
                                         <Trash2 size={16} /> Excluir Conta
                                     </button>
                                 )}
                                 <div className="flex gap-3 ml-auto">
                                     <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 font-bold text-gray-400">Cancelar</button>
-                                    <button onClick={handleSaveUser} className="btn-primary px-8 py-3 flex items-center gap-2">
+                                    <button
+                                        onClick={handleSaveUser}
+                                        disabled={selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster}
+                                        className="btn-primary px-8 py-3 flex items-center gap-2 disabled:opacity-50 disabled:grayscale cursor-pointer"
+                                    >
                                         <Save size={18} /> Salvar
                                     </button>
                                 </div>

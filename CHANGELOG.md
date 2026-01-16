@@ -6,6 +6,23 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [STABLE20260116-1236] - 2026-01-16
+
+### ✨ Novidades (Features)
+
+- **Lançamento Produção**: Sistema pronto para operação real.
+- **Auditoria Completa**: Sistema de logs de auditoria implementado em todos os módulos críticos.
+- **Segurança Premium**: Rate limiting, CORS restritivo e proteção de endpoints JWT.
+- **Layout Refinado**: Melhorias de UI/UX em toda a plataforma para uma experiência premium.
+
+### 🔒 Segurança (Security)
+
+- Implementação de proteção contra força bruta no login.
+- Configuração de CORS para domínios de produção da 7Pet.
+- Validação rigorosa de ambiente para segredos sensíveis.
+
+---
+
 ## [BETA20260105-0041] - 2026-01-05
 
 ### ✨ Novidades (Features)

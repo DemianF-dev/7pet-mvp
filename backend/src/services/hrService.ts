@@ -291,7 +291,7 @@ export async function getTransportLegExecutions(filters: {
                 include: {
                     pet: true,
                     customer: true,
-                    transport: true,
+                    transportDetails: true,
                     quote: { select: { id: true, seqId: true, totalAmount: true } }
                 }
             }

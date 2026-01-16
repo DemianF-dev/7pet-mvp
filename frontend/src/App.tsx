@@ -59,6 +59,7 @@ const PayStatementDetail = lazy(() => import('./pages/staff/hr/PayStatementDetai
 const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
 const MarketingCenter = lazy(() => import('./pages/staff/marketing/MarketingCenter'));
 const StrategyManager = lazy(() => import('./pages/staff/StrategyManager'));
+const AuditConsole = lazy(() => import('./pages/staff/AuditConsole'));
 
 // ⚡ LAYOUT SYSTEM - Shell for mobile/desktop
 import AppShell from './layouts/AppShell';
@@ -201,8 +202,9 @@ function App() {
                                     <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
                                     <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
                                     <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
-                                    <Route path="/staff/marketing" element={<LazyPage><MarketingCenter /></LazyPage>} />
+                                    <Route path="/staff/hr" element={<LazyPage><MyHR /></LazyPage>} />
                                     <Route path="/staff/strategy" element={<LazyPage><StrategyManager /></LazyPage>} />
+                                    <Route path="/staff/audit" element={<LazyPage><AuditConsole /></LazyPage>} />
                                     <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
                                     <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
                                     <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />

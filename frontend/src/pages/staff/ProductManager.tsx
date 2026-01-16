@@ -64,8 +64,10 @@ export default function ProductManager() {
             const endpoint = tab === 'trash' ? '/products/trash' : '/products';
             const response = await api.get(endpoint);
             setProducts(response.data);
+            console.log('[ProductManager] Produtos carregados:', response.data.length);
         } catch (error) {
             console.error('Erro ao buscar produtos:', error);
+            toast.error('Erro ao carregar lista de produtos.');
         } finally {
             setIsLoading(false);
         }
@@ -94,11 +96,26 @@ export default function ProductManager() {
         setIsModalOpen(true);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const msg = editingProduct ? 'Deseja salvar as alterações neste produto?' : 'Deseja cadastrar este novo produto?';
-        if (!window.confirm(msg)) return;
-        try {
+    const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+        if (e) e.preventDefault();
+        console.log('[ProductManager] Submitting form (direct/form)...', formData);
+
+        // MANUAL VALIDATION
+        if (!formData.name) {
+            toast.error('O nome do produto é obrigatório.');
+            return;
+        }
+        if (formData.price < 0) {
+            toast.error('O preço não pode ser negativo.');
+            return;
+        }
+        if (formData.stock < 0) {
+            toast.error('O estoque não pode ser negativo.');
+            return;
+        }
+
+        const savePromise = (async () => {
+            console.log('[ProductManager] Sending request...');
             if (editingProduct) {
                 await api.patch(`/products/${editingProduct.id}`, formData);
             } else {
@@ -106,9 +123,17 @@ export default function ProductManager() {
             }
             fetchProducts();
             setIsModalOpen(false);
-        } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao salvar produto');
-        }
+            console.log('[ProductManager] Save success!');
+        })();
+
+        toast.promise(savePromise, {
+            loading: 'Salvando produto...',
+            success: 'Produto salvo com sucesso!',
+            error: (err) => {
+                console.error('[ProductManager] Save error:', err);
+                return `Erro ao salvar: ${err.response?.data?.error || err.message || 'Erro desconhecido'}`;
+            }
+        });
     };
 
     const handleDelete = async (id: string) => {
@@ -116,8 +141,9 @@ export default function ProductManager() {
         try {
             await api.delete(`/products/${id}`);
             fetchProducts();
+            toast.success('Produto excluído.');
         } catch (error) {
-            alert('Erro ao excluir produto');
+            toast.error('Erro ao excluir produto.');
         }
     };
 
@@ -140,8 +166,9 @@ export default function ProductManager() {
             fetchProducts();
             setSelectedIds([]);
             setIsBulkMode(false);
+            toast.success('Ação em massa concluída.');
         } catch (error) {
-            alert('Erro ao processar produtos');
+            toast.error('Erro ao processar produtos.');
         }
     };
 
@@ -152,8 +179,9 @@ export default function ProductManager() {
             fetchProducts();
             setSelectedIds([]);
             setIsBulkMode(false);
+            toast.success('Produtos restaurados.');
         } catch (error) {
-            alert('Erro ao restaurar produtos');
+            toast.error('Erro ao restaurar produtos.');
         }
     };
 
@@ -341,7 +369,7 @@ export default function ProductManager() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nome do Produto</label>
                                 <input
-                                    required
+
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
@@ -365,7 +393,7 @@ export default function ProductManager() {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            required
+
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                                             className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
@@ -376,7 +404,7 @@ export default function ProductManager() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Estoque</label>
                                     <input
                                         type="number"
-                                        required
+
                                         value={formData.stock}
                                         onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
                                         className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
@@ -398,7 +426,7 @@ export default function ProductManager() {
                             </div>
                             <div className="flex gap-4 pt-6">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
-                                <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Produto</button>
+                                <button type="button" onClick={handleSubmit} className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Produto</button>
                             </div>
                         </form>
                     </motion.div>

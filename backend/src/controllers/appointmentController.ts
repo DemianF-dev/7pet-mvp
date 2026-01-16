@@ -133,20 +133,19 @@ const appointmentUpdateSchema = appointmentSchema.partial();
 
 export const update = async (req: any, res: Response) => {
     try {
-        const validatedData = appointmentUpdateSchema.parse(req.body);
-        const { id } = req.params;
+        const appointmentBefore = await appointmentService.get(id);
+        const updated = await appointmentService.update(id, data, req.user.id);
 
-        const data: any = {
-            ...validatedData,
-            performerId: validatedData.performerId
-        };
-
-        if (validatedData.startAt) {
-            data.startAt = new Date(validatedData.startAt);
+        // Log Reschedule if date changed
+        if (data.startAt && appointmentBefore && data.startAt.getTime() !== appointmentBefore.startAt.getTime()) {
+            await auditService.logAppointmentEvent((req as any).audit, updated, 'APPOINTMENT_RESCHEDULED',
+                `Agendamento de ${updated.pet.name} reagendado para ${updated.startAt.toLocaleString('pt-BR')}`,
+                { from: appointmentBefore.startAt, to: updated.startAt }
+            );
         }
 
-        const updated = await appointmentService.update(id, data, req.user.id);
         res.json(updated);
+
     } catch (error: any) {
         res.status(400).json({ error: error.message });
     }
@@ -188,8 +187,19 @@ export const updateStatus = async (req: any, res: Response) => {
         const { reason } = req.body;
         const updated = await appointmentService.updateStatus(id, status as AppointmentStatus, req.user.id, reason);
 
+        // Audit Log
+        let action: any = 'APPOINTMENT_STATUS_CHANGED';
+        if (status === 'CANCELADO') action = 'APPOINTMENT_CANCELLED';
+        if (status === 'NO_SHOW') action = 'APPOINTMENT_NO_SHOW';
+
+        await auditService.logAppointmentEvent((req as any).audit, updated, action,
+            `Status do agendamento de ${updated.pet.name} alterado para ${status}`,
+            { oldStatus: appointment.status, newStatus: status, reason }
+        );
+
         // Notificar Cliente
         if (updated.customer.user) {
+
             let type: 'UPDATE' | 'CANCEL' | 'CONFIRM' = 'UPDATE';
             let message = '';
 

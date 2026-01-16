@@ -34,6 +34,18 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
         }
 
         req.user = user;
+
+        // Inject Audit Context
+        req.audit = {
+            actorUserId: user.id,
+            actorNameSnapshot: user.name,
+            actorRoleSnapshot: user.division || user.role,
+            source: 'API', // Default for backend requests
+            ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            userAgent: req.headers['user-agent'],
+            requestId: crypto.randomUUID?.() || Math.random().toString(36).substring(2)
+        };
+
         next();
     } catch (error) {
         console.log('[Auth] Token Validation Error:', error);

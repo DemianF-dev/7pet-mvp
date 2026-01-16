@@ -25,7 +25,7 @@ router.get('/', async (req: Request, res: Response) => {
             customer: {
                 include: { user: true }
             },
-            payments: true,
+            paymentRecords: true,
             quotes: {
                 include: { items: true }
             },
@@ -76,11 +76,11 @@ router.post('/:id/payments', staffOnly, async (req, res) => {
     if (useBalance) {
         const invoiceForBalance = await prisma.invoice.findUnique({
             where: { id: req.params.id },
-            include: { payments: true, customer: true }
+            include: { paymentRecords: true, customer: true }
         });
 
         if (invoiceForBalance && invoiceForBalance.customer.balance > 0) {
-            const currentPaid = invoiceForBalance.payments.reduce((acc, p) => acc + p.amount, 0);
+            const currentPaid = invoiceForBalance.paymentRecords.reduce((acc, p) => acc + p.amount, 0);
             const remaining = invoiceForBalance.amount - currentPaid;
 
             if (remaining > 0) {
@@ -109,7 +109,7 @@ router.post('/:id/payments', staffOnly, async (req, res) => {
     // Check totals
     const invoice = await prisma.invoice.findUnique({
         where: { id: req.params.id },
-        include: { payments: true, quotes: true, customer: { include: { user: true } } }
+        include: { paymentRecords: true, quotes: true, customer: { include: { user: true } } }
     });
 
     if (invoice) {
@@ -241,11 +241,11 @@ router.delete('/:id/payments/:paymentId', staffOnly, async (req, res) => {
         // Re-evaluate invoice status
         const invoice = await prisma.invoice.findUnique({
             where: { id },
-            include: { payments: true, quotes: true }
+            include: { paymentRecords: true, quotes: true }
         });
 
         if (invoice) {
-            const totalPaid = invoice.payments.reduce((acc, p) => acc + p.amount, 0);
+            const totalPaid = invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0);
             if (totalPaid < invoice.amount && invoice.status === 'PAGO') {
                 await prisma.invoice.update({
                     where: { id },
@@ -327,14 +327,14 @@ router.delete('/:id', staffOnly, async (req: Request, res: Response) => {
         // Check if invoice has payments
         const invoice = await prisma.invoice.findUnique({
             where: { id },
-            include: { payments: true }
+            include: { paymentRecords: true }
         });
 
         if (!invoice) {
             return res.status(404).json({ error: 'Fatura não encontrada' });
         }
 
-        if (invoice.payments.length > 0) {
+        if (invoice.paymentRecords.length > 0) {
             return res.status(400).json({
                 error: 'Não é possível excluir uma fatura que já possui pagamentos registrados.'
             });
@@ -387,7 +387,7 @@ router.post('/:id/duplicate', staffOnly, async (req: Request, res: Response) => 
             include: {
                 customer: true,
                 quotes: true,
-                payments: true
+                paymentRecords: true
             }
         });
 
@@ -417,11 +417,11 @@ async function processPayment(invoiceId: string, data: any, user: any) {
     if (useBalance) {
         const invoiceForBalance = await prisma.invoice.findUnique({
             where: { id: invoiceId },
-            include: { payments: true, customer: true }
+            include: { paymentRecords: true, customer: true }
         });
 
         if (invoiceForBalance && invoiceForBalance.customer.balance > 0) {
-            const currentPaid = invoiceForBalance.payments.reduce((acc, p) => acc + p.amount, 0);
+            const currentPaid = invoiceForBalance.paymentRecords.reduce((acc, p) => acc + p.amount, 0);
             const remaining = invoiceForBalance.amount - currentPaid;
 
             if (remaining > 0) {
@@ -443,11 +443,11 @@ async function processPayment(invoiceId: string, data: any, user: any) {
 
     const invoice = await prisma.invoice.findUnique({
         where: { id: invoiceId },
-        include: { payments: true, quotes: true, customer: { include: { user: true } } }
+        include: { paymentRecords: true, quotes: true, customer: { include: { user: true } } }
     });
 
     if (invoice) {
-        const totalPaid = invoice.payments.reduce((acc, p) => acc + p.amount, 0);
+        const totalPaid = invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0);
 
         if (totalPaid >= invoice.amount || settle) {
             await prisma.invoice.update({
@@ -511,7 +511,7 @@ router.post('/sync', staffOnly, async (req: Request, res: Response) => {
                 quotes: { some: {} },
                 deletedAt: null
             },
-            include: { quotes: true, payments: true }
+            include: { quotes: true, paymentRecords: true }
         });
 
         let updatedCount = 0;
@@ -527,7 +527,7 @@ router.post('/sync', staffOnly, async (req: Request, res: Response) => {
             }
 
             // Sync Status based on payments
-            const totalPaid = invoice.payments.reduce((acc, p) => acc + p.amount, 0);
+            const totalPaid = invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0);
             if (totalPaid >= (updateData.amount || invoice.amount) && invoice.status !== 'PAGO' && invoice.status !== 'ENCERRADO') {
                 updateData.status = 'PAGO';
                 changed = true;

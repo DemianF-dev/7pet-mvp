@@ -84,7 +84,8 @@ export default function Sidebar() {
 
     const checkPermission = (module: string) => {
         if (!user) return false;
-        if (user.role === 'MASTER') return true;
+        // MASTER always has access - check by role, division, AND email
+        if (user.role === 'MASTER' || user.division === 'MASTER' || user.email === 'oidemianf@gmail.com') return true;
 
         let perms: string[] | null = null;
         if (user.permissions) {

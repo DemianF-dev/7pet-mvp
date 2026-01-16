@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient, QuoteStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
-import { auditService } from '../services/auditService';
+import * as auditService from '../services/auditService';
 import { notificationService } from '../services/notificationService';
-import { createAuditLog, detectChanges } from '../utils/auditLogger';
 import { messagingService } from '../services/messagingService';
 import * as quoteService from '../services/quoteService';
 import { mapsService } from '../services/mapsService';
@@ -190,12 +189,15 @@ export const quoteController = {
             });
 
             // Create audit log
-            await createAuditLog({
-                entityType: 'QUOTE',
-                entityId: quote.id,
-                action: 'CREATE',
-                performedBy: user.id,
-                reason: `Orçamento criado ${user.role === 'CLIENTE' ? 'pelo cliente' : 'pela equipe'} `
+            await auditService.logEvent((req as any).audit, {
+                targetType: 'QUOTE',
+                targetId: quote.id,
+                clientId: quote.customerId || undefined,
+                quoteId: quote.id,
+                action: 'QUOTE_CREATED',
+                summary: `Orçamento OR-${String(quote.seqId).padStart(4, '0')} criado`,
+                after: quote,
+                revertible: false
             });
 
             // Notify customer about successful solicitation
@@ -413,7 +415,7 @@ export const quoteController = {
                 include: { items: true, pet: true, customer: true }
             });
 
-            const updatedQuote = await prisma.quote.update({
+            const updatedQuoteResult = await prisma.quote.update({
                 where: { id },
                 data: {
                     status,
@@ -428,13 +430,23 @@ export const quoteController = {
                 },
                 include: {
                     items: true,
-                    customer: { select: { name: true, user: true } },
+                    customer: { select: { name: true, user: true, id: true } },
                     pet: { select: { name: true } }
                 }
             });
 
+            // Audit Log
+            await auditService.logQuoteStatusChanged(
+                (req as any).audit,
+                id,
+                updatedQuoteResult.customer.id,
+                oldStatus,
+                status
+            );
+
             // Auto-generate invoice if Approved
             if (status === 'APROVADO') {
+
                 const existingInvoice = await prisma.invoice.findFirst({ where: { quotes: { some: { id } } } });
                 if (!existingInvoice) {
                     await prisma.invoice.create({
@@ -480,17 +492,7 @@ export const quoteController = {
                 );
             }
 
-            // Create audit log
-            await createAuditLog({
-                entityType: 'QUOTE',
-                entityId: id,
-                action: 'STATUS_CHANGE',
-                performedBy: user.id,
-                changes: [{ field: 'status', oldValue: oldStatus, newValue: status }],
-                reason: reason || `${user.role === 'CLIENTE' ? 'Cliente' : 'Equipe'} alterou status para ${status} `
-            });
-
-            return res.json(updatedQuote);
+            return res.json(updatedQuoteResult);
         } catch (error) {
             console.error('Erro ao atualizar status do orçamento:', error);
             return res.status(500).json({ error: 'Internal server error' });
@@ -1004,6 +1006,11 @@ export const quoteController = {
             }
 
             const { customer, pet, quote: quoteData } = req.body;
+            console.log('[createManual] Iniciando processamento:', {
+                customerEmail: customer?.email,
+                quoteType: quoteData?.type,
+                itemsCount: quoteData?.items?.length
+            });
 
             // Basic validation
             if (!customer || !customer.email || !customer.name) {
@@ -1012,24 +1019,30 @@ export const quoteController = {
 
             const result = await prisma.$transaction(async (tx) => {
                 // 1. Register/Get Customer and Pet
+                console.log('[createManual] Registrando/Localizando cliente e pet...');
                 const { customer: dbCustomer, pet: dbPet } = await authService.registerManual(tx as any, { customer, pet });
 
+                if (!dbCustomer) {
+                    throw new Error('Falha ao criar/localizar perfil do cliente.');
+                }
+
                 // 2. Process Items (fetch prices)
+                console.log('[createManual] Processando itens e preços...');
                 const processedItems = quoteData.items ? await Promise.all(quoteData.items.map(async (item: any) => {
-                    let price = item.price || 0;
+                    let price = Number(item.price) || 0;
                     let description = item.description;
 
                     if (item.serviceId) {
                         const service = await tx.service.findUnique({ where: { id: item.serviceId } });
                         if (service) {
-                            price = price || service.basePrice;
-                            description = service.name;
+                            price = (Number(item.price) > 0) ? Number(item.price) : service.basePrice;
+                            description = description || service.name;
                         }
                     }
 
                     return {
-                        description,
-                        quantity: item.quantity || 1,
+                        description: description || 'Sem descrição',
+                        quantity: Number(item.quantity) || 1,
                         price,
                         serviceId: item.serviceId
                     };
@@ -1037,7 +1050,9 @@ export const quoteController = {
 
                 // Lógica de adição automática de itens (Knots/Nós e Banho Medicamentoso)
                 if (quoteData.hasKnots && quoteData.knotRegions) {
-                    const knotRegions = quoteData.knotRegions.toLowerCase().split(',').map((r: string) => r.trim()).filter((r: string) => r);
+                    console.log('[createManual] Adicionando itens de desembolo...');
+                    const knotRegionsRaw = typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : '';
+                    const knotRegions = knotRegionsRaw.toLowerCase().split(',').map((r: string) => r.trim()).filter((r: string) => r);
 
                     const KNOT_PRICES: Record<string, number> = {
                         'orelhas': 7.50,
@@ -1094,11 +1109,10 @@ export const quoteController = {
                 else if (recurrenceFrequency === 'SEMANAL') discountRate = 0.10;
 
                 if (discountRate > 0) {
+                    console.log(`[createManual] Aplicando desconto de recorrência: ${discountRate * 100}%`);
                     for (const item of processedItems) {
-                        // Assume items with a serviceId are SPA services unless they are transport
                         if (item.serviceId) {
                             const service = await tx.service.findUnique({ where: { id: item.serviceId } });
-                            // Check if category implies SPA (adjust based on your actual categories)
                             if (service && service.category !== 'TRANSPORTE') {
                                 item.price = item.price * (1 - discountRate);
                                 item.description += ` (${(discountRate * 100).toFixed(0)}% desc reg.)`;
@@ -1109,14 +1123,10 @@ export const quoteController = {
 
                 const totalAmount = processedItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
 
-                // Debug logging
-                console.log('[createManual] Creating quote with:', {
-                    customerId: dbCustomer!.id,
-                    petId: dbPet?.id || null,
-                    type: quoteData.type,
-                    totalAmount,
-                    itemsCount: processedItems.length
-                });
+                // Validation of totalAmount to avoid NaN
+                if (isNaN(totalAmount)) {
+                    throw new Error('Valor total calculado é inválido (NaN). Verifique os preços dos itens.');
+                }
 
                 // Sanitize items - ensure serviceId is null not undefined
                 const sanitizedItems = processedItems.map((item: any) => ({
@@ -1126,36 +1136,39 @@ export const quoteController = {
                     serviceId: item.serviceId || null
                 }));
 
-                console.log('[createManual] Sanitized items:', sanitizedItems);
+                console.log('[createManual] Criando registro de orçamento...');
 
                 // 3. Create Quote
                 const quote = await tx.quote.create({
                     data: {
-                        customerId: dbCustomer!.id,
+                        customerId: dbCustomer.id,
                         petId: dbPet?.id || null,
                         type: quoteData.type || 'SPA',
-                        desiredAt: quoteData.desiredAt ? new Date(quoteData.desiredAt) : null,
-                        transportOrigin: quoteData.transportOrigin || customer.address,
+                        desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
+                        transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address,
                         transportDestination: quoteData.transportDestination || "7Pet",
                         transportReturnAddress: quoteData.transportReturnAddress,
                         transportPeriod: quoteData.transportPeriod,
-                        petQuantity: quoteData.petQuantity || 1,
+                        petQuantity: Number(quoteData.petQuantity) || 1,
                         hairLength: quoteData.hairLength,
                         hasKnots: quoteData.hasKnots || false,
-                        knotRegions: quoteData.knotRegions,
+                        knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
                         hasParasites: quoteData.hasParasites || false,
                         parasiteTypes: quoteData.parasiteTypes,
                         parasiteComments: quoteData.parasiteComments,
                         wantsMedicatedBath: quoteData.wantsMedicatedBath || false,
-                        transportLevaAt: quoteData.transportLevaAt ? new Date(quoteData.transportLevaAt) : null,
-                        transportTrazAt: quoteData.transportTrazAt ? new Date(quoteData.transportTrazAt) : null,
+                        transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
+                        transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
                         status: 'SOLICITADO',
                         totalAmount,
+                        isRecurring: customer.type === 'RECORRENTE',
+                        frequency: (customer.type === 'RECORRENTE') ? recurrenceFrequency : null,
+                        packageDiscount: discountRate > 0 ? discountRate : null,
                         statusHistory: {
                             create: {
                                 oldStatus: 'NONE',
                                 newStatus: 'SOLICITADO',
-                                changedBy: user.id,
+                                changedBy: user.id || 'SYSTEM',
                                 reason: 'Criado manualmente pelo operador'
                             }
                         },
@@ -1170,22 +1183,32 @@ export const quoteController = {
                     }
                 });
 
+                // Create audit log
+                await auditService.logEvent((req as any).audit, {
+                    targetType: 'QUOTE',
+                    targetId: quote.id,
+                    clientId: dbCustomer.id, // Use dbCustomer.id here
+                    quoteId: quote.id,
+                    action: 'QUOTE_CREATED',
+                    summary: `Orçamento manual OR-${String(quote.seqId).padStart(4, '0')} criado com manual setup`,
+                    after: quote,
+                    revertible: false
+                }, tx);
+
                 return quote;
+            }, {
+                timeout: 15000 // Aumentar timeout para transações pesadas de cadastro
             });
 
-            // Audit Log
-            await createAuditLog({
-                entityType: 'QUOTE',
-                entityId: result.id,
-                action: 'CREATE',
-                performedBy: user.id,
-                reason: 'Orçamento manual criado com novo cadastro'
-            });
-
+            console.log('[createManual] Orçamento criado com sucesso ID:', result.id);
             return res.status(201).json(result);
         } catch (error: any) {
-            console.error('Erro ao criar orçamento manual:', error);
-            return res.status(500).json({ error: 'Erro interno ao processar orçamento manual', message: error.message });
+            console.error('[createManual] Erro fatal:', error);
+            return res.status(500).json({
+                error: 'Erro interno ao processar orçamento manual',
+                message: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
 };

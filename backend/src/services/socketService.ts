@@ -9,8 +9,18 @@ class SocketService {
     initialize(httpServer: HttpServer) {
         this.io = new Server(httpServer, {
             cors: {
-                origin: '*', // Allow all origins for now (adjust for prod)
-                methods: ['GET', 'POST']
+                origin: [
+                    'http://localhost:5173',
+                    'http://127.0.0.1:5173',
+                    'http://localhost:3000',
+                    'http://localhost:5174',
+                    'https://my7.pet',
+                    'https://www.my7.pet',
+                    'https://7pet-mvp.vercel.app',
+                    'https://7pet-backend.vercel.app'
+                ],
+                methods: ['GET', 'POST'],
+                credentials: true
             }
         });
 

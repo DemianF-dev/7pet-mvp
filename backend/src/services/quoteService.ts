@@ -14,7 +14,7 @@ export const checkDependencies = async (id: string): Promise<QuoteDependencies> 
             appointments: {
                 include: {
                     services: { select: { name: true } },
-                    transport: true
+                    transportDetails: true
                 }
             },
             invoice: true
@@ -69,8 +69,8 @@ export const checkDependencies = async (id: string): Promise<QuoteDependencies> 
                 id: a.id,
                 startAt: a.startAt.toISOString(),
                 status: a.status,
-                origin: a.transport?.origin,
-                destination: a.transport?.destination
+                origin: a.transportDetails?.origin,
+                destination: a.transportDetails?.destination
             }))
         },
         invoice: quote.invoice && !quote.invoice.deletedAt ? {
@@ -275,7 +275,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO',
                         category: 'LOGISTICA',
                         quote: { connect: { id } },
-                        transport: {
+                        transportDetails: {
                             create: {
                                 origin: quote.transportOrigin || 'Endereço do Cliente',
                                 destination: quote.transportDestination || '7Pet',
@@ -300,7 +300,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO',
                         category: 'LOGISTICA',
                         quote: { connect: { id } },
-                        transport: {
+                        transportDetails: {
                             create: {
                                 origin: quote.transportDestination || '7Pet',
                                 destination: quote.transportReturnAddress || quote.transportOrigin || 'Endereço do Cliente',
@@ -323,7 +323,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO',
                         category: 'LOGISTICA',
                         quote: { connect: { id } },
-                        transport: {
+                        transportDetails: {
                             create: {
                                 origin: quote.transportOrigin || 'Endereço do Cliente',
                                 destination: quote.transportDestination || '7Pet',

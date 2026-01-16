@@ -77,26 +77,38 @@ export const mapsService = {
                 handlingTimeLargada, handlingTimeLeva, handlingTimeTraz, handlingTimeRetorno
             } = settings;
 
+            console.log(`[MapsService] Calculating transport for: ${originAddress}`);
+
             // 1. Calculate OD for Origin (Store <-> Origin)
             // We assume symmetric travel for simplification (Store->Origin = Origin->Store)
             const originResponse = await client.distancematrix({
                 params: {
                     origins: [storeAddress],
                     destinations: [originAddress],
-                    key: process.env.GOOGLE_MAPS_API_KEY,
+                    key: process.env.GOOGLE_MAPS_API_KEY!,
                     language: 'pt-BR',
-                    mode: TravelMode.driving,
-                    departure_time: 'now' as any,
-                    traffic_model: TrafficModel.pessimistic
+                    mode: TravelMode.driving
                 }
             });
 
-            if (originResponse.data.status !== "OK") throw new Error(`Maps API Error (Origin): ${originResponse.data.status}`);
-            const originElement = originResponse.data.rows[0].elements[0];
-            if (originElement.status !== "OK") throw new Error(`Route not found for origin: ${originElement.status}`);
+            if (originResponse.data.status !== "OK") {
+                console.error(`[MapsService] Maps API Error: ${originResponse.data.status}`, originResponse.data.error_message);
+                throw new Error(`Maps API Error (Origin): ${originResponse.data.status}`);
+            }
 
-            const originKm = originElement.distance.value / 1000;
-            const originMin = Math.ceil(originElement.duration.value / 60);
+            if (!originResponse.data.rows?.[0]?.elements?.[0]) {
+                console.error(`[MapsService] No route found in response`);
+                throw new Error(`Route not found for origin`);
+            }
+
+            const originElement = originResponse.data.rows[0].elements[0];
+            if (originElement.status !== "OK") {
+                console.error(`[MapsService] Element status not OK: ${originElement.status}`);
+                throw new Error(`Route not found for origin: ${originElement.status}`);
+            }
+
+            const originKm = (originElement.distance?.value || 0) / 1000;
+            const originMin = Math.ceil((originElement.duration?.value || 0) / 60);
 
             // 2. Calculate OD for Destination (if different)
             let destKm = originKm;
@@ -105,26 +117,37 @@ export const mapsService = {
             let destDurationText = originElement.duration.text;
 
             if (distinctAddresses) {
+                console.log(`[MapsService] Calculating destination: ${destAddr}`);
                 const destResponse = await client.distancematrix({
                     params: {
                         origins: [storeAddress],
                         destinations: [destAddr],
-                        key: process.env.GOOGLE_MAPS_API_KEY,
+                        key: process.env.GOOGLE_MAPS_API_KEY!,
                         language: 'pt-BR',
-                        mode: TravelMode.driving,
-                        departure_time: 'now' as any,
-                        traffic_model: TrafficModel.pessimistic
+                        mode: TravelMode.driving
                     }
                 });
 
-                if (destResponse.data.status !== "OK") throw new Error(`Maps API Error (Dest): ${destResponse.data.status}`);
-                const destElement = destResponse.data.rows[0].elements[0];
-                if (destElement.status !== "OK") throw new Error(`Route not found for destination: ${destElement.status}`);
+                if (destResponse.data.status !== "OK") {
+                    console.error(`[MapsService] Maps API Error (Dest): ${destResponse.data.status}`);
+                    throw new Error(`Maps API Error (Dest): ${destResponse.data.status}`);
+                }
 
-                destKm = destElement.distance.value / 1000;
-                destMin = Math.ceil(destElement.duration.value / 60);
-                destDistanceText = destElement.distance.text;
-                destDurationText = destElement.duration.text;
+                if (!destResponse.data.rows?.[0]?.elements?.[0]) {
+                    console.error(`[MapsService] No route found in response for destination`);
+                    throw new Error(`Route not found for destination`);
+                }
+
+                const destElement = destResponse.data.rows[0].elements[0];
+                if (destElement.status !== "OK") {
+                    console.error(`[MapsService] Dest element status not OK: ${destElement.status}`);
+                    throw new Error(`Route not found for destination: ${destElement.status}`);
+                }
+
+                destKm = (destElement.distance?.value || 0) / 1000;
+                destMin = Math.ceil((destElement.duration?.value || 0) / 60);
+                destDistanceText = destElement.distance?.text || '';
+                destDurationText = destElement.duration?.text || '';
             }
 
             // Build Legs based on Type

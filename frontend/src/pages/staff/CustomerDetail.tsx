@@ -12,7 +12,8 @@ import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
 import CustomerFinancialSection from '../../components/staff/CustomerFinancialSection';
 import CustomerAlertsSection from '../../components/staff/CustomerAlertsSection';
-import { Award, Star, Heart, Zap, Trophy } from 'lucide-react';
+import ClientAuditTimeline from '../../components/client/ClientAuditTimeline';
+import { Award, Star, Heart, Zap, Trophy, History } from 'lucide-react';
 
 interface Appreciation {
     id: string;
@@ -101,6 +102,8 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     // Form State
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [activeTab, setActiveTab] = useState('PERFIL');
+
     const [email, setEmail] = useState('');
     const [extraEmails, setExtraEmails] = useState<string[]>([]);
     const [phone, setPhone] = useState('');
@@ -142,6 +145,8 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     const [isAssigningBadge, setIsAssigningBadge] = useState(false);
     const [selectedBadge, setSelectedBadge] = useState('TOP_WORKER');
     const [badgeComment, setBadgeComment] = useState('');
+    const [totalSpent, setTotalSpent] = useState(0);
+    const [userId, setUserId] = useState<string | null>(null);
 
     useEffect(() => {
         if (id && id !== 'new') {
@@ -161,12 +166,16 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     const fetchAppreciations = async () => {
         if (!id || id === 'new') return;
         try {
-            // First get the customer to find the userId
-            const customerResp = await api.get(`/customers/${id}`);
-            const userId = customerResp.data.userId;
+            // Use the userId from state if available, otherwise fetch customer
+            let targetUserId = userId;
+            if (!targetUserId) {
+                const customerResp = await api.get(`/customers/${id}`);
+                targetUserId = customerResp.data.userId;
+                setUserId(targetUserId);
+            }
 
-            if (userId) {
-                const resp = await api.get(`/appreciations/user/${userId}`);
+            if (targetUserId) {
+                const resp = await api.get(`/appreciations/user/${targetUserId}`);
                 setAppreciations(resp.data);
             }
         } catch (e) {
@@ -178,11 +187,14 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
 
     const handleAssignBadge = async () => {
-        if (!id) return;
+        if (!id || !userId) {
+            toast.error('ID do usuário não encontrado');
+            return;
+        }
         try {
             await api.post('/appreciations', {
                 badgeType: selectedBadge,
-                receiverId: id,
+                receiverId: userId,
                 comment: badgeComment
             });
             toast.success('Insígnia atribuída com sucesso!');
@@ -219,6 +231,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             setRecurringFrequency(data.recurrenceFrequency || '');
             setRecurrenceDiscount(data.recurrenceDiscount || 0);
             setSeqId(u.seqId || null);
+            setUserId(data.userId || null);
+
+            // Calculate total spent from PAGO invoices
+            const total = (data.invoices || [])
+                .filter((inv: any) => inv.status === 'PAGO' || inv.status === 'ENCERRADO')
+                .reduce((acc: number, inv: any) => acc + (inv.amount || 0), 0);
+            setTotalSpent(total);
 
             // New fields
             setRiskLevel(data.riskLevel || 'Nivel 1');
@@ -445,19 +464,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                         </div>
                     </div>
 
-                    {/* Classificação de Risco */}
-                    <div className="md:col-span-4 bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 shadow-sm flex flex-col justify-center">
+                    {/* Nível de Risco - Ações Staff */}
+                    <div className="md:col-span-4 flex flex-col justify-center bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                                 <Shield size={14} className="text-gray-400" />
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight">Classificação Staff</span>
                             </div>
-                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shadow-sm ${riskLevel === 'Nivel 3' ? 'bg-red-500 text-white shadow-red-100' :
-                                riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
-                                    'bg-green-500 text-white shadow-green-100'
-                                }`}>
-                                {riskLevel}
-                            </span>
                         </div>
                         <div className="flex gap-2">
                             {['Nivel 1', 'Nivel 2', 'Nivel 3'].map(lvl => (
@@ -481,6 +494,24 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
             {/* CUSTOMER ALERTS - Show active alerts banner */}
             {id !== 'new' && <CustomerAlertsSection customerId={id} />}
+
+            {/* NAVIGATION TABS - Move to prominent location */}
+            <div className="flex items-center gap-1 mb-8 bg-white p-2 rounded-[32px] border border-gray-100 shadow-sm w-fit overflow-x-auto no-scrollbar mx-auto lg:mx-0">
+                {['PERFIL', 'PETS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'HISTORICO']
+                    .filter((t): t is string => typeof t === 'string')
+                    .map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === tab
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
+                                }`}
+                        >
+                            {tab === 'HISTORICO' ? 'Histórico' : tab}
+                        </button>
+                    ))}
+            </div>
 
             {/* NEW BITRIX-STYLE MAIN LAYOUT */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -547,11 +578,27 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                         <div className="space-y-4">
                             <div className="flex justify-between items-end">
                                 <span className="text-[10px] font-bold text-gray-400">Total Gastos</span>
-                                <span className="text-sm font-black text-secondary">R$ 1.240,00</span>
+                                <span className="text-sm font-black text-secondary">R$ {totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between items-end">
                                 <span className="text-[10px] font-bold text-gray-400">Pets Ativos</span>
                                 <span className="text-sm font-black text-secondary">{pets.length}</span>
+                            </div>
+
+                            <div className="pt-4 border-t border-gray-50 flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">ID Bitrix (Legado)</label>
+                                <div className="relative group">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-primary transition-colors">
+                                        <Info size={12} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={legacyBitrixId}
+                                        onChange={e => setLegacyBitrixId(e.target.value)}
+                                        placeholder="Ex: 12345"
+                                        className="w-full bg-gray-50/50 border border-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -559,675 +606,698 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                 {/* MAIN CONTENT AREA */}
                 <div className="lg:col-span-9 space-y-6">
-                    {/* IDENTIFICATION */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <User size={16} /> Identificação Básica
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Nome</label>
-                                <input
-                                    type="text"
-                                    value={firstName}
-                                    onChange={e => setFirstName(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="Primeiro nome"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Sobrenome</label>
-                                <input
-                                    type="text"
-                                    value={lastName}
-                                    onChange={e => setLastName(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="Sobrenome"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF / Documento</label>
-                                <div className="relative">
-                                    <CreditCard size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
-                                    <input
-                                        type="text"
-                                        value={document}
-                                        onChange={e => setDocument(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                        placeholder="000.000.000-00"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Data de Nascimento</label>
-                                <div className="relative">
-                                    <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
-                                    <input
-                                        type="date"
-                                        value={birthday}
-                                        onChange={e => setBirthday(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* CONTACTS */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <Phone size={16} /> Canais de Contato
-                        </h3>
-                        <div className="space-y-6">
-                            {/* Emails */}
-                            <div className="space-y-4">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">E-mails</label>
-                                <div className="relative">
-                                    <Mail size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={e => setEmail(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                        placeholder="E-mail principal (login)"
-                                    />
-                                </div>
-                                {extraEmails.map((em, idx) => (
-                                    <div key={idx} className="flex gap-2">
-                                        <input
-                                            type="email"
-                                            value={em}
-                                            onChange={e => {
-                                                const newEmails = [...extraEmails];
-                                                newEmails[idx] = e.target.value;
-                                                setExtraEmails(newEmails);
-                                            }}
-                                            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                        />
-                                        <button onClick={() => setExtraEmails(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
-                                    </div>
-                                ))}
-                                <button onClick={() => setExtraEmails([...extraEmails, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar E-mail</button>
-                            </div>
-
-                            {/* Phones */}
-                            <div className="space-y-4">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Telefones</label>
-                                <div className="relative">
-                                    <Phone size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
-                                    <input
-                                        type="text"
-                                        value={phone}
-                                        onChange={e => setPhone(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                        placeholder="Telefone principal"
-                                    />
-                                </div>
-                                {extraPhones.map((ph, idx) => (
-                                    <div key={idx} className="flex gap-2">
+                    {activeTab === 'PERFIL' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* IDENTIFICATION */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <User size={16} /> Identificação Básica
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Nome</label>
                                         <input
                                             type="text"
-                                            value={ph}
-                                            onChange={e => {
-                                                const newPhones = [...extraPhones];
-                                                newPhones[idx] = e.target.value;
-                                                setExtraPhones(newPhones);
-                                            }}
-                                            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            value={firstName}
+                                            onChange={e => setFirstName(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="Primeiro nome"
                                         />
-                                        <button onClick={() => setExtraPhones(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
                                     </div>
-                                ))}
-                                <button onClick={() => setExtraPhones([...extraPhones, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Telefone</button>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* ADDRESSES */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <MapPin size={16} /> Localização
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="relative">
-                                <MapPin size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
-                                <input
-                                    type="text"
-                                    value={address}
-                                    onChange={e => setAddress(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="Endereço principal"
-                                />
-                            </div>
-                            {extraAddresses.map((addr, idx) => (
-                                <div key={idx} className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={addr}
-                                        onChange={e => {
-                                            const newAddresses = [...extraAddresses];
-                                            newAddresses[idx] = e.target.value;
-                                            setExtraAddresses(newAddresses);
-                                        }}
-                                        className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    />
-                                    <button onClick={() => setExtraAddresses(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Sobrenome</label>
+                                        <input
+                                            type="text"
+                                            value={lastName}
+                                            onChange={e => setLastName(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="Sobrenome"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF / Documento</label>
+                                        <div className="relative">
+                                            <CreditCard size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                                            <input
+                                                type="text"
+                                                value={document}
+                                                onChange={e => setDocument(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                                placeholder="000.000.000-00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Data de Nascimento</label>
+                                        <div className="relative">
+                                            <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                                            <input
+                                                type="date"
+                                                value={birthday}
+                                                onChange={e => setBirthday(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            ))}
-                            <button onClick={() => setExtraAddresses([...extraAddresses, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Endereço</button>
-                        </div>
-                    </section>
+                            </section>
 
-                    {/* MIGRATION & BILLING INFO */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <Shield size={16} /> Faturamento & Histórico (Bitrix24)
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">ID Bitrix24</label>
-                                <input
-                                    type="text"
-                                    value={legacyBitrixId}
-                                    readOnly
-                                    className="w-full bg-gray-100 border border-gray-100 rounded-2xl px-5 py-4 text-gray-500 font-bold outline-none cursor-not-allowed"
-                                    placeholder="N/A"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF (Bitrix)</label>
-                                <input
-                                    type="text"
-                                    value={cpf}
-                                    onChange={e => setCpf(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="CPF importado"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Preferência de Faturamento</label>
-                                <input
-                                    type="text"
-                                    value={billingPreference}
-                                    onChange={e => setBillingPreference(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="Ex: Mensal, Por serviço..."
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Método de Pagamento</label>
-                                <input
-                                    type="text"
-                                    value={paymentMethod}
-                                    onChange={e => setPaymentMethod(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="Ex: PIX, Cartão..."
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">% Desconto Negociação</label>
-                                <input
-                                    type="number"
-                                    value={negotiationDiscount}
-                                    onChange={e => setNegotiationDiscount(parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                    placeholder="0%"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Criado em (Migração)</label>
-                                <input
-                                    type="date"
-                                    value={legacyCreatedAt}
-                                    readOnly
-                                    className="w-full bg-gray-100 border border-gray-100 rounded-2xl px-5 py-3 text-gray-500 font-bold outline-none cursor-not-allowed"
-                                />
-                            </div>
-                        </div>
-                        <div className="mt-6 space-y-2">
-                            <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Detalhes da Origem</label>
-                            <input
-                                type="text"
-                                value={discoverySourceDetail}
-                                onChange={e => setDiscoverySourceDetail(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                placeholder="Mais detalhes sobre como conheceu..."
-                            />
-                        </div>
-                    </section>
+                            {/* CONTACTS */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <Phone size={16} /> Canais de Contato
+                                </h3>
+                                <div className="space-y-6">
+                                    {/* Emails */}
+                                    <div className="space-y-4">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">E-mails</label>
+                                        <div className="relative">
+                                            <Mail size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={e => setEmail(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                                placeholder="E-mail principal (login)"
+                                            />
+                                        </div>
+                                        {extraEmails.map((em, idx) => (
+                                            <div key={idx} className="flex gap-2">
+                                                <input
+                                                    type="email"
+                                                    value={em}
+                                                    onChange={e => {
+                                                        const newEmails = [...extraEmails];
+                                                        newEmails[idx] = e.target.value;
+                                                        setExtraEmails(newEmails);
+                                                    }}
+                                                    className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                                />
+                                                <button onClick={() => setExtraEmails(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                            </div>
+                                        ))}
+                                        <button onClick={() => setExtraEmails([...extraEmails, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar E-mail</button>
+                                    </div>
 
-                    {/* GUARDIANS */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <Users size={16} /> Tutores Adicionais
-                        </h3>
-                        <div className="space-y-6">
-                            {additionalGuardians.map((g, idx) => (
-                                <div key={idx} className="bg-gray-50 p-6 rounded-3xl relative border border-gray-100">
-                                    <button
-                                        onClick={() => setAdditionalGuardians(prev => prev.filter((_, i) => i !== idx))}
-                                        className="absolute top-4 right-4 text-red-300 hover:text-red-500 transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Phones */}
+                                    <div className="space-y-4">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Telefones</label>
+                                        <div className="relative">
+                                            <Phone size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
+                                            <input
+                                                type="text"
+                                                value={phone}
+                                                onChange={e => setPhone(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                                placeholder="Telefone principal"
+                                            />
+                                        </div>
+                                        {extraPhones.map((ph, idx) => (
+                                            <div key={idx} className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={ph}
+                                                    onChange={e => {
+                                                        const newPhones = [...extraPhones];
+                                                        newPhones[idx] = e.target.value;
+                                                        setExtraPhones(newPhones);
+                                                    }}
+                                                    className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                                />
+                                                <button onClick={() => setExtraPhones(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                            </div>
+                                        ))}
+                                        <button onClick={() => setExtraPhones([...extraPhones, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Telefone</button>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* ADDRESSES */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <MapPin size={16} /> Localização
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <MapPin size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
                                         <input
-                                            value={g.name}
-                                            onChange={e => {
-                                                const updated = [...additionalGuardians];
-                                                updated[idx].name = e.target.value;
-                                                setAdditionalGuardians(updated);
-                                            }}
-                                            placeholder="Nome do tutor"
-                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                            type="text"
+                                            value={address}
+                                            onChange={e => setAddress(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="Endereço principal"
                                         />
+                                    </div>
+                                    {extraAddresses.map((addr, idx) => (
+                                        <div key={idx} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={addr}
+                                                onChange={e => {
+                                                    const newAddresses = [...extraAddresses];
+                                                    newAddresses[idx] = e.target.value;
+                                                    setExtraAddresses(newAddresses);
+                                                }}
+                                                className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-sm text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            />
+                                            <button onClick={() => setExtraAddresses(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
+                                        </div>
+                                    ))}
+                                    <button onClick={() => setExtraAddresses([...extraAddresses, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Endereço</button>
+                                </div>
+                            </section>
+
+                            {/* MIGRATION & BILLING INFO */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <Shield size={16} /> Faturamento & Histórico (Bitrix24)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">ID Bitrix24</label>
                                         <input
-                                            value={g.phone}
-                                            onChange={e => {
-                                                const updated = [...additionalGuardians];
-                                                updated[idx].phone = e.target.value;
-                                                setAdditionalGuardians(updated);
-                                            }}
-                                            placeholder="Telefone"
-                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                            type="text"
+                                            value={legacyBitrixId}
+                                            readOnly
+                                            className="w-full bg-gray-100 border border-gray-100 rounded-2xl px-5 py-4 text-gray-500 font-bold outline-none cursor-not-allowed"
+                                            placeholder="N/A"
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF (Bitrix)</label>
                                         <input
-                                            value={g.email}
-                                            onChange={e => {
-                                                const updated = [...additionalGuardians];
-                                                updated[idx].email = e.target.value;
-                                                setAdditionalGuardians(updated);
-                                            }}
-                                            placeholder="E-mail"
-                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                            type="text"
+                                            value={cpf}
+                                            onChange={e => setCpf(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="CPF importado"
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Preferência de Faturamento</label>
+                                        <input
+                                            type="text"
+                                            value={billingPreference}
+                                            onChange={e => setBillingPreference(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="Ex: Mensal, Por serviço..."
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Método de Pagamento</label>
+                                        <input
+                                            type="text"
+                                            value={paymentMethod}
+                                            onChange={e => setPaymentMethod(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="Ex: PIX, Cartão..."
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">% Desconto Negociação</label>
+                                        <input
+                                            type="number"
+                                            value={negotiationDiscount}
+                                            onChange={e => setNegotiationDiscount(parseFloat(e.target.value) || 0)}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                            placeholder="0%"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Criado em (Migração)</label>
                                         <input
                                             type="date"
-                                            value={g.birthday}
-                                            onChange={e => {
-                                                const updated = [...additionalGuardians];
-                                                updated[idx].birthday = e.target.value;
-                                                setAdditionalGuardians(updated);
-                                            }}
-                                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
-                                        />
-                                        <input
-                                            value={g.address}
-                                            onChange={e => {
-                                                const updated = [...additionalGuardians];
-                                                updated[idx].address = e.target.value;
-                                                setAdditionalGuardians(updated);
-                                            }}
-                                            placeholder="Endereço"
-                                            className="md:col-span-2 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                            value={legacyCreatedAt}
+                                            readOnly
+                                            className="w-full bg-gray-100 border border-gray-100 rounded-2xl px-5 py-3 text-gray-500 font-bold outline-none cursor-not-allowed"
                                         />
                                     </div>
                                 </div>
-                            ))}
-                            <button
-                                onClick={() => setAdditionalGuardians([...additionalGuardians, { name: '', phone: '', email: '', address: '', birthday: '' }])}
-                                className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
-                            >
-                                <Plus size={16} /> Adicionar Novo Tutor
-                            </button>
-                        </div>
-                    </section>
+                                <div className="mt-6 space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Detalhes da Origem</label>
+                                    <input
+                                        type="text"
+                                        value={discoverySourceDetail}
+                                        onChange={e => setDiscoverySourceDetail(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                        placeholder="Mais detalhes sobre como conheceu..."
+                                    />
+                                </div>
+                            </section>
 
-                    {/* PETS */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <PawPrint size={16} /> Pets do Tutor
-                        </h3>
-                        <div className="space-y-4">
-                            {pets.map((pet, idx) => (
-                                <div key={pet.id || idx} className="bg-gray-50 rounded-3xl border border-gray-100 overflow-hidden">
-                                    {/* Pet Header */}
-                                    <div
-                                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
-                                        onClick={() => {
-                                            const updated = [...pets];
-                                            updated[idx].isExpanded = !updated[idx].isExpanded;
-                                            setPets(updated);
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                                                <PawPrint size={20} className="text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-secondary">{pet.name || 'Novo Pet'}</p>
-                                                <p className="text-xs text-gray-400">{pet.species} {pet.breed && `• ${pet.breed}`}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
+                            {/* GUARDIANS */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <Users size={16} /> Tutores Adicionais
+                                </h3>
+                                <div className="space-y-6">
+                                    {additionalGuardians.map((g, idx) => (
+                                        <div key={idx} className="bg-gray-50 p-6 rounded-3xl relative border border-gray-100">
                                             <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (window.confirm('Remover este pet?')) {
-                                                        if (pet.id) {
-                                                            api.delete(`/customers/pets/${pet.id}`).then(() => {
-                                                                setPets(pets.filter((_, i) => i !== idx));
-                                                                toast.success('Pet removido');
-                                                            }).catch(() => toast.error('Erro ao remover'));
-                                                        } else {
-                                                            setPets(pets.filter((_, i) => i !== idx));
-                                                        }
-                                                    }
-                                                }}
-                                                className="text-red-300 hover:text-red-500 p-2"
+                                                onClick={() => setAdditionalGuardians(prev => prev.filter((_, i) => i !== idx))}
+                                                className="absolute top-4 right-4 text-red-300 hover:text-red-500 transition-colors"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
-                                            {pet.isExpanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <input
+                                                    value={g.name}
+                                                    onChange={e => {
+                                                        const updated = [...additionalGuardians];
+                                                        updated[idx].name = e.target.value;
+                                                        setAdditionalGuardians(updated);
+                                                    }}
+                                                    placeholder="Nome do tutor"
+                                                    className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                                />
+                                                <input
+                                                    value={g.phone}
+                                                    onChange={e => {
+                                                        const updated = [...additionalGuardians];
+                                                        updated[idx].phone = e.target.value;
+                                                        setAdditionalGuardians(updated);
+                                                    }}
+                                                    placeholder="Telefone"
+                                                    className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                                />
+                                                <input
+                                                    value={g.email}
+                                                    onChange={e => {
+                                                        const updated = [...additionalGuardians];
+                                                        updated[idx].email = e.target.value;
+                                                        setAdditionalGuardians(updated);
+                                                    }}
+                                                    placeholder="E-mail"
+                                                    className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                                />
+                                                <input
+                                                    type="date"
+                                                    value={g.birthday}
+                                                    onChange={e => {
+                                                        const updated = [...additionalGuardians];
+                                                        updated[idx].birthday = e.target.value;
+                                                        setAdditionalGuardians(updated);
+                                                    }}
+                                                    className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                                />
+                                                <input
+                                                    value={g.address}
+                                                    onChange={e => {
+                                                        const updated = [...additionalGuardians];
+                                                        updated[idx].address = e.target.value;
+                                                        setAdditionalGuardians(updated);
+                                                    }}
+                                                    placeholder="Endereço"
+                                                    className="md:col-span-2 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button
+                                        onClick={() => setAdditionalGuardians([...additionalGuardians, { name: '', phone: '', email: '', address: '', birthday: '' }])}
+                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Plus size={16} /> Adicionar Novo Tutor
+                                    </button>
+                                </div>
+                            </section>
+
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                {/* PREFERENCES */}
+                                <section className="bg-secondary p-8 rounded-[40px] text-white shadow-xl flex flex-col h-full">
+                                    <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                        <MessageSquare size={16} /> Preferências
+                                    </h3>
+                                    <div className="space-y-6 flex-1">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Tipo de Cliente</label>
+                                            <div className="flex gap-2">
+                                                {['AVULSO', 'RECORRENTE'].map(t => (
+                                                    <button
+                                                        key={t}
+                                                        onClick={() => {
+                                                            if (t === 'RECORRENTE' && type !== 'RECORRENTE') {
+                                                                setShowCelebration(true);
+                                                                return;
+                                                            }
+                                                            setType(t);
+                                                            if (t === 'AVULSO') {
+                                                                setRecurringFrequency('');
+                                                                setRecurrenceDiscount(0);
+                                                            }
+                                                        }}
+                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all border ${type === t ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                                                    >
+                                                        {t}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Canal de Preferência</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['APP', 'WHATSAPP', 'TELEFONE', 'OUTROS'].map(pref => (
+                                                    <label key={pref} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${communicationPrefs.includes(pref) ? 'bg-primary/20 border-primary/40 text-white' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={communicationPrefs.includes(pref)}
+                                                            onChange={() => {
+                                                                if (communicationPrefs.includes(pref)) setCommunicationPrefs(prev => prev.filter(p => p !== pref));
+                                                                else setCommunicationPrefs([...communicationPrefs, pref]);
+                                                            }}
+                                                            className="rounded border-white/20 bg-white/10 text-primary"
+                                                        />
+                                                        <span className="text-[10px] font-black">{pref}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            {communicationPrefs.includes('OUTROS') && (
+                                                <input
+                                                    value={communicationOther}
+                                                    onChange={e => setCommunicationOther(e.target.value)}
+                                                    placeholder="Explique qual canal..."
+                                                    className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:ring-1 focus:ring-primary/50"
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Como conheceu a 7Pet?</label>
+                                            <input
+                                                value={discoverySource}
+                                                onChange={e => setDiscoverySource(e.target.value)}
+                                                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-4 text-sm font-bold text-white outline-none focus:ring-1 focus:ring-primary/50"
+                                                placeholder="Ex: Instagram, Indicação..."
+                                            />
                                         </div>
                                     </div>
+                                </section>
 
-                                    {/* Pet Details (Expandable) */}
-                                    {pet.isExpanded && (
-                                        <div className="p-6 border-t border-gray-200 space-y-6">
-                                            {/* Basic Info */}
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <input value={pet.name} onChange={e => { const u = [...pets]; u[idx].name = e.target.value; setPets(u); }} placeholder="Nome" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
-                                                <select value={pet.species} onChange={e => { const u = [...pets]; u[idx].species = e.target.value; setPets(u); }} className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm">
-                                                    <option value="Canino">🐕 Canino</option>
-                                                    <option value="Felino">🐈 Felino</option>
-                                                </select>
-                                                <input value={pet.breed} onChange={e => { const u = [...pets]; u[idx].breed = e.target.value; setPets(u); }} placeholder="Raça" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
-                                                <input type="number" value={pet.weight || ''} onChange={e => { const u = [...pets]; u[idx].weight = e.target.value ? parseFloat(e.target.value) : null; setPets(u); }} placeholder="Peso (kg)" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
-                                            </div>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <select value={pet.coatType} onChange={e => { const u = [...pets]; u[idx].coatType = e.target.value; setPets(u); }} className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm">
-                                                    <option value="">Tipo de Pelo</option>
-                                                    <option value="CURTO">Curto</option>
-                                                    <option value="MEDIO">Médio</option>
-                                                    <option value="LONGO">Longo</option>
-                                                </select>
-                                                <select value={pet.temperament} onChange={e => { const u = [...pets]; u[idx].temperament = e.target.value; setPets(u); }} className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm">
-                                                    <option value="">Temperamento</option>
-                                                    <option value="DOCIL">Dócil</option>
-                                                    <option value="AGITADO">Agitado</option>
-                                                    <option value="AGRESSIVO">Agressivo</option>
-                                                    <option value="MEDROSO">Medroso</option>
-                                                </select>
-                                                <input value={pet.age} onChange={e => { const u = [...pets]; u[idx].age = e.target.value; setPets(u); }} placeholder="Idade" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
-                                                <div className="flex items-center gap-2">
-                                                    <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={pet.hasKnots} onChange={e => { const u = [...pets]; u[idx].hasKnots = e.target.checked; setPets(u); }} /> Nós</label>
-                                                    <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={pet.usesPerfume} onChange={e => { const u = [...pets]; u[idx].usesPerfume = e.target.checked; setPets(u); }} /> Perfume</label>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <input value={pet.healthIssues} onChange={e => { const u = [...pets]; u[idx].healthIssues = e.target.value; setPets(u); }} placeholder="Problemas de saúde" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
-                                                <input value={pet.allergies} onChange={e => { const u = [...pets]; u[idx].allergies = e.target.value; setPets(u); }} placeholder="Alergias" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
-                                            </div>
-
-                                            {/* Advanced Migration Pet Details */}
-                                            <div className="bg-gray-100/50 p-6 rounded-3xl border border-gray-200 space-y-4">
-                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Info size={14} /> Ficha Completa (Migração)</h4>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Sexo</label>
-                                                        <select value={pet.sex} onChange={e => { const u = [...pets]; u[idx].sex = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
-                                                            <option value="">Selecione</option>
-                                                            <option value="MACHO">Macho</option>
-                                                            <option value="FEMEA">Fêmea</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Porte</label>
-                                                        <select value={pet.size} onChange={e => { const u = [...pets]; u[idx].size = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
-                                                            <option value="">Selecione</option>
-                                                            <option value="P">Pequeno</option>
-                                                            <option value="M">Médio</option>
-                                                            <option value="G">Grande</option>
-                                                            <option value="GG">Gigante</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Nascimento</label>
-                                                        <input type="date" value={pet.birthDate} onChange={e => { const u = [...pets]; u[idx].birthDate = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Alimentação</label>
-                                                        <input value={pet.feedingType} onChange={e => { const u = [...pets]; u[idx].feedingType = e.target.value; setPets(u); }} placeholder="Tipo" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos / Manias</label>
-                                                        <textarea value={pet.habits} onChange={e => { const u = [...pets]; u[idx].habits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="O que ele faz?" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos Noturnos</label>
-                                                        <textarea value={pet.nightHabits} onChange={e => { const u = [...pets]; u[idx].nightHabits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="Como ele dorme?" />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.isCastrated} onChange={e => { const u = [...pets]; u[idx].isCastrated = e.target.checked; setPets(u); }} /> Castrado</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.hasOwnTrousseau} onChange={e => { const u = [...pets]; u[idx].hasOwnTrousseau = e.target.checked; setPets(u); }} /> Enxoval Próprio</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.hasSpecialNeeds} onChange={e => { const u = [...pets]; u[idx].hasSpecialNeeds = e.target.checked; setPets(u); }} /> Nec. Especiais</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.takesMedication} onChange={e => { const u = [...pets]; u[idx].takesMedication = e.target.checked; setPets(u); }} /> Medicamento</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.vaccinesUpToDate} onChange={e => { const u = [...pets]; u[idx].vaccinesUpToDate = e.target.checked; setPets(u); }} /> Vacinas em dia</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.parasiteControlUpToDate} onChange={e => { const u = [...pets]; u[idx].parasiteControlUpToDate = e.target.checked; setPets(u); }} /> Vermífugo/Antipulgas</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.socialWithAnimals} onChange={e => { const u = [...pets]; u[idx].socialWithAnimals = e.target.checked; setPets(u); }} /> Social (Pets)</label>
-                                                    <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.allowsTreats} onChange={e => { const u = [...pets]; u[idx].allowsTreats = e.target.checked; setPets(u); }} /> Aceita Petisco</label>
-                                                </div>
-
-                                                {(pet.hasSpecialNeeds || pet.takesMedication) && (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                                        {pet.hasSpecialNeeds && <input value={pet.specialNeedsDescription} onChange={e => { const u = [...pets]; u[idx].specialNeedsDescription = e.target.value; setPets(u); }} placeholder="Detalhes nec. especiais..." className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />}
-                                                        {pet.takesMedication && <input value={pet.medicationDetails} onChange={e => { const u = [...pets]; u[idx].medicationDetails = e.target.value; setPets(u); }} placeholder="Detalhes medicação..." className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />}
-                                                    </div>
-                                                )}
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Tratativa / Autoridade</label>
-                                                        <input value={pet.authorityCommand} onChange={e => { const u = [...pets]; u[idx].authorityCommand = e.target.value; setPets(u); }} placeholder="Ex: Comando 'Não'" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase">Tempo com Pet / Origem</label>
-                                                        <input value={pet.timeWithPet} onChange={e => { const u = [...pets]; u[idx].timeWithPet = e.target.value; setPets(u); }} placeholder="Ex: 5 anos" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Grooming Details */}
-                                            <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200">
-                                                <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2"><Scissors size={14} /> Detalhes da Tosa</h4>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                    <input value={pet.groomingMachine} onChange={e => { const u = [...pets]; u[idx].groomingMachine = e.target.value; setPets(u); }} placeholder="Máquina" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
-                                                    <input value={pet.groomingHeight} onChange={e => { const u = [...pets]; u[idx].groomingHeight = e.target.value; setPets(u); }} placeholder="Altura (ex: 3mm)" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
-                                                    <input value={pet.groomingAdapter} onChange={e => { const u = [...pets]; u[idx].groomingAdapter = e.target.value; setPets(u); }} placeholder="Adaptador" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
-                                                    <input value={pet.groomingScissors} onChange={e => { const u = [...pets]; u[idx].groomingScissors = e.target.value; setPets(u); }} placeholder="Tesoura" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
-                                                </div>
-                                                <textarea value={pet.groomingNotes} onChange={e => { const u = [...pets]; u[idx].groomingNotes = e.target.value; setPets(u); }} placeholder="Observações sobre a tosa..." rows={2} className="mt-3 w-full bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm resize-none" />
-                                            </div>
-
-                                            {/* General Notes */}
-                                            <textarea value={pet.observations} onChange={e => { const u = [...pets]; u[idx].observations = e.target.value; setPets(u); }} placeholder="Observações gerais do pet..." rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm resize-none" />
-
-                                            {/* Save Pet Button */}
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        if (pet.id) {
-                                                            await api.patch(`/customers/pets/${pet.id}`, pet);
-                                                        } else {
-                                                            const res = await api.post(`/customers/${id}/pets`, pet);
-                                                            const updated = [...pets];
-                                                            updated[idx] = { ...pet, id: res.data.id, isNew: false };
-                                                            setPets(updated);
-                                                        }
-                                                        toast.success('Pet salvo');
-                                                    } catch {
-                                                        toast.error('Erro ao salvar pet');
-                                                    }
-                                                }}
-                                                className="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors"
-                                            >
-                                                Salvar Pet
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                            <button
-                                onClick={() => setPets([...pets, { name: '', species: 'Canino', breed: '', weight: null, coatType: '', temperament: '', age: '', observations: '', healthIssues: '', allergies: '', hasKnots: false, hasMattedFur: false, usesPerfume: false, usesOrnaments: false, groomingMachine: '', groomingHeight: '', groomingAdapter: '', groomingScissors: '', groomingNotes: '', isNew: true, isExpanded: true }])}
-                                className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
-                            >
-                                <Plus size={16} /> Adicionar Novo Pet
-                            </button>
-                        </div>
-                    </section>
-                </div>
-
-                <div className="space-y-8">
-                    {/* FINANCIAL SECTION */}
-                    {id !== 'new' && <CustomerFinancialSection customerId={id} />}
-
-                    {/* PREFERENCES */}
-                    <section className="bg-secondary p-8 rounded-[40px] text-white shadow-xl">
-                        <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                            <MessageSquare size={16} /> Preferências
-                        </h3>
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Tipo de Cliente</label>
-                                <div className="flex gap-2">
-                                    {['AVULSO', 'RECORRENTE'].map(t => (
-                                        <button
-                                            key={t}
-                                            onClick={() => {
-                                                if (t === 'RECORRENTE' && type !== 'RECORRENTE') {
-                                                    setShowCelebration(true);
-                                                    return;
-                                                }
-                                                setType(t);
-                                                if (t === 'AVULSO') {
-                                                    setRecurringFrequency('');
-                                                    setRecurrenceDiscount(0);
-                                                }
-                                            }}
-                                            className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all border ${type === t ? 'bg-primary border-primary text-white' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
-                                        >
-                                            {t}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Canal de Preferência</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {['APP', 'WHATSAPP', 'TELEFONE', 'OUTROS'].map(pref => (
-                                        <label key={pref} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${communicationPrefs.includes(pref) ? 'bg-primary/20 border-primary/40' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                                            <input
-                                                type="checkbox"
-                                                checked={communicationPrefs.includes(pref)}
-                                                onChange={() => {
-                                                    if (communicationPrefs.includes(pref)) setCommunicationPrefs(prev => prev.filter(p => p !== pref));
-                                                    else setCommunicationPrefs([...communicationPrefs, pref]);
-                                                }}
-                                                className="rounded border-white/20 bg-white/10 text-primary"
-                                            />
-                                            <span className="text-[10px] font-black">{pref}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                                {communicationPrefs.includes('OUTROS') && (
-                                    <input
-                                        value={communicationOther}
-                                        onChange={e => setCommunicationOther(e.target.value)}
-                                        placeholder="Explique qual canal..."
-                                        className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-primary/50"
+                                {/* NOTES */}
+                                <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 flex flex-col h-full">
+                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                        <Info size={16} /> Observações Internas
+                                    </h3>
+                                    <textarea
+                                        value={internalNotes}
+                                        onChange={e => setInternalNotes(e.target.value)}
+                                        rows={10}
+                                        className="w-full flex-1 bg-gray-50 border border-gray-100 rounded-3xl p-6 text-sm text-secondary font-medium focus:ring-2 focus:ring-primary/10 transition-all outline-none resize-none leading-relaxed"
+                                        placeholder="Notas restritas ao operacional..."
                                     />
-                                )}
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Como conheceu a 7Pet?</label>
-                                <input
-                                    value={discoverySource}
-                                    onChange={e => setDiscoverySource(e.target.value)}
-                                    className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:ring-1 focus:ring-primary/50"
-                                    placeholder="Ex: Instagram, Indicação..."
-                                />
+                                </section>
                             </div>
                         </div>
-                    </section>
+                    )}
 
-                    {/* NOTES */}
-                    <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <Info size={16} /> Observações Internas
-                        </h3>
-                        <textarea
-                            value={internalNotes}
-                            onChange={e => setInternalNotes(e.target.value)}
-                            rows={6}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 text-sm text-secondary font-medium focus:ring-2 focus:ring-primary/10 transition-all outline-none resize-none"
-                            placeholder="Notas restritas ao operacional..."
-                        />
-                    </section>
+                    {activeTab === 'PETS' && (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* PETS */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <PawPrint size={16} /> Pets do Tutor
+                                </h3>
+                                <div className="space-y-4">
+                                    {pets.map((pet, idx) => (
+                                        <div key={pet.id || idx} className="bg-gray-50 rounded-3xl border border-gray-100 overflow-hidden">
+                                            {/* Pet Header */}
+                                            <div
+                                                className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => {
+                                                    const updated = [...pets];
+                                                    updated[idx].isExpanded = !updated[idx].isExpanded;
+                                                    setPets(updated);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                                                        <PawPrint size={20} className="text-primary" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-secondary">{pet.name || 'Novo Pet'}</p>
+                                                        <p className="text-xs text-gray-400">{pet.species} {pet.breed && `• ${pet.breed}`}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (window.confirm('Remover este pet?')) {
+                                                                if (pet.id) {
+                                                                    api.delete(`/customers/pets/${pet.id}`).then(() => {
+                                                                        setPets(pets.filter((_, i) => i !== idx));
+                                                                        toast.success('Pet removido');
+                                                                    }).catch(() => toast.error('Erro ao remover'));
+                                                                } else {
+                                                                    setPets(pets.filter((_, i) => i !== idx));
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="text-red-300 hover:text-red-500 p-2"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                    {pet.isExpanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+                                                </div>
+                                            </div>
+
+                                            {/* Pet Details (Expandable) */}
+                                            {pet.isExpanded && (
+                                                <div className="p-6 border-t border-gray-200 space-y-6">
+                                                    {/* Basic Info */}
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                        <input value={pet.name} onChange={e => { const u = [...pets]; u[idx].name = e.target.value; setPets(u); }} placeholder="Nome" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                                        <select value={pet.species} onChange={e => { const u = [...pets]; u[idx].species = e.target.value; setPets(u); }} className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm">
+                                                            <option value="Canino">🐕 Canino</option>
+                                                            <option value="Felino">🐈 Felino</option>
+                                                        </select>
+                                                        <input value={pet.breed} onChange={e => { const u = [...pets]; u[idx].breed = e.target.value; setPets(u); }} placeholder="Raça" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                                        <input type="number" value={pet.weight || ''} onChange={e => { const u = [...pets]; u[idx].weight = e.target.value ? parseFloat(e.target.value) : null; setPets(u); }} placeholder="Peso (kg)" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                        <select value={pet.coatType} onChange={e => { const u = [...pets]; u[idx].coatType = e.target.value; setPets(u); }} className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm">
+                                                            <option value="">Tipo de Pelo</option>
+                                                            <option value="CURTO">Curto</option>
+                                                            <option value="MEDIO">Médio</option>
+                                                            <option value="LONGO">Longo</option>
+                                                        </select>
+                                                        <select value={pet.temperament} onChange={e => { const u = [...pets]; u[idx].temperament = e.target.value; setPets(u); }} className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm">
+                                                            <option value="">Temperamento</option>
+                                                            <option value="DOCIL">Dócil</option>
+                                                            <option value="AGITADO">Agitado</option>
+                                                            <option value="AGRESSIVO">Agressivo</option>
+                                                            <option value="MEDROSO">Medroso</option>
+                                                        </select>
+                                                        <input value={pet.age} onChange={e => { const u = [...pets]; u[idx].age = e.target.value; setPets(u); }} placeholder="Idade" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={pet.hasKnots} onChange={e => { const u = [...pets]; u[idx].hasKnots = e.target.checked; setPets(u); }} /> Nós</label>
+                                                            <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={pet.usesPerfume} onChange={e => { const u = [...pets]; u[idx].usesPerfume = e.target.checked; setPets(u); }} /> Perfume</label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <input value={pet.healthIssues} onChange={e => { const u = [...pets]; u[idx].healthIssues = e.target.value; setPets(u); }} placeholder="Problemas de saúde" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                                        <input value={pet.allergies} onChange={e => { const u = [...pets]; u[idx].allergies = e.target.value; setPets(u); }} placeholder="Alergias" className="bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold text-sm" />
+                                                    </div>
+
+                                                    {/* Advanced Migration Pet Details */}
+                                                    <div className="bg-gray-100/50 p-6 rounded-3xl border border-gray-200 space-y-4">
+                                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Info size={14} /> Ficha Completa (Migração)</h4>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Sexo</label>
+                                                                <select value={pet.sex} onChange={e => { const u = [...pets]; u[idx].sex = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
+                                                                    <option value="">Selecione</option>
+                                                                    <option value="MACHO">Macho</option>
+                                                                    <option value="FEMEA">Fêmea</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Porte</label>
+                                                                <select value={pet.size} onChange={e => { const u = [...pets]; u[idx].size = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
+                                                                    <option value="">Selecione</option>
+                                                                    <option value="P">Pequeno</option>
+                                                                    <option value="M">Médio</option>
+                                                                    <option value="G">Grande</option>
+                                                                    <option value="GG">Gigante</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Nascimento</label>
+                                                                <input type="date" value={pet.birthDate} onChange={e => { const u = [...pets]; u[idx].birthDate = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Alimentação</label>
+                                                                <input value={pet.feedingType} onChange={e => { const u = [...pets]; u[idx].feedingType = e.target.value; setPets(u); }} placeholder="Tipo" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos / Manias</label>
+                                                                <textarea value={pet.habits} onChange={e => { const u = [...pets]; u[idx].habits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="O que ele faz?" />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos Noturnos</label>
+                                                                <textarea value={pet.nightHabits} onChange={e => { const u = [...pets]; u[idx].nightHabits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="Como ele dorme?" />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.isCastrated} onChange={e => { const u = [...pets]; u[idx].isCastrated = e.target.checked; setPets(u); }} /> Castrado</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.hasOwnTrousseau} onChange={e => { const u = [...pets]; u[idx].hasOwnTrousseau = e.target.checked; setPets(u); }} /> Enxoval Próprio</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.hasSpecialNeeds} onChange={e => { const u = [...pets]; u[idx].hasSpecialNeeds = e.target.checked; setPets(u); }} /> Nec. Especiais</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.takesMedication} onChange={e => { const u = [...pets]; u[idx].takesMedication = e.target.checked; setPets(u); }} /> Medicamento</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.vaccinesUpToDate} onChange={e => { const u = [...pets]; u[idx].vaccinesUpToDate = e.target.checked; setPets(u); }} /> Vacinas em dia</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.parasiteControlUpToDate} onChange={e => { const u = [...pets]; u[idx].parasiteControlUpToDate = e.target.checked; setPets(u); }} /> Vermífugo/Antipulgas</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.socialWithAnimals} onChange={e => { const u = [...pets]; u[idx].socialWithAnimals = e.target.checked; setPets(u); }} /> Social (Pets)</label>
+                                                            <label className="flex items-center gap-2 text-[10px] font-bold text-gray-600"><input type="checkbox" checked={pet.allowsTreats} onChange={e => { const u = [...pets]; u[idx].allowsTreats = e.target.checked; setPets(u); }} /> Aceita Petisco</label>
+                                                        </div>
+
+                                                        {(pet.hasSpecialNeeds || pet.takesMedication) && (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                                                {pet.hasSpecialNeeds && <input value={pet.specialNeedsDescription} onChange={e => { const u = [...pets]; u[idx].specialNeedsDescription = e.target.value; setPets(u); }} placeholder="Detalhes nec. especiais..." className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />}
+                                                                {pet.takesMedication && <input value={pet.medicationDetails} onChange={e => { const u = [...pets]; u[idx].medicationDetails = e.target.value; setPets(u); }} placeholder="Detalhes medicação..." className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Tratativa / Autoridade</label>
+                                                                <input value={pet.authorityCommand} onChange={e => { const u = [...pets]; u[idx].authorityCommand = e.target.value; setPets(u); }} placeholder="Ex: Comando 'Não'" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Tempo com Pet / Origem</label>
+                                                                <input value={pet.timeWithPet} onChange={e => { const u = [...pets]; u[idx].timeWithPet = e.target.value; setPets(u); }} placeholder="Ex: 5 anos" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Grooming Details */}
+                                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200">
+                                                        <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2"><Scissors size={14} /> Detalhes da Tosa</h4>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                            <input value={pet.groomingMachine} onChange={e => { const u = [...pets]; u[idx].groomingMachine = e.target.value; setPets(u); }} placeholder="Máquina" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
+                                                            <input value={pet.groomingHeight} onChange={e => { const u = [...pets]; u[idx].groomingHeight = e.target.value; setPets(u); }} placeholder="Altura (ex: 3mm)" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
+                                                            <input value={pet.groomingAdapter} onChange={e => { const u = [...pets]; u[idx].groomingAdapter = e.target.value; setPets(u); }} placeholder="Adaptador" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
+                                                            <input value={pet.groomingScissors} onChange={e => { const u = [...pets]; u[idx].groomingScissors = e.target.value; setPets(u); }} placeholder="Tesoura" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
+                                                        </div>
+                                                        <textarea value={pet.groomingNotes} onChange={e => { const u = [...pets]; u[idx].groomingNotes = e.target.value; setPets(u); }} placeholder="Observações sobre a tosa..." rows={2} className="mt-3 w-full bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm resize-none" />
+                                                    </div>
+
+                                                    {/* General Notes */}
+                                                    <textarea value={pet.observations} onChange={e => { const u = [...pets]; u[idx].observations = e.target.value; setPets(u); }} placeholder="Observações gerais do pet..." rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm resize-none" />
+
+                                                    {/* Save Pet Button */}
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                if (pet.id) {
+                                                                    await api.patch(`/customers/pets/${pet.id}`, pet);
+                                                                } else {
+                                                                    const res = await api.post(`/customers/${id}/pets`, pet);
+                                                                    const updated = [...pets];
+                                                                    updated[idx] = { ...pet, id: res.data.id, isNew: false };
+                                                                    setPets(updated);
+                                                                }
+                                                                toast.success('Pet salvo');
+                                                            } catch {
+                                                                toast.error('Erro ao salvar pet');
+                                                            }
+                                                        }}
+                                                        className="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors"
+                                                    >
+                                                        Salvar Pet
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button
+                                        onClick={() => setPets([...pets, { name: '', species: 'Canino', breed: '', weight: null, coatType: '', temperament: '', age: '', observations: '', healthIssues: '', allergies: '', hasKnots: false, hasMattedFur: false, usesPerfume: false, usesOrnaments: false, groomingMachine: '', groomingHeight: '', groomingAdapter: '', groomingScissors: '', groomingNotes: '', isNew: true, isExpanded: true }])}
+                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Plus size={16} /> Adicionar Novo Pet
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {activeTab === 'FINANCEIRO' && id !== 'new' && (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* FINANCIAL SECTION */}
+                            <CustomerFinancialSection customerId={id} />
+                        </div>
+                    )}
+
+                    {activeTab === 'HISTORICO' && id !== 'new' && (
+                        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <History size={16} /> Histórico de Alterações
+                            </h3>
+                            <ClientAuditTimeline clientId={id} />
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* ASSIGN BADGE MODAL */}
-            {isAssigningBadge && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[40px] w-full max-w-md p-8 shadow-2xl">
-                        <h3 className="text-2xl font-black text-secondary tracking-tight mb-6">Atribuir <span className="text-primary">Insígnia</span></h3>
+            {
+                isAssigningBadge && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-[40px] w-full max-w-md p-8 shadow-2xl">
+                            <h3 className="text-2xl font-black text-secondary tracking-tight mb-6">Atribuir <span className="text-primary">Insígnia</span></h3>
 
-                        <div className="grid grid-cols-3 gap-3 mb-8">
-                            {[
-                                { id: 'THANK_YOU', icon: Heart, label: 'Vlw!', color: 'text-red-500' },
-                                { id: 'TEAM_WORK', icon: Users, label: 'Equipe', color: 'text-blue-500' },
-                                { id: 'TOP_WORKER', icon: Star, label: 'Top', color: 'text-amber-500' },
-                                { id: 'ACHIEVEMENT', icon: Trophy, label: 'Meta', color: 'text-amber-500' },
-                                { id: 'ENERGY', icon: Zap, label: 'Uau!', color: 'text-yellow-500' },
-                            ].map(b => (
+                            <div className="grid grid-cols-3 gap-3 mb-8">
+                                {[
+                                    { id: 'THANK_YOU', icon: Heart, label: 'Vlw!', color: 'text-red-500' },
+                                    { id: 'TEAM_WORK', icon: Users, label: 'Equipe', color: 'text-blue-500' },
+                                    { id: 'TOP_WORKER', icon: Star, label: 'Top', color: 'text-amber-500' },
+                                    { id: 'ACHIEVEMENT', icon: Trophy, label: 'Meta', color: 'text-amber-500' },
+                                    { id: 'ENERGY', icon: Zap, label: 'Uau!', color: 'text-yellow-500' },
+                                ].map(b => (
+                                    <button
+                                        key={b.id}
+                                        onClick={() => setSelectedBadge(b.id)}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-3xl border transition-all ${selectedBadge === b.id ? 'bg-primary/5 border-primary shadow-lg scale-105' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
+                                    >
+                                        <b.icon size={24} className={selectedBadge === b.id ? b.color : ''} />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">{b.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="space-y-4 mb-8">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Comentário (Opcional)</label>
+                                <textarea
+                                    value={badgeComment}
+                                    onChange={e => setBadgeComment(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 text-sm font-bold resize-none focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+                                    rows={3}
+                                    placeholder="Por que este colaborador merece esta insignia?"
+                                />
+                            </div>
+
+                            <div className="flex gap-4">
                                 <button
-                                    key={b.id}
-                                    onClick={() => setSelectedBadge(b.id)}
-                                    className={`flex flex-col items-center gap-2 p-4 rounded-3xl border transition-all ${selectedBadge === b.id ? 'bg-primary/5 border-primary shadow-lg scale-105' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
+                                    onClick={() => setIsAssigningBadge(false)}
+                                    className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors"
                                 >
-                                    <b.icon size={24} className={selectedBadge === b.id ? b.color : ''} />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">{b.label}</span>
+                                    Cancelar
                                 </button>
-                            ))}
-                        </div>
-
-                        <div className="space-y-4 mb-8">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Comentário (Opcional)</label>
-                            <textarea
-                                value={badgeComment}
-                                onChange={e => setBadgeComment(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 text-sm font-bold resize-none focus:ring-2 focus:ring-primary/10 transition-all outline-none"
-                                rows={3}
-                                placeholder="Por que este colaborador merece esta insignia?"
-                            />
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => setIsAssigningBadge(false)}
-                                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleAssignBadge}
-                                className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-                            >
-                                Confirmar
-                            </button>
+                                <button
+                                    onClick={handleAssignBadge}
+                                    className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div>
     );
 

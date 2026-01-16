@@ -33,8 +33,8 @@ export const createTransaction = async (params: CreateTransactionParams) => {
         },
         include: {
             customer: true,
-            relatedQuote: true,
-            relatedInvoice: true
+            quote: true,
+            invoice: true
         }
     });
 
@@ -98,10 +98,10 @@ export const getTransactionHistory = async (
             skip,
             take,
             include: {
-                relatedQuote: {
+                quote: {
                     select: { id: true, seqId: true, status: true }
                 },
-                relatedInvoice: {
+                invoice: {
                     select: { id: true, amount: true, status: true }
                 }
             }
@@ -129,6 +129,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
     if (balance < -1000 && !existingAlerts.some(a => a.type === 'CRITICAL')) {
         await prisma.customerAlert.create({
             data: {
+                id: crypto.randomUUID(),
                 customerId,
                 type: 'CRITICAL',
                 title: '🔴 Débito Crítico',
@@ -141,6 +142,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
     else if (balance < -500 && !existingAlerts.some(a => a.type === 'WARNING')) {
         await prisma.customerAlert.create({
             data: {
+                id: crypto.randomUUID(),
                 customerId,
                 type: 'WARNING',
                 title: '⚠️ Débito Elevado',

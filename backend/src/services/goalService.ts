@@ -22,7 +22,7 @@ export const createGoal = async (data: {
             ...goalData,
             startDate: new Date(startDate),
             endDate: new Date(endDate),
-            GoalAssignment: staffIds ? {
+            goalAssignments: staffIds ? {
                 create: staffIds.map(staffId => ({
                     id: crypto.randomUUID(),
                     staffId
@@ -30,9 +30,9 @@ export const createGoal = async (data: {
             } : undefined
         },
         include: {
-            GoalAssignment: {
+            goalAssignments: {
                 include: {
-                    StaffProfile: {
+                    staff: {
                         include: {
                             user: {
                                 select: { name: true }
@@ -70,9 +70,9 @@ export const updateGoal = async (id: string, data: any) => {
             ...(endDate && { endDate: new Date(endDate) }),
         },
         include: {
-            GoalAssignment: {
+            goalAssignments: {
                 include: {
-                    StaffProfile: {
+                    staff: {
                         include: {
                             user: {
                                 select: { name: true }
@@ -92,9 +92,9 @@ export const deleteGoal = async (id: string) => {
 export const getAllGoals = async () => {
     return prisma.goal.findMany({
         include: {
-            GoalAssignment: {
+            goalAssignments: {
                 include: {
-                    StaffProfile: {
+                    staff: {
                         include: {
                             user: {
                                 select: { name: true }
@@ -117,7 +117,7 @@ export const getGoalsForStaff = async (staffId: string, department?: string) => 
             startDate: { lte: now },
             endDate: { gte: now },
             OR: [
-                { GoalAssignment: { some: { staffId } } },
+                { goalAssignments: { some: { staffId } } },
                 { department: department || undefined }
             ]
         },

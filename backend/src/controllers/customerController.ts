@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
-import { createAuditLog, detectChanges } from '../utils/auditLogger';
+import * as auditService from '../services/auditService';
 import * as customerService from '../services/customerService';
 
 const customerSchema = z.object({
@@ -63,7 +63,8 @@ export const customerController = {
                     OR: [
                         { name: { contains: q, mode: 'insensitive' } },
                         { phone: { contains: q, mode: 'insensitive' } },
-                        { legacyBitrixId: { contains: q, mode: 'insensitive' } }
+                        { legacyBitrixId: { contains: q, mode: 'insensitive' } },
+                        { user: { email: { contains: q, mode: 'insensitive' } } }
                     ]
                 },
                 include: {
@@ -377,12 +378,14 @@ export const customerController = {
                 });
 
                 // Create audit log
-                await createAuditLog({
-                    entityType: 'CUSTOMER',
-                    entityId: customer.id,
-                    action: 'CREATE',
-                    performedBy: user.id,
-                    reason: 'Cliente criado pela equipe'
+                await auditService.logEvent((req as any).audit, {
+                    targetType: 'CLIENT',
+                    targetId: customer.id,
+                    clientId: customer.id,
+                    action: 'CLIENT_CREATED',
+                    summary: `Cliente ${customer.name} criado pela equipe`,
+                    after: customer,
+                    revertible: false
                 }, tx);
 
                 return customer;
@@ -546,15 +549,14 @@ export const customerController = {
                     data: customerUpdateData
                 });
 
-                // Create audit log with detected changes
-                await createAuditLog({
-                    entityType: 'CUSTOMER',
-                    entityId: id,
-                    action: 'UPDATE',
-                    performedBy,
-                    changes: detectChanges(customerBefore, updated),
-                    reason: 'Atualização de dados do cliente'
-                }, tx);
+                // Create audit log using specific helper
+                await auditService.logClientUpdated(
+                    (req as any).audit,
+                    id,
+                    customerBefore,
+                    updated,
+                    tx
+                );
 
                 return updated;
             });
@@ -687,6 +689,11 @@ export const customerController = {
             const { petId } = req.params;
             const data = req.body;
 
+            // Fetch before for diff
+            const petBefore = await prisma.pet.findUnique({
+                where: { id: petId }
+            });
+
             const pet = await prisma.pet.update({
                 where: { id: petId },
                 data: {
@@ -711,6 +718,20 @@ export const customerController = {
                     groomingScissors: data.groomingScissors,
                     groomingNotes: data.groomingNotes,
                 }
+            });
+
+            // Log Pet Update
+            await auditService.logEvent((req as any).audit, {
+                targetType: 'PET',
+                targetId: petId,
+                clientId: pet.customerId || undefined,
+                petId: petId,
+                action: 'PET_UPDATED',
+                summary: `Dados do pet ${pet.name} atualizados`,
+                before: petBefore,
+                after: pet,
+                revertible: true,
+                revertStrategy: 'PATCH'
             });
 
             return res.json(pet);

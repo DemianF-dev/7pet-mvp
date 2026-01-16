@@ -24,6 +24,7 @@ import petRoutes from './routes/petRoutes';
 import serviceRoutes from './routes/serviceRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import quoteRoutes from './routes/quoteRoutes';
+import auditRoutes from './routes/auditRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import staffRoutes from './routes/staffRoutes';
@@ -46,6 +47,8 @@ import packageRoutes from './routes/packageRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
+import { auditContextMiddleware } from './middlewares/auditContext';
+
 
 // 📊 MONITORING SYSTEM
 import { metricsMiddleware } from './middlewares/metricsMiddleware';
@@ -138,6 +141,13 @@ app.use((req, res, next) => {
     next();
 });
 
+// 2. Apply Audit Context (Must be after normalization and before routes)
+// Note: req.user is populated by authenticate middleware inside routes, 
+// so we'll apply this globally but it will only find req.user if placed after auth.
+// However, the prompt says "apply auditContext after auth parsing".
+app.use(auditContextMiddleware);
+
+
 // NOTE: helmet(), compression(), and express.json() are already applied above (lines 69-70, 119)
 
 app.use('/auth', authRoutes);
@@ -146,6 +156,7 @@ app.use('/pets', petRoutes);
 app.use('/services', serviceRoutes);
 app.use('/appointments', appointmentRoutes);
 app.use('/quotes', quoteRoutes);
+app.use('/audit', auditRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/staff', staffRoutes);
 app.use('/management', managementRoutes);

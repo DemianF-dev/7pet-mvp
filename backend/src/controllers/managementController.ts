@@ -4,6 +4,8 @@ import { AppointmentStatus, InvoiceStatus } from '@prisma/client';
 import * as appointmentService from '../services/appointmentService';
 import bcrypt from 'bcryptjs';
 import { socketService } from '../services/socketService';
+import * as auditService from '../services/auditService';
+
 
 const getNextStaffId = async (role: string) => {
     if (role === 'CLIENTE') {
@@ -32,6 +34,10 @@ const isRestricted = (email?: string | null) => {
     if (!email) return false;
     return RESTRICTED_EMAILS.some(e => email.toLowerCase().includes(e.toLowerCase()));
 };
+
+// Helper to check if user is Master by Role, Division or specific Email
+const isMaster = (user: any) => user?.email === MASTER_EMAIL || user?.role === 'MASTER' || user?.division === 'MASTER';
+const isAdmin = (user: any) => user?.role === 'ADMIN' || user?.division === 'ADMIN' || isMaster(user);
 
 const getDefaultPermissions = async (role: string) => {
     try {
@@ -88,11 +94,11 @@ export const getKPIs = async (req: Request, res: Response) => {
                 prisma.service.findMany({
                     include: {
                         _count: {
-                            select: { appointments: true }
+                            select: { Appointment: true }
                         }
                     },
                     orderBy: {
-                        appointments: { _count: 'desc' }
+                        Appointment: { _count: 'desc' }
                     },
                     take: 5
                 }),
@@ -249,7 +255,7 @@ export const getKPIs = async (req: Request, res: Response) => {
             },
             services: servicePopularity.map((s: any) => ({
                 name: s.name,
-                count: s._count.appointments
+                count: s._count.Appointment
             })),
             growth: {
                 newCustomers: newCustomersThisMonth
@@ -272,14 +278,10 @@ export const getKPIs = async (req: Request, res: Response) => {
 export const verifyMaster = async (req: Request, res: Response) => {
     try {
         const user = (req as any).user;
-        res.json({
-            ok: true,
-            email: user?.email,
-            role: user?.role,
-            superMaster: user?.email === 'oidemianf@gmail.com'
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao verificar status Master' });
+        const master = isMaster(user);
+        res.json({ isMaster: master });
+    } catch (e) {
+        res.status(500).json({ error: 'Erro ao verificar master' });
     }
 };
 
@@ -312,16 +314,16 @@ export const getReports = async (req: Request, res: Response) => {
     }
 };
 
-// Helper to check if user is Master by Role
-const isMaster = (user: any) => user?.role === 'MASTER';
-const isAdmin = (user: any) => user?.role === 'ADMIN';
+
+// Middlewares are using these helpers
 
 export const listUsers = async (req: Request, res: Response) => {
     try {
+        console.log('[listUsers] Request received');
         const currentUser = (req as any).user;
         const { trash } = req.query;
 
-        console.log('listUsers request by:', currentUser?.email, 'Role:', currentUser?.role);
+        console.log('listUsers request by:', currentUser?.email, 'Role:', currentUser?.role, 'Division:', currentUser?.division);
 
         const users = await prisma.user.findMany({
             where: {
@@ -330,6 +332,8 @@ export const listUsers = async (req: Request, res: Response) => {
             include: { customer: true },
             orderBy: { createdAt: 'desc' }
         });
+
+        console.log(`[listUsers] Found ${users.length} users`);
 
         // Strict Privacy Rule: Non-Masters cannot see Master users at all
         const visibleUsers = users.filter(u => {
@@ -349,7 +353,12 @@ export const listUsers = async (req: Request, res: Response) => {
             }
 
             // Add online status
-            userJson.isOnline = socketService.isUserOnline(u.id);
+            try {
+                userJson.isOnline = socketService.isUserOnline(u.id);
+            } catch (sockErr) {
+                console.warn(`[listUsers] Socket check failed for user ${u.id}`, sockErr);
+                userJson.isOnline = false;
+            }
 
             return userJson;
         });
@@ -391,7 +400,19 @@ export const updateUserRole = async (req: Request, res: Response) => {
             data: updateData
         });
 
+        // Audit Log
+        await auditService.logSecurityEvent((req as any).audit, {
+            targetId: id,
+            action: 'PERMISSION_CHANGED',
+            summary: `Cargo de ${user.name} alterado para ${role}`,
+            before: { role: targetUser.role },
+            after: { role },
+            revertible: true,
+            revertStrategy: 'PATCH'
+        });
+
         res.json(user);
+
     } catch (error) {
         console.error('Update role error:', error);
         res.status(500).json({ error: 'Erro ao atualizar cargo.' });
@@ -487,7 +508,17 @@ export const createUser = async (req: Request, res: Response) => {
             include: { customer: true }
         });
 
+        // Audit Log
+        await auditService.logSecurityEvent((req as any).audit, {
+            targetId: user.id,
+            action: 'USER_CREATED',
+            summary: `Novo usuário ${user.name} (${user.role}) criado`,
+            after: user,
+            revertible: false
+        });
+
         res.status(201).json(user);
+
     } catch (error) {
         console.error('Create user error:', error);
         res.status(500).json({ error: 'Erro ao criar usuário' });
@@ -502,9 +533,10 @@ export const updateUser = async (req: Request, res: Response) => {
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        // PROTECT MASTER ACCOUNT
-        if (targetUser.role === 'MASTER' && !isMaster(currentUser)) {
-            return res.status(403).json({ error: 'Apenas o Master pode alterar dados de usuários Master.' });
+        // PROTECT ADMIN/MASTER ACCOUNTS - Only Master can edit them
+        const isMasterUser = isMaster(currentUser);
+        if ((targetUser.role === 'MASTER' || targetUser.role === 'ADMIN') && !isMasterUser) {
+            return res.status(403).json({ error: 'Apenas o Master pode alterar dados de usuários Administradores ou Master.' });
         }
 
         const {
@@ -603,7 +635,19 @@ export const updateUser = async (req: Request, res: Response) => {
             });
         }
 
+        // Audit Log
+        await auditService.logSecurityEvent((req as any).audit, {
+            targetId: id,
+            action: 'USER_UPDATED',
+            summary: `Dados de ${updatedUser?.name} atualizados`,
+            before: targetUser,
+            after: updatedUser,
+            revertible: true,
+            revertStrategy: 'PATCH'
+        });
+
         res.json(updatedUser);
+
     } catch (error) {
         console.error('Update user error:', error);
         console.error('Error details:', {
@@ -646,7 +690,17 @@ export const deleteUser = async (req: Request, res: Response) => {
             }
         });
 
+        // Audit Log
+        await auditService.logSecurityEvent((req as any).audit, {
+            targetId: id,
+            action: 'USER_DELETED_SOFT',
+            summary: `Usuário ${targetUser.name} movido para a lixeira`,
+            revertible: true,
+            revertStrategy: 'RESTORE_SOFT_DELETE'
+        });
+
         res.json({ message: 'Usuário excluído com sucesso' });
+
     } catch (error) {
         console.error('Delete user error:', error);
         res.status(500).json({ error: 'Erro ao excluir usuário' });
@@ -744,3 +798,66 @@ export const restoreUser = async (req: Request, res: Response) => {
     }
 };
 
+export const permanentDeleteUser = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const currentUser = (req as any).user;
+
+        // Only Master can permanently delete
+        if (!isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode excluir permanentemente usuários.' });
+        }
+
+        const targetUser = await prisma.user.findUnique({
+            where: { id },
+            include: { customer: true }
+        });
+
+        if (!targetUser) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        // Check if user is in trash (soft deleted)
+        if (!targetUser.deletedAt) {
+            return res.status(400).json({
+                error: 'O usuário deve estar na lixeira antes de ser excluído permanentemente. Mova-o para a lixeira primeiro.'
+            });
+        }
+
+        // Store info for audit before deletion
+        const userInfo = {
+            email: targetUser.email,
+            name: targetUser.name,
+            role: targetUser.role
+        };
+
+        // Delete customer profile if exists (will cascade delete related records based on schema)
+        if (targetUser.customer) {
+            await prisma.customer.delete({
+                where: { id: targetUser.customer.id }
+            });
+        }
+
+        // Hard delete the user
+        await prisma.user.delete({
+            where: { id }
+        });
+
+        // Audit Log - mark as NOT revertible since it's permanent
+        await auditService.logSecurityEvent((req as any).audit, {
+            targetId: id,
+            action: 'USER_DELETED_PERMANENT',
+            summary: `Usuário ${userInfo.name} (${userInfo.email}) foi excluído permanentemente do sistema`,
+            revertible: false
+        });
+
+        res.json({
+            message: 'Usuário excluído permanentemente. O e-mail está agora disponível para reutilização.',
+            email: userInfo.email
+        });
+
+    } catch (error) {
+        console.error('Permanent delete user error:', error);
+        res.status(500).json({ error: 'Erro ao excluir usuário permanentemente' });
+    }
+};

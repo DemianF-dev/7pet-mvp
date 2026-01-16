@@ -221,7 +221,7 @@ export const getPackageById = async (packageId: string) => {
             appointments: {
                 where: { deletedAt: null },
                 orderBy: { startAt: 'asc' },
-                include: { transport: true }
+                include: { transportDetails: true }
             },
             quotes: true,
             debitCredits: {
@@ -327,7 +327,7 @@ export const schedulePackageMonth = async (input: SchedulePackageInput) => {
             };
 
             if (appt.isTransport && appt.transportType) {
-                appointmentData.transport = {
+                appointmentData.transportDetails = {
                     create: {
                         origin: appt.transportOrigin || (appt.transportType === 'LEVA' ? 'Endereço do Cliente' : '7Pet'),
                         destination: appt.transportDestination || (appt.transportType === 'LEVA' ? '7Pet' : 'Endereço do Cliente'),
@@ -339,7 +339,7 @@ export const schedulePackageMonth = async (input: SchedulePackageInput) => {
 
             const created = await tx.appointment.create({
                 data: appointmentData,
-                include: { transport: true }
+                include: { transportDetails: true }
             });
 
             createdAppointments.push(created);

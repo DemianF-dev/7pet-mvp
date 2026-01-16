@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260115-0407",
-  "stage": "BETA",
-  "timestamp": "2026-01-15T04:07:23.000Z",
+  "version": "STABLE20260116-1236",
+  "stage": "STABLE",
+  "timestamp": "2026-01-16T15:36:15.000Z",
   "commit": "a404fe9",
-  "buildNumber": 75,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "buildNumber": 76,
+  "releaseNotes": "Release 1.0.0-PROD: Sistema pronto para produção com auditoria completa, segurança robusta e layout premium."
 }

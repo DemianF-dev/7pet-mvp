@@ -82,7 +82,7 @@ export const create = async (data: {
             services: data.serviceIds ? {
                 connect: data.serviceIds.map(id => ({ id }))
             } : undefined,
-            transport: data.transport ? {
+            transportDetails: data.transport ? {
                 create: {
                     origin: data.transport.origin || 'Endereço não informado',
                     destination: data.transport.destination || '7Pet',
@@ -95,7 +95,7 @@ export const create = async (data: {
         include: {
             pet: true,
             services: true,
-            transport: true,
+            transportDetails: true,
             performer: true,
             customer: {
                 include: { pets: true }
@@ -135,7 +135,7 @@ export const list = async (
             services: {
                 select: { id: true, name: true, basePrice: true, duration: true }
             },
-            transport: true,
+            transportDetails: true,
             performer: {
                 select: { id: true, name: true, color: true }
             },
@@ -148,7 +148,7 @@ export const list = async (
                     status: true,
                     appointments: {
                         where: { deletedAt: null },
-                        select: { id: true, category: true, transport: { select: { type: true } } }
+                        select: { id: true, category: true, transportDetails: { select: { type: true } } }
                     }
                 }
             },
@@ -178,7 +178,7 @@ export const get = async (id: string) => {
         include: {
             pet: true,
             services: true,
-            transport: true,
+            transportDetails: true,
             performer: true,
             invoice: {
                 include: { payments: true, customer: true }
@@ -208,7 +208,7 @@ export const update = async (id: string, data: any, userId?: string) => {
                 set: [], // Clear existing relations
                 connect: data.serviceIds.map((sid: string) => ({ id: sid }))
             } : undefined,
-            transport: data.transport ? {
+            transportDetails: data.transport ? {
                 upsert: {
                     create: {
                         origin: data.transport.origin || 'Endereço não informado',
@@ -227,7 +227,7 @@ export const update = async (id: string, data: any, userId?: string) => {
         include: {
             pet: true,
             services: true,
-            transport: true,
+            transportDetails: true,
             performer: true,
             customer: {
                 include: { pets: true }
@@ -259,7 +259,7 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
             customer: { include: { user: true } },
             pet: true,
             services: true,
-            transport: true
+            transportDetails: true
         }
     });
 
@@ -304,7 +304,7 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
                 }
 
                 // Record Transport production if it's LOGISTICA
-                if (updated.category === 'LOGISTICA' || updated.transport) {
+                if (updated.category === 'LOGISTICA' || updated.transportDetails) {
                     const existingLegs = await hrService.getTransportLegExecutions({ staffId: staff.id });
                     const apptLegs = existingLegs.filter(l => l.appointmentId === updated.id);
 
@@ -341,7 +341,7 @@ export const updateLogisticsStatus = async (id: string, logisticsStatus: string,
         include: {
             customer: { include: { user: true } },
             pet: true,
-            transport: true,
+            transportDetails: true,
             performer: true
         }
     });
@@ -455,7 +455,7 @@ export const listTrash = async () => {
         include: {
             pet: true,
             services: true,
-            transport: true,
+            transportDetails: true,
             performer: true,
             customer: {
                 include: { pets: true }

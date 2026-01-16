@@ -159,8 +159,8 @@ export const registerManual = async (tx: any, data: any) => {
                     role: 'CLIENTE',
                     division: 'CLIENTE',
                     name: customer.name,
-                    firstName: customer.firstName || customer.name.split(' ')[0],
-                    lastName: customer.lastName || customer.name.split(' ').slice(1).join(' '),
+                    firstName: customer.firstName || (customer.name ? customer.name.split(' ')[0] : 'Cliente'),
+                    lastName: customer.lastName || (customer.name ? customer.name.split(' ').slice(1).join(' ') : ''),
                     phone: customer.phone,
                     address: customer.address,
                     isEligible: false,
@@ -189,10 +189,28 @@ export const registerManual = async (tx: any, data: any) => {
                 },
                 include: { customer: true }
             });
+        } else if (!user.customer) {
+            // Se o usuário existe mas não tem perfil de cliente (ex: admin), cria agora
+            const customerProfile = await tx.customer.create({
+                data: {
+                    userId: user.id,
+                    name: customer.name || user.name,
+                    phone: customer.phone || user.phone,
+                    address: customer.address || user.address,
+                    type: customer.type || 'AVULSO',
+                    recurrenceFrequency: customer.recurrenceFrequency || null,
+                    discoverySource: 'BALCAO_MANUAL'
+                }
+            });
+            user.customer = customerProfile;
         }
     }
 
-    const customerId = user!.customer!.id;
+    if (!user || !user.customer) {
+        throw new Error('Falha ao localizar ou criar perfil de cliente.');
+    }
+
+    const customerId = user.customer.id;
 
     // 2. Criar ou Atualizar Pet
     let dbPet = null;

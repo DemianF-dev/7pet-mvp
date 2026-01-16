@@ -21,12 +21,13 @@ router.use((req, res, next) => {
     const userDivision = user?.division || user?.role;
     const userRole = user?.role;
 
-    // Allow MASTER role OR ADMIN division
-    if (userRole === 'MASTER' || userDivision === 'ADMIN') {
+    // Allow MASTER role/division OR ADMIN division/role
+    const isSuperUser = userRole === 'MASTER' || userDivision === 'MASTER' || userDivision === 'ADMIN';
+
+    if (isSuperUser) {
         return next();
     }
 
-    console.log('[Management Routes] Access denied - not MASTER or ADMIN');
     return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
 });
 
@@ -41,11 +42,24 @@ router.post('/users/:id/restore', managementController.restoreUser);
 // Legacy individual role update kept if needed, but updateUser covers it
 router.put('/users/:id/role', managementController.updateUserRole);
 
-// Role Permissions
-// Role Permissions
-router.get('/roles', managementController.getRoleConfigs);
-router.put('/roles/:role', managementController.updateRoleConfig);
-router.delete('/roles/:role', managementController.deleteRoleConfig);
+// Role Permissions - MASTER ONLY
+router.get('/roles', (req, res, next) => {
+    const user = (req as any).user;
+    if (user?.email === 'oidemianf@gmail.com' || user?.role === 'MASTER' || user?.division === 'MASTER') return next();
+    return res.status(403).json({ error: 'Apenas o Master pode configurar cargos.' });
+}, managementController.getRoleConfigs);
+
+router.put('/roles/:role', (req, res, next) => {
+    const user = (req as any).user;
+    if (user?.email === 'oidemianf@gmail.com' || user?.role === 'MASTER' || user?.division === 'MASTER') return next();
+    return res.status(403).json({ error: 'Apenas o Master pode alterar cargos.' });
+}, managementController.updateRoleConfig);
+
+router.delete('/roles/:role', (req, res, next) => {
+    const user = (req as any).user;
+    if (user?.email === 'oidemianf@gmail.com' || user?.role === 'MASTER' || user?.division === 'MASTER') return next();
+    return res.status(403).json({ error: 'Apenas o Master pode excluir cargos.' });
+}, managementController.deleteRoleConfig);
 
 // Audit Logs
 router.get('/audit/:entityType/:entityId', auditController.getLogs);

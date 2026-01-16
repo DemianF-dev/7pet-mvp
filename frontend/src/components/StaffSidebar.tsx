@@ -27,7 +27,8 @@ import {
     ChevronLeft,
     ChevronRight,
     History,
-    Target
+    Target,
+    Shield
 } from 'lucide-react';
 
 import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
@@ -104,8 +105,8 @@ export default function StaffSidebar() {
     const checkPermission = (module: string) => {
         if (!user) return false;
 
-        // Master always has access
-        if (user.role === 'MASTER') return true;
+        // MASTER always has access - check by role, division, AND email
+        if (user.role === 'MASTER' || user.division === 'MASTER' || user.email === 'oidemianf@gmail.com') return true;
 
         // 1. Check if user has explicit permission array
         let perms: string[] | null = null;
@@ -195,13 +196,23 @@ export default function StaffSidebar() {
                     />
                 )}
 
-                {/* 5. Clientes */}
+                {/* 11. Clientes */}
                 {checkPermission('customers') && (
                     <SidebarItem
                         icon={<Users size={20} />}
                         label="Clientes"
-                        active={location.pathname === '/staff/customers'}
+                        active={location.pathname.startsWith('/staff/customers')}
                         onClick={() => { navigate('/staff/customers'); setIsOpen(false); }}
+                    />
+                )}
+
+                {/* 11.5 Auditoria (New) */}
+                {(user?.role === 'MASTER' || user?.role === 'ADMIN') && (
+                    <SidebarItem
+                        icon={<Shield size={20} />}
+                        label="Auditoria"
+                        active={location.pathname === '/staff/audit'}
+                        onClick={() => { navigate('/staff/audit'); setIsOpen(false); }}
                     />
                 )}
 
@@ -267,7 +278,17 @@ export default function StaffSidebar() {
 
 
 
-                {/* 9.1 Config Transporte */}
+                {/* 9.1 Transporte */}
+                {checkPermission('transport') && (
+                    <SidebarItem
+                        icon={<Truck size={20} />}
+                        label="Transporte"
+                        active={location.pathname === '/staff/transport'}
+                        onClick={() => { navigate('/staff/transport'); setIsOpen(false); }}
+                    />
+                )}
+
+                {/* 9.2 Config Transporte */}
                 {checkPermission('transport-config') && (
                     <SidebarItem
                         icon={<Settings size={20} />}
@@ -281,10 +302,9 @@ export default function StaffSidebar() {
                 {checkPermission('users') && (
                     <SidebarItem
                         icon={<Users size={20} />}
-                        label="Usuários"
+                        label="Usuários / Cargos"
                         active={location.pathname === '/staff/users'}
                         onClick={() => {
-                            console.log('[StaffSidebar] Navigating to /staff/users');
                             navigate('/staff/users');
                             setIsOpen(false);
                         }}

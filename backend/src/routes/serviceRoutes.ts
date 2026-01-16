@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { authenticate, authorize } from '../middlewares/authMiddleware';
 import * as serviceService from '../services/serviceService';
+import * as auditService from '../services/auditService';
 
 const router = Router();
 
@@ -17,13 +18,12 @@ router.use(authenticate);
 router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'COMERCIAL']));
 
 router.post('/', async (req: Request, res: Response) => {
-    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, responsibleId } = req.body;
+    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, coatType, notes, responsibleId } = req.body;
 
     const existing = await prisma.service.findFirst({ where: { name } });
     if (existing) {
         return res.status(400).json({ error: 'Já existe um serviço com este nome.' });
     }
-
     const service = await prisma.service.create({
         data: {
             name,
@@ -35,9 +35,23 @@ router.post('/', async (req: Request, res: Response) => {
             minWeight: minWeight ? Number(minWeight) : null,
             maxWeight: maxWeight ? Number(maxWeight) : null,
             sizeLabel,
+            coatType,
+            notes,
             responsibleId: responsibleId || null
         }
     });
+
+    const auditContext = (req as any).audit;
+    if (auditContext) {
+        await auditService.logEvent(auditContext, {
+            targetType: 'SERVICE',
+            targetId: service.id,
+            action: 'SERVICE_CREATED',
+            summary: `Serviço criado: ${service.name}`,
+            after: service
+        });
+    }
+
     res.status(201).json(service);
 });
 
@@ -65,7 +79,9 @@ router.post('/bulk', async (req: Request, res: Response) => {
                         species: s.species || 'Canino',
                         minWeight: s.minWeight ? Number(s.minWeight) : null,
                         maxWeight: s.maxWeight ? Number(s.maxWeight) : null,
-                        sizeLabel: s.sizeLabel
+                        sizeLabel: s.sizeLabel,
+                        coatType: s.coatType,
+                        notes: s.notes
                     }
                 });
                 createdCount++;
@@ -80,7 +96,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, responsibleId } = req.body;
+    const { name, description, basePrice, duration, category, species, minWeight, maxWeight, sizeLabel, coatType, notes, responsibleId } = req.body;
 
     if (name) {
         const existing = await prisma.service.findFirst({
@@ -94,6 +110,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
         }
     }
 
+    const before = await prisma.service.findUnique({ where: { id } });
+
     const service = await prisma.service.update({
         where: { id },
         data: {
@@ -106,16 +124,48 @@ router.patch('/:id', async (req: Request, res: Response) => {
             minWeight: minWeight !== undefined ? (minWeight ? Number(minWeight) : null) : undefined,
             maxWeight: maxWeight !== undefined ? (maxWeight ? Number(maxWeight) : null) : undefined,
             sizeLabel,
+            coatType,
+            notes,
             responsibleId: responsibleId !== undefined ? (responsibleId || null) : undefined
         }
     });
+
+    const auditContext = (req as any).audit;
+    if (auditContext && before) {
+        await auditService.logEvent(auditContext, {
+            targetType: 'SERVICE',
+            targetId: service.id,
+            action: 'SERVICE_UPDATED',
+            summary: `Serviço atualizado: ${service.name}`,
+            before,
+            after: service,
+            revertible: true,
+            revertStrategy: 'PATCH'
+        });
+    }
+
     res.json(service);
 });
 
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const service = await prisma.service.findUnique({ where: { id } });
         await serviceService.remove(id);
+
+        const auditContext = (req as any).audit;
+        if (auditContext && service) {
+            await auditService.logEvent(auditContext, {
+                targetType: 'SERVICE',
+                targetId: id,
+                action: 'SERVICE_DELETED',
+                summary: `Serviço movido para a lixeira: ${service.name}`,
+                before: service,
+                revertible: true,
+                revertStrategy: 'RESTORE_SOFT_DELETE'
+            });
+        }
+
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: 'Erro ao excluir serviço' });
