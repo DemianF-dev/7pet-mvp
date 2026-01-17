@@ -1018,9 +1018,34 @@ export const quoteController = {
                 if (error.response.status === 403 || error.response.status === 401) {
                     return res.status(500).json({
                         error: 'Erro de configuração da API de Mapas (Chave inválida ou Billing não ativado)',
-                        details: error.message
+                        details: error.message,
+                        diagnostics: {
+                            status: error.response.status,
+                            message: error.response.data?.error_message || 'Sem detalhes adicionais',
+                            possibleCauses: [
+                                'Billing não está ativado no Google Cloud Console',
+                                'Distance Matrix API não está habilitada no projeto',
+                                'A chave API está com restrições que bloqueiam este servidor',
+                                'A chave API expirou ou foi revogada'
+                            ]
+                        }
                     });
                 }
+            }
+
+            // If it's an error from mapsService with detailed message, pass it through
+            if (error.message && error.message.includes('Erro 403')) {
+                return res.status(500).json({
+                    error: 'Erro de configuração da API de Mapas',
+                    details: error.message
+                });
+            }
+
+            if (error.message && error.message.includes('Erro 401')) {
+                return res.status(500).json({
+                    error: 'Erro de autenticação da API de Mapas',
+                    details: error.message
+                });
             }
 
             return res.status(500).json({

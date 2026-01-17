@@ -81,19 +81,43 @@ export const mapsService = {
 
             // 1. Calculate OD for Origin (Store <-> Origin)
             // We assume symmetric travel for simplification (Store->Origin = Origin->Store)
-            const originResponse = await client.distancematrix({
-                params: {
-                    origins: [storeAddress],
-                    destinations: [originAddress],
-                    key: process.env.GOOGLE_MAPS_API_KEY!,
-                    language: 'pt-BR',
-                    mode: TravelMode.driving
+            let originResponse;
+            try {
+                originResponse = await client.distancematrix({
+                    params: {
+                        origins: [storeAddress],
+                        destinations: [originAddress],
+                        key: process.env.GOOGLE_MAPS_API_KEY!,
+                        language: 'pt-BR',
+                        mode: TravelMode.driving
+                    }
+                });
+            } catch (axiosError: any) {
+                console.error('[MapsService] Request to Google Maps failed');
+                console.error('[MapsService] Error Status:', axiosError.response?.status);
+                console.error('[MapsService] Error Data:', JSON.stringify(axiosError.response?.data, null, 2));
+                console.error('[MapsService] Error Message:', axiosError.message);
+
+                if (axiosError.response?.status === 403) {
+                    throw new Error(
+                        `Erro 403: A chave da API do Google Maps está inválida, expirou, ou não tem permissões suficientes. ` +
+                        `Verifique: (1) Billing está ativado no Google Cloud, (2) Distance Matrix API está habilitada, ` +
+                        `(3) A chave não tem restrições que bloqueiam seu IP/domínio. ` +
+                        `Detalhes: ${axiosError.response?.data?.error_message || axiosError.message}`
+                    );
+                } else if (axiosError.response?.status === 401) {
+                    throw new Error(
+                        `Erro 401: Chave de API inválida ou não autorizada. ` +
+                        `Verifique se GOOGLE_MAPS_API_KEY está correta no arquivo .env`
+                    );
                 }
-            });
+
+                throw new Error(`Erro ao conectar com Google Maps: ${axiosError.message}`);
+            }
 
             if (originResponse.data.status !== "OK") {
                 console.error(`[MapsService] Maps API Error: ${originResponse.data.status}`, originResponse.data.error_message);
-                throw new Error(`Maps API Error (Origin): ${originResponse.data.status}`);
+                throw new Error(`Maps API Error (Origin): ${originResponse.data.status} - ${originResponse.data.error_message || 'Unknown error'}`);
             }
 
             if (!originResponse.data.rows?.[0]?.elements?.[0]) {
@@ -118,19 +142,36 @@ export const mapsService = {
 
             if (distinctAddresses) {
                 console.log(`[MapsService] Calculating destination: ${destAddr}`);
-                const destResponse = await client.distancematrix({
-                    params: {
-                        origins: [storeAddress],
-                        destinations: [destAddr],
-                        key: process.env.GOOGLE_MAPS_API_KEY!,
-                        language: 'pt-BR',
-                        mode: TravelMode.driving
+
+                let destResponse;
+                try {
+                    destResponse = await client.distancematrix({
+                        params: {
+                            origins: [storeAddress],
+                            destinations: [destAddr],
+                            key: process.env.GOOGLE_MAPS_API_KEY!,
+                            language: 'pt-BR',
+                            mode: TravelMode.driving
+                        }
+                    });
+                } catch (axiosError: any) {
+                    console.error('[MapsService] Request to Google Maps (Dest) failed');
+                    console.error('[MapsService] Error Status:', axiosError.response?.status);
+                    console.error('[MapsService] Error Data:', JSON.stringify(axiosError.response?.data, null, 2));
+
+                    if (axiosError.response?.status === 403 || axiosError.response?.status === 401) {
+                        throw new Error(
+                            `Erro ${axiosError.response.status}: Problema de autenticação/autorização com Google Maps API. ` +
+                            `Verifique a chave e as configurações do projeto no Google Cloud.`
+                        );
                     }
-                });
+
+                    throw new Error(`Erro ao conectar com Google Maps (Destino): ${axiosError.message}`);
+                }
 
                 if (destResponse.data.status !== "OK") {
                     console.error(`[MapsService] Maps API Error (Dest): ${destResponse.data.status}`);
-                    throw new Error(`Maps API Error (Dest): ${destResponse.data.status}`);
+                    throw new Error(`Maps API Error (Dest): ${destResponse.data.status} - ${destResponse.data.error_message || 'Unknown error'}`);
                 }
 
                 if (!destResponse.data.rows?.[0]?.elements?.[0]) {
