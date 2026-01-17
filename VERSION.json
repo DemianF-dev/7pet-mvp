@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260117-1933",
+  "version": "BETA20260117-2005",
   "stage": "BETA",
-  "timestamp": "2026-01-17T19:33:25.000Z",
-  "commit": "f7caf2c",
-  "buildNumber": 78,
-  "releaseNotes": "Auto-generated from commit: feat: implement major updates, UI refinements, and fixes for production candidate"
+  "timestamp": "2026-01-17T20:05:55.000Z",
+  "commit": "aaf1c6b",
+  "buildNumber": 79,
+  "releaseNotes": "Auto-generated from commit: fix: improve Google Maps API error handling and diagnostics"
 }
