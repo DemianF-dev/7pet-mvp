@@ -84,7 +84,7 @@ export default function FinancialReports() {
         fetchReports();
     }, []);
 
-    const filteredInvoices = invoices.filter(inv => {
+    const filteredInvoices = Array.isArray(invoices) ? invoices.filter(inv => {
         const matchesGlobal = inv.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             inv.id.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -95,7 +95,7 @@ export default function FinancialReports() {
         const matchesStatus = !columnFilters.status || inv.status.toLowerCase().includes(columnFilters.status.toLowerCase());
 
         return matchesGlobal && matchesId && matchesCustomer && matchesDate && matchesAmount && matchesStatus;
-    });
+    }) : [];
 
     const currentTotal = filteredInvoices.reduce((acc, curr) => acc + curr.amount, 0);
 

@@ -91,12 +91,12 @@ export default function PaymentList() {
         fetchData();
     }, []);
 
-    const totalPending = invoices
+    const totalPending = Array.isArray(invoices) ? invoices
         .filter(inv => inv.status === 'PENDENTE' || inv.status === 'VENCIDO')
         .reduce((acc, inv) => {
-            const paid = inv.payments.reduce((pAcc, p) => pAcc + p.amount, 0);
+            const paid = Array.isArray(inv.payments) ? inv.payments.reduce((pAcc, p) => pAcc + p.amount, 0) : 0;
             return acc + (inv.amount - paid);
-        }, 0);
+        }, 0) : 0;
 
     return (
         <main className="p-6 md:p-10 max-w-7xl">
@@ -183,7 +183,7 @@ export default function PaymentList() {
                         </div>
                     ) : (
                         invoices.map((invoice) => {
-                            const totalPaid = invoice.payments.reduce((acc, p) => acc + p.amount, 0);
+                            const totalPaid = Array.isArray(invoice.payments) ? invoice.payments.reduce((acc, p) => acc + p.amount, 0) : 0;
                             const isPartiallyPaid = totalPaid > 0 && totalPaid < invoice.amount;
 
                             return (
@@ -301,7 +301,7 @@ export default function PaymentList() {
                                     <div className="flex justify-between items-center px-4">
                                         <span className="text-sm font-bold text-gray-500">Saldo Restante</span>
                                         <span className="text-2xl font-black text-primary">
-                                            R$ {(selectedInvoice.amount - selectedInvoice.payments.reduce((a, b) => a + b.amount, 0)).toFixed(2)}
+                                            R$ {(selectedInvoice.amount - (Array.isArray(selectedInvoice.payments) ? selectedInvoice.payments.reduce((a, b) => a + b.amount, 0) : 0)).toFixed(2)}
                                         </span>
                                     </div>
 

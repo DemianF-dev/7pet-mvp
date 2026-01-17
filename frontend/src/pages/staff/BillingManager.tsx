@@ -280,7 +280,7 @@ export default function BillingManager() {
         }));
     };
 
-    const filteredInvoices = invoices.filter(i => {
+    const filteredInvoices = Array.isArray(invoices) ? invoices.filter(i => {
         const matchesSearch = i.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             i.id.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -292,20 +292,20 @@ export default function BillingManager() {
         return matchesSearch && matchesStatus && matchesDate;
     }).sort((a, b) => {
         const aValue = sortConfig.key === 'amount' ? a.amount :
-            sortConfig.key === 'paid' ? a.payments.reduce((acc, p) => acc + p.amount, 0) :
+            sortConfig.key === 'paid' ? (Array.isArray(a.payments) ? a.payments.reduce((acc, p) => acc + p.amount, 0) : 0) :
                 sortConfig.key === 'dueDate' ? new Date(a.dueDate).getTime() :
                     0;
 
         const bValue = sortConfig.key === 'amount' ? b.amount :
-            sortConfig.key === 'paid' ? b.payments.reduce((acc, p) => acc + p.amount, 0) :
+            sortConfig.key === 'paid' ? (Array.isArray(b.payments) ? b.payments.reduce((acc, p) => acc + p.amount, 0) : 0) :
                 sortConfig.key === 'dueDate' ? new Date(b.dueDate).getTime() :
                     0;
 
         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-    });
+    }) : [];
 
     const totalAmount = filteredInvoices.reduce((acc, i) => acc + i.amount, 0);
-    const totalReceived = filteredInvoices.reduce((acc, i) => acc + i.payments.reduce((pAcc, p) => pAcc + p.amount, 0), 0);
+    const totalReceived = filteredInvoices.reduce((acc, i) => acc + (Array.isArray(i.payments) ? i.payments.reduce((pAcc, p) => pAcc + p.amount, 0) : 0), 0);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -324,7 +324,7 @@ export default function BillingManager() {
 
     // Calculate totals
     // Calculate totals for modal
-    const totalReceivedModal = selectedInvoice?.payments.reduce((acc, p) => acc + p.amount, 0) || 0;
+    const totalReceivedModal = Array.isArray(selectedInvoice?.payments) ? selectedInvoice.payments.reduce((acc, p) => acc + p.amount, 0) : 0;
     const remaining = selectedInvoice ? selectedInvoice.amount - totalReceivedModal : 0;
 
     return (
@@ -479,7 +479,7 @@ export default function BillingManager() {
                                 </td>
                             </tr>
                         ) : filteredInvoices.map(invoice => {
-                            const paid = invoice.payments.reduce((acc, p) => acc + p.amount, 0);
+                            const paid = Array.isArray(invoice.payments) ? invoice.payments.reduce((acc, p) => acc + p.amount, 0) : 0;
                             const isSelected = selectedIds.includes(invoice.id);
                             return (
                                 <tr
