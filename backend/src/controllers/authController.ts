@@ -102,6 +102,12 @@ export const updateMe = async (req: any, res: Response) => {
         const userId = req.user.id;
         const customerId = req.user.customer?.id;
 
+        // CPF Management Rule: For "client" users, the CPF should only be viewable and settable by collaborators, 
+        // with clients only able to view or input their CPF but not modify or delete it once set.
+        if (req.user.role === 'CLIENTE' && req.user.document && data.document !== undefined && data.document !== req.user.document) {
+            return res.status(403).json({ error: 'O CPF não pode ser alterado ou removido após ter sido informado. Entre em contato com o suporte se precisar de correções.' });
+        }
+
         const updateData: any = {
             firstName: data.firstName,
             lastName: data.lastName,
@@ -141,6 +147,7 @@ export const updateMe = async (req: any, res: Response) => {
         if (customerId) {
             const customerUpdateData: any = {
                 name: updateData.name,
+                cpf: data.document, // Sync with User.document
                 phone: data.phone,
                 address: data.address,
                 discoverySource: data.discoverySource,

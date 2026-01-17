@@ -8,6 +8,7 @@ import * as quoteService from '../services/quoteService';
 import { mapsService } from '../services/mapsService';
 import * as authService from '../services/authService';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
 
@@ -15,7 +16,8 @@ const quoteItemSchema = z.object({
     description: z.string().min(1, 'Descrição é obrigatória'),
     quantity: z.number().int().positive().default(1),
     price: z.number().default(0),
-    serviceId: z.string().optional()
+    serviceId: z.string().optional(),
+    productId: z.string().optional()
 });
 
 const quoteSchema = z.object({
@@ -36,11 +38,14 @@ const quoteSchema = z.object({
     wantsMedicatedBath: z.boolean().optional(), // Added missing field
     petQuantity: z.number().int().optional(),
     transportLevaAt: z.string().optional(),
-    transportTrazAt: z.string().optional()
+    transportTrazAt: z.string().optional(),
+    saveAsDraft: z.boolean().optional().default(false)
 });
 
 export const quoteController = {
     async create(req: Request, res: Response) {
+        console.log('[QuoteCreate] ========== START ==========');
+        console.log('[QuoteCreate] User:', (req as any).user?.id, (req as any).user?.role);
         try {
             const user = (req as any).user;
             let customerId = user.customer?.id;
@@ -64,10 +69,12 @@ export const quoteController = {
                 }
             }
 
+            console.log('[QuoteCreate] Raw request body:', JSON.stringify(req.body, null, 2));
             const data = quoteSchema.parse(req.body);
             console.log(`[DEBUG] Criando orçamento para CustomerID: ${customerId}`, data);
 
-            // Fetch prices for services if not provided (or to ensure they are correct)
+
+            // Fetch prices for services and products if not provided (or to ensure they are correct)
             const processedItems = data.items ? await Promise.all(data.items.map(async (item) => {
                 let price = item.price;
                 let description = item.description;
@@ -78,13 +85,21 @@ export const quoteController = {
                         price = service.basePrice;
                         description = service.name; // Ensure description matches service name
                     }
+                } else if (item.productId) {
+                    const product = await prisma.product.findUnique({ where: { id: item.productId } });
+                    if (product) {
+                        price = product.price;
+                        description = product.name; // Ensure description matches product name
+                    }
                 }
 
                 return {
+                    id: randomUUID(),
                     description,
                     quantity: item.quantity,
                     price,
-                    serviceId: item.serviceId
+                    serviceId: item.serviceId,
+                    productId: item.productId
                 };
             })) : [];
 
@@ -111,10 +126,12 @@ export const quoteController = {
 
                 if (patas.length > 0) {
                     processedItems.push({
+                        id: randomUUID(),
                         description: `Desembolo - Patas(${patas.length}x)`,
                         quantity: patas.length,
                         price: 7.50,
-                        serviceId: undefined
+                        serviceId: undefined,
+                        productId: undefined
                     });
                 }
 
@@ -122,10 +139,12 @@ export const quoteController = {
                     const price = KNOT_PRICES[region];
                     if (price) {
                         processedItems.push({
+                            id: randomUUID(),
                             description: `Desembolo - ${region.charAt(0).toUpperCase() + region.slice(1)} `,
                             quantity: 1,
                             price,
-                            serviceId: undefined
+                            serviceId: undefined,
+                            productId: undefined
                         });
                     }
                 });
@@ -134,10 +153,12 @@ export const quoteController = {
             // Adicionar banho medicamentoso antipulgas se solicitado
             if (data.wantsMedicatedBath) {
                 processedItems.push({
+                    id: randomUUID(),
                     description: '💊 Banho Medicamentoso Antipulgas',
                     quantity: 1,
                     price: 45.00,
-                    serviceId: undefined
+                    serviceId: undefined,
+                    productId: undefined
                 });
             }
 
@@ -163,14 +184,17 @@ export const quoteController = {
                     petQuantity: data.petQuantity || 1,
                     transportLevaAt: data.transportLevaAt ? new Date(data.transportLevaAt) : null,
                     transportTrazAt: data.transportTrazAt ? new Date(data.transportTrazAt) : null,
-                    status: 'SOLICITADO',
+                    status: data.saveAsDraft ? 'RASCUNHO' : 'SOLICITADO',
                     totalAmount,
                     statusHistory: {
                         create: {
+                            id: randomUUID(),
                             oldStatus: 'NONE',
-                            newStatus: 'SOLICITADO',
+                            newStatus: data.saveAsDraft ? 'RASCUNHO' : 'SOLICITADO',
                             changedBy: user.id,
-                            reason: user.role === 'CLIENTE' ? 'Solicitação inicial pelo cliente' : `Criado por colaborador ${user.role} `
+                            reason: data.saveAsDraft
+                                ? 'Rascunho salvo pelo cliente'
+                                : (user.role === 'CLIENTE' ? 'Solicitação inicial pelo cliente' : `Criado por colaborador ${user.role}`)
                         }
                     },
                     items: {
@@ -208,20 +232,16 @@ export const quoteController = {
             });
 
             if (customerData && customerData.userId) {
-                // Import dynamically
-                const { createNotification } = require('./notificationController');
-
-                await createNotification(customerData.userId, {
-                    title: 'Solicitação de Orçamento Recebida',
-                    body: `Olá ${customerData.name}! Recebemos seu pedido para ${data.petId ? 'o pet' : 'seu pet'}. Fique atento às notificações!`,
-                    type: 'quote',
-                    referenceId: quote.id,
-                    data: { quoteId: quote.id }
-                });
+                console.log(`[QuoteCreate] Notifying customer: ${customerData.userId}`);
+                await messagingService.notifyUser(
+                    customerData.userId,
+                    'Solicitação de Orçamento Recebida',
+                    `Olá ${customerData.name}! Recebemos seu pedido para ${data.petId ? 'o pet' : 'seu pet'}. Fique atento às notificações!`,
+                    'quote'
+                );
             }
 
             // Notify staff members (Admins and Finance)
-            // Ideally we should find who has role ADMIN or division FINANCEIRO
             const staffToNotify = await prisma.user.findMany({
                 where: {
                     OR: [
@@ -235,25 +255,44 @@ export const quoteController = {
             });
 
             if (staffToNotify.length > 0) {
-                const { createNotification } = require('./notificationController');
+                console.log(`[QuoteCreate] Notifying ${staffToNotify.length} staff members`);
                 for (const staff of staffToNotify) {
-                    await createNotification(staff.id, {
-                        title: 'Novo Orçamento Solicitado',
-                        body: `Cliente ${customerData?.name || 'Desconhecido'} solicitou um orçamento.`,
-                        type: 'quote',
-                        referenceId: quote.id,
-                        data: { quoteId: quote.id, url: '/staff/quotes' }
-                    });
+                    await messagingService.notifyUser(
+                        staff.id,
+                        'Novo Orçamento Solicitado',
+                        `Cliente ${customerData?.name || 'Desconhecido'} solicitou um orçamento.`,
+                        'quote'
+                    );
                 }
             }
 
             return res.status(201).json(quote);
         } catch (error) {
+            console.error('[QuoteCreate] ========== ERROR ==========');
             if (error instanceof z.ZodError) {
+                console.error('[QuoteCreate] Validation Error:', JSON.stringify(error.issues, null, 2));
                 return res.status(400).json({ errors: error.issues });
             }
-            console.error('Erro ao criar orçamento:', error);
-            return res.status(500).json({ error: 'Internal server error' });
+            console.error('[QuoteCreate] Error creating quote:', error);
+            console.error('[QuoteCreate] Error name:', error instanceof Error ? error.name : 'Unknown');
+            console.error('[QuoteCreate] Error message:', error instanceof Error ? error.message : String(error));
+            console.error('[QuoteCreate] Error stack:', error instanceof Error ? error.stack : 'No stack');
+
+            // Log raw body for better debugging of production issues
+            console.error('[QuoteCreate] Failed Body Context:', JSON.stringify(req.body));
+            console.error('[QuoteCreate] User Context:', JSON.stringify({
+                id: (req as any).user?.id,
+                role: (req as any).user?.role,
+                customer: (req as any).user?.customer
+            }));
+
+            // Send detailed error in development
+            const isDev = process.env.NODE_ENV === 'development';
+            return res.status(500).json({
+                error: 'Internal server error',
+                message: isDev && error instanceof Error ? error.message : undefined,
+                details: isDev ? String(error) : undefined
+            });
         }
     },
 
@@ -421,6 +460,7 @@ export const quoteController = {
                     status,
                     statusHistory: {
                         create: {
+                            id: randomUUID(),
                             oldStatus,
                             newStatus: status,
                             changedBy: user.id,
@@ -451,13 +491,17 @@ export const quoteController = {
                 if (!existingInvoice) {
                     await prisma.invoice.create({
                         data: {
-                            customerId: quote.customerId,
+                            id: randomUUID(),
+                            customer: {
+                                connect: { id: quote.customerId }
+                            },
                             quotes: {
                                 connect: [{ id }]
                             },
                             amount: quote.totalAmount,
                             status: 'PENDENTE',
-                            dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // Default +5 days (matching validity)
+                            dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // Default +5 days (matching validity)
+                            updatedAt: new Date()
                         }
                     });
                     console.log(`[AUTO] Fatura gerada para orçamento aprovado ${id} `);
@@ -740,6 +784,7 @@ export const quoteController = {
                     totalAmount: original.totalAmount,
                     items: {
                         create: original.items.map(item => ({
+                            id: randomUUID(),
                             description: item.description + ' (Cópia)',
                             quantity: item.quantity,
                             price: item.price
@@ -747,6 +792,7 @@ export const quoteController = {
                     },
                     statusHistory: {
                         create: {
+                            id: randomUUID(),
                             oldStatus: 'NONE',
                             newStatus: 'SOLICITADO',
                             changedBy: user.id,
@@ -773,6 +819,14 @@ export const quoteController = {
             await prisma.quote.update({
                 where: { id },
                 data: { deletedAt: new Date() }
+            });
+
+            // Log the deletion
+            await auditService.logEvent((req as any).audit, {
+                targetType: 'QUOTE',
+                targetId: id,
+                action: 'BULK_DELETE',
+                summary: 'Orçamento movido para a lixeira'
             });
             return res.status(204).send();
         } catch (error) {
@@ -832,12 +886,11 @@ export const quoteController = {
             await prisma.quote.delete({ where: { id } });
 
             // Log the permanent deletion
-            await auditService.log({
-                performedBy: user.id,
-                action: 'DELETE_PERMANENT',
-                entityType: 'QUOTE',
-                entityId: id,
-                reason: 'Exclusão permanente após período de retenção'
+            await auditService.logEvent((req as any).audit, {
+                targetType: 'QUOTE',
+                targetId: id,
+                action: 'BULK_DELETE',
+                summary: 'Exclusão permanente de orçamento após período de retenção'
             });
 
             return res.status(204).send();
@@ -1121,6 +1174,19 @@ export const quoteController = {
                     }
                 }
 
+                // Apply Strategic Discount to Products
+                const strategicDiscount = Number(quoteData.strategicDiscount) || 0;
+                if (strategicDiscount > 0) {
+                    console.log(`[createManual] Aplicando desconto estratégico em produtos: ${strategicDiscount}%`);
+                    for (const item of processedItems) {
+                        if (item.productId) {
+                            const discountMultiplier = 1 - (strategicDiscount / 100);
+                            item.price = item.price * discountMultiplier;
+                            item.description += ` (${strategicDiscount}% desc est.)`;
+                        }
+                    }
+                }
+
                 const totalAmount = processedItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
 
                 // Validation of totalAmount to avoid NaN
@@ -1130,6 +1196,7 @@ export const quoteController = {
 
                 // Sanitize items - ensure serviceId is null not undefined
                 const sanitizedItems = processedItems.map((item: any) => ({
+                    id: randomUUID(),
                     description: item.description || 'Item sem descrição',
                     quantity: item.quantity || 1,
                     price: item.price || 0,
@@ -1166,6 +1233,7 @@ export const quoteController = {
                         packageDiscount: discountRate > 0 ? discountRate : null,
                         statusHistory: {
                             create: {
+                                id: randomUUID(),
                                 oldStatus: 'NONE',
                                 newStatus: 'SOLICITADO',
                                 changedBy: user.id || 'SYSTEM',

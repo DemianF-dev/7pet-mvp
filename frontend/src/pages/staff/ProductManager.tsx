@@ -49,8 +49,8 @@ export default function ProductManager() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        price: 0,
-        stock: 0,
+        price: 0 as number | '',
+        stock: 0 as number | '',
         category: 'Geral'
     });
 
@@ -114,12 +114,18 @@ export default function ProductManager() {
             return;
         }
 
+        const payload = {
+            ...formData,
+            price: formData.price === '' ? 0 : formData.price,
+            stock: formData.stock === '' ? 0 : formData.stock
+        };
+
         const savePromise = (async () => {
-            console.log('[ProductManager] Sending request...');
+            console.log('[ProductManager] Sending request...', payload);
             if (editingProduct) {
-                await api.patch(`/products/${editingProduct.id}`, formData);
+                await api.patch(`/products/${editingProduct.id}`, payload);
             } else {
-                await api.post('/products', formData);
+                await api.post('/products', payload);
             }
             fetchProducts();
             setIsModalOpen(false);
@@ -394,8 +400,11 @@ export default function ProductManager() {
                                             type="number"
                                             step="0.01"
 
-                                            value={formData.price}
-                                            onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                                            value={formData.price ?? ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, price: val === '' ? '' : parseFloat(val) });
+                                            }}
                                             className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                                         />
                                     </div>
@@ -405,8 +414,11 @@ export default function ProductManager() {
                                     <input
                                         type="number"
 
-                                        value={formData.stock}
-                                        onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                                        value={formData.stock ?? ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFormData({ ...formData, stock: val === '' ? '' : parseInt(val) });
+                                        }}
                                         className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                                     />
                                 </div>

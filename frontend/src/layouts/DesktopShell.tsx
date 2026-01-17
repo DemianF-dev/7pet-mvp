@@ -6,11 +6,11 @@ import StaffSidebar from '../components/StaffSidebar';
  */
 export default function DesktopShell() {
     return (
-        <div className="min-h-screen">
+        <div className="floating-layout-wrapper">
             <StaffSidebar />
-            <div className="main-content-layout bg-[var(--color-bg-primary)]">
+            <main className="floating-main-content custom-scrollbar">
                 <Outlet />
-            </div>
+            </main>
         </div>
     );
 }

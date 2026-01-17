@@ -137,7 +137,13 @@ export default function WebMonthGrid({
                                             style={appt.performer?.color ? { borderLeft: `3px solid ${appt.performer.color}` } : { borderLeft: '3px solid transparent' }}
                                         >
                                             <span className="opacity-70 tabular-nums shrink-0">{time}</span>
-                                            <span className="font-bold truncate">{appt.pet.name}</span>
+                                            <div
+                                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                                style={{ backgroundColor: appt.performer?.color || (appt.pet.species?.toUpperCase().includes('GATO') ? '#F472B6' : '#60A5FA') }}
+                                            ></div>
+                                            <span className="font-bold truncate">
+                                                {appt.customer?.type === 'RECORRENTE' ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
+                                            </span>
                                         </div>
                                     );
                                 })}

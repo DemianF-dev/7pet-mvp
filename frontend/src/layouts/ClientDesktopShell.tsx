@@ -6,11 +6,11 @@ import Sidebar from '../components/Sidebar';
  */
 export default function ClientDesktopShell() {
     return (
-        <div className="min-h-screen">
+        <div className="floating-layout-wrapper">
             <Sidebar />
-            <div className="main-content-layout bg-gray-50">
+            <main className="floating-main-content custom-scrollbar">
                 <Outlet />
-            </div>
+            </main>
         </div>
     );
 }

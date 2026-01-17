@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
 import { socketService } from '../services/socketService';
@@ -56,14 +57,26 @@ export const getConversations = async (req: Request, res: Response) => {
 export const getMessages = async (req: Request, res: Response) => {
     try {
         const { id } = req.params; // conversationId
+        Logger.info(`📂 Fetching messages for conversation: ${id}`);
         const messages = await prisma.message.findMany({
             where: { conversationId: id },
             orderBy: { createdAt: 'asc' },
             include: {
-                sender: { select: { id: true, name: true, color: true } }
+                user: { select: { id: true, name: true, color: true } }
             }
         });
-        res.json(messages);
+
+        // Map user to sender for frontend compatibility
+        const mappedMessages = messages.map(m => {
+            const { user, ...rest } = m;
+            return {
+                ...rest,
+                sender: user || { id: 'unknown', name: 'Usuário Removido', color: '#999' }
+            };
+        });
+
+        Logger.info(`✅ Found ${mappedMessages.length} messages`);
+        res.json(mappedMessages);
     } catch (error) {
         Logger.error('Error fetching messages', error);
         res.status(500).json({ error: 'Failed to fetch messages' });
@@ -79,6 +92,7 @@ export const sendMessage = async (req: Request, res: Response) => {
 
         const message = await prisma.message.create({
             data: {
+                id: randomUUID(),
                 content,
                 fileUrl,
                 fileType,
@@ -87,9 +101,16 @@ export const sendMessage = async (req: Request, res: Response) => {
                 senderId
             },
             include: {
-                sender: { select: { id: true, name: true, color: true } }
+                user: { select: { id: true, name: true, color: true } }
             }
         });
+
+        // Map user to sender for frontend compatibility
+        const mappedMessage = {
+            ...message,
+            sender: (message as any).user
+        };
+        delete (mappedMessage as any).user;
 
         // Update conversation timestamp
         await prisma.conversation.update({
@@ -99,7 +120,7 @@ export const sendMessage = async (req: Request, res: Response) => {
 
         // 1. Broadcast to chat room (for users with ChatWindow open)
         Logger.info(`📨 Sending chat:new_message to chat room: chat:${id}`);
-        socketService.notifyChat(id, 'chat:new_message', message);
+        socketService.notifyChat(id, 'chat:new_message', mappedMessage);
 
         // 2. Fetch conversation participants
         const conversation = await prisma.conversation.findUnique({
@@ -109,7 +130,7 @@ export const sendMessage = async (req: Request, res: Response) => {
 
         if (conversation) {
             const otherParticipants = conversation.participants.filter(p => p.userId !== senderId);
-            const senderName = message.sender.name || 'Alguém';
+            const senderName = mappedMessage.sender.name || 'Alguém';
 
             Logger.info(`📨 Notifying ${otherParticipants.length} other participants`);
 
@@ -117,7 +138,7 @@ export const sendMessage = async (req: Request, res: Response) => {
             // (ensures delivery even if they're not in the chat room)
             for (const p of otherParticipants) {
                 Logger.info(`📨 Sending chat:new_message to user room: user:${p.userId}`);
-                socketService.notifyUser(p.userId, 'chat:new_message', message);
+                socketService.notifyUser(p.userId, 'chat:new_message', mappedMessage);
             }
 
             // 4. Create persistent notifications for history/badges
@@ -126,14 +147,14 @@ export const sendMessage = async (req: Request, res: Response) => {
                     const { createNotification } = require('./notificationController');
                     const displayBody = content
                         ? (content.substring(0, 50) + (content.length > 50 ? '...' : ''))
-                        : (fileType?.startsWith('image/') ? '📷 Foto' : '📎 Arquivo');
+                        : (fileType?.startsWith('image/') ? '📷 Photo' : '📎 Arquivo');
 
                     await createNotification(p.userId, {
                         title: `Nova mensagem de ${senderName}`,
                         body: displayBody,
                         type: 'chat',
                         referenceId: id,
-                        icon: message.sender.color || undefined,
+                        icon: mappedMessage.sender.color || undefined,
                         data: { url: `/staff/chat`, chatId: id }
                     });
                     Logger.info(`📨 Created notification for user: ${p.userId}`);
@@ -143,10 +164,13 @@ export const sendMessage = async (req: Request, res: Response) => {
             }
         }
 
-        res.status(201).json(message);
+        res.status(201).json(mappedMessage);
     } catch (error) {
-        Logger.error('Error sending message', error);
-        res.status(500).json({ error: 'Failed to send message' });
+        Logger.error('❌ Error sending message:', error);
+        res.status(500).json({
+            error: 'Failed to send message',
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 };
 
@@ -167,23 +191,34 @@ export const createConversation = async (req: Request, res: Response) => {
                 lastMessageAt: new Date(),
                 participants: {
                     create: allParticipants.map(uid => ({
+                        id: randomUUID(),
                         userId: uid as string
                     }))
                 }
             },
             include: {
                 participants: {
-                    include: { user: { select: { id: true, name: true } } }
+                    include: { user: { select: { id: true, name: true, color: true } } }
+                },
+                messages: {
+                    take: 1
                 }
             }
         });
 
+        // Map messages for conversation object
+        const mappedConversation = {
+            ...conversation,
+            messagesBySender: [], // ensure field exists for mapping if needed
+            messages: conversation?.messages.map(m => ({ ...m, sender: null })) || []
+        };
+
         // Notify participants
         allParticipants.forEach(uid => {
-            socketService.notifyUser(uid as string, 'chat:new_conversation', conversation);
+            socketService.notifyUser(uid as string, 'chat:new_conversation', mappedConversation);
         });
 
-        res.status(201).json(conversation);
+        res.status(201).json(mappedConversation);
     } catch (error) {
         Logger.error('Error creating conversation', error);
         res.status(500).json({ error: 'Failed to start chat' });
@@ -202,7 +237,8 @@ export const getSupportAgents = async (req: Request, res: Response) => {
                 name: true,
                 role: true,
                 email: true,
-                division: true
+                division: true,
+                color: true
             }
         });
         res.json(agents);
@@ -233,7 +269,8 @@ export const searchUsers = async (req: Request, res: Response) => {
                 name: true,
                 email: true,
                 role: true,
-                division: true
+                division: true,
+                color: true
             }
         });
         res.json(users);
@@ -381,7 +418,11 @@ export const addParticipant = async (req: Request, res: Response) => {
         // Upsert participant
         await prisma.participant.upsert({
             where: { userId_conversationId: { userId: newUserId, conversationId: id } },
-            create: { userId: newUserId, conversationId: id },
+            create: {
+                id: randomUUID(),
+                userId: newUserId,
+                conversationId: id
+            },
             update: {} // No change if already exists
         });
 
@@ -429,7 +470,11 @@ export const transferConversation = async (req: Request, res: Response) => {
         // 1. Add new participant
         await prisma.participant.upsert({
             where: { userId_conversationId: { userId: targetUserId, conversationId: id } },
-            create: { userId: targetUserId, conversationId: id },
+            create: {
+                id: randomUUID(),
+                userId: targetUserId,
+                conversationId: id
+            },
             update: {}
         });
 
@@ -444,6 +489,7 @@ export const transferConversation = async (req: Request, res: Response) => {
 
         await prisma.message.create({
             data: {
+                id: randomUUID(),
                 content: `Atendimento transferido de ${currentUser?.name} para ${targetUser?.name}`,
                 conversationId: id,
                 senderId: userId // Or a system dummy user if exists

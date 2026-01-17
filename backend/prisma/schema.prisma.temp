@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  url = env("DATABASE_URL_V7")
   directUrl = env("DIRECT_URL")
 }
 
@@ -53,7 +53,7 @@ model Appointment {
 }
 
 model Appreciation {
-  id         String   @id @default(uuid())
+  id         String   @id
   badgeType  String
   senderId   String
   receiverId String
@@ -89,7 +89,7 @@ model AttendanceRecord {
 }
 
 model AuditEvent {
-  id                String          @id @default(uuid())
+  id                String          @id
   createdAt         DateTime        @default(now())
   actorUserId       String?
   actorNameSnapshot String?
@@ -294,7 +294,7 @@ model DebitCreditNote {
 }
 
 model FinancialTransaction {
-  id               String   @id @default(uuid())
+  id               String   @id
   customerId       String
   type             String
   amount           Float
@@ -316,7 +316,7 @@ model FinancialTransaction {
 }
 
 model Goal {
-  id              String           @id @default(uuid())
+  id              String           @id
   title           String
   description     String?
   targetValue     Float
@@ -338,7 +338,7 @@ model Goal {
 }
 
 model GoalAssignment {
-  id      String       @id @default(uuid())
+  id      String       @id
   goalId  String
   staffId String
   goal    Goal         @relation(fields: [goalId], references: [id], onDelete: Cascade)
@@ -348,7 +348,7 @@ model GoalAssignment {
 }
 
 model HrAuditLog {
-  id          String   @id @default(uuid())
+  id          String   @id
   actorUserId String
   action      String
   entityType  String
@@ -383,7 +383,7 @@ model Invoice {
 }
 
 model Message {
-  id             String       @id @default(uuid())
+  id             String       @id
   content        String?
   senderId       String
   conversationId String
@@ -400,7 +400,7 @@ model Message {
 }
 
 model Metric {
-  id        String   @id @default(uuid())
+  id        String   @id
   type      String
   data      Json
   timestamp DateTime @default(now())
@@ -410,7 +410,7 @@ model Metric {
 }
 
 model Notification {
-  id         String    @id @default(uuid())
+  id         String    @id
   userId     String
   title      String
   message    String
@@ -429,7 +429,7 @@ model Notification {
 }
 
 model NotificationExecution {
-  id                      String                @id @default(uuid())
+  id                      String                @id
   scheduledNotificationId String
   executedAt              DateTime              @default(now())
   recipientCount          Int
@@ -472,7 +472,7 @@ model PackageItem {
 }
 
 model Participant {
-  id             String       @id @default(uuid())
+  id             String       @id
   userId         String
   conversationId String
   joinedAt       DateTime     @default(now())
@@ -538,7 +538,7 @@ model PayStatement {
 }
 
 model PaymentRecord {
-  id        String   @id @default(uuid())
+  id        String   @id
   invoiceId String
   amount    Float
   paidAt    DateTime @default(now())
@@ -734,7 +734,7 @@ model QuoteItem {
 }
 
 model Reaction {
-  id        String   @id @default(uuid())
+  id        String   @id
   type      String
   authorId  String
   postId    String
@@ -780,7 +780,7 @@ model RolePermission {
 }
 
 model ScheduledNotification {
-  id                     String                  @id @default(uuid())
+  id                     String                  @id
   name                   String
   description            String?
   scheduleType           String

@@ -124,9 +124,15 @@ export default function AgendaSPA() {
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 uppercase tracking-[0.2em] mb-2">Pet & Tutor(a)</p>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-2xl font-black text-secondary dark:text-white uppercase tracking-tighter bg-white dark:bg-gray-700/50 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 group-hover:border-primary/30 transition-colors">
-                                                {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
-                                            </span>
+                                            <div className="flex items-center gap-2 bg-white dark:bg-gray-700/50 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 group-hover:border-primary/30 transition-colors">
+                                                <div
+                                                    className="w-3 h-3 rounded-full shadow-sm shrink-0"
+                                                    style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
+                                                ></div>
+                                                <span className="text-2xl font-black text-secondary dark:text-white uppercase tracking-tighter">
+                                                    {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
+                                                </span>
+                                            </div>
                                             <div className="h-6 w-px bg-gray-100 dark:bg-gray-700"></div>
                                             <span className="font-black text-gray-500 dark:text-gray-300 text-lg group-hover:text-secondary dark:group-hover:text-white transition-colors">{appt.customer.name}</span>
                                             {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
@@ -227,7 +233,11 @@ export default function AgendaSPA() {
                                                     )}
                                                 </div>
                                                 <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight flex items-center gap-2 text-secondary dark:text-white">
-                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                    <div
+                                                        className="w-2 h-2 rounded-full shrink-0"
+                                                        style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
+                                                    ></div>
+                                                    <span>{isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}</span>
                                                     {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
                                                         <span className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></span>
                                                     )}
@@ -288,10 +298,16 @@ export default function AgendaSPA() {
                                             </button>
                                         )}
                                     </div>
-                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center justify-between">
-                                        <span>{appt.pet.name} {isRecurring ? '(R)' : '(A)'}</span>
+                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-primary transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <div
+                                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                                style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
+                                            ></div>
+                                            <span className="truncate">{isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}</span>
+                                        </div>
                                         {appt.quote?.appointments?.some(a => a.category === 'LOGISTICA') && (
-                                            <span className="bg-orange-500 text-white text-[8px] px-2 py-0.5 rounded-full">TR</span>
+                                            <span className="bg-orange-500 text-white text-[8px] px-2 py-0.5 rounded-full shrink-0">TR</span>
                                         )}
                                     </h4>
                                     <p className="text-[11px] opacity-70 font-bold truncate mt-1">{appt.customer.name}</p>

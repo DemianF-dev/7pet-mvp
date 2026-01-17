@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Save, ShieldCheck, CreditCard, Calendar, Star, TrendingDown, Fingerprint, Smartphone, Download } from 'lucide-react';
+import { User, Mail, Save, ShieldCheck, CreditCard, Calendar, Star, TrendingDown, Fingerprint, Smartphone, Download, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -19,6 +19,7 @@ export default function ClientProfile() {
     const [address, setAddress] = useState(user?.address || '');
     const [extraAddresses, setExtraAddresses] = useState<string[]>(user?.extraAddresses || []);
     const [birthday, setBirthday] = useState(user?.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '');
+    const [document, setDocument] = useState(user?.document || '');
 
     // Customer specific fields
     const [discoverySource, setDiscoverySource] = useState('');
@@ -67,6 +68,7 @@ export default function ClientProfile() {
                 setAddress(u.address || '');
                 setExtraAddresses(u.extraAddresses || []);
                 setBirthday(u.birthday ? new Date(u.birthday).toISOString().split('T')[0] : '');
+                setDocument(u.document || '');
 
                 if (u.customer) {
                     setDiscoverySource(u.customer.discoverySource || '');
@@ -98,6 +100,7 @@ export default function ClientProfile() {
                 address,
                 extraAddresses,
                 birthday,
+                document,
                 discoverySource,
                 communicationPrefs,
                 communicationOther,
@@ -266,6 +269,24 @@ export default function ClientProfile() {
                                         onChange={(e) => setBirthday(e.target.value)}
                                         className="input-field text-sm"
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">CPF (Documento)</label>
+                                    <div className="relative">
+                                        <FileText className={`absolute left-4 top-1/2 -translate-y-1/2 ${user?.document ? 'text-gray-300' : 'text-gray-200'}`} size={18} />
+                                        <input
+                                            type="text"
+                                            value={document}
+                                            onChange={(e) => setDocument(e.target.value)}
+                                            disabled={!!user?.document}
+                                            placeholder="000.000.000-00"
+                                            className={`input-field pl-10 md:pl-12 text-sm ${user?.document ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-transparent' : ''}`}
+                                        />
+                                    </div>
+                                    {user?.document && (
+                                        <p className="text-[9px] text-gray-400 ml-1 italic">* O CPF não pode ser alterado pelo aplicativo. Contate o suporte para correções.</p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">

@@ -502,6 +502,7 @@ export const createUser = async (req: Request, res: Response) => {
                         name: finalName || email,
                         phone: phone || null,
                         address: address || null,
+                        cpf: document || null,
                     }
                 } : undefined
             },
@@ -606,6 +607,14 @@ export const updateUser = async (req: Request, res: Response) => {
             data: updateData,
             include: { customer: true }
         });
+
+        // Sync Document (User) with CPF (Customer) if provided
+        if (document !== undefined && user.customer) {
+            await prisma.customer.update({
+                where: { id: user.customer.id },
+                data: { cpf: document }
+            });
+        }
 
         // Update customer restrictions if provided
         const customerData = req.body.customer;
@@ -803,9 +812,9 @@ export const permanentDeleteUser = async (req: Request, res: Response) => {
         const { id } = req.params;
         const currentUser = (req as any).user;
 
-        // Only Master can permanently delete
-        if (!isMaster(currentUser)) {
-            return res.status(403).json({ error: 'Apenas o Master pode excluir permanentemente usuários.' });
+        // Only Master or Admin can permanently delete
+        if (!isMaster(currentUser) && !isAdmin(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master ou Administradores podem excluir permanentemente usuários.' });
         }
 
         const targetUser = await prisma.user.findUnique({

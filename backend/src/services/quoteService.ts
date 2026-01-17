@@ -3,6 +3,7 @@ import { QuoteDependencies, CascadeDeleteOptions } from '../types/QuoteDependenc
 import { messagingService } from './messagingService';
 import { createAuditLog } from '../utils/auditLogger';
 import Logger from '../lib/logger';
+import { randomUUID } from 'crypto';
 
 /**
  * Verifica dependências de um orçamento (appointments e invoices)
@@ -211,6 +212,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                 status: 'APROVADO',
                 statusHistory: {
                     create: {
+                        id: randomUUID(),
                         oldStatus: quote.status,
                         newStatus: 'APROVADO',
                         changedBy: authUser?.id || 'SYSTEM',
@@ -228,13 +230,15 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         if (!existingInvoiceForThisQuote) {
             await tx.invoice.create({
                 data: {
+                    id: randomUUID(),
                     customer: { connect: { id: quote.customerId } },
                     quotes: {
                         connect: [{ id: quote.id }]
                     },
                     amount: quote.totalAmount,
                     status: 'PENDENTE',
-                    dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+                    dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+                    updatedAt: new Date()
                 }
             });
         }
@@ -245,6 +249,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         if (quote.type === 'SPA' || quote.type === 'SPA_TRANSPORTE') {
             const appt = await tx.appointment.create({
                 data: {
+                    id: randomUUID(),
                     customer: { connect: { id: quote.customerId } },
                     pet: { connect: { id: quote.petId! } },
                     startAt: quote.scheduledAt || quote.desiredAt || new Date(),
@@ -254,7 +259,8 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                     performer: performerId ? { connect: { id: performerId } } : undefined,
                     services: {
                         connect: quote.items.filter(i => i.serviceId).map(i => ({ id: i.serviceId! }))
-                    }
+                    },
+                    updatedAt: new Date()
                 }
             });
             Logger.info(`[QuoteService] SPA Appointment created: ${appt.id}`);
@@ -269,6 +275,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                 // Leg 1: LEVA (Pickup)
                 const apptLeva = await tx.appointment.create({
                     data: {
+                        id: randomUUID(),
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: quote.transportLevaAt || quote.transportAt || quote.desiredAt || new Date(),
@@ -277,12 +284,14 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         quote: { connect: { id } },
                         transportDetails: {
                             create: {
+                                id: randomUUID(),
                                 origin: quote.transportOrigin || 'Endereço do Cliente',
                                 destination: quote.transportDestination || '7Pet',
                                 requestedPeriod: quote.transportPeriod || 'MANHA',
                                 type: 'LEVA'
                             }
-                        }
+                        },
+                        updatedAt: new Date()
                     }
                 });
                 Logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id}`);
@@ -294,6 +303,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
 
                 const apptTraz = await tx.appointment.create({
                     data: {
+                        id: randomUUID(),
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: returnTime,
@@ -302,12 +312,14 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         quote: { connect: { id } },
                         transportDetails: {
                             create: {
+                                id: randomUUID(),
                                 origin: quote.transportDestination || '7Pet',
                                 destination: quote.transportReturnAddress || quote.transportOrigin || 'Endereço do Cliente',
                                 requestedPeriod: quote.transportPeriod || 'TARDE',
                                 type: 'TRAZ'
                             }
-                        }
+                        },
+                        updatedAt: new Date()
                     }
                 });
                 Logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id}`);
@@ -317,6 +329,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                 const legType = quote.transportType === 'DROP_OFF' ? 'TRAZ' : 'LEVA';
                 const appt = await tx.appointment.create({
                     data: {
+                        id: randomUUID(),
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: (legType === 'LEVA' ? (quote.transportLevaAt || quote.transportAt || quote.desiredAt) : (quote.transportTrazAt || quote.scheduledAt)) || new Date(),
@@ -325,12 +338,14 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         quote: { connect: { id } },
                         transportDetails: {
                             create: {
+                                id: randomUUID(),
                                 origin: quote.transportOrigin || 'Endereço do Cliente',
                                 destination: quote.transportDestination || '7Pet',
                                 requestedPeriod: quote.transportPeriod || 'MANHA',
                                 type: legType
                             }
-                        }
+                        },
+                        updatedAt: new Date()
                     }
                 });
                 Logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id}`);

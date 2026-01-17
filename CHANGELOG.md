@@ -14,6 +14,13 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - **Auditoria Completa**: Sistema de logs de auditoria implementado em todos os módulos críticos.
 - **Segurança Premium**: Rate limiting, CORS restritivo e proteção de endpoints JWT.
 - **Layout Refinado**: Melhorias de UI/UX em toda a plataforma para uma experiência premium.
+- **Gestão de Acessos**: Ativação completa da lixeira com exclusão definitiva e restauração de usuários.
+
+### 🐛 Correções (Fixed)
+
+- **Lixeira de Usuários**: Corrigido erro que impedia a exclusão permanente e restauração de colaboradores via Master/Admin.
+- **Gestão de E-mails**: Sistema agora permite a liberação de e-mails de contas excluídas permanentemente para novos registros.
+- **Confirmações**: Implementada mecânica de confirmação reforçada (digitar "EXCLUIR") para ações destrutivas.
 
 ### 🔒 Segurança (Security)
 

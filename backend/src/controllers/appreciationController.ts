@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
 import { socketService } from '../services/socketService';
@@ -16,6 +17,7 @@ export const create = async (req: Request, res: Response) => {
         // 1. Create Appreciation record
         const appreciation = await prisma.appreciation.create({
             data: {
+                id: randomUUID(),
                 badgeType,
                 senderId,
                 receiverId,
@@ -30,6 +32,7 @@ export const create = async (req: Request, res: Response) => {
         // 2. Create Notification for the receiver
         const notification = await prisma.notification.create({
             data: {
+                id: randomUUID(),
                 userId: receiverId,
                 title: 'Parabéns! Você recebeu uma insígnia!',
                 message: `Você recebeu a insígnia "${badgeType}" de ${appreciation.sender.name}.`,

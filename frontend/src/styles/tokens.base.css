@@ -57,6 +57,26 @@
     /* Default Focus Ring (Accessibility) */
     --focus-ring: 0 0 0 3px rgba(66, 153, 225, 0.5);
     /* Blue fallback */
+
+    /* =========================================
+     SIDEBAR LAYOUT TOKENS
+     ========================================= */
+    --sidebar-width-expanded: 264px;
+    --sidebar-width-collapsed: 84px;
+    --sidebar-item-gap: 12px;
+    --sidebar-group-gap: 24px;
+    --sidebar-section-spacing: 24px;
+    --sidebar-item-radius: var(--radius-xl);
+    --sidebar-item-height: 46px;
+
+    /* Sidebar Depth & Glass Tokens */
+    --sidebar-bg: var(--glass-bg, rgba(255, 255, 255, 0.75));
+    --sidebar-bg-solid: var(--color-bg-secondary);
+    --sidebar-border: rgba(0, 0, 0, 0.1);
+    --sidebar-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --sidebar-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.03);
+    --sidebar-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+    --sidebar-active-glow: 0 0 0 1px rgba(0, 113, 227, 0.1), 0 8px 20px rgba(0, 113, 227, 0.12);
 }
 
 /* Reduced Motion Preference */

@@ -144,12 +144,12 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                                             description.includes('busca');
 
                                         if (isLogistics) {
-                                            return u.division === 'LOGISTICA';
+                                            return u.division?.toUpperCase().includes('LOGISTICA') || u.role === 'TTM';
                                         }
 
                                         // Everything else (Banhos, Tosas, Extras, even if no category) 
                                         // is considered SPA and should only show SPA staff
-                                        return u.division === 'SPA';
+                                        return u.division?.toUpperCase().includes('SPA') || ['SPA', 'BANHADOR', 'TOSADOR'].includes(u.role);
                                     })
                                     .map(u => u && (
                                         <option key={u.id} value={u.id}>

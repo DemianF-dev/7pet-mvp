@@ -35,20 +35,13 @@ export default function AgendaItemCompact({ appointment, onClick }: AgendaItemCo
     const isTransport = appointment.quote?.appointments?.some((a: any) => a.category === 'LOGISTICA');
     const transportType = isTransport ? (appointment.title?.includes('Leva') ? 'R' : appointment.title?.includes('Traz') ? 'A' : 'LI') : null;
 
-    // Title formatting
     const petName = appointment.pet?.name || '';
     const customerName = appointment.customer?.name || '';
     const serviceName = appointment.service?.name || '';
 
-    // Build title like reference: "(R) Leva - Blue - Industrial Auton..."
-    let title = '';
-    if (isRecurring && !isTransport) {
-        title = `***${customerName.toUpperCase()}${petName ? ` ${petName.toUpperCase()}` : ''}****`;
-    } else if (isTransport && transportType) {
-        title = `(${transportType}) ${appointment.title || `Leva - ${petName}`}`;
-    } else {
-        title = `${customerName} - ${petName}`;
-    }
+    // Build title like reference: "● (A) João - Chloe"
+    const isCat = appointment.pet?.species?.toUpperCase().includes('GATO');
+    const dotColor = appointment.performer?.color || (isCat ? '#F472B6' : '#60A5FA');
 
     // Subtitle: address or service
     const subtitle = appointment.address
@@ -68,20 +61,19 @@ export default function AgendaItemCompact({ appointment, onClick }: AgendaItemCo
 
             {/* Content Area */}
             <div className="flex-1 py-3.5 px-5 flex items-start gap-4">
-                {/* Icon */}
-                {isRecurring && (
-                    <RefreshCw size={14} className="text-[var(--color-text-tertiary)] mt-1 shrink-0 opacity-70" />
-                )}
-                {isTransport && !isRecurring && (
-                    <Truck size={14} className="text-[var(--color-text-tertiary)] mt-1 shrink-0 opacity-70" />
-                )}
+                {/* Colored Dot at the beginning of the line */}
+                <div
+                    className="w-3 h-3 rounded-full mt-1.5 shrink-0 shadow-sm"
+                    style={{ backgroundColor: dotColor }}
+                />
 
                 {/* Text Content */}
                 <div className="flex-1 min-w-0">
                     {/* Title Row */}
                     <div className="flex items-start justify-between gap-2">
                         <span className="text-[var(--color-text-primary)] font-bold text-[15px] leading-tight truncate flex-1 tracking-tight">
-                            {title}
+                            {isTransport && appointment.transport?.type ? `${appointment.transport.type}: ` : ''}
+                            {isRecurring ? '(R)' : '(A)'} {customerName.split(' ')[0]} - {petName}
                         </span>
                         <span className="text-[var(--color-text-tertiary)] text-[12px] font-medium whitespace-nowrap shrink-0 ml-2">
                             {isAllDay ? 'o dia todo' : timeString}

@@ -641,7 +641,10 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                             <input
                                                 type="text"
                                                 value={document}
-                                                onChange={e => setDocument(e.target.value)}
+                                                onChange={e => {
+                                                    setDocument(e.target.value);
+                                                    setCpf(e.target.value); // Keep in sync
+                                                }}
                                                 className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
                                                 placeholder="000.000.000-00"
                                             />
@@ -788,7 +791,10 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         <input
                                             type="text"
                                             value={cpf}
-                                            onChange={e => setCpf(e.target.value)}
+                                            onChange={e => {
+                                                setCpf(e.target.value);
+                                                setDocument(e.target.value); // Keep in sync
+                                            }}
                                             className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none"
                                             placeholder="CPF importado"
                                         />
@@ -1117,10 +1123,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                                 <label className="text-[10px] font-black text-gray-400 uppercase">Porte</label>
                                                                 <select value={pet.size} onChange={e => { const u = [...pets]; u[idx].size = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
                                                                     <option value="">Selecione</option>
-                                                                    <option value="P">Pequeno</option>
-                                                                    <option value="M">Médio</option>
-                                                                    <option value="G">Grande</option>
-                                                                    <option value="GG">Gigante</option>
+                                                                    <option value="Mini">Mini (Toy)</option>
+                                                                    <option value="Pequeno">Pequeno</option>
+                                                                    <option value="Médio">Médio</option>
+                                                                    <option value="Grande">Grande</option>
+                                                                    <option value="Gigante">Gigante</option>
+                                                                    <option value="XGigante">XGigante</option>
                                                                 </select>
                                                             </div>
                                                             <div className="space-y-1">

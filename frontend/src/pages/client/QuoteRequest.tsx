@@ -30,11 +30,19 @@ interface Service {
     name: string;
     basePrice: number;
     category?: string;
+    type?: string;
     species: string;
     minWeight?: number;
     maxWeight?: number;
     sizeLabel?: string;
     coatType?: string;
+}
+
+interface Product {
+    id: string;
+    name: string;
+    price: number;
+    category?: string;
 }
 
 interface Pet {
@@ -49,6 +57,11 @@ type QuoteType = 'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE';
 
 const fetchServices = async (): Promise<Service[]> => {
     const response = await api.get('/services');
+    return response.data;
+};
+
+const fetchProducts = async (): Promise<Product[]> => {
+    const response = await api.get('/products');
     return response.data;
 };
 
@@ -73,6 +86,7 @@ export default function QuoteRequest() {
     const [desiredTime, setDesiredTime] = useState('');
 
     const { data: services = [] } = useQuery({ queryKey: ['services'], queryFn: fetchServices });
+    const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: fetchProducts });
     const { data: pets = [] } = useQuery({ queryKey: ['pets'], queryFn: fetchPets });
     const { data: userData } = useQuery({ queryKey: ['me'], queryFn: fetchMe });
 
@@ -96,7 +110,8 @@ export default function QuoteRequest() {
         returnAddress: '',
         isReturnSame: true,
         petQuantity: 1,
-        period: 'MANHA'
+        period: 'MANHA',
+        transportType: 'LEVA_E_TRAZ' // LEVA_E_TRAZ, SO_LEVA, SO_TRAZ
     });
 
     useEffect(() => {
@@ -125,6 +140,7 @@ export default function QuoteRequest() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [savedAsDraft, setSavedAsDraft] = useState(false);
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
     const selectedPet = pets.find(p => p.id === selectedPetId);
@@ -132,12 +148,12 @@ export default function QuoteRequest() {
     // Helper: Determine pet size based on weight
     const getPetSize = (weight?: number): string | null => {
         if (!weight) return null;
-        if (weight <= 3) return 'PP';
-        if (weight <= 7) return 'P';
-        if (weight <= 15) return 'M';
-        if (weight <= 30) return 'G';
-        if (weight <= 45) return 'GG';
-        return 'XG';
+        if (weight <= 3) return 'Mini';
+        if (weight <= 7) return 'Pequeno';
+        if (weight <= 15) return 'Médio';
+        if (weight <= 30) return 'Grande';
+        if (weight <= 50) return 'Gigante';
+        return 'XGigante';
     };
 
     const petSize = selectedPet ? getPetSize(selectedPet.weight) : null;
@@ -156,10 +172,11 @@ export default function QuoteRequest() {
 
         if (!speciesMatch) return false;
 
-        // 2. Size/Porte Match - Show only services for the pet's size
+        // 2. Size/Porte Match - Show services for pet's size OR services available for all sizes
         if (petSize && s.sizeLabel) {
-            // Service has a specific size requirement, check if it matches
-            if (s.sizeLabel !== petSize) return false;
+            // Service has a specific size requirement
+            // Accept if service matches pet size OR service is available for all sizes
+            if (s.sizeLabel !== 'Todos' && s.sizeLabel !== petSize) return false;
         }
 
         // 3. Hair Type Filter - Match coatType with selected hairLength
@@ -177,15 +194,38 @@ export default function QuoteRequest() {
         return true;
     });
 
-    // Categorize services for SPA
+    // Intelligent Product Filtering based on Pet Profile
+    const availableProducts = products.filter(p => {
+        if (!selectedPet) return true;
+        // Simple intelligent matching: look for pet species or size in product name/description/category
+        const profileTags = [
+            selectedPet.species.toLowerCase(),
+            petSize?.toLowerCase(),
+            selectedPet.breed?.toLowerCase()
+        ].filter(Boolean);
+
+        const searchText = (p.name + ' ' + (p.category || '')).toLowerCase();
+
+        // If product mentions a different species, exclude it
+        if (selectedPet.species.toLowerCase().includes('cão') || selectedPet.species.toLowerCase().includes('cachorro') || selectedPet.species.toLowerCase().includes('canino')) {
+            if (searchText.includes('gato') || searchText.includes('felino')) return false;
+        }
+        if (selectedPet.species.toLowerCase().includes('gato') || selectedPet.species.toLowerCase().includes('felino')) {
+            if (searchText.includes('cão') || searchText.includes('cachorro') || searchText.includes('canino')) return false;
+        }
+
+        return true;
+    });
+
+    // Categorize services for SPA using the 'type' field
     const banhoServices = availableServices.filter(s =>
-        s.category && s.category.toLowerCase() === 'banhos'
+        s.type && s.type.toLowerCase() === 'banho'
     );
     const tosaServices = availableServices.filter(s =>
-        s.category && s.category.toLowerCase() === 'tosas'
+        s.type && s.type.toLowerCase() === 'tosa'
     );
     const extraServices = availableServices.filter(s =>
-        s.category && s.category.toLowerCase() === 'adicionais'
+        s.type && s.type.toLowerCase() === 'outros'
     );
 
     const [selectedBanhoId, setSelectedBanhoId] = useState('');
@@ -267,7 +307,13 @@ export default function QuoteRequest() {
         setShowConfirmSubmit(true);
     };
 
-    const handleSubmit = async () => {
+    const handleSaveAsDraft = async () => {
+        setIsSubmitting(true);
+        setError(null);
+        await handleSubmit(true);
+    };
+
+    const handleSubmit = async (saveAsDraft: boolean = false) => {
         setIsSubmitting(true);
         setError(null);
         try {
@@ -285,7 +331,48 @@ export default function QuoteRequest() {
                     description: services.find(s => s.id === selectedTosaId)?.name || 'Tosa',
                     quantity: 1
                 }] : []),
-                ...items.filter(item => item.serviceId)
+                ...items
+                    .filter(item => item.serviceId)
+                    .map(item => ({
+                        serviceId: item.serviceId,
+                        description: item.description || services.find(s => s.id === item.serviceId)?.name || 'Serviço Extra',
+                        quantity: item.quantity || 1
+                    })),
+                // Intelligent product suggestions based on pet profile
+                // Automatically include specific products if intelligently matched and requested
+                ...(spaDetails.hasParasites && products && products.length > 0 ?
+                    [products.find(p => p.name.toLowerCase().includes('antipulga') || (p.category && p.category.toLowerCase().includes('parasita')))].filter(Boolean).map(p => ({
+                        productId: p!.id,
+                        description: p!.name,
+                        quantity: 1
+                    })) : []),
+                ...(spaDetails.hasKnots ?
+                    (() => {
+                        // First try to find a matching service (preferred)
+                        const knotService = services && services.length > 0
+                            ? services.find(s => s.type === 'Outros' && (s.name.toLowerCase().includes('desembolo') || s.name.toLowerCase().includes('nós')))
+                            : null;
+
+                        if (knotService) {
+                            return [{
+                                serviceId: knotService.id,
+                                description: knotService.name,
+                                quantity: 1
+                            }];
+                        }
+
+                        // Fallback to product if no service found
+                        if (products && products.length > 0) {
+                            return products
+                                .filter(p => p.name.toLowerCase().includes('desembolo') || p.name.toLowerCase().includes('nós'))
+                                .map(p => ({
+                                    productId: p.id,
+                                    description: p.name,
+                                    quantity: 1
+                                }));
+                        }
+                        return [];
+                    })() : [])
             ];
 
             await api.post('/quotes', {
@@ -307,12 +394,13 @@ export default function QuoteRequest() {
                 parasiteTypes: spaDetails.parasiteTypes,
                 parasiteComments: spaDetails.parasiteComments,
                 wantsMedicatedBath: spaDetails.wantsMedicatedBath,
-                communicationPrefs
+                saveAsDraft
             });
 
             // Proactively update user preference
             await api.patch('/auth/me', { communicationPrefs });
 
+            setSavedAsDraft(saveAsDraft);
             setSuccess(true);
             setShowConfirmSubmit(false);
         } catch (err: any) {
@@ -333,8 +421,14 @@ export default function QuoteRequest() {
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
                         <CheckCircle2 size={40} />
                     </div>
-                    <h2 className="text-3xl font-black text-secondary mb-4">Solicitação Enviada!</h2>
-                    <p className="text-gray-500 mb-8">Nossa equipe analisará seu pedido e enviará o orçamento em breve. Você pode acompanhar o status na lista de orçamentos.</p>
+                    <h2 className="text-3xl font-black text-secondary mb-4">
+                        {savedAsDraft ? '💾 Rascunho Salvo!' : 'Solicitação Enviada!'}
+                    </h2>
+                    <p className="text-gray-500 mb-8">
+                        {savedAsDraft
+                            ? 'Seu rascunho foi salvo com sucesso. Você pode continuar editando ou enviar quando estiver pronto.'
+                            : 'Nossa equipe analisará seu pedido e enviará o orçamento em breve. Você pode acompanhar o status na lista de orçamentos.'}
+                    </p>
                     <div className="flex flex-col gap-3">
                         <button onClick={() => navigate('/client/quotes')} className="btn-primary w-full py-4">Ver Meus Orçamentos</button>
                         <button onClick={() => navigate('/client/dashboard')} className="text-gray-400 font-bold hover:text-secondary transition-colors">Voltar ao Início</button>
@@ -470,14 +564,25 @@ export default function QuoteRequest() {
 
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-8 rounded-[40px] shadow-lg border border-gray-50">
                             <button type="button" onClick={() => setStep(2)} className="font-black text-gray-400 hover:text-secondary uppercase tracking-widest text-xs">Voltar</button>
-                            <LoadingButton
-                                type="submit"
-                                isLoading={isSubmitting}
-                                loadingText="Enviando..."
-                                className="px-14 py-6 rounded-[28px] text-xl"
-                            >
-                                Solicitar Agora
-                            </LoadingButton>
+                            <div className="flex gap-4">
+                                <LoadingButton
+                                    type="button"
+                                    onClick={handleSaveAsDraft}
+                                    isLoading={isSubmitting}
+                                    loadingText="Salvando..."
+                                    className="px-10 py-6 rounded-[28px] text-lg bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-gray-200"
+                                >
+                                    💾 Salvar Rascunho
+                                </LoadingButton>
+                                <LoadingButton
+                                    type="submit"
+                                    isLoading={isSubmitting}
+                                    loadingText="Enviando..."
+                                    className="px-14 py-6 rounded-[28px] text-xl"
+                                >
+                                    Solicitar Agora
+                                </LoadingButton>
+                            </div>
                         </div>
                     </motion.form>
                 )}

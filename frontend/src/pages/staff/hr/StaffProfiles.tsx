@@ -115,15 +115,23 @@ export default function StaffProfiles() {
         }
     };
 
+    const parseSafeFloat = (val: string) => {
+        if (!val) return null;
+        // Replace comma with dot if present, and remove multiple dots/commas
+        const sanitized = val.replace(',', '.');
+        const parsed = parseFloat(sanitized);
+        return isNaN(parsed) ? null : parsed;
+    };
+
     const handleSubmit = async () => {
         try {
             const payload = {
                 ...formData,
-                dailyRate: formData.dailyRate ? parseFloat(formData.dailyRate) : null,
-                perLegRate: formData.perLegRate ? parseFloat(formData.perLegRate) : null,
-                transportVoucher: formData.transportVoucher ? parseFloat(formData.transportVoucher) : null,
-                mealVoucher: formData.mealVoucher ? parseFloat(formData.mealVoucher) : null,
-                otherBenefits: formData.otherBenefits ? parseFloat(formData.otherBenefits) : null
+                dailyRate: parseSafeFloat(formData.dailyRate),
+                perLegRate: parseSafeFloat(formData.perLegRate),
+                transportVoucher: parseSafeFloat(formData.transportVoucher),
+                mealVoucher: parseSafeFloat(formData.mealVoucher),
+                otherBenefits: parseSafeFloat(formData.otherBenefits)
             };
 
             if (editingProfile) {

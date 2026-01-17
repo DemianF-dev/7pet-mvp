@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
@@ -32,6 +33,7 @@ export const createTicket = async (req: Request, res: Response) => {
         if (masterUser) {
             await prisma.notification.create({
                 data: {
+                    id: randomUUID(),
                     userId: masterUser.id,
                     title: 'Novo Chamado Técnico',
                     message: `Novo chamado de ${user.name}: ${description.substring(0, 50)}...`,

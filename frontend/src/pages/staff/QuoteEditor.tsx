@@ -156,7 +156,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             console.log('[AUTOCOMPLETE] Serviços carregados:', servicesRes.data.length);
             setAvailableServices(servicesRes.data);
             setStaffUsers((usersRes.data || []).filter((u: any) =>
-                u && ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role) && u.isEligible !== false
+                u && ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'LOGISTICA', 'MASTER', 'TTM'].includes(u.role) && u.isEligible !== false
             ));
         } catch (error) {
             console.error('[AUTOCOMPLETE] Erro ao buscar serviços/usuários:', error);

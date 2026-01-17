@@ -70,6 +70,30 @@ const TransportSection = ({
                 </div>
 
                 <div className="space-y-6">
+                    {/* Tipo de Transporte */}
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Tipo de Transporte</label>
+                        <div className="grid grid-cols-3 gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                            {[
+                                { value: 'LEVA_E_TRAZ', label: 'Leva e Traz' },
+                                { value: 'SO_LEVA', label: 'Só Leva' },
+                                { value: 'SO_TRAZ', label: 'Só Traz' }
+                            ].map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setTransportDetails(prev => ({ ...prev, transportType: option.value }))}
+                                    className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all ${(transportDetails.transportType || 'LEVA_E_TRAZ') === option.value
+                                            ? 'bg-orange-500 text-white shadow-lg'
+                                            : 'text-gray-400 hover:text-secondary'
+                                        }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="p-6 bg-orange-50 rounded-[32px] border border-orange-100/50">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-black text-orange-700 uppercase tracking-widest">Retorno no mesmo endereço?</span>
@@ -77,11 +101,12 @@ const TransportSection = ({
                                 type="button"
                                 onClick={() => setTransportDetails(prev => ({ ...prev, isReturnSame: !prev.isReturnSame, returnAddress: prev.isReturnSame ? '' : prev.origin }))}
                                 className={`w-12 h-7 rounded-full transition-all relative ${transportDetails.isReturnSame ? 'bg-orange-500' : 'bg-gray-200'}`}
+                                disabled={(transportDetails.transportType || 'LEVA_E_TRAZ') !== 'LEVA_E_TRAZ'}
                             >
                                 <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${transportDetails.isReturnSame ? 'left-6 shadow-md' : 'left-1'}`} />
                             </button>
                         </div>
-                        {!transportDetails.isReturnSame && (
+                        {!transportDetails.isReturnSame && (transportDetails.transportType || 'LEVA_E_TRAZ') === 'LEVA_E_TRAZ' && (
                             <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
                                 <label className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] mb-2 block ml-1">Outro endereço para retorno</label>
                                 <input

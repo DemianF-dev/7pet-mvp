@@ -115,9 +115,15 @@ export default function AgendaLOG() {
                                             </button>
                                         )}
                                     </div>
-                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-orange-500 transition-colors truncate uppercase drop-shadow-sm leading-tight">
-                                        {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                        {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-orange-500 transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center gap-2">
+                                        <div
+                                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                                            style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
+                                        ></div>
+                                        <span className="truncate">
+                                            {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
+                                            {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
+                                        </span>
                                     </h4>
                                     <p className="text-[11px] opacity-70 font-bold truncate mt-1 text-gray-500 dark:text-gray-400">{appt.customer.name}</p>
                                     <p className="text-[9px] font-black text-orange-600 dark:text-orange-400 mt-2 bg-orange-50 dark:bg-orange-500/10 p-1.5 rounded-lg border border-orange-100 dark:border-orange-500/20 truncate">
@@ -180,10 +186,16 @@ export default function AgendaLOG() {
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 uppercase tracking-[0.2em] mb-2">Pet & Tutor(a)</p>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-2xl font-black text-secondary dark:text-white uppercase tracking-tighter bg-white dark:bg-gray-700/50 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 group-hover:border-orange-500/30 transition-colors">
-                                                {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                                {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
-                                            </span>
+                                            <div className="flex items-center gap-2 bg-white dark:bg-gray-700/50 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 group-hover:border-orange-500/30 transition-colors">
+                                                <div
+                                                    className="w-3 h-3 rounded-full shadow-sm shrink-0"
+                                                    style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
+                                                ></div>
+                                                <span className="text-2xl font-black text-secondary dark:text-white uppercase tracking-tighter">
+                                                    {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
+                                                    {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
+                                                </span>
+                                            </div>
                                             <div className="h-6 w-px bg-gray-100 dark:bg-gray-700"></div>
                                             <span className="font-black text-gray-500 dark:text-gray-300 text-lg group-hover:text-secondary dark:group-hover:text-white transition-colors">{appt.customer.name}</span>
                                         </div>
@@ -281,9 +293,15 @@ export default function AgendaLOG() {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight text-secondary dark:text-white">
-                                                    {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight flex items-center gap-2 text-secondary dark:text-white">
+                                                    <div
+                                                        className="w-2 h-2 rounded-full shrink-0"
+                                                        style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
+                                                    ></div>
+                                                    <span className="truncate">
+                                                        {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
+                                                        {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
+                                                    </span>
                                                 </p>
                                                 <p className="text-[10px] opacity-70 font-bold truncate text-gray-500 dark:text-gray-400">{appt.customer.name}</p>
                                                 <p className="text-[9px] font-black text-orange-600 dark:text-orange-400 mt-1 truncate">{appt.transport?.origin.split(',')[0]} → {appt.transport?.destination.split(',')[0]}</p>

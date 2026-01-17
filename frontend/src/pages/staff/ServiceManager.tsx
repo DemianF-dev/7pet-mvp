@@ -18,11 +18,14 @@ import {
     RotateCcw,
     X,
     Filter,
+    Settings,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
+import toast from 'react-hot-toast';
+
 
 interface Service {
     id: string;
@@ -33,7 +36,9 @@ interface Service {
     duration: number;
     category: string;
     subcategory?: string;
-    type?: string;
+    type?: 'Banho' | 'Tosa' | 'Outros';
+    bathCategory?: 'Tradicional' | 'Hidratante';
+    groomingType?: string;
     coatType?: string;
     unit?: string;
     sizeLabel?: string;
@@ -66,6 +71,12 @@ export default function ServiceManager() {
     const [tab, setTab] = useState<TabType>('active');
     const [isCopying, setIsCopying] = useState(false);
     const [autoGenerateName, setAutoGenerateName] = useState(true);
+    const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+    const [bulkEditData, setBulkEditData] = useState({
+        basePrice: '',
+        duration: '',
+        category: '',
+    });
 
     // Advanced Filters
     const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -87,9 +98,12 @@ export default function ServiceManager() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        basePrice: 0,
-        duration: 30,
-        category: 'Banho',
+        basePrice: 0 as number | '',
+        duration: 30 as number | '',
+        category: 'Estética',
+        type: 'Banho' as 'Banho' | 'Tosa' | 'Outros',
+        bathCategory: 'Tradicional' as 'Tradicional' | 'Hidratante',
+        groomingType: 'Higiênica',
         species: 'Canino',
         sizeLabel: 'Médio',
         coatType: 'Curto',
@@ -106,10 +120,19 @@ export default function ServiceManager() {
     useEffect(() => {
         if (autoGenerateName && isModalOpen && !editingService && !isCopying) {
             const speciesText = formData.species === 'Canino' ? 'Cão' : 'Gato';
-            const name = `${formData.category} ${speciesText} ${formData.sizeLabel} - Pelagem ${formData.coatType}`;
+            let name = '';
+
+            if (formData.type === 'Banho') {
+                name = `Banho ${formData.bathCategory} ${speciesText} ${formData.sizeLabel} - Pelagem ${formData.coatType}`;
+            } else if (formData.type === 'Tosa') {
+                name = `Tosa ${formData.groomingType} ${speciesText} ${formData.sizeLabel}`;
+            } else {
+                name = `Serviço ${speciesText} Personalizado`;
+            }
+
             setFormData(prev => ({ ...prev, name }));
         }
-    }, [formData.category, formData.species, formData.sizeLabel, formData.coatType, autoGenerateName, isModalOpen, editingService, isCopying]);
+    }, [formData.type, formData.bathCategory, formData.groomingType, formData.species, formData.sizeLabel, formData.coatType, autoGenerateName, isModalOpen, editingService, isCopying]);
 
     const fetchUsers = async () => {
         try {
@@ -126,6 +149,7 @@ export default function ServiceManager() {
             const endpoint = tab === 'trash' ? '/services/trash' : '/services';
             const response = await api.get(endpoint);
             setServices(response.data);
+            setIsLoading(false);
         } catch (error) {
             console.error('Erro ao buscar serviços:', error);
         } finally {
@@ -142,7 +166,10 @@ export default function ServiceManager() {
                 description: service.description || '',
                 basePrice: service.basePrice,
                 duration: service.duration,
-                category: service.category || 'Banho',
+                category: service.category || 'Estética',
+                type: (service.type as any) || 'Banho',
+                bathCategory: (service.bathCategory as any) || 'Tradicional',
+                groomingType: service.groomingType || 'Higiênica',
                 species: service.species || 'Canino',
                 sizeLabel: service.sizeLabel || 'Médio',
                 coatType: service.coatType || 'Curto',
@@ -156,7 +183,10 @@ export default function ServiceManager() {
                 description: '',
                 basePrice: 0,
                 duration: 30,
-                category: 'Banho',
+                category: 'Estética',
+                type: 'Banho',
+                bathCategory: 'Tradicional',
+                groomingType: 'Higiênica',
                 species: speciesFilter, // Default to current tab
                 sizeLabel: 'Médio',
                 coatType: 'Curto',
@@ -171,41 +201,36 @@ export default function ServiceManager() {
         if (e) e.preventDefault();
         console.log('[ServiceManager] Submitting form...', formData);
 
-        // Manual validation since we are not using html required attribute anymore
+        // Manual validation
         if (!formData.name) {
-            alert('O nome do serviço é obrigatório');
+            toast.error('O nome do serviço é obrigatório');
             return;
         }
 
-        // Removed window.confirm to align with ProductManager fix
-        // const msg = editingService ? 'Deseja salvar as alterações neste serviço?' : 'Deseja cadastrar este novo serviço?';
-        // if (!window.confirm(msg)) return;
+        const payload = {
+            ...formData,
+            basePrice: formData.basePrice === '' ? 0 : formData.basePrice,
+            duration: formData.duration === '' ? 0 : formData.duration
+        };
 
         const savePromise = (async () => {
             if (editingService) {
-                await api.patch(`/services/${editingService.id}`, formData);
+                await api.patch(`/services/${editingService.id}`, payload);
             } else {
-                await api.post('/services', formData);
+                await api.post('/services', payload);
             }
             fetchServices();
             setIsModalOpen(false);
         })();
 
-        // Using alert/console for now to be simple, or reuse toast if available (it is not imported in original snippet but used in ProductManager, let's stick to safe defaults or check imports)
-        // Checking imports: toast is NOT imported in the viewed file snippet I saw (lines 1-800). 
-        // Wait, line 16 includes 'lucide-react' etc. I need to check if 'react-hot-toast' is imported.
-        // It wasn't in the imports I saw. So I will use alert/console for error handling to be safe, or I should have added the import.
-        // Let's rely on api throwing error handled by the promise catch which effectively is covered by the async IIFE but we need to surface it.
-
-        // Actually, let's wrap it in try/catch for the alert.
-        try {
-            await savePromise;
-            // Success feedback
-            // alert('Serviço salvo com sucesso!'); // Optional, maybe too intrusive
-        } catch (error: any) {
-            console.error(error);
-            alert(error.response?.data?.error || 'Erro ao salvar serviço');
-        }
+        toast.promise(savePromise, {
+            loading: 'Salvando serviço...',
+            success: 'Serviço salvo com sucesso!',
+            error: (err) => {
+                console.error('[ServiceManager] Save error:', err);
+                return `Erro ao salvar: ${err.response?.data?.error || err.message || 'Erro desconhecido'}`;
+            }
+        });
     };
 
     const handleDelete = async (id: string) => {
@@ -222,8 +247,10 @@ export default function ServiceManager() {
                 await api.delete(`/services/${id}`);
             }
             fetchServices();
+            toast.success(tab === 'trash' ? 'Serviço excluído permanentemente.' : 'Serviço movido para a lixeira.');
         } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao excluir serviço');
+            console.error('Erro ao excluir:', error);
+            toast.error(error.response?.data?.error || 'Erro ao excluir serviço');
         }
     };
 
@@ -232,14 +259,46 @@ export default function ServiceManager() {
         try {
             await api.patch(`/services/${id}/restore`);
             fetchServices();
+            toast.success('Serviço restaurado!');
         } catch (error) {
-            alert('Erro ao restaurar serviço');
+            toast.error('Erro ao restaurar serviço');
         }
     };
 
     const toggleSelect = (id: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleBulkUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (selectedIds.length === 0) return;
+
+        try {
+            const data: any = {};
+            if (bulkEditData.basePrice) data.basePrice = parseFloat(bulkEditData.basePrice);
+            if (bulkEditData.duration) data.duration = parseInt(bulkEditData.duration);
+            if (bulkEditData.category) data.category = bulkEditData.category;
+
+            if (Object.keys(data).length === 0) {
+                alert('Preencha ao menos um campo para atualizar.');
+                return;
+            }
+
+            await api.post('/services/bulk-update', {
+                ids: selectedIds,
+                data
+            });
+
+            toast.success(`${selectedIds.length} serviços atualizados com sucesso!`);
+            setIsBulkEditModalOpen(false);
+            setBulkEditData({ basePrice: '', duration: '', category: '' });
+            setSelectedIds([]);
+            setIsBulkMode(false);
+            fetchServices();
+        } catch (error) {
+            toast.error('Erro ao atualizar serviços em massa.');
+        }
     };
 
     const handleBulkDelete = async () => {
@@ -256,8 +315,9 @@ export default function ServiceManager() {
             fetchServices();
             setSelectedIds([]);
             setIsBulkMode(false);
+            toast.success('Ação em massa concluída.');
         } catch (error) {
-            alert('Erro ao processar serviços');
+            toast.error('Erro ao processar serviço(s)');
         }
     };
 
@@ -268,8 +328,9 @@ export default function ServiceManager() {
             fetchServices();
             setSelectedIds([]);
             setIsBulkMode(false);
+            toast.success('Serviços restaurados.');
         } catch (error) {
-            alert('Erro ao restaurar serviços');
+            toast.error('Erro ao restaurar serviços');
         }
     };
 
@@ -283,6 +344,9 @@ export default function ServiceManager() {
             basePrice: service.basePrice,
             duration: service.duration,
             category: service.category,
+            type: service.type as any,
+            bathCategory: service.bathCategory as any,
+            groomingType: service.groomingType,
             species: service.species,
             sizeLabel: service.sizeLabel || 'Médio',
             coatType: service.coatType || 'Curto',
@@ -300,23 +364,29 @@ export default function ServiceManager() {
             const servicesToImport = lines.map(line => {
                 const parts = line.split(';').map(s => s.trim());
                 if (parts.length >= 3) {
-                    const [name, description, price, duration, category, size, coat] = parts;
+                    const [name, price, duration, type, size, extra, bathCat, category, description] = parts;
+
+                    const serviceType = (type || 'Banho') as 'Banho' | 'Tosa' | 'Outros';
+
                     return {
-                        name,
+                        name: (name === '-' || !name) ? 'AUTOMATICO' : name,
                         description: description || '',
                         basePrice: parseFloat(price.replace(',', '.')) || 0,
                         duration: parseInt(duration) || 30,
-                        category: category || 'Geral',
+                        type: serviceType,
+                        bathCategory: (bathCat || 'Tradicional') as any,
                         species: speciesFilter,
                         sizeLabel: size || 'Médio',
-                        coatType: coat || 'Curto'
+                        coatType: serviceType === 'Banho' ? (extra || 'Curto') : 'Curto',
+                        groomingType: serviceType === 'Tosa' ? (extra || 'Higiênica') : 'Higiênica',
+                        category: serviceType === 'Outros' ? (category || 'Geral') : 'Estética'
                     };
                 }
                 return null;
             }).filter(Boolean);
 
             if (servicesToImport.length === 0) {
-                alert('Nenhum serviço identificado. Verifique o formato.');
+                alert('Nenhum serviço identificado. Verifique o formato indicado no cabeçalho.');
                 return;
             }
 
@@ -527,16 +597,90 @@ export default function ServiceManager() {
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    onClick={handleBulkDelete}
-                                    disabled={selectedIds.length === 0}
-                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                >
-                                    <Trash2 size={18} /> Apagar Agora
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => setIsBulkEditModalOpen(true)}
+                                        disabled={selectedIds.length === 0}
+                                        className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl bg-primary hover:bg-primary-dark text-white shadow-primary/20 active:scale-95 transition-all"
+                                    >
+                                        <Settings size={18} /> Editar em Massa
+                                    </button>
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        disabled={selectedIds.length === 0}
+                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                    >
+                                        <Trash2 size={18} /> Apagar Agora
+                                    </button>
+                                </>
                             )}
                         </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal de Edição em Massa */}
+            <AnimatePresence>
+                {isBulkEditModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsBulkEditModalOpen(false)}
+                            className="absolute inset-0 bg-secondary/80 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
+                        >
+                            <h2 className="text-2xl font-black text-secondary mb-2 uppercase tracking-tighter">Edição em Massa</h2>
+                            <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">
+                                Alterando <span className="text-primary">{selectedIds.length}</span> serviços selecionados. <br />
+                                <span className="text-[10px] italic">Preencha apenas o que deseja alterar.</span>
+                            </p>
+
+                            <form onSubmit={handleBulkUpdate} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Novo Preço (R$)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={bulkEditData.basePrice}
+                                        onChange={(e) => setBulkEditData({ ...bulkEditData, basePrice: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="Deixe vazio para não alterar"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nova Duração (min)</label>
+                                    <input
+                                        type="number"
+                                        value={bulkEditData.duration}
+                                        onChange={(e) => setBulkEditData({ ...bulkEditData, duration: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="Deixe vazio para não alterar"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nova Categoria</label>
+                                    <input
+                                        value={bulkEditData.category}
+                                        onChange={(e) => setBulkEditData({ ...bulkEditData, category: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="Ex: Premium, Promocional..."
+                                    />
+                                </div>
+
+                                <div className="flex gap-4 pt-6 border-t border-gray-100">
+                                    <button type="button" onClick={() => setIsBulkEditModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                    <button type="submit" className="flex-1 px-8 py-4 rounded-2xl font-black text-white bg-primary uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all">Salvar Alterações</button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
@@ -713,426 +857,482 @@ export default function ServiceManager() {
             </AnimatePresence>
 
             {/* Content - Table or Cards View */}
-            {viewMode === 'table' ? (
-                <div className="bg-white rounded-[24px] md:rounded-[40px] shadow-sm border border-gray-100 overflow-x-auto">
-                    <table className="w-full text-left min-w-[800px]">
-                        <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-wider">
-                            <tr>
-                                <th className="px-3 md:px-8 py-4 md:py-6 w-12 text-center md:text-left">
-                                    {(isBulkMode || selectedIds.length > 0) && (
-                                        <button
-                                            onClick={handleSelectAll}
-                                            className="text-gray-300 hover:text-primary transition-colors"
-                                        >
-                                            {selectedIds.length > 0 && selectedIds.length === sortedServices.length ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
-                                        </button>
-                                    )}
-                                </th>
-                                <th className="px-3 md:px-8 py-4 md:py-6">Serviço</th>
-                                <th className="px-3 md:px-8 py-4 md:py-6">Categoria</th>
-                                <th className="px-3 md:px-8 py-4 md:py-6 text-center">Espécie</th>
-                                <th className="px-3 md:px-8 py-4 md:py-6 text-center">Duração</th>
-                                <th className="px-3 md:px-8 py-4 md:py-6 text-right">Preço</th>
-                                <th className="px-3 md:px-8 py-4 md:py-6 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {isLoading ? (
+            {
+                viewMode === 'table' ? (
+                    <div className="bg-white rounded-[24px] md:rounded-[40px] shadow-sm border border-gray-100 overflow-x-auto">
+                        <table className="w-full text-left min-w-[800px]">
+                            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-wider">
                                 <tr>
-                                    <td colSpan={7} className="px-8 py-32 text-center">
-                                        <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
-                                    </td>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 w-12 text-center md:text-left">
+                                        {(isBulkMode || selectedIds.length > 0) && (
+                                            <button
+                                                onClick={handleSelectAll}
+                                                className="text-gray-300 hover:text-primary transition-colors"
+                                            >
+                                                {selectedIds.length > 0 && selectedIds.length === sortedServices.length ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
+                                            </button>
+                                        )}
+                                    </th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6">Serviço</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6">Categoria</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-center">Espécie</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-center">Duração</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-right">Preço</th>
+                                    <th className="px-3 md:px-8 py-4 md:py-6 text-right">Ações</th>
                                 </tr>
-                            ) : sortedServices.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="px-8 py-32 text-center">
-                                        <div className="bg-gray-50 rounded-[40px] p-20 border-2 border-dashed border-gray-100">
-                                            <Tag className="mx-auto text-gray-200 mb-4" size={64} />
-                                            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhum serviço encontrado.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : sortedServices.map(service => (
-                                <tr
-                                    key={service.id}
-                                    className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(service.id) ? 'bg-primary/5' : ''}`}
-                                >
-                                    <td className="px-3 md:px-8 py-4 md:py-6" onClick={(e) => e.stopPropagation()}>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-8 py-32 text-center">
+                                            <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
+                                        </td>
+                                    </tr>
+                                ) : sortedServices.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-8 py-32 text-center">
+                                            <div className="bg-gray-50 rounded-[40px] p-20 border-2 border-dashed border-gray-100">
+                                                <Tag className="mx-auto text-gray-200 mb-4" size={64} />
+                                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhum serviço encontrado.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : sortedServices.map(service => (
+                                    <tr
+                                        key={service.id}
+                                        className={`hover:bg-gray-50/50 transition-all group ${selectedIds.includes(service.id) ? 'bg-primary/5' : ''}`}
+                                    >
+                                        <td className="px-3 md:px-8 py-4 md:py-6" onClick={(e) => e.stopPropagation()}>
+                                            {(isBulkMode || selectedIds.includes(service.id)) && (
+                                                <button
+                                                    onClick={(e) => toggleSelect(service.id, e)}
+                                                    className={`transition-all ${selectedIds.includes(service.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
+                                                >
+                                                    {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
+                                                </button>
+                                            )}
+                                        </td>
+                                        <td className="px-3 md:px-8 py-4 md:py-6">
+                                            <div className="flex items-center gap-2 md:gap-3">
+                                                <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/10 rounded-lg md:rounded-xl flex items-center justify-center text-primary shrink-0">
+                                                    <Tag size={16} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2">
+                                                        <h3 className="font-black text-secondary uppercase text-[11px] md:text-sm truncate max-w-[120px] md:max-w-none">{service.name}</h3>
+                                                        <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded-md uppercase tracking-widest w-fit">
+                                                            SR-{String((service.seqId || 0) + 999).padStart(4, '0')}
+                                                        </span>
+                                                    </div>
+                                                    {service.description && (
+                                                        <p className="text-[10px] md:text-xs text-gray-400 line-clamp-1 hidden sm:block">{service.description}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-3 md:px-8 py-4 md:py-6">
+                                            <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                                                {service.category}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-center">
+                                            <div className="flex justify-center">
+                                                {service.species === 'Canino' ? (
+                                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[9px] md:text-[10px] font-black">
+                                                        <Dog size={10} /> <span className="hidden md:inline">Canino</span>
+                                                    </span>
+                                                ) : service.species === 'Felino' ? (
+                                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-[9px] md:text-[10px] font-black">
+                                                        <Cat size={10} /> <span className="hidden md:inline">Felino</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-[9px] md:text-[10px] font-black">
+                                                        <span className="hidden md:inline">Ambos</span><span className="md:hidden">A</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-center">
+                                            <div className="flex items-center justify-center gap-1 text-gray-600">
+                                                <Clock size={12} />
+                                                <span className="font-bold text-[10px] md:text-sm">{service.duration}<span className="hidden md:inline"> min</span><span className="md:hidden">m</span></span>
+                                            </div>
+                                        </td>
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-right">
+                                            <span className="text-sm md:text-lg font-black text-primary whitespace-nowrap">
+                                                R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 md:px-8 py-4 md:py-6 text-right">
+                                            <div className="flex justify-end gap-1">
+                                                {tab === 'trash' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleRestore(service.id)}
+                                                            className="p-2 hover:bg-orange-50 rounded-xl transition-colors"
+                                                            title="Restaurar"
+                                                        >
+                                                            <RotateCcw size={16} className="text-orange-400" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(service.id)}
+                                                            className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                                            title="Excluir Permanentemente"
+                                                        >
+                                                            <Trash2 size={16} className="text-red-600" />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleOpenModal(service)}
+                                                            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit2 size={16} className="text-gray-400" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDuplicate(service)}
+                                                            className="p-2 hover:bg-blue-50 rounded-xl transition-colors"
+                                                            title="Duplicar"
+                                                        >
+                                                            <Copy size={16} className="text-blue-400" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(service.id)}
+                                                            className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                                                            title="Excluir"
+                                                        >
+                                                            <Trash2 size={16} className="text-red-400" />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {isLoading ? (
+                            <div className="col-span-full py-20 text-center">
+                                <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
+                            </div>
+                        ) : sortedServices.length === 0 ? (
+                            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 rounded-[40px] bg-white">
+                                <Tag className="mx-auto text-gray-200 mb-4" size={64} />
+                                <p className="text-gray-400 font-bold">Nenhum serviço encontrado.</p>
+                            </div>
+                        ) : sortedServices.map(service => (
+                            <motion.div
+                                layout
+                                key={service.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`group bg-white p-4 md:p-6 rounded-2xl md:rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                        <Tag size={24} />
+                                    </div>
+                                    <div className="flex gap-2">
                                         {(isBulkMode || selectedIds.includes(service.id)) && (
                                             <button
                                                 onClick={(e) => toggleSelect(service.id, e)}
-                                                className={`transition-all ${selectedIds.includes(service.id) ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
+                                                className={`p-2 rounded-xl transition-all shadow-md border ${selectedIds.includes(service.id) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-300 border-gray-100 hover:text-primary'}`}
                                             >
                                                 {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
                                             </button>
                                         )}
-                                    </td>
-                                    <td className="px-3 md:px-8 py-4 md:py-6">
-                                        <div className="flex items-center gap-2 md:gap-3">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/10 rounded-lg md:rounded-xl flex items-center justify-center text-primary shrink-0">
-                                                <Tag size={16} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2">
-                                                    <h3 className="font-black text-secondary uppercase text-[11px] md:text-sm truncate max-w-[120px] md:max-w-none">{service.name}</h3>
-                                                    <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded-md uppercase tracking-widest w-fit">
-                                                        SR-{String((service.seqId || 0) + 999).padStart(4, '0')}
-                                                    </span>
-                                                </div>
-                                                {service.description && (
-                                                    <p className="text-[10px] md:text-xs text-gray-400 line-clamp-1 hidden sm:block">{service.description}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 md:px-8 py-4 md:py-6">
-                                        <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
-                                            {service.category}
-                                        </span>
-                                    </td>
-                                    <td className="px-3 md:px-8 py-4 md:py-6 text-center">
-                                        <div className="flex justify-center">
-                                            {service.species === 'Canino' ? (
-                                                <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[9px] md:text-[10px] font-black">
-                                                    <Dog size={10} /> <span className="hidden md:inline">Canino</span>
-                                                </span>
-                                            ) : service.species === 'Felino' ? (
-                                                <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-[9px] md:text-[10px] font-black">
-                                                    <Cat size={10} /> <span className="hidden md:inline">Felino</span>
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-[9px] md:text-[10px] font-black">
-                                                    <span className="hidden md:inline">Ambos</span><span className="md:hidden">A</span>
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-3 md:px-8 py-4 md:py-6 text-center">
-                                        <div className="flex items-center justify-center gap-1 text-gray-600">
-                                            <Clock size={12} />
-                                            <span className="font-bold text-[10px] md:text-sm">{service.duration}<span className="hidden md:inline"> min</span><span className="md:hidden">m</span></span>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 md:px-8 py-4 md:py-6 text-right">
-                                        <span className="text-sm md:text-lg font-black text-primary whitespace-nowrap">
-                                            R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </td>
-                                    <td className="px-3 md:px-8 py-4 md:py-6 text-right">
-                                        <div className="flex justify-end gap-1">
-                                            {tab === 'trash' ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleRestore(service.id)}
-                                                        className="p-2 hover:bg-orange-50 rounded-xl transition-colors"
-                                                        title="Restaurar"
-                                                    >
-                                                        <RotateCcw size={16} className="text-orange-400" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(service.id)}
-                                                        className="p-2 hover:bg-red-50 rounded-xl transition-colors"
-                                                        title="Excluir Permanentemente"
-                                                    >
-                                                        <Trash2 size={16} className="text-red-600" />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleOpenModal(service)}
-                                                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit2 size={16} className="text-gray-400" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDuplicate(service)}
-                                                        className="p-2 hover:bg-blue-50 rounded-xl transition-colors"
-                                                        title="Duplicar"
-                                                    >
-                                                        <Copy size={16} className="text-blue-400" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(service.id)}
-                                                        className="p-2 hover:bg-red-50 rounded-xl transition-colors"
-                                                        title="Excluir"
-                                                    >
-                                                        <Trash2 size={16} className="text-red-400" />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {isLoading ? (
-                        <div className="col-span-full py-20 text-center">
-                            <RefreshCcw className="animate-spin text-primary mx-auto" size={48} />
-                        </div>
-                    ) : sortedServices.length === 0 ? (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 rounded-[40px] bg-white">
-                            <Tag className="mx-auto text-gray-200 mb-4" size={64} />
-                            <p className="text-gray-400 font-bold">Nenhum serviço encontrado.</p>
-                        </div>
-                    ) : sortedServices.map(service => (
-                        <motion.div
-                            layout
-                            key={service.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`group bg-white p-4 md:p-6 rounded-2xl md:rounded-[32px] shadow-sm border border-gray-100 hover:border-primary/20 transition-all relative overflow-hidden ${selectedIds.includes(service.id) ? 'ring-2 ring-primary' : ''}`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                    <Tag size={24} />
-                                </div>
-                                <div className="flex gap-2">
-                                    {(isBulkMode || selectedIds.includes(service.id)) && (
-                                        <button
-                                            onClick={(e) => toggleSelect(service.id, e)}
-                                            className={`p-2 rounded-xl transition-all shadow-md border ${selectedIds.includes(service.id) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-300 border-gray-100 hover:text-primary'}`}
-                                        >
-                                            {selectedIds.includes(service.id) ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} strokeWidth={3} />}
-                                        </button>
-                                    )}
-                                    {tab === 'trash' ? (
-                                        <>
-                                            <button onClick={() => handleRestore(service.id)} className="p-2 hover:bg-orange-50 rounded-xl transition-colors" title="Restaurar">
-                                                <RotateCcw size={16} className="text-orange-400" />
-                                            </button>
-                                            <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir Permanentemente">
-                                                <Trash2 size={16} className="text-red-600" />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
-                                                <Edit2 size={16} className="text-gray-400" />
-                                            </button>
-                                            <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
-                                                <Copy size={16} className="text-blue-400" />
-                                            </button>
-                                            <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
-                                                <Trash2 size={16} className="text-red-400" />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            <h3 className="text-sm md:text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
-                            <p className="text-[10px] font-black text-primary mb-1">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
-                            <p className="text-gray-400 text-[10px] md:text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
-
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className={`text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full ${service.species === 'Canino' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
-                                    {service.species === 'Canino' ? '🐶 Cão' : '🐱 Gato'}
-                                </span>
-                                {service.sizeLabel && (
-                                    <span className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full bg-gray-50 text-gray-500">
-                                        📏 {service.sizeLabel}
-                                    </span>
-                                )}
-                                {service.coatType && (
-                                    <span className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full bg-gray-50 text-gray-400">
-                                        ✨ {service.coatType}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                                    <Clock size={12} />
-                                    <span>{service.duration} min</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-lg font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-            )}
-
-            {/* Service Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-secondary/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
-                    >
-                        <h2 className="text-3xl font-black text-secondary mb-8">{editingService ? 'Editar Serviço' : (isCopying ? 'Duplicar Serviço' : 'Novo Serviço')}</h2>
-                        <form onSubmit={(e) => e.preventDefault()} className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Espécie</label>
-                                    <div className="flex gap-2 p-1.5 bg-gray-50 rounded-2xl">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, species: 'Canino' })}
-                                            className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl transition-all ${formData.species === 'Canino' ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-400 opacity-50'}`}
-                                        >
-                                            <Dog size={16} className={formData.species === 'Canino' ? 'text-blue-500' : ''} />
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Cão</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, species: 'Felino' })}
-                                            className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl transition-all ${formData.species === 'Felino' ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-400 opacity-50'}`}
-                                        >
-                                            <Cat size={16} className={formData.species === 'Felino' ? 'text-purple-500' : ''} />
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Gato</span>
-                                        </button>
+                                        {tab === 'trash' ? (
+                                            <>
+                                                <button onClick={() => handleRestore(service.id)} className="p-2 hover:bg-orange-50 rounded-xl transition-colors" title="Restaurar">
+                                                    <RotateCcw size={16} className="text-orange-400" />
+                                                </button>
+                                                <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir Permanentemente">
+                                                    <Trash2 size={16} className="text-red-600" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => handleOpenModal(service)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Editar">
+                                                    <Edit2 size={16} className="text-gray-400" />
+                                                </button>
+                                                <button onClick={() => handleDuplicate(service)} className="p-2 hover:bg-blue-50 rounded-xl transition-colors" title="Duplicar">
+                                                    <Copy size={16} className="text-blue-400" />
+                                                </button>
+                                                <button onClick={() => handleDelete(service.id)} className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Excluir">
+                                                    <Trash2 size={16} className="text-red-400" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
+
+                                <h3 className="text-sm md:text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
+                                <p className="text-[10px] font-black text-primary mb-1">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
+                                <p className="text-gray-400 text-[10px] md:text-xs font-bold mb-4 line-clamp-2 h-8">{service.description || 'Sem descrição'}</p>
+
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className={`text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full ${service.species === 'Canino' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
+                                        {service.species === 'Canino' ? '🐶 Cão' : '🐱 Gato'}
+                                    </span>
+                                    {service.sizeLabel && (
+                                        <span className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full bg-gray-50 text-gray-500">
+                                            📏 {service.sizeLabel}
+                                        </span>
+                                    )}
+                                    {service.coatType && (
+                                        <span className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full bg-gray-50 text-gray-400">
+                                            ✨ {service.coatType}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                                        <Clock size={12} />
+                                        <span>{service.duration} min</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-lg font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )
+            }
+
+            {/* Service Modal */}
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-secondary/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
+                        >
+                            <h2 className="text-3xl font-black text-secondary mb-8">{editingService ? 'Editar Serviço' : (isCopying ? 'Duplicar Serviço' : 'Novo Serviço')}</h2>
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Espécie</label>
+                                        <div className="flex gap-2 p-1.5 bg-gray-50 rounded-2xl">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, species: 'Canino' })}
+                                                className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl transition-all ${formData.species === 'Canino' ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-400 opacity-50'}`}
+                                            >
+                                                <Dog size={16} className={formData.species === 'Canino' ? 'text-blue-500' : ''} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Cão</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, species: 'Felino' })}
+                                                className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl transition-all ${formData.species === 'Felino' ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-400 opacity-50'}`}
+                                            >
+                                                <Cat size={16} className={formData.species === 'Felino' ? 'text-purple-500' : ''} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Gato</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Serviço</label>
+                                        <select
+                                            value={formData.type}
+                                            onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                                            className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                        >
+                                            <option value="Banho">🛁 Banho</option>
+                                            <option value="Tosa">✂️ Tosa</option>
+                                            <option value="Outros">🌟 Outros Serviços</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Porte</label>
+                                        <select
+                                            value={formData.sizeLabel}
+                                            onChange={(e) => setFormData({ ...formData, sizeLabel: e.target.value })}
+                                            className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                        >
+                                            {formData.type === 'Outros' && (
+                                                <option value="Todos">✨ Todos os Portes</option>
+                                            )}
+                                            <option value="Mini">Mini (Toy)</option>
+                                            <option value="Pequeno">Pequeno</option>
+                                            <option value="Médio">Médio</option>
+                                            <option value="Grande">Grande</option>
+                                            <option value="Gigante">Gigante</option>
+                                            <option value="XGigante">XGigante (Acima de 50kg)</option>
+                                            <option value="Especial">Especial / Por Peso</option>
+                                        </select>
+                                    </div>
+
+                                    {formData.type === 'Banho' && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria do Banho</label>
+                                                <select
+                                                    value={formData.bathCategory}
+                                                    onChange={(e) => setFormData({ ...formData, bathCategory: e.target.value as any })}
+                                                    className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                                >
+                                                    <option value="Tradicional">Tradicional</option>
+                                                    <option value="Hidratante">Hidratante</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pelagem</label>
+                                                <select
+                                                    value={formData.coatType}
+                                                    onChange={(e) => setFormData({ ...formData, coatType: e.target.value })}
+                                                    className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                                >
+                                                    <option value="Curto">Curto</option>
+                                                    <option value="Médio">Médio</option>
+                                                    <option value="Longo">Longo</option>
+                                                    <option value="Densa">Densa / Com Subpelo</option>
+                                                    <option value="Primitiva">Primitiva (Ex: Husky)</option>
+                                                    <option value="Enrolada">Enrolada (Ex: Poodle)</option>
+                                                </select>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {formData.type === 'Tosa' && (
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Tosa</label>
+                                            <select
+                                                value={formData.groomingType}
+                                                onChange={(e) => setFormData({ ...formData, groomingType: e.target.value })}
+                                                className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                            >
+                                                <option value="Higiênica">Higiênica</option>
+                                                <option value="Estetica Geral">Estética Geral</option>
+                                                <option value="Raça">Padrão da Raça</option>
+                                                <option value="Bebê">Tosa Bebê</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {formData.type === 'Outros' && (
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria Personalizada</label>
+                                            <input
+                                                value={formData.category}
+                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                                placeholder="Ex: SPA, Táxi Dog..."
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Serviço</label>
+                                    <div className="flex justify-between items-center ml-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome de Exibição / Sugestão</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAutoGenerateName(!autoGenerateName)}
+                                            className={`text-[9px] font-black uppercase px-2 py-1 rounded-md transition-all ${autoGenerateName ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}
+                                        >
+                                            {autoGenerateName ? 'Auto-Gerar ON' : 'Manual'}
+                                        </button>
+                                    </div>
                                     <input
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
-                                        placeholder="Ex: Banho, Tosa..."
+                                        value={formData.name}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, name: e.target.value });
+                                            if (autoGenerateName) setAutoGenerateName(false);
+                                        }}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
+                                        placeholder="Ex: Banho Completo G"
                                     />
+                                    <p className="text-[9px] text-gray-400 italic px-1">Este é o nome que aparecerá no orçamento e nota fiscal.</p>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Porte</label>
-                                    <select
-                                        value={formData.sizeLabel}
-                                        onChange={(e) => setFormData({ ...formData, sizeLabel: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
-                                    >
-                                        <option value="Mini">Mini (Toy)</option>
-                                        <option value="Pequeno">Pequeno</option>
-                                        <option value="Médio">Médio</option>
-                                        <option value="Grande">Grande</option>
-                                        <option value="Gigante">Gigante</option>
-                                        <option value="Especial">Especial / Por Peso</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pelagem</label>
-                                    <select
-                                        value={formData.coatType}
-                                        onChange={(e) => setFormData({ ...formData, coatType: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
-                                    >
-                                        <option value="Curto">Curto</option>
-                                        <option value="Médio">Médio</option>
-                                        <option value="Longo">Longo</option>
-                                        <option value="Densa">Densa / Com Subpelo</option>
-                                        <option value="Primitiva">Primitiva (Ex: Husky)</option>
-                                        <option value="Enrolada">Enrolada (Ex: Poodle)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome de Exibição / Sugestão</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAutoGenerateName(!autoGenerateName)}
-                                        className={`text-[9px] font-black uppercase px-2 py-1 rounded-md transition-all ${autoGenerateName ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}
-                                    >
-                                        {autoGenerateName ? 'Auto-Gerar ON' : 'Manual'}
-                                    </button>
-                                </div>
-                                <input
-                                    value={formData.name}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, name: e.target.value });
-                                        if (autoGenerateName) setAutoGenerateName(false);
-                                    }}
-                                    className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
-                                    placeholder="Ex: Banho Completo G"
-                                />
-                                <p className="text-[9px] text-gray-400 italic px-1">Este é o nome que aparecerá no orçamento e nota fiscal.</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={formData.basePrice ?? ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFormData({ ...formData, basePrice: val === '' ? '' : parseFloat(val) });
+                                                }}
+                                                className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Duração (min)</label>
                                         <input
                                             type="number"
-                                            step="0.01"
-                                            value={formData.basePrice}
+                                            value={formData.duration ?? ''}
                                             onChange={(e) => {
-                                                const val = parseFloat(e.target.value);
-                                                setFormData({ ...formData, basePrice: isNaN(val) ? 0 : val });
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, duration: val === '' ? '' : parseInt(val) });
                                             }}
-                                            className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                            className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                                         />
                                     </div>
                                 </div>
+
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Duração (min)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.duration}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            setFormData({ ...formData, duration: isNaN(val) ? 0 : val });
-                                        }}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição Comercial</label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px]"
+                                        placeholder="O que o cliente vê..."
                                     />
                                 </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição Comercial</label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px]"
-                                    placeholder="O que o cliente vê..."
-                                />
-                            </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Observações Internas</label>
+                                    <textarea
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px]"
+                                        placeholder="Dicas para o profissional ou notas de custos..."
+                                    />
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Observações Internas</label>
-                                <textarea
-                                    value={formData.notes}
-                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px]"
-                                    placeholder="Dicas para o profissional ou notas de custos..."
-                                />
-                            </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Profissional Responsável (Padrão)</label>
+                                    <select
+                                        value={formData.responsibleId}
+                                        onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                                    >
+                                        <option value="">Selecione um profissional...</option>
+                                        {users.filter(u => u.role !== 'CLIENTE').map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Profissional Responsável (Padrão)</label>
-                                <select
-                                    value={formData.responsibleId}
-                                    onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
-                                >
-                                    <option value="">Selecione um profissional...</option>
-                                    {users.filter(u => u.role !== 'CLIENTE').map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="flex gap-3 pt-4 sticky bottom-0 bg-white pb-2">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all border border-gray-100">Cancelar</button>
-                                <button type="button" onClick={() => handleSubmit()} className="flex-[2] bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Serviço</button>
-                            </div>
-                        </form>
-                    </motion.div>
-                </div>
-            )}
+                                <div className="flex gap-3 pt-4 sticky bottom-0 bg-white pb-2">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all border border-gray-100">Cancelar</button>
+                                    <button type="button" onClick={() => handleSubmit()} className="flex-[2] bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Serviço</button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )
+            }
 
             {/* Import Modal */}
             {
@@ -1145,16 +1345,18 @@ export default function ServiceManager() {
                             className="bg-white rounded-[40px] p-8 w-full max-w-2xl relative z-10 shadow-2xl"
                         >
                             <h2 className="text-3xl font-black text-secondary mb-2">Importação em Massa</h2>
-                            <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">Cole os serviços abaixo, um por linha. Formato: <br />
-                                <code className="bg-gray-100 px-3 py-1 rounded-lg text-primary mt-2 block lowercase font-mono">Nome; Descrição; Preço; Duração(min); Categoria</code>
+                            <p className="text-gray-400 text-[10px] font-bold mb-8 uppercase tracking-[0.1em] leading-relaxed">
+                                Cole os serviços abaixo, um por linha. Os campos devem ser separados por ponto e vírgula (;). <br />
+                                <span className="text-primary font-black">FORMATO: Nome; Preço; Duração; Tipo (Banho/Tosa/Outros); Porte; Detalhe (Pelagem ou Tosa); Categoria Banho (Tradicional/Hidratante); Categoria Geral; Descrição</span> <br />
+                                <span className="text-secondary opacity-60">DICA: Use "-" no Nome para gerar o nome automaticamente seguindo o padrão do sistema.</span>
                             </p>
 
                             <form onSubmit={handleBulkImport} className="space-y-6">
                                 <textarea
                                     value={importText}
                                     onChange={(e) => setImportText(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-3xl px-8 py-6 text-xs font-mono min-h-[250px] focus:ring-2 focus:ring-primary/20 transition-all"
-                                    placeholder={`Banho Simples; Banho tradicional; 50.00; 45; Banho\nTosa Higiênica; Corte íntimo e patinhas; 30.00; 20; Tosa`}
+                                    className="w-full bg-gray-50 border-none rounded-3xl px-8 py-6 text-[11px] font-mono min-h-[250px] focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
+                                    placeholder={`Banho Simples; 55.00; 45; Banho; Médio; Curto; Tradicional; Estética; Banho relaxante\nBanho Spa; 95.00; 60; Banho; Grande; Longo; Hidratante; Estética; Banho com máscara\nTosa Bob; 80.00; 90; Tosa; Pequeno; Bebê; -; Estética; Tosa completa`}
                                 />
                                 <div className="flex gap-4 pt-6 border-t border-gray-100">
                                     <button type="button" onClick={() => setIsImportModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>

@@ -41,7 +41,8 @@ export const bulkRestore = async (ids: string[]) => {
 // Listar Lixeira
 export const listTrash = async () => {
     const retentionDate = new Date();
-    retentionDate.setDate(retentionDate.getDate() - 15);
+    // Retention period increased to 365 days for manual cleanup
+    retentionDate.setDate(retentionDate.getDate() - 365);
 
     return prisma.service.findMany({
         where: {
@@ -70,6 +71,8 @@ export const permanentRemove = async (id: string) => {
         throw new Error('Serviço deve estar na lixeira antes de exclusão permanente');
     }
 
+    // REMOVED: 7 day retention rule as per user request for manual cleanup
+    /*
     const minDays = 7;
     const minDate = new Date();
     minDate.setDate(minDate.getDate() - minDays);
@@ -78,6 +81,7 @@ export const permanentRemove = async (id: string) => {
         const daysRemaining = Math.ceil((service.deletedAt.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
         throw new Error(`Serviço deve estar na lixeira por pelo menos ${minDays} dias. Faltam ${daysRemaining} dias.`);
     }
+    */
 
     return prisma.service.delete({ where: { id } });
 };

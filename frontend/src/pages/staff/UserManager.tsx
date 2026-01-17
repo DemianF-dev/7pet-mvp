@@ -454,47 +454,66 @@ export default function UserManager() {
         }
     };
 
-    const handleDeleteUser = async () => {
-        if (!selectedUser) return;
-        const msg = tab === 'trash' ? 'Tem certeza que deseja excluir PERMANENTEMENTE este usuário?' : 'Tem certeza que deseja excluir este usuário?';
-        if (!window.confirm(msg)) return;
-        try {
-            if (tab === 'trash') {
-                // For users, we don't have a permanent delete endpoint yet, so we just keep it in trash?
-                // Actually, let's just use the same delete endpoint. If the backend is modified to handle it.
-                // For now, let's just say "Restricted"
-                toast.error('Exclusão permanente não implementada.');
+    const handleDeleteUser = async (u: UserData) => {
+        if (!u) return;
+
+        const isTrash = tab === 'trash';
+        const msg = isTrash
+            ? `ATENÇÃO: Deseja excluir PERMANENTEMENTE o usuário ${u.name}?\n\nEsta ação liberará o e-mail (${u.email}) para novos cadastros e removerá todos os dados vinculados.\n\nPara confirmar, digite EXCLUIR no campo abaixo:`
+            : 'Tem certeza que deseja mover este usuário para a lixeira?';
+
+        if (isTrash) {
+            const confirmText = window.prompt(msg);
+            if (confirmText?.toUpperCase() !== 'EXCLUIR') {
+                if (confirmText !== null) toast.error('Confirmação inválida. Digite EXCLUIR para confirmar.');
                 return;
             }
-            await api.delete(`/management/users/${selectedUser.id}`);
-            toast.success('Usuário excluído');
+        } else {
+            if (!window.confirm(msg)) return;
+        }
+
+        const toastId = toast.loading(isTrash ? 'Excluindo permanentemente...' : 'Movendo para lixeira...');
+
+        try {
+            if (isTrash) {
+                await api.delete(`/management/users/${u.id}/permanent`);
+                toast.success('Usuário removido permanentemente!', { id: toastId });
+            } else {
+                await api.delete(`/management/users/${u.id}`);
+                toast.success('Usuário movido para a lixeira!', { id: toastId });
+            }
             setIsModalOpen(false);
             fetchUsers();
-        } catch (err) {
-            alert('Erro ao excluir usuário');
+        } catch (err: any) {
+            console.error('Erro ao excluir usuário:', err);
+            const errorMsg = err.response?.data?.error || 'Erro ao processar exclusão';
+            toast.error(errorMsg, { id: toastId });
         }
     };
 
-    const handleRestoreUser = async (user: UserData) => {
-        if (!window.confirm('Deseja restaurar este usuário?')) return;
+    const handleRestoreUser = async (u: UserData) => {
+        if (!window.confirm(`Deseja restaurar o acesso de ${u.name}?`)) return;
+        const toastId = toast.loading('Restaurando usuário...');
         try {
-            await api.post(`/management/users/${user.id}/restore`);
-            toast.success('Usuário restaurado!');
+            await api.post(`/management/users/${u.id}/restore`);
+            toast.success('Usuário restaurado com sucesso!', { id: toastId });
             fetchUsers();
-        } catch (error) {
-            toast.error('Erro ao restaurar usuário');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.error || 'Erro ao restaurar usuário';
+            toast.error(errorMsg, { id: toastId });
         }
     };
 
     const handleBulkRestore = async () => {
-        if (!window.confirm(`Deseja restaurar ${selectedIds.length} usuário(s)?`)) return;
+        if (!window.confirm(`Deseja restaurar os ${selectedIds.length} usuários selecionados?`)) return;
+        const toastId = toast.loading(`Restaurando ${selectedIds.length} usuários...`);
         try {
             await Promise.all(selectedIds.map(id => api.post(`/management/users/${id}/restore`)));
-            toast.success('Usuários restaurados!');
+            toast.success(`${selectedIds.length} usuários restaurados!`, { id: toastId });
             setSelectedIds([]);
             fetchUsers();
         } catch (error) {
-            toast.error('Erro ao restaurar usuários');
+            toast.error('Erro ao restaurar um ou mais usuários', { id: toastId });
         }
     };
 
@@ -515,26 +534,43 @@ export default function UserManager() {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`TEM CERTEZA que deseja excluir ${selectedIds.length} usuário(s)?\n\nEsta ação é IRREVERSÍVEL.`)) return;
+        const isTrash = tab === 'trash';
+        const count = selectedIds.length;
+
+        const msg = isTrash
+            ? `CUIDADO: Você está prestes a excluir PERMANENTEMENTE ${count} usuários.\n\nEsta ação é irreversível e liberará os e-mails para novos cadastros.\n\nPara confirmar, digite EXCLUIR ${count} abaixo:`
+            : `Deseja mover ${count} usuários para a lixeira?`;
+
+        if (isTrash) {
+            const confirmText = window.prompt(msg);
+            if (confirmText?.toUpperCase() !== `EXCLUIR ${count}`) {
+                if (confirmText !== null) toast.error(`Confirmação inválida. Digite EXCLUIR ${count} para confirmar.`);
+                return;
+            }
+        } else {
+            if (!window.confirm(msg)) return;
+        }
+
+        const toastId = toast.loading(isTrash ? 'Excluindo permanentemente...' : 'Movendo para lixeira...');
 
         try {
             const results = await Promise.allSettled(
-                selectedIds.map(id => api.delete(`/management/users/${id}`))
+                selectedIds.map(id => api.delete(`/management/users/${id}${isTrash ? '/permanent' : ''}`))
             );
 
             const succeeded = results.filter(r => r.status === 'fulfilled').length;
             const failed = results.filter(r => r.status === 'rejected').length;
 
             if (failed > 0) {
-                toast.error(`${succeeded} excluído(s).\n${failed} falharam.`);
+                toast.error(`${succeeded} processados com sucesso. ${failed} falharam.`, { id: toastId });
             } else {
-                toast.success(`${succeeded} usuário(s) excluído(s)!`);
+                toast.success(`${succeeded} usuários ${isTrash ? 'removidos permanentemente' : 'movidos para lixeira'}!`, { id: toastId });
             }
 
-            await fetchUsers();
             setSelectedIds([]);
+            fetchUsers();
         } catch (error) {
-            toast.error('Erro ao excluir usuários');
+            toast.error('Erro ao processar exclusão em massa', { id: toastId });
         }
     };
 
@@ -1050,29 +1086,60 @@ export default function UserManager() {
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                {tab === 'trash' ? (
-                                                    <button onClick={() => handleRestoreUser(u)} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all" title="Restaurar Usuário">
-                                                        <RotateCcw size={18} />
-                                                    </button>
-                                                ) : (
-                                                    <>
-                                                        {u.customer?.id && (
+                                                <div className="flex items-center gap-1">
+                                                    {tab === 'trash' ? (
+                                                        <>
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleOpenCustomerDetail(u.customer!.id);
+                                                                    handleRestoreUser(u);
                                                                 }}
-                                                                className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition-all flex items-center justify-center"
-                                                                title="Ver Perfil de Cliente Completo (Popup)"
+                                                                className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors border border-transparent hover:border-green-100"
+                                                                title="Restaurar Usuário"
                                                             >
-                                                                <User size={18} />
+                                                                <RotateCcw size={16} />
                                                             </button>
-                                                        )}
-                                                        <button onClick={() => handleOpenUser(u)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-all">
-                                                            <ChevronRight size={18} />
+                                                            {isMaster && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteUser(u);
+                                                                    }}
+                                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                                    title="Excluir Permanentemente"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteUser(u);
+                                                            }}
+                                                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                            title="Excluir Colaborador"
+                                                        >
+                                                            <Trash2 size={16} />
                                                         </button>
-                                                    </>
+                                                    )}
+                                                </div>
+                                                {u.customer?.id && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenCustomerDetail(u.customer!.id);
+                                                        }}
+                                                        className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition-all flex items-center justify-center"
+                                                        title="Ver Perfil de Cliente Completo (Popup)"
+                                                    >
+                                                        <User size={18} />
+                                                    </button>
                                                 )}
+                                                <button onClick={() => handleOpenUser(u)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-all">
+                                                    <ChevronRight size={18} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -1583,13 +1650,37 @@ export default function UserManager() {
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
                                 {selectedUser && (
-                                    <button
-                                        onClick={handleDeleteUser}
-                                        disabled={selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster}
-                                        className="flex items-center gap-2 text-red-500 font-black text-xs hover:underline disabled:opacity-30 disabled:no-underline"
-                                    >
-                                        <Trash2 size={16} /> Excluir Conta
-                                    </button>
+                                    <div className="flex gap-2">
+                                        {tab === 'trash' ? (
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        setIsModalOpen(false);
+                                                        handleRestoreUser(selectedUser);
+                                                    }}
+                                                    className="flex items-center gap-2 text-green-600 font-extra-bold text-[10px] uppercase tracking-widest hover:underline"
+                                                >
+                                                    <RotateCcw size={14} /> Restaurar Perfil
+                                                </button>
+                                                {isMaster && (
+                                                    <button
+                                                        onClick={() => handleDeleteUser(selectedUser)}
+                                                        className="flex items-center gap-2 text-red-500 font-extra-bold text-[10px] uppercase tracking-widest hover:underline border-l border-gray-200 ml-2 pl-4"
+                                                    >
+                                                        <Trash2 size={14} /> Excluir Definitivamente
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleDeleteUser(selectedUser)}
+                                                disabled={selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster}
+                                                className="flex items-center gap-2 text-red-500 font-black text-xs hover:underline disabled:opacity-30 disabled:no-underline"
+                                            >
+                                                <Trash2 size={16} /> Excluir Conta
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                                 <div className="flex gap-3 ml-auto">
                                     <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 font-bold text-gray-400">Cancelar</button>

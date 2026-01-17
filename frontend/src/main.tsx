@@ -20,6 +20,7 @@ import './styles/themes/forest-nature.css'
 import './styles/themes/candy-pop.css'
 import './styles/design-system-base.css'   // Design system reusable classes
 import './styles/sidebar-collapsible.css'   // Collapsible sidebar support
+import './styles/sidebar.glass.css'
 import './styles/mobile-fixes.css'          // Mobile-specific fixes (iOS/Android)
 import './index.css'
 import { SocketProvider } from './context/SocketContext'

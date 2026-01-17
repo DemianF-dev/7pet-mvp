@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import { socketService } from '../services/socketService';
 // @ts-ignore
@@ -40,6 +41,7 @@ export const createNotification = async (userId: string, payload: {
         // 1. Persist to Database (In-App History)
         const notification = await prisma.notification.create({
             data: {
+                id: randomUUID(),
                 userId,
                 title: payload.title,
                 message: payload.body,

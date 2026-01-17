@@ -110,4 +110,24 @@
    --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 100%);
    --bg-gradient-subtle: linear-gradient(180deg, #FAFAFA 0%, #F5F5F7 100%);
    --bg-gradient-accent: linear-gradient(135deg, #0071E3 0%, #5E5CE6 100%);
+
+   /* =========================================
+       SIDEBAR SPECIFIC TOKENS - PREMIUM GLASS
+       ========================================= */
+   --sidebar-bg: rgba(255, 255, 255, 0.72);
+   --sidebar-bg-solid: #FAFAFA;
+   --sidebar-surface: #FFFFFF;
+   --sidebar-border: rgba(0, 0, 0, 0.08);
+   --sidebar-sheen: linear-gradient(165deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 40%);
+   --sidebar-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02);
+   --sidebar-shadow-2: 0 8px 24px -4px rgba(0, 0, 0, 0.06);
+
+   --sidebar-item-bg-hover: rgba(0, 0, 0, 0.04);
+   --sidebar-item-bg-active: #0071E3;
+   --sidebar-item-text: #1D1D1F;
+   --sidebar-item-text-active: #FFFFFF;
+   --sidebar-item-text-muted: #86868B;
+   --sidebar-accent-bar: #0071E3;
+   --sidebar-group-label: #6E6E73;
+   --sidebar-active-glow: 0 8px 20px -4px rgba(0, 113, 227, 0.25), 0 0 0 1px rgba(0, 113, 227, 0.1);
 }

@@ -15,8 +15,12 @@ import {
     XCircle,
     Clock,
     Zap,
-    Target
+    Target,
+    Heart,
+    Briefcase
 } from 'lucide-react';
+import { format, isToday, isTomorrow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useAuthStore } from '../../store/authStore';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +51,25 @@ interface DashboardMetrics {
         week: number;
         month: number;
     };
+}
+
+interface WidgetData {
+    nextAppointments: {
+        id: string;
+        startAt: string;
+        status: string;
+        pet: { name: string };
+        customer: { name: string };
+        services: { name: string }[];
+    }[];
+    myTasks: { status: string; count: number }[];
+    popularPosts: {
+        id: string;
+        content: string;
+        author: { name: string };
+        reactions: any[];
+        _count: { comments: number };
+    }[];
 }
 
 const fetchMetrics = async (): Promise<DashboardMetrics> => {
@@ -81,9 +104,19 @@ export default function StaffDashboard() {
         staleTime: 5 * 60 * 1000,
     });
 
+    const { data: widgets, isLoading: isLoadingWidgets } = useQuery({
+        queryKey: ['staff-widgets'],
+        queryFn: async (): Promise<WidgetData> => {
+            const response = await api.get('/staff/widgets');
+            return response.data;
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+
     const handleRefresh = () => {
         queryClient.invalidateQueries({ queryKey: ['staff-metrics'] });
         queryClient.invalidateQueries({ queryKey: ['staff-goals'] });
+        queryClient.invalidateQueries({ queryKey: ['staff-widgets'] });
     };
 
     const isMaster = user?.role === 'MASTER' || user?.role === 'ADMIN' || user?.role === 'GESTAO';
@@ -216,7 +249,7 @@ export default function StaffDashboard() {
                             <Zap size={18} className="text-primary" />
                             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Operações do Dia</h2>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                             {[
                                 {
                                     label: 'SPA Hoje',
@@ -251,6 +284,15 @@ export default function StaffDashboard() {
                                     link: '/staff/quotes',
                                     trend: 'Ações imediatas',
                                     urgent: (metrics?.overdueItems || 0) > 0
+                                },
+                                {
+                                    label: 'Tickets Suporte',
+                                    value: (metrics?.newTickets || 0) + (metrics?.pendingTickets || 0),
+                                    icon: <MessageSquare size={22} className="text-purple-600" />,
+                                    color: 'bg-purple-50 dark:bg-purple-500/10',
+                                    link: '/staff/support',
+                                    trend: 'Ver chamados',
+                                    urgent: (metrics?.newTickets || 0) > 0
                                 }
                             ].map((card, idx) => (
                                 <motion.div key={idx} variants={itemVariants}>
@@ -352,29 +394,139 @@ export default function StaffDashboard() {
                                     <Clock size={60} className="absolute -right-4 -bottom-4 text-orange-500/5" />
                                 </SpotlightCard>
 
-                                <div className="bg-secondary dark:bg-gray-900 p-8 rounded-[32px] text-white shadow-xl flex flex-col justify-between h-[280px]">
-                                    <div>
-                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4">
-                                            <TrendingUp size={20} className="text-primary" />
-                                        </div>
-                                        <h3 className="text-xl font-black mb-2 leading-tight">Mural Operacional</h3>
-                                        <p className="text-gray-400 text-[11px] leading-relaxed">
-                                            Acesse o feed para ver as últimas comunicações internas, notícias da 7Pet e atualizações dos pets.
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => navigate('/staff/mural')}
-                                        className="mt-6 w-full py-4 bg-primary hover:bg-primary-dark text-secondary font-black rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
-                                    >
-                                        Ver Mural <ArrowRight size={14} />
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* 🏠 My Workspace / Personal Widgets */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-2 ml-1">
+                            <Briefcase size={18} className="text-primary" />
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Meu Espaço de Trabalho</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Next Appointments */}
+                            <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <h3 className="text-lg font-bold mb-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar size={20} className="text-primary" />
+                                        Minha Agenda Próxima
+                                    </div>
+                                    <button
+                                        onClick={() => navigate('/staff/agenda')}
+                                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                                    >
+                                        Ver Tudo
+                                    </button>
+                                </h3>
+
+                                {/* Status Counters for User */}
+                                {!isLoadingWidgets && widgets?.myTasks && (
+                                    <div className="flex flex-wrap gap-2 mb-6">
+                                        {widgets.myTasks.map((task, idx) => (
+                                            <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-600/50">
+                                                <span className="text-[10px] font-black text-secondary dark:text-white">{task.count}</span>
+                                                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">{task.status}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    {isLoadingWidgets ? (
+                                        [1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-50 dark:bg-gray-700/50 rounded-2xl animate-pulse" />)
+                                    ) : widgets?.nextAppointments.length === 0 ? (
+                                        <p className="text-center py-8 text-gray-400 text-sm italic">Nenhum atendimento agendado para você no momento.</p>
+                                    ) : (
+                                        widgets?.nextAppointments.map((apt) => (
+                                            <div
+                                                key={apt.id}
+                                                className="group flex items-center gap-4 p-4 rounded-2xl border border-transparent hover:border-primary/20 hover:bg-primary/[0.02] transition-all"
+                                            >
+                                                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-primary/5 text-primary">
+                                                    <span className="text-[10px] font-black uppercase leading-none">{format(new Date(apt.startAt), 'MMM', { locale: ptBR })}</span>
+                                                    <span className="text-lg font-black">{format(new Date(apt.startAt), 'dd')}</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-secondary dark:text-white truncate flex items-center gap-2">
+                                                        {apt.pet.name} <span className="text-gray-300 font-normal">|</span> {apt.customer.name}
+                                                    </h4>
+                                                    <p className="text-[10px] text-gray-400 font-medium truncate">
+                                                        {apt.services.map(s => s.name).join(', ')}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs font-black text-secondary dark:text-white">
+                                                        {format(new Date(apt.startAt), 'HH:mm')}
+                                                    </span>
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                                            {apt.status}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Popular Posts */}
+                            <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <h3 className="text-lg font-bold mb-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <TrendingUp size={20} className="text-primary" />
+                                        Mural de Destaques
+                                    </div>
+                                    <button
+                                        onClick={() => navigate('/staff/mural')}
+                                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                                    >
+                                        Ir para o Mural
+                                    </button>
+                                </h3>
+
+                                <div className="space-y-4">
+                                    {isLoadingWidgets ? (
+                                        [1, 2].map(i => <div key={i} className="h-24 bg-gray-50 dark:bg-gray-700/50 rounded-2xl animate-pulse" />)
+                                    ) : widgets?.popularPosts.length === 0 ? (
+                                        <p className="text-center py-8 text-gray-400 text-sm italic">Nenhum post em destaque no momento.</p>
+                                    ) : (
+                                        widgets?.popularPosts.map((post) => (
+                                            <div
+                                                key={post.id}
+                                                className="p-5 rounded-2xl bg-gray-50/50 dark:bg-gray-700/30 border border-transparent hover:border-primary/20 transition-all cursor-pointer"
+                                                onClick={() => navigate('/staff/mural')}
+                                            >
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-[10px] font-black text-primary uppercase">
+                                                        {post.author.name.charAt(0)}
+                                                    </div>
+                                                    <span className="text-xs font-black text-secondary dark:text-white">{post.author.name}</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-4">
+                                                    {post.content}
+                                                </p>
+                                                <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400">
+                                                    <span className="flex items-center gap-1">
+                                                        <Heart size={14} className="text-red-400 fill-red-400" /> {post.reactions.length}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <MessageSquare size={14} /> {post._count.comments} comentários
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </motion.div>
-            )}
-        </main>
+            )
+            }
+        </main >
     );
 }
 

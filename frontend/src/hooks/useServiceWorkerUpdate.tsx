@@ -8,13 +8,20 @@ export function useServiceWorkerUpdate() {
         needRefresh: [needRefresh, setNeedRefresh],
         updateServiceWorker,
     } = useRegisterSW({
+        immediate: true, // Force immediate activation
         onRegistered(r) {
             console.log('✅ Service Worker registered');
-            // Check for updates every 60 seconds
-            r && setInterval(() => {
-                console.log('🔍 Checking for SW update...');
-                r.update();
-            }, 60000);
+            // In development, skip the cache and force reload
+            if (import.meta.env.DEV && r) {
+                console.log('🔧 DEV MODE: Unregistering SW to avoid cache issues');
+                r.unregister();
+            } else {
+                // Check for updates every 60 seconds in production
+                r && setInterval(() => {
+                    console.log('🔍 Checking for SW update...');
+                    r.update();
+                }, 60000);
+            }
         },
         onRegisterError(error) {
             console.error('❌ SW registration error:', error);

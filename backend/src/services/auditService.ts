@@ -1,6 +1,7 @@
 
 import { PrismaClient, AuditSource, AuditTargetType, AuditAction, AuditSeverity } from '@prisma/client';
 import prisma from '../lib/prisma';
+import { randomUUID } from 'crypto';
 
 export interface AuditContext {
     actorUserId?: string;
@@ -93,6 +94,7 @@ export const logEvent = async (context: AuditContext, options: LogEventOptions, 
     try {
         return await client.auditEvent.create({
             data: {
+                id: randomUUID(),
                 actorUserId: context.actorUserId,
                 actorNameSnapshot: context.actorNameSnapshot,
                 actorRoleSnapshot: context.actorRoleSnapshot,
