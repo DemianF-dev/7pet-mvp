@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260117-2005",
+  "version": "BETA20260117-2053",
   "stage": "BETA",
-  "timestamp": "2026-01-17T20:05:55.000Z",
-  "commit": "aaf1c6b",
-  "buildNumber": 79,
-  "releaseNotes": "Auto-generated from commit: fix: improve Google Maps API error handling and diagnostics"
+  "timestamp": "2026-01-17T20:53:47.000Z",
+  "commit": "4ca4880",
+  "buildNumber": 80,
+  "releaseNotes": "Auto-generated from commit: fix: corrigir erros de undefined em .reduce() nas páginas financeiras e adicionar documentação da API Google Maps\n\n- Adicionar validações Array.isArray() em FinancialReports.tsx\n- Corrigir 5 ocorrências de .reduce() em BillingManager.tsx\n- Corrigir 3 ocorrências de .reduce() em PaymentList.tsx\n- Adicionar GOOGLE_MAPS_CONFIG.md com guia de configuração\n- Adicionar GOOGLE_MAPS_STATUS.md com status e próximos passos\n- Resolver erro: Cannot read properties of undefined (reading 'reduce')"
 }
