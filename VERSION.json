@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260117-2103",
+  "version": "BETA20260117-2124",
   "stage": "BETA",
-  "timestamp": "2026-01-17T21:03:10.000Z",
-  "commit": "dcec097",
-  "buildNumber": 82,
-  "releaseNotes": "Auto-generated from commit: fix(socket): prioritize polling transport for better Vercel compatibility"
+  "timestamp": "2026-01-17T21:24:52.000Z",
+  "commit": "2755665",
+  "buildNumber": 83,
+  "releaseNotes": "Auto-generated from commit: fix: resolve socket.io 404 on Vercel and aggressive clean Google Maps API key"
 }
