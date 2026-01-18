@@ -36,7 +36,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         const newSocket = io(targetUrl, {
             query: { userId: user.id },
             auth: { token },
-            transports: ['websocket', 'polling'], // Prioritize websocket
+            transports: ['polling', 'websocket'], // Use polling first for Vercel compatibility
             autoConnect: true,
             reconnection: true,
             reconnectionDelay: 500, // Faster retry
