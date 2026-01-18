@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260117-2124",
+  "version": "BETA20260118-0239",
   "stage": "BETA",
-  "timestamp": "2026-01-17T21:24:52.000Z",
-  "commit": "2755665",
-  "buildNumber": 83,
-  "releaseNotes": "Auto-generated from commit: fix: resolve socket.io 404 on Vercel and aggressive clean Google Maps API key"
+  "timestamp": "2026-01-18T02:39:46.000Z",
+  "commit": "e331117",
+  "buildNumber": 84,
+  "releaseNotes": "Auto-generated from commit: feat: integrate Railway socket client for real-time events"
 }
