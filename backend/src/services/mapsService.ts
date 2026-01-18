@@ -53,10 +53,14 @@ export const mapsService = {
     ): Promise<DetailedTransportResult> {
         const storeAddress = process.env.STORE_ADDRESS || "Av. Hildebrando de Lima, 525, Osasco - SP";
 
-        if (!process.env.GOOGLE_MAPS_API_KEY) {
+        const apiKey = (process.env.GOOGLE_MAPS_API_KEY || '').trim();
+
+        if (!apiKey) {
             console.error("GOOGLE_MAPS_API_KEY is missing!");
             throw new Error("Configuration error: Maps API Key missing");
         }
+
+        console.log(`[MapsService] Using API Key (length: ${apiKey.length}, starts with: ${apiKey.substring(0, 8)}...)`);
 
         try {
             // Need to calculate for origin (START/LEVA) and destination (TRAZ/RETURN)
@@ -87,7 +91,7 @@ export const mapsService = {
                     params: {
                         origins: [storeAddress],
                         destinations: [originAddress],
-                        key: process.env.GOOGLE_MAPS_API_KEY!,
+                        key: apiKey,
                         language: 'pt-BR',
                         mode: TravelMode.driving
                     }
@@ -149,7 +153,7 @@ export const mapsService = {
                         params: {
                             origins: [storeAddress],
                             destinations: [destAddr],
-                            key: process.env.GOOGLE_MAPS_API_KEY!,
+                            key: apiKey,
                             language: 'pt-BR',
                             mode: TravelMode.driving
                         }
