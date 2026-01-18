@@ -207,7 +207,7 @@ app.get('/ping', (req, res) => {
 app.get('/diag', async (req, res) => {
     // 🛡️ Security: Only return keys, never values
     const envKeys = Object.keys(process.env).sort();
-    const criticalKeys = ['DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'GOOGLE_MAPS_API_KEY', 'GOOGLE_CLIENT_ID'];
+    const criticalKeys = ['DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'GOOGLE_MAPS_SERVER_KEY', 'GOOGLE_CLIENT_ID'];
     const missingKeys = criticalKeys.filter(key => !process.env[key]);
 
     let dbStatus = 'not_tested';
@@ -224,6 +224,8 @@ app.get('/diag', async (req, res) => {
         database: dbStatus,
         allEnvKeys: envKeys,
         missingCriticalKeys: missingKeys,
+        mapsServerKeyPresent: !!process.env.GOOGLE_MAPS_SERVER_KEY,
+        mapsStage: process.env.GOOGLE_MAPS_SERVER_KEY ? 'enabled' : 'disabled',
         nodeVersion: process.version,
         platform: process.platform
     });

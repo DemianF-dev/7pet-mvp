@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import { mapsService } from '../services/mapsService';
+import { mapsService, MapsError } from '../services/googleMapsService';
 
 export const mapsController = {
     async calculate(req: Request, res: Response) {

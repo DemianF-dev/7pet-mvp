@@ -5,7 +5,7 @@ import * as auditService from '../services/auditService';
 import { notificationService } from '../services/notificationService';
 import { messagingService } from '../services/messagingService';
 import * as quoteService from '../services/quoteService';
-import { mapsService } from '../services/mapsService';
+import { mapsService, MapsError } from '../services/googleMapsService';
 import * as authService from '../services/authService';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -1010,47 +1010,42 @@ export const quoteController = {
         } catch (error: any) {
             console.error('[Quote] Error calculating transport:', error);
 
-            // Check if it's an Axios error from Google Maps
-            if (error.response) {
-                console.error('[Quote] Upstream (Google) Error Status:', error.response.status);
-                console.error('[Quote] Upstream (Google) Error Data:', error.response.data);
+            // Handle structured MapsError
+            if (error instanceof MapsError) {
+                console.error(`[Quote] MapsError for Quote ${id}: code=${error.code}, status=${error.upstreamStatus
 
-                if (error.response.status === 403 || error.response.status === 401) {
-                    return res.status(500).json({
-                        error: 'Erro de configuração da API de Mapas (Chave inválida ou Billing não ativado)',
-                        details: error.message,
-                        diagnostics: {
-                            status: error.response.status,
-                            message: error.response.data?.error_message || 'Sem detalhes adicionais',
-                            possibleCauses: [
-                                'Billing não está ativado no Google Cloud Console',
-                                'Distance Matrix API não está habilitada no projeto',
-                                'A chave API está com restrições que bloqueiam este servidor',
-                                'A chave API expirou ou foi revogada'
-                            ]
-                        }
-                    });
-                }
-            }
+                    }, origin=${address}, dest=${destinationAddress || 'N/A'}`);
 
-            // If it's an error from mapsService with detailed message, pass it through
-            if (error.message && error.message.includes('Erro 403')) {
-                return res.status(500).json({
-                    error: 'Erro de configuração da API de Mapas',
-                    details: error.message
+                const statusCode = error.code === 'MAPS_AUTH' ? 502 :
+                    error.code === 'MAPS_QUOTA' ? 503 :
+                        error.code === 'MAPS_BAD_REQUEST' ? 400 :
+                            error.code === 'MAPS_CONFIG' ? 500 :
+                                502;
+
+                const userMessages: Record<string, string> = {
+                    'MAPS_AUTH': 'Erro ao calcular rota. Entre em contato com o suporte.',
+                    'MAPS_QUOTA': 'Limite de uso atingido. Tente novamente em alguns minutos.',
+                    'MAPS_BAD_REQUEST': 'Endereco invalido. Verifique o endereco e tente novamente.',
+                    'MAPS_UPSTREAM': 'Servico de mapas temporariamente indisponivel.',
+                    'MAPS_CONFIG': 'Erro de configuracao. Entre em contato com o suporte.'
+                };
+
+                return res.status(statusCode).json({
+                    ok: false,
+                    code: error.code,
+                    messageUser: userMessages[error.code] || 'Erro ao calcular transporte.',
+                    messageDev: `${error.message}${error.upstreamMessage ? ` | Upstream: ${error.upstreamMessage}` : ''}`,
+                    upstreamStatus: error.upstreamStatus
                 });
             }
 
-            if (error.message && error.message.includes('Erro 401')) {
-                return res.status(500).json({
-                    error: 'Erro de autenticação da API de Mapas',
-                    details: error.message
-                });
-            }
-
+            // Fallback for unexpected errors
+            console.error('[Quote] Unexpected error:', error);
             return res.status(500).json({
-                error: 'Erro ao calcular transporte',
-                details: error.message
+                ok: false,
+                code: 'INTERNAL_ERROR',
+                messageUser: 'Erro inesperado. Tente novamente ou entre em contato com o suporte.',
+                messageDev: error.message || 'Unknown error'
             });
         }
     },

@@ -1,11 +1,23 @@
 import { Client, TravelMode, TrafficModel } from "@googlemaps/google-maps-services-js";
-// Trigger reload for env var update
 import dotenv from 'dotenv';
 import prisma from '../lib/prisma';
 
 dotenv.config();
 
 const client = new Client({});
+
+// Custom error classes for structured error handling
+export class MapsError extends Error {
+    constructor(
+        public code: 'MAPS_AUTH' | 'MAPS_QUOTA' | 'MAPS_BAD_REQUEST' | 'MAPS_UPSTREAM' | 'MAPS_CONFIG',
+        message: string,
+        public upstreamStatus?: number,
+        public upstreamMessage?: string
+    ) {
+        super(message);
+        this.name = 'MapsError';
+    }
+}
 
 interface LegCalculation {
     distance: string;
@@ -54,16 +66,19 @@ export const mapsService = {
         const storeAddress = process.env.STORE_ADDRESS || "Av. Hildebrando de Lima, 525, Osasco - SP";
 
         // Limpeza agressiva da chave (remove aspas e espaços que podem vir do Vercel)
-        const apiKey = (process.env.GOOGLE_MAPS_API_KEY || '')
+        const apiKey = (process.env.GOOGLE_MAPS_SERVER_KEY || '')
             .replace(/['"]/g, '')
             .trim();
 
         if (!apiKey) {
-            console.error("GOOGLE_MAPS_API_KEY is missing!");
-            throw new Error("Configuration error: Maps API Key missing");
+            console.error("[GoogleMapsService] GOOGLE_MAPS_SERVER_KEY is missing!");
+            throw new MapsError(
+                'MAPS_CONFIG',
+                'Google Maps Server Key is not configured. Check GOOGLE_MAPS_SERVER_KEY in environment variables.'
+            );
         }
 
-        console.log(`[MapsService] Using API Key (length: ${apiKey.length}, starts with: ${apiKey.substring(0, 8)}...)`);
+        console.log(`[GoogleMapsService] Using Server Key (length: ${apiKey.length}, starts with: ${apiKey.substring(0, 8)}...)`);
 
         try {
             // Need to calculate for origin (START/LEVA) and destination (TRAZ/RETURN)
@@ -100,26 +115,50 @@ export const mapsService = {
                     }
                 });
             } catch (axiosError: any) {
-                console.error('[MapsService] Request to Google Maps failed');
-                console.error('[MapsService] Error Status:', axiosError.response?.status);
-                console.error('[MapsService] Error Data:', JSON.stringify(axiosError.response?.data, null, 2));
-                console.error('[MapsService] Error Message:', axiosError.message);
+                console.error('[GoogleMapsService] Request to Google Maps failed');
+                console.error('[GoogleMapsService] Error Status:', axiosError.response?.status);
+                console.error('[GoogleMapsService] Error Data:', JSON.stringify(axiosError.response?.data, null, 2));
+                console.error('[GoogleMapsService] Error Message:', axiosError.message);
 
-                if (axiosError.response?.status === 403) {
-                    throw new Error(
-                        `Erro 403: A chave da API do Google Maps está inválida, expirou, ou não tem permissões suficientes. ` +
-                        `Verifique: (1) Billing está ativado no Google Cloud, (2) Distance Matrix API está habilitada, ` +
-                        `(3) A chave não tem restrições que bloqueiam seu IP/domínio. ` +
-                        `Detalhes: ${axiosError.response?.data?.error_message || axiosError.message}`
+                const status = axiosError.response?.status;
+                const errorMsg = axiosError.response?.data?.error_message || axiosError.message;
+
+                if (status === 403 || status === 401) {
+                    throw new MapsError(
+                        'MAPS_AUTH',
+                        `Google Maps authentication failed. Verify: (1) Billing enabled, (2) Distance Matrix API enabled, (3) Key restrictions allow this server IP.`,
+                        status,
+                        errorMsg
                     );
-                } else if (axiosError.response?.status === 401) {
-                    throw new Error(
-                        `Erro 401: Chave de API inválida ou não autorizada. ` +
-                        `Verifique se GOOGLE_MAPS_API_KEY está correta no arquivo .env`
+                } else if (status === 429) {
+                    throw new MapsError(
+                        'MAPS_QUOTA',
+                        'Google Maps quota exceeded. Try again later or upgrade your plan.',
+                        status,
+                        errorMsg
+                    );
+                } else if (status === 400) {
+                    throw new MapsError(
+                        'MAPS_BAD_REQUEST',
+                        `Invalid request to Google Maps: ${errorMsg}`,
+                        status,
+                        errorMsg
+                    );
+                } else if (status && status >= 500) {
+                    throw new MapsError(
+                        'MAPS_UPSTREAM',
+                        'Google Maps service is temporarily unavailable.',
+                        status,
+                        errorMsg
                     );
                 }
 
-                throw new Error(`Erro ao conectar com Google Maps: ${axiosError.message}`);
+                // Generic network error
+                throw new MapsError(
+                    'MAPS_UPSTREAM',
+                    `Failed to connect to Google Maps: ${axiosError.message}`,
+                    status
+                );
             }
 
             if (originResponse.data.status !== "OK") {
@@ -162,18 +201,29 @@ export const mapsService = {
                         }
                     });
                 } catch (axiosError: any) {
-                    console.error('[MapsService] Request to Google Maps (Dest) failed');
-                    console.error('[MapsService] Error Status:', axiosError.response?.status);
-                    console.error('[MapsService] Error Data:', JSON.stringify(axiosError.response?.data, null, 2));
+                    console.error('[GoogleMapsService] Request to Google Maps (Dest) failed');
+                    console.error('[GoogleMapsService] Error Status:', axiosError.response?.status);
+                    console.error('[GoogleMapsService] Error Data:', JSON.stringify(axiosError.response?.data, null, 2));
 
-                    if (axiosError.response?.status === 403 || axiosError.response?.status === 401) {
-                        throw new Error(
-                            `Erro ${axiosError.response.status}: Problema de autenticação/autorização com Google Maps API. ` +
-                            `Verifique a chave e as configurações do projeto no Google Cloud.`
+                    const status = axiosError.response?.status;
+                    const errorMsg = axiosError.response?.data?.error_message || axiosError.message;
+
+                    if (status === 403 || status === 401) {
+                        throw new MapsError(
+                            'MAPS_AUTH',
+                            'Google Maps authentication failed for destination address.',
+                            status,
+                            errorMsg
                         );
+                    } else if (status === 429) {
+                        throw new MapsError('MAPS_QUOTA', 'Quota exceeded', status, errorMsg);
+                    } else if (status === 400) {
+                        throw new MapsError('MAPS_BAD_REQUEST', `Invalid destination: ${errorMsg}`, status, errorMsg);
+                    } else if (status && status >= 500) {
+                        throw new MapsError('MAPS_UPSTREAM', 'Google Maps unavailable', status, errorMsg);
                     }
 
-                    throw new Error(`Erro ao conectar com Google Maps (Destino): ${axiosError.message}`);
+                    throw new MapsError('MAPS_UPSTREAM', `Failed to calculate destination: ${axiosError.message}`, status);
                 }
 
                 if (destResponse.data.status !== "OK") {

@@ -27,10 +27,10 @@ const CRITICAL_ENV_VARS: EnvValidationRule[] = [
     },
 
     {
-        key: 'GOOGLE_MAPS_API_KEY',
+        key: 'GOOGLE_MAPS_SERVER_KEY',
         required: false,
         minLength: 20,
-        errorMessage: 'GOOGLE_MAPS_API_KEY must be configured'
+        errorMessage: 'GOOGLE_MAPS_SERVER_KEY must be configured'
     },
     {
         key: 'NODE_ENV',
