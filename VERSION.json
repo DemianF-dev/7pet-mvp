@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260117-2100",
+  "version": "BETA20260117-2103",
   "stage": "BETA",
-  "timestamp": "2026-01-17T21:00:58.000Z",
-  "commit": "4a91111",
-  "buildNumber": 81,
-  "releaseNotes": "Auto-generated from commit: fix(maps): add .trim() to GOOGLE_MAPS_API_KEY to solve invalid key errors on Vercel"
+  "timestamp": "2026-01-17T21:03:10.000Z",
+  "commit": "dcec097",
+  "buildNumber": 82,
+  "releaseNotes": "Auto-generated from commit: fix(socket): prioritize polling transport for better Vercel compatibility"
 }
