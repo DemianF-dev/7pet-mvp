@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
 import { socketService } from '../services/socketService';
+import { railwaySocketClient } from '../services/railwaySocketClient';
 
 export const getConversations = async (req: Request, res: Response) => {
     try {
@@ -120,7 +121,7 @@ export const sendMessage = async (req: Request, res: Response) => {
 
         // 1. Broadcast to chat room (for users with ChatWindow open)
         Logger.info(`📨 Sending chat:new_message to chat room: chat:${id}`);
-        socketService.notifyChat(id, 'chat:new_message', mappedMessage);
+        railwaySocketClient.notifyChat(id, 'chat:new_message', mappedMessage);
 
         // 2. Fetch conversation participants
         const conversation = await prisma.conversation.findUnique({
@@ -138,7 +139,7 @@ export const sendMessage = async (req: Request, res: Response) => {
             // (ensures delivery even if they're not in the chat room)
             for (const p of otherParticipants) {
                 Logger.info(`📨 Sending chat:new_message to user room: user:${p.userId}`);
-                socketService.notifyUser(p.userId, 'chat:new_message', mappedMessage);
+                railwaySocketClient.notifyUser(p.userId, 'chat:new_message', mappedMessage);
             }
 
             // 4. Create persistent notifications for history/badges
@@ -215,7 +216,7 @@ export const createConversation = async (req: Request, res: Response) => {
 
         // Notify participants
         allParticipants.forEach(uid => {
-            socketService.notifyUser(uid as string, 'chat:new_conversation', mappedConversation);
+            railwaySocketClient.notifyUser(uid as string, 'chat:new_conversation', mappedConversation);
         });
 
         res.status(201).json(mappedConversation);
@@ -310,7 +311,7 @@ export const sendAttention = async (req: Request, res: Response) => {
         const otherParticipants = conversation.participants.filter(p => p.userId !== senderId);
 
         // Broadcast attention via socket
-        socketService.notifyChat(id, 'chat:attention', {
+        railwaySocketClient.notifyChat(id, 'chat:attention', {
             conversationId: id,
             senderName: sender?.name || 'Administrador',
             message: 'Atenção, vc tem mensagem importante no seu chat.'
@@ -320,7 +321,7 @@ export const sendAttention = async (req: Request, res: Response) => {
         for (const p of otherParticipants) {
             try {
                 // Also notify their personal room in case they are not in the chat page
-                socketService.notifyUser(p.userId, 'chat:attention', {
+                railwaySocketClient.notifyUser(p.userId, 'chat:attention', {
                     conversationId: id,
                     senderName: sender?.name || 'Administrador',
                     message: 'Atenção, vc tem mensagem importante no seu chat.'
@@ -442,7 +443,7 @@ export const addParticipant = async (req: Request, res: Response) => {
         }
 
         // Notify new participant
-        socketService.notifyUser(newUserId, 'chat:new_conversation', conversation);
+        railwaySocketClient.notifyUser(newUserId, 'chat:new_conversation', conversation);
 
         res.json({ success: true, conversation });
     } catch (error) {
