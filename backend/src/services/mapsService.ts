@@ -53,7 +53,10 @@ export const mapsService = {
     ): Promise<DetailedTransportResult> {
         const storeAddress = process.env.STORE_ADDRESS || "Av. Hildebrando de Lima, 525, Osasco - SP";
 
-        const apiKey = (process.env.GOOGLE_MAPS_API_KEY || '').trim();
+        // Limpeza agressiva da chave (remove aspas e espaços que podem vir do Vercel)
+        const apiKey = (process.env.GOOGLE_MAPS_API_KEY || '')
+            .replace(/['"]/g, '')
+            .trim();
 
         if (!apiKey) {
             console.error("GOOGLE_MAPS_API_KEY is missing!");
