@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260117-2053",
+  "version": "BETA20260117-2100",
   "stage": "BETA",
-  "timestamp": "2026-01-17T20:53:47.000Z",
-  "commit": "4ca4880",
-  "buildNumber": 80,
-  "releaseNotes": "Auto-generated from commit: fix: corrigir erros de undefined em .reduce() nas páginas financeiras e adicionar documentação da API Google Maps\n\n- Adicionar validações Array.isArray() em FinancialReports.tsx\n- Corrigir 5 ocorrências de .reduce() em BillingManager.tsx\n- Corrigir 3 ocorrências de .reduce() em PaymentList.tsx\n- Adicionar GOOGLE_MAPS_CONFIG.md com guia de configuração\n- Adicionar GOOGLE_MAPS_STATUS.md com status e próximos passos\n- Resolver erro: Cannot read properties of undefined (reading 'reduce')"
+  "timestamp": "2026-01-17T21:00:58.000Z",
+  "commit": "4a91111",
+  "buildNumber": 81,
+  "releaseNotes": "Auto-generated from commit: fix(maps): add .trim() to GOOGLE_MAPS_API_KEY to solve invalid key errors on Vercel"
 }
