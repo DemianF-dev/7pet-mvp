@@ -2,6 +2,7 @@
 import React from 'react';
 import WebAgendaToolbar from './WebAgendaToolbar';
 import WebMonthGrid from './WebMonthGrid';
+import { Container } from '../../layout/LayoutHelpers';
 
 interface Appointment {
     id: string;
@@ -114,18 +115,14 @@ export default function WebAgendaLayout({
                         appointments={appointments}
                         onSelectDay={(date) => {
                             onSelectedDateChange(date);
-                            onViewChange('DAY'); // Click on day header goes to day view
+                            onViewChange('DAY');
                         }}
                         onAppointmentClick={onAppointmentClick}
                     />
                 ) : (
-                    <div className="p-4 h-full">
-                        {/* 
-                       If the view is NOT Month, we temporarily render children (old views) 
-                       or placeholders. The prompt focused on Month Grid refactor.
-                    */}
+                    <Container fluid className="py-6 h-full">
                         {children}
-                    </div>
+                    </Container>
                 )}
             </div>
         </div>

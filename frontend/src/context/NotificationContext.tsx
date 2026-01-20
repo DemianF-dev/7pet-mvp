@@ -157,16 +157,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                             const url = notification.data?.url || (notification.type === 'chat' && notification.metadata?.chatId ? `/staff/chat?chatId=${notification.metadata.chatId}` : null);
                             if (url) window.location.href = url;
                         }}
-                        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer overflow-hidden`}
+                        className={`
+                            ${t.visible ? 'animate-enter' : 'animate-leave'}
+                            max-w-[calc(100vw-32px)] w-full sm:max-w-md
+                            bg-[var(--color-bg-surface)] shadow-[var(--shadow-xl)] 
+                            rounded-[var(--radius-xl)] pointer-events-auto flex 
+                            border border-[var(--color-border)] 
+                            cursor-pointer overflow-hidden
+                        `.trim()}
                     >
-                        <div className={`w-2 ${notification.type === 'chat' ? 'bg-blue-500' : notification.type === 'quote' ? 'bg-green-500' : 'bg-primary'}`} />
-                        <div className="flex-1 p-4">
-                            <div className="flex items-start gap-3">
-                                <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                        <div className={`w-1.5 ${notification.type === 'chat' ? 'bg-[var(--color-accent-primary)]' : notification.type === 'quote' ? 'bg-[var(--color-success)]' : 'bg-[var(--color-accent-primary)]'}`} />
+                        <div className="flex-1 p-[var(--space-4)]">
+                            <div className="flex items-start gap-4">
+                                <span className="text-2xl mt-0.5">{getNotificationIcon(notification.type)}</span>
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-900 truncate">{notification.title}</p>
-                                    <p className="text-sm text-gray-500 line-clamp-2">{notification.message}</p>
-                                    <p className="text-[10px] text-gray-400 mt-1">Agora mesmo</p>
+                                    <p className="font-[var(--font-weight-bold)] text-[var(--color-text-primary)] truncate text-[var(--font-size-headline)]">{notification.title}</p>
+                                    <p className="text-[var(--font-size-body)] text-[var(--color-text-secondary)] line-clamp-2 mt-0.5 leading-snug">{notification.message}</p>
+                                    <p className="text-[var(--font-size-caption2)] text-[var(--color-text-tertiary)] mt-2 font-[var(--font-weight-medium)]">agora mesmo</p>
                                 </div>
                             </div>
                         </div>
@@ -213,16 +220,26 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                                 window.location.href = `/staff/chat`;
                             }
                         }}
-                        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer overflow-hidden`}
+                        className={`
+                            ${t.visible ? 'animate-enter' : 'animate-leave'}
+                            max-w-[calc(100vw-32px)] w-full sm:max-w-md
+                            bg-[var(--color-bg-surface)] shadow-[var(--shadow-xl)] 
+                            rounded-[var(--radius-xl)] pointer-events-auto flex 
+                            border border-[var(--color-border)] 
+                            cursor-pointer overflow-hidden
+                        `.trim()}
                     >
-                        <div className="w-2 bg-blue-500" />
-                        <div className="flex-1 p-4">
-                            <div className="flex items-start gap-3">
-                                <span className="text-2xl">💬</span>
+                        <div className="w-1.5 bg-[var(--color-accent-primary)]" />
+                        <div className="flex-1 p-[var(--space-4)]">
+                            <div className="flex items-start gap-4">
+                                <div className="relative">
+                                    <span className="text-2xl">💬</span>
+                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--color-accent-primary)] rounded-full border-2 border-[var(--color-bg-surface)]" />
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-900 truncate">{senderName}</p>
-                                    <p className="text-sm text-gray-500 line-clamp-2">{message.content}</p>
-                                    <p className="text-[10px] text-gray-400 mt-1">Agora mesmo</p>
+                                    <p className="font-[var(--font-weight-bold)] text-[var(--color-text-primary)] truncate text-[var(--font-size-headline)]">{senderName}</p>
+                                    <p className="text-[var(--font-size-body)] text-[var(--color-text-secondary)] line-clamp-2 mt-0.5 leading-snug">{message.content}</p>
+                                    <p className="text-[var(--font-size-caption2)] text-[var(--color-text-tertiary)] mt-2 font-[var(--font-weight-medium)]">agora mesmo</p>
                                 </div>
                             </div>
                         </div>
@@ -253,16 +270,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                             toast.dismiss(t.id);
                             window.location.href = '/staff/chat'; // Redirect to chat
                         }}
-                        className={`${t.visible ? 'animate-bounce' : 'animate-leave'} max-w-md w-full bg-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)] rounded-2xl pointer-events-auto flex ring-4 ring-white cursor-pointer overflow-hidden p-6 text-white`}
+                        className={`
+                            ${t.visible ? 'animate-bounce' : 'animate-leave'}
+                            max-w-[calc(100vw-32px)] w-full sm:max-w-md
+                            bg-[var(--color-error)] shadow-[0_0_50px_rgba(255,69,58,0.4)]
+                            rounded-[var(--radius-2xl)] pointer-events-auto flex 
+                            border-4 border-white/20 
+                            cursor-pointer overflow-hidden p-[var(--space-6)] text-white
+                        `.trim()}
                     >
                         <div className="flex items-center gap-6">
                             <div className="bg-white/20 p-4 rounded-full">
                                 <AlertCircle size={40} className="text-white animate-pulse" />
                             </div>
                             <div className="flex-1">
-                                <p className="font-black text-xl uppercase tracking-tighter leading-none mb-1">CHAMADA DE ATENÇÃO!</p>
-                                <p className="text-lg font-bold opacity-90">Atenção, vc tem mensagem importante no seu chat.</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest mt-3 opacity-70 underline">Clique para abrir agora</p>
+                                <p className="font-[var(--font-weight-bold)] text-xl uppercase tracking-tighter leading-none mb-1">CHAMADA DE ATENÇÃO!</p>
+                                <p className="text-lg font-[var(--font-weight-medium)] opacity-90">Atenção, você tem uma mensagem urgente no chat.</p>
+                                <p className="text-[var(--font-size-caption2)] font-[var(--font-weight-bold)] uppercase tracking-widest mt-4 opacity-80 underline">Toque para abrir agora</p>
                             </div>
                         </div>
                     </div>

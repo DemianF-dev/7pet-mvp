@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import CalendarCompactHeader from './CalendarCompactHeader';
 import MonthGridCompact from './MonthGridCompact';
 import DayAgendaList from './DayAgendaList';
+import { Container } from '../../layout/LayoutHelpers';
 
 import { AgendaItem } from '../../../features/agenda/domain/types';
 
@@ -118,13 +119,15 @@ export default function MobileCalendarCompactView({
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-[var(--color-bg-secondary)]"
                 style={{ paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 20px))' }}
             >
-                <DayAgendaList
-                    selectedDate={selectedDayDate}
-                    appointments={dayAgendaItems}
-                    isLoading={isLoading}
-                    onAppointmentClick={onAppointmentClick}
-                    onCreateNew={onCreateNew}
-                />
+                <Container fluid className="py-2">
+                    <DayAgendaList
+                        selectedDate={selectedDayDate}
+                        appointments={dayAgendaItems}
+                        isLoading={isLoading}
+                        onAppointmentClick={onAppointmentClick}
+                        onCreateNew={onCreateNew}
+                    />
+                </Container>
             </div>
 
             {/* ========================================

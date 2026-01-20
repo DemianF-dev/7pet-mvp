@@ -77,6 +77,8 @@ import FeedbackWidget from './components/FeedbackWidget';
 import ProtectedRoute from './components/ProtectedRoute';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWASettings from './components/PWASettings';
+import RouteSkeleton from './components/system/RouteSkeleton';
+import NetworkStatus from './components/NetworkStatus';
 
 import { NotificationProvider } from './context/NotificationContext';
 import { ServicesProvider } from './context/ServicesContext';
@@ -85,7 +87,7 @@ import { ThemeProvider } from './context/ThemeContext';
 
 // Helper component to wrap lazy pages with Suspense
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<RouteSkeleton />}>
         <PageTransition>{children}</PageTransition>
     </Suspense>
 );
@@ -152,6 +154,7 @@ function App() {
         <ThemeProvider defaultTheme="system" storageKey="7pet-theme">
             <Toaster position="top-right" reverseOrder={false} />
             <FeedbackWidget />
+            <NetworkStatus />
             <PWAInstallPrompt />
 
             <ServicesProvider>

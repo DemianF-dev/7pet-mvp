@@ -10,12 +10,14 @@
 
     --font-size-xs: 0.75rem;
     /* 12px */
-    --font-size-sm: 0.875rem;
-    /* 14px */
-    --font-size-md: 1rem;
+    --font-size-sm: 0.8125rem;
+    /* 13px */
+    --font-size-md: 0.9375rem;
+    /* 15px */
+    --font-size-base: 1rem;
     /* 16px */
-    --font-size-lg: 1.125rem;
-    /* 18px */
+    --font-size-lg: 1.0625rem;
+    /* 17px */
     --font-size-xl: 1.25rem;
     /* 20px */
     --font-size-2xl: 1.5rem;
@@ -28,13 +30,41 @@
     --font-weight-bold: 600;
     /* Modern bold is often 600 */
 
-    /* Spacing & Layout */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
+    /* Spacing & Layout - 8pt Grid */
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-4: 1rem;
+    /* 16px */
+    --space-5: 1.25rem;
+    /* 20px */
+    --space-6: 1.5rem;
+    /* 24px */
+    --space-8: 2rem;
+    /* 32px */
+    --space-10: 2.5rem;
+    /* 40px */
+    --space-12: 3rem;
+    /* 48px */
+    --space-16: 4rem;
+    /* 64px */
+    --space-20: 5rem;
+    /* 80px */
+    --space-24: 6rem;
+    /* 96px */
 
+    /* Legacy Spacing Mapping */
+    --spacing-xs: var(--space-1);
+    --spacing-sm: var(--space-2);
+    --spacing-md: var(--space-4);
+    --spacing-lg: var(--space-6);
+    --spacing-xl: var(--space-8);
+
+    --radius-xs: 0.25rem;
+    /* 4px */
     --radius-sm: 0.375rem;
     /* 6px */
     --radius-md: 0.5rem;
@@ -43,11 +73,24 @@
     /* 12px */
     --radius-xl: 1rem;
     /* 16px */
+    --radius-2xl: 1.25rem;
+    /* 20px */
+    --radius-3xl: 1.5rem;
+    /* 24px */
+    --radius-full: 9999px;
 
-    /* Shadows (Defaults) */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    /* Shadows (Premium Layered) */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+    /* Glass Alphas */
+    --glass-bg-opacity: 0.75;
+    --glass-border-opacity: 0.1;
 
     /* Animation */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,6 +120,48 @@
     --sidebar-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.03);
     --sidebar-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
     --sidebar-active-glow: 0 0 0 1px rgba(0, 113, 227, 0.1), 0 8px 20px rgba(0, 113, 227, 0.12);
+
+    /* =========================================
+     GLOBAL MOBILE-FIRST INTERACTIONS
+     ========================================= */
+    --tap-feedback-scale: 0.97;
+    --tap-feedback-duration: var(--transition-fast);
+
+    /* Nav Heights */
+    --nav-bottom-height: 72px;
+    --nav-top-height: 64px;
+
+    /* Tap Targets (Ergonomics) */
+    --tap-target-min: 44px;
+    --tap-target-comfortable: 48px;
+
+    /* Safe Area Insets (Proxies) */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+
+    /* Nav Heights */
+    --nav-bottom-height: 72px;
+    --nav-top-height: 64px;
+
+    /* PWA Experience */
+    --pwa-overscroll-color: var(--color-bg-primary, #FAFAFA);
+    --pwa-status-bar-height: var(--safe-area-top);
+}
+
+/* Global PWA Refinements */
+html,
+body {
+    overscroll-behavior-y: none;
+    /* Prevent browser bounce */
+    background-color: var(--pwa-overscroll-color);
+}
+
+/* Global Tap Feedback for anything with .interactive or button */
+.interactive-tap:active,
+button:active:not(:disabled) {
+    transform: scale(var(--tap-feedback-scale));
 }
 
 /* Reduced Motion Preference */

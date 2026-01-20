@@ -7,18 +7,18 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico'],
+            registerType: 'prompt',
+            includeAssets: ['favicon.ico', 'logo.png', 'pwa-192x192.png', 'pwa-512x512.png'],
             devOptions: {
-                enabled: true, // Habilita PWA em desenvolvimento
+                enabled: true,
                 type: 'module'
             },
             manifest: {
-                name: '7Pet - Sistema de Gestão',
+                name: '7Pet - Gestão Inteligente',
                 short_name: '7Pet',
-                description: '7Pet - Sistema Completo para Gestão de Pets',
-                theme_color: '#4B96C3',
-                background_color: '#ffffff',
+                description: 'Sistema completo de gestão para centros estéticos e logística pet.',
+                theme_color: '#0071E3',
+                background_color: '#FAFAFA',
                 display: 'standalone',
                 scope: '/',
                 start_url: '/',
@@ -31,6 +31,12 @@ export default defineConfig({
                         type: 'image/png'
                     },
                     {
+                        src: 'pwa-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                        purpose: 'maskable'
+                    },
+                    {
                         src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png'
@@ -39,76 +45,87 @@ export default defineConfig({
                         src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png',
-                        purpose: 'any maskable'
+                        purpose: 'maskable'
+                    }
+                ],
+                shortcuts: [
+                    {
+                        name: 'Agenda',
+                        short_name: 'Agenda',
+                        description: 'Ver agendamentos do dia',
+                        url: '/staff/agenda-spa',
+                        icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+                    },
+                    {
+                        name: 'Orçamentos',
+                        short_name: 'Orçamentos',
+                        description: 'Gerenciar orçamentos',
+                        url: '/staff/quotes',
+                        icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+                    },
+                    {
+                        name: 'Clientes',
+                        short_name: 'Clientes',
+                        description: 'Lista de clientes',
+                        url: '/staff/users',
+                        icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+                    },
+                    {
+                        name: 'Pausa',
+                        short_name: 'Pausa',
+                        description: 'Modo pausa e jogos',
+                        url: '/pausa',
+                        icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
                     }
                 ]
             },
             workbox: {
-                // Background Sync para operações offline
                 cleanupOutdatedCaches: true,
-                navigateFallback: 'index.html',
-                navigateFallbackAllowlist: [/^\/client/, /^\/staff/, /^\/$/], // Allow SPA routes
-                navigateFallbackDenylist: [/^\/api/], // Don't fallback for API routes
-                skipWaiting: true,
-                clientsClaim: true,
-
-                // Cache strategies otimizadas
+                navigateFallback: '/index.html',
+                navigateFallbackAllowlist: [/^\/(?!api|socket\.io).*/],
+                navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
                 runtimeCaching: [
-                    // API Calls - Network First com fallback
                     {
-                        urlPattern: ({ url }) => url.pathname.startsWith('/api'),
-                        handler: 'NetworkFirst',
+                        urlPattern: /^https:\/\/.*\/api\/.*/i,
+                        handler: 'NetworkOnly'
+                    },
+                    {
+                        urlPattern: /\/api\/.*/i,
+                        handler: 'NetworkOnly'
+                    },
+                    {
+                        urlPattern: /\/socket\.io\/.*/i,
+                        handler: 'NetworkOnly'
+                    },
+                    {
+                        urlPattern: /\.(?:js|css)$/i,
+                        handler: 'StaleWhileRevalidate',
                         options: {
-                            cacheName: 'api-cache',
+                            cacheName: 'assets-cache',
                             expiration: {
-                                maxEntries: 200,
-                                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 dias
-                            },
-                            cacheableResponse: {
-                                statuses: [0, 200]
-                            },
-                            networkTimeoutSeconds: 10,
-                            // Background Sync para requisições falhadas
-                            backgroundSync: {
-                                name: 'api-sync-queue',
-                                options: {
-                                    maxRetentionTime: 24 * 60 // 24 horas
-                                }
+                                maxEntries: 100,
+                                maxAgeSeconds: 60 * 60 * 24 * 30
                             }
                         }
                     },
-                    // Imagens - Cache First
                     {
-                        urlPattern: /\.(png|jpg|jpeg|svg|gif|webp|avif)$/i,
+                        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif|ico)$/i,
                         handler: 'CacheFirst',
                         options: {
                             cacheName: 'images-cache',
                             expiration: {
                                 maxEntries: 100,
-                                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+                                maxAgeSeconds: 60 * 60 * 24 * 30
                             }
                         }
                     },
-                    // Fontes - Cache First
                     {
-                        urlPattern: /\.(woff|woff2|ttf|eot)$/i,
+                        urlPattern: /\.(?:woff|woff2|ttf|eot)$/i,
                         handler: 'CacheFirst',
                         options: {
                             cacheName: 'fonts-cache',
                             expiration: {
                                 maxEntries: 20,
-                                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 ano
-                            }
-                        }
-                    },
-                    // Google Fonts
-                    {
-                        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
-                        handler: 'CacheFirst',
-                        options: {
-                            cacheName: 'google-fonts-cache',
-                            expiration: {
-                                maxEntries: 10,
                                 maxAgeSeconds: 60 * 60 * 24 * 365
                             }
                         }
@@ -118,9 +135,9 @@ export default defineConfig({
         })
     ],
     server: {
-        host: true, // Listen on all addresses
+        host: true,
         port: 5173,
-        strictPort: true, // Fail if port is in use
+        strictPort: true,
     },
     build: {
         outDir: 'dist',

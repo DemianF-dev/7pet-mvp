@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { useDiagnosticsStore } from '../store/diagnosticsStore';
 
 // Validate and sanitize API URL to prevent common configuration errors
 const getApiUrl = (): string => {
@@ -10,7 +11,7 @@ const getApiUrl = (): string => {
         return '/api';
     }
 
-    const defaultUrl = 'http://localhost:3001';
+    const defaultUrl = 'http://localhost:3000';
     let apiUrl = envUrl || defaultUrl;
 
     // 🚀 Robustness Fix: Ensure the URL has a protocol if it's not a relative path
@@ -23,8 +24,11 @@ const getApiUrl = (): string => {
     return apiUrl;
 };
 
+const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 const api = axios.create({
     baseURL: getApiUrl(),
+    timeout: isMobile() ? 12000 : 20000,
 });
 
 // Add a request interceptor to include the JWT token in all requests
@@ -36,75 +40,103 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Retry Logic Helper
+const MAX_RETRIES = 2;
+const RETRIABLE_STATUSES = [502, 503, 504];
+
 // Response interceptor for global error handling
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const { config, response } = error;
+
+        // 🚀 Retry Logic
+        const isNetworkError = !response;
+        const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
+        const isRetriableStatus = response && RETRIABLE_STATUSES.includes(response.status);
+
+        // 📝 Log failure to diagnostics
+        useDiagnosticsStore.getState().addLog({
+            type: 'request',
+            message: `Failed: ${config?.url || 'unknown'}`,
+            details: {
+                status: response?.status,
+                error: error.message,
+                code: error.code,
+                method: config?.method
+            }
+        });
+
+        if (config && (isNetworkError || isTimeout || isRetriableStatus)) {
+            config._retryCount = config._retryCount || 0;
+
+            if (config._retryCount < MAX_RETRIES) {
+                config._retryCount++;
+                const delay = Math.pow(2, config._retryCount) * 500; // 1s, 2s
+
+                console.warn(`[API] 🔄 Retrying ${config.url} (${config._retryCount}/${MAX_RETRIES}) in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return api(config);
+            }
+        }
+
         // Network Error or Server Down
-        if (!error.response) {
+        if (!response) {
             const attemptedUrl = error.config?.url || '';
 
             // 🔇 Silently fail for polling endpoints like notifications
             if (attemptedUrl.includes('/notifications')) {
-                console.warn('[API Polling] 🔇 Silent fail for notifications');
                 return Promise.reject(error);
             }
 
-            const baseURL = error.config?.baseURL || '';
-            const fullUrl = attemptedUrl.startsWith('http') ? attemptedUrl : `${baseURL}${attemptedUrl}`;
-
-            toast.error(`Sem conexão com a API: ${fullUrl}. Verifique se a variável VITE_API_URL está correta no servidor.`, {
-                id: 'network-error', // Prevent duplicate toasts
-                duration: 8000,
+            toast.error(`Falha na conexão. Tentando reconectar...`, {
+                id: 'network-error',
+                duration: 5000,
                 icon: '📡'
             });
         }
-        // 401 Unauthorized - Token might be expired or JWT_SECRET changed
-        else if (error.response.status === 401) {
-            console.warn('[API Error] 🔑 Unauthorized (401). Clearing token...');
+        // 401 Unauthorized
+        else if (response.status === 401) {
             localStorage.removeItem('7pet-token');
-            toast.error('Sessão expirada. Por favor, faça login novamente.', { id: 'auth-error' });
-
             if (!window.location.pathname.includes('/login')) {
-
                 window.location.href = window.location.pathname.startsWith('/client')
                     ? '/client/login'
                     : '/staff/login';
             }
         }
-        // 500 Internal Server Error
-        else if (error.response.status >= 500) {
-
-            console.error('[API Error] 🔴 Server Error Details:', {
-                status: error.response.status,
-                data: error.response.data,
-                url: error.config?.url
-            });
-
-            const data = error.response.data;
-            let message = 'Erro interno no servidor.';
-
-            if (typeof data === 'string') {
-                if (data.includes('<!DOCTYPE html>')) {
-                    message = 'Erro crítico (Vercel Function Crash).';
-                } else {
-                    message = data;
-                }
-            } else if (data && typeof data === 'object') {
-                const errorObj = data.error || data;
-                if (typeof errorObj === 'string') {
-                    message = errorObj;
-                } else if (errorObj && typeof errorObj === 'object') {
-                    message = errorObj.message || errorObj.code || JSON.stringify(errorObj);
-                }
+        // 500+ Errors
+        else if (response.status >= 500) {
+            const data = response.data;
+            let message = 'Erro no servidor.';
+            if (data && typeof data === 'object') {
+                message = data.error || data.message || message;
             }
-
-            toast.error(`${message} (500)`, {
-                duration: 6000
-            });
+            toast.error(`${message} (${response.status})`, { id: 'server-error' });
         }
+
         return Promise.reject(error);
     }
 );
+
+/**
+ * Premium request helper with automatic cancellation and error boundary integration
+ */
+export const requestSafe = async <T = any>(config: any): Promise<T> => {
+    const controller = new AbortController();
+    const finalConfig = {
+        ...config,
+        signal: controller.signal
+    };
+
+    try {
+        const response = await api(finalConfig);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isCancel(error)) {
+            console.log('[API] 🛑 Request canceled:', config.url);
+        }
+        throw error;
+    }
+};
 
 export default api;

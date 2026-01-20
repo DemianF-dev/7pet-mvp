@@ -6,9 +6,14 @@ import { usePushNotifications } from '../hooks/usePushNotifications';
 import { toast } from 'react-hot-toast';
 import ThemePicker from './ThemePicker';
 import { APP_VERSION } from '../constants/version';
+import { useAuthStore } from '../store/authStore';
+import DiagnosticsModal from './DiagnosticsModal';
 
 const PWASettings: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const isMaster = user?.role === 'MASTER';
+    const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
     const {
         supported,
         permission,
@@ -303,7 +308,6 @@ const PWASettings: React.FC = () => {
                     )}
                 </div>
 
-
                 {/* Informações Adicionais */}
                 <div className="bg-slate-50 rounded-3xl border border-slate-100 p-6">
                     <h3 className="font-bold text-slate-800 mb-3">ℹ️ Recursos Offline</h3>
@@ -316,16 +320,35 @@ const PWASettings: React.FC = () => {
                             <Check className="text-green-600 mt-0.5 flex-shrink-0" size={16} />
                             <span><strong>Imagens:</strong> Até 100 imagens em cache (30 dias)</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                            <Check className="text-green-600 mt-0.5 flex-shrink-0" size={16} />
-                            <span><strong>Sincronização:</strong> Dados sincronizam automaticamente ao voltar online</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <X className="text-orange-600 mt-0.5 flex-shrink-0" size={16} />
-                            <span><strong>Limitação:</strong> Criar/editar dados requer conexão</span>
-                        </li>
                     </ul>
                 </div>
+
+                {/* Developer Console - MASTER ONLY */}
+                {isMaster && (
+                    <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-xl overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-4">
+                            <Terminal className="text-primary/20 opacity-30" size={40} />
+                        </div>
+
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-primary/20 rounded-xl">
+                                <Activity className="text-primary" size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white">Developer Console</h3>
+                                <p className="text-sm text-slate-400">Ferramentas de observabilidade mobile</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setIsDiagnosticsOpen(true)}
+                            className="w-full py-4 bg-slate-800 text-primary font-black rounded-2xl text-[10px] uppercase tracking-widest border border-slate-700 hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Terminal size={16} />
+                            Abrir Mobile Diagnostics
+                        </button>
+                    </div>
+                )}
 
                 <div className="text-center pb-6">
                     <p className="text-xs text-text-tertiary font-mono opacity-50">
@@ -333,6 +356,11 @@ const PWASettings: React.FC = () => {
                     </p>
                 </div>
             </motion.div>
+
+            <DiagnosticsModal
+                isOpen={isDiagnosticsOpen}
+                onClose={() => setIsDiagnosticsOpen(false)}
+            />
         </div>
     );
 };

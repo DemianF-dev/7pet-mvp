@@ -7,6 +7,10 @@ import api from '../../services/api';
 import ConversationList from '../../components/chat/ConversationList';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { Conversation } from '../../types/chat';
+import QueryState from '../../components/system/QueryState';
+import RouteSkeleton from '../../components/system/RouteSkeleton';
+import AppImage from '../../components/ui/AppImage';
+
 
 export default function ChatPage() {
     const { user } = useAuthStore();
@@ -127,21 +131,26 @@ export default function ChatPage() {
 
                     {/* Right Pane - Chat Window */}
                     <div className={`flex-1 bg-gray-50 dark:bg-gray-900/50 flex flex-col items-center justify-center ${!activeConversationId ? 'hidden md:flex' : 'flex'}`}>
-                        {activeConversationId ? (
-                            <ChatWindow
-                                conversationId={activeConversationId}
-                                onBack={() => setActiveConversationId(null)}
-                                className="h-full w-full"
-                            />
-                        ) : (
-                            <div className="text-center p-8 text-gray-400 flex flex-col items-center">
-                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                                    <MessageSquare size={32} strokeWidth={1.5} />
+                        <QueryState
+                            isLoading={isLoading}
+                            skeleton={<RouteSkeleton />}
+                        >
+                            {activeConversationId ? (
+                                <ChatWindow
+                                    conversationId={activeConversationId}
+                                    onBack={() => setActiveConversationId(null)}
+                                    className="h-full w-full"
+                                />
+                            ) : (
+                                <div className="text-center p-8 text-gray-400 flex flex-col items-center">
+                                    <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                                        <MessageSquare size={32} strokeWidth={1.5} />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300">Selecione uma conversa</h3>
+                                    <p className="text-sm max-w-xs mt-2">Escolha uma pessoa ou grupo na lista lateral para iniciar o bate-papo.</p>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300">Selecione uma conversa</h3>
-                                <p className="text-sm max-w-xs mt-2">Escolha uma pessoa ou grupo na lista lateral para iniciar o bate-papo.</p>
-                            </div>
-                        )}
+                            )}
+                        </QueryState>
                     </div>
                 </div>
             </main >
@@ -184,7 +193,7 @@ export default function ChatPage() {
                                             className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-800 transition flex items-center gap-3 group disabled:opacity-50"
                                         >
                                             <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full flex items-center justify-center font-bold overflow-hidden shrink-0">
-                                                {u.photo ? <img src={u.photo} alt={u.name} className="w-full h-full object-cover" /> : <UserIcon size={20} />}
+                                                {u.photo ? <AppImage src={u.photo} alt={u.name} className="w-full h-full object-cover" /> : <UserIcon size={20} />}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 block truncate">{u.name}</span>

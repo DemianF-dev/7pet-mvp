@@ -572,3 +572,48 @@ export const bulkRestore = async (ids: string[]) => {
     });
 };
 
+export const duplicate = async (id: string, performedBy: string) => {
+    const original = await (prisma.appointment as any).findUnique({
+        where: { id },
+        include: {
+            services: true,
+            transportDetails: true
+        }
+    });
+
+    if (!original) throw new Error('Agendamento original não encontrado');
+
+    // Create a new appointment based on the original
+    // We reset status to PENDENTE and set a new future date (default to 1 week after original or now + 1 day)
+    const originalDate = new Date(original.startAt);
+    const nextWeek = new Date(originalDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const startAt = nextWeek > new Date() ? nextWeek : new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const duplicateData = {
+        customerId: original.customerId,
+        petId: original.petId,
+        serviceIds: original.services.map((s: any) => s.id),
+        startAt,
+        category: original.category,
+        transport: original.transportDetails ? {
+            origin: original.transportDetails.origin,
+            destination: original.transportDetails.destination,
+            requestedPeriod: original.transportDetails.requestedPeriod
+        } : undefined,
+        performerId: original.performerId,
+    };
+
+    const duplicated = await create(duplicateData, true); // true as isStaff to allow creating with performer
+
+    await auditService.log({
+        entityType: 'Appointment',
+        entityId: duplicated.id,
+        action: 'CREATE',
+        performedBy,
+        newData: duplicated,
+        reason: `Duplicado a partir do agendamento #${original.seqId || original.id}`
+    });
+
+    return duplicated;
+};
+

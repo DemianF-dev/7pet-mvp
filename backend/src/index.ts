@@ -44,6 +44,7 @@ import timeTrackingRoutes from './routes/timeTrackingRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import goalRoutes from './routes/goalRoutes';
 import packageRoutes from './routes/packageRoutes';
+import devRoutes from './routes/devRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -177,11 +178,13 @@ app.use('/hr', hrRoutes);
 app.use('/time-tracking', timeTrackingRoutes);
 app.use('/marketing', marketingRoutes);
 app.use('/packages', packageRoutes);
+app.use('/dev', devRoutes); // MASTER-only developer tools
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 startNotificationScheduler();
 
 app.get('/', (req, res) => {
+    console.log('Health Check Triggered');
     res.send('🚀 7Pet API está Ativa!');
 });
 

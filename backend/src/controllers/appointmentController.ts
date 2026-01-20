@@ -4,6 +4,7 @@ import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 import Logger from '../lib/logger';
+import * as auditService from '../services/auditService';
 
 const appointmentSchema = z.object({
     petId: z.string().uuid(),
@@ -133,13 +134,15 @@ const appointmentUpdateSchema = appointmentSchema.partial();
 
 export const update = async (req: any, res: Response) => {
     try {
+        const { id } = req.params;
+        const data = req.body;
         const appointmentBefore = await appointmentService.get(id);
         const updated = await appointmentService.update(id, data, req.user.id);
 
         // Log Reschedule if date changed
         if (data.startAt && appointmentBefore && data.startAt.getTime() !== appointmentBefore.startAt.getTime()) {
-            await auditService.logAppointmentEvent((req as any).audit, updated, 'APPOINTMENT_RESCHEDULED',
-                `Agendamento de ${updated.pet.name} reagendado para ${updated.startAt.toLocaleString('pt-BR')}`,
+            await auditService.logAppointmentEvent((req as any).audit, updated as any, 'APPOINTMENT_RESCHEDULED',
+                `Agendamento de ${(updated as any).pet.name} reagendado para ${updated.startAt.toLocaleString('pt-BR')}`,
                 { from: appointmentBefore.startAt, to: updated.startAt }
             );
         }
@@ -288,6 +291,16 @@ export const bulkPermanentRemove = async (req: any, res: Response) => {
         const { ids } = req.body;
         await appointmentService.bulkPermanentRemove(ids);
         res.status(204).send();
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const duplicate = async (req: any, res: Response) => {
+    try {
+        const { id } = req.params;
+        const duplicated = await appointmentService.duplicate(id, req.user.id);
+        res.status(201).json(duplicated);
     } catch (error: any) {
         res.status(400).json({ error: error.message });
     }

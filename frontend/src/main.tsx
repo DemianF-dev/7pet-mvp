@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ErrorBoundary from './components/ErrorBoundary'
+import { initChunkRecovery } from './utils/chunkRecovery'
 import App from './App.tsx'
 // Theme System - Base tokens + all themes
 import './styles/tokens.base.css'
@@ -30,10 +31,15 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes (data remains fresh)
-            gcTime: 24 * 60 * 60 * 1000, // 24 hours (how long it stays in cache)
-            retry: 1,
+            staleTime: 5 * 60 * 1000,
+            gcTime: 24 * 60 * 60 * 1000,
+            retry: (failureCount, error: any) => {
+                // Only retry on network errors or server-side issues
+                if (failureCount >= 2) return false;
+                return !error.response || error.response.status >= 500;
+            },
             refetchOnWindowFocus: false,
+            refetchOnReconnect: true,
         },
     },
 })
@@ -41,6 +47,34 @@ const queryClient = new QueryClient({
 const persister = createSyncStoragePersister({
     storage: window.localStorage,
 })
+
+// 🛡️ Initialize chunk error recovery system BEFORE rendering
+initChunkRecovery();
+
+// 📝 Global Error Diagnostics
+window.addEventListener('unhandledrejection', (event) => {
+    import('./store/diagnosticsStore').then(({ useDiagnosticsStore }) => {
+        useDiagnosticsStore.getState().addLog({
+            type: 'error',
+            message: `Unhandled Rejection: ${event.reason?.message || 'Unknown reason'}`,
+            details: event.reason
+        });
+    });
+});
+
+window.addEventListener('error', (event) => {
+    import('./store/diagnosticsStore').then(({ useDiagnosticsStore }) => {
+        useDiagnosticsStore.getState().addLog({
+            type: 'error',
+            message: `Global Error: ${event.message}`,
+            details: {
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno
+            }
+        });
+    });
+});
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

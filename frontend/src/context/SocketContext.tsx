@@ -23,7 +23,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
-        const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
         // Connect immediately without timeout
         // In production, we might need a specific VITE_SOCKET_URL if the backend is on a different domain/port

@@ -14,6 +14,8 @@ import BackButton from '../../components/BackButton';
 import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
 import LoadingButton from '../../components/LoadingButton';
+import QueryState from '../../components/system/QueryState';
+import RouteSkeleton from '../../components/system/RouteSkeleton';
 
 // Refactored Components
 import QuoteTypeSelection from '../../components/client/QuoteTypeSelection';
@@ -85,10 +87,12 @@ export default function QuoteRequest() {
     const [desiredDate, setDesiredDate] = useState('');
     const [desiredTime, setDesiredTime] = useState('');
 
-    const { data: services = [] } = useQuery({ queryKey: ['services'], queryFn: fetchServices });
-    const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: fetchProducts });
-    const { data: pets = [] } = useQuery({ queryKey: ['pets'], queryFn: fetchPets });
-    const { data: userData } = useQuery({ queryKey: ['me'], queryFn: fetchMe });
+    const { data: services = [], isLoading: isLoadingServices } = useQuery({ queryKey: ['services'], queryFn: fetchServices });
+    const { data: products = [], isLoading: isLoadingProducts } = useQuery({ queryKey: ['products'], queryFn: fetchProducts });
+    const { data: pets = [], isLoading: isLoadingPets } = useQuery({ queryKey: ['pets'], queryFn: fetchPets });
+    const { data: userData, isLoading: isLoadingMe } = useQuery({ queryKey: ['me'], queryFn: fetchMe });
+
+    const isLoadingData = isLoadingServices || isLoadingProducts || isLoadingPets || isLoadingMe;
 
     const [communicationPrefs, setCommunicationPrefs] = useState<string[]>(['APP']);
 
@@ -439,7 +443,10 @@ export default function QuoteRequest() {
     }
 
     return (
-        <>
+        <QueryState
+            isLoading={isLoadingData}
+            skeleton={<RouteSkeleton />}
+        >
             <main className="p-6 md:p-10 max-w-5xl">
                 <header className="mb-10">
                     <div className="flex items-center gap-4 mb-4">
@@ -586,21 +593,21 @@ export default function QuoteRequest() {
                         </div>
                     </motion.form>
                 )}
-            </main>
 
-            <AnimatePresence>
-                {showConfirmSubmit && (
-                    <ConfirmModal
-                        isOpen={showConfirmSubmit}
-                        onClose={() => setShowConfirmSubmit(false)}
-                        onConfirm={handleSubmit}
-                        title="Confirmar Solicitação"
-                        description="Deseja enviar seu pedido de orçamento agora? Nossa equipe responderá o mais breve possível."
-                        confirmText="Sim, Enviar"
-                        cancelText="Ainda não"
-                    />
-                )}
-            </AnimatePresence>
-        </>
+                <AnimatePresence>
+                    {showConfirmSubmit && (
+                        <ConfirmModal
+                            isOpen={showConfirmSubmit}
+                            onClose={() => setShowConfirmSubmit(false)}
+                            onConfirm={handleSubmit}
+                            title="Confirmar Solicitação"
+                            description="Deseja enviar seu pedido de orçamento agora? Nossa equipe responderá o mais breve possível."
+                            confirmText="Sim, Enviar"
+                            cancelText="Ainda não"
+                        />
+                    )}
+                </AnimatePresence>
+            </main>
+        </QueryState>
     );
 }

@@ -1,5 +1,8 @@
-import React from 'react';
 import AgendaItemCompact from './AgendaItemCompact';
+import VirtualList from '../../system/VirtualList';
+import QueryState from '../../system/QueryState';
+import { EmptyState, Button, AppImage } from '../../ui';
+import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 
 interface Appointment {
     id: string;
@@ -40,67 +43,65 @@ export default function DayAgendaList({
 
     const displayDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
-    // Empty state
-    if (!isLoading && appointments.length === 0) {
-        return (
-            <div className="w-full">
-                {/* Date Header */}
-                <div className="px-5 py-5 border-b border-[var(--color-border)] opacity-80">
-                    <h3 className="text-[13px] font-black text-[var(--color-text-secondary)] uppercase tracking-[0.15em]">
-                        {displayDate}
-                    </h3>
-                </div>
-
-                {/* Empty Message */}
-                <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
-                    <div className="w-16 h-16 bg-[var(--color-bg-tertiary)] rounded-full flex items-center justify-center mb-6 opacity-30">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-text-tertiary)]"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /><path d="m9 16 2 2 4-4" /></svg>
-                    </div>
-                    <p className="text-[var(--color-text-tertiary)] text-sm font-medium mb-1">
-                        Dia livre
-                    </p>
-                    <p className="text-[var(--color-text-quaternary)] text-[12px] mb-6">
-                        Nenhum agendamento para esta data
-                    </p>
-                    <button
-                        onClick={onCreateNew}
-                        className="bg-[var(--color-accent-primary)] text-white px-6 py-3 rounded-xl font-black text-[12px] uppercase tracking-wider shadow-lg shadow-[var(--color-accent-primary)]/10"
-                    >
-                        Criar Agendamento
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // List with appointments
-    return (
-        <div className="w-full pb-24">
-            {/* Date Header */}
-            <div className="px-5 py-5 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] sticky top-0 z-10 backdrop-blur-md">
-                <h3 className="text-[13px] font-black text-[var(--color-text-secondary)] uppercase tracking-[0.15em]">
-                    {displayDate}
-                </h3>
-            </div>
-
-            {/* List Items */}
-            <div className="divide-y divide-[var(--color-border)]/50">
-                {isLoading ? (
-                    // Skeleton
-                    [1, 2, 3].map(i => (
-                        <div key={i} className="h-20 bg-[var(--color-bg-tertiary)] animate-pulse mb-0.5 mx-4 rounded-xl opacity-20" />
-                    ))
-                ) : (
-                    appointments.map(appt => (
-                        <AgendaItemCompact
-                            key={appt.id}
-                            appointment={appt}
-                            onClick={onAppointmentClick}
-                        />
-                    ))
-                )}
+    const DateHeader = () => (
+        <div className="px-[var(--space-5)] py-[var(--space-4)] border-b border-[var(--color-border)] bg-[var(--color-bg-surface)]/80 sticky top-0 z-20 backdrop-blur-xl flex items-center justify-between">
+            <h3 className="text-[var(--font-size-xs)] font-[var(--font-weight-black)] text-[var(--color-text-secondary)] uppercase tracking-[0.2em] opacity-70">
+                {displayDate}
+            </h3>
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-[var(--color-accent-primary)]/10 rounded-full border border-[var(--color-accent-primary)]/10">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-primary)] animate-pulse" />
+                <span className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-accent-primary)] uppercase">Hoje</span>
             </div>
         </div>
     );
+
+    const EmptyStateView = () => (
+        <div className="w-full flex-1 flex flex-col">
+            <DateHeader />
+            <div className="flex-1 flex flex-col items-center justify-center">
+                <EmptyState
+                    icon={CalendarIcon}
+                    title="Dia Livre"
+                    description={`Nenhum agendamento para ${displayDate.split(',')[0].toLowerCase()}. Aproveite para organizar sua pauta!`}
+                    action={{
+                        label: "NOVO AGENDAMENTO",
+                        onClick: onCreateNew,
+                        icon: Plus,
+                        props: {
+                            className: "shadow-[0_12px_24px_-8px_var(--color-accent-primary-alpha)]"
+                        }
+                    }}
+                />
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="w-full h-full flex flex-col">
+            <QueryState
+                isLoading={isLoading}
+                isEmpty={appointments.length === 0}
+                emptyState={<EmptyStateView />}
+                className="flex-1"
+            >
+                <div className="w-full h-full pb-24">
+                    <DateHeader />
+                    <VirtualList
+                        items={appointments}
+                        estimateSize={90}
+                        renderItem={(appt) => (
+                            <div className="border-b border-[var(--color-border)]/50">
+                                <AgendaItemCompact
+                                    appointment={appt}
+                                    onClick={onAppointmentClick}
+                                />
+                            </div>
+                        )}
+                    />
+                </div>
+            </QueryState>
+        </div>
+    );
 }
+
 

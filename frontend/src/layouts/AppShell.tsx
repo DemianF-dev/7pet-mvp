@@ -1,7 +1,6 @@
-import { Outlet } from 'react-router-dom';
 import { useIsMobile } from '../hooks/useIsMobile';
 import DesktopShell from './DesktopShell';
-import MobileShell from './MobileShell';
+import MobileAppLayout from './MobileAppLayout';
 
 /**
  * Root layout wrapper that switches between Desktop and Mobile shells
@@ -10,5 +9,5 @@ import MobileShell from './MobileShell';
 export default function AppShell() {
     const isMobile = useIsMobile();
 
-    return isMobile ? <MobileShell /> : <DesktopShell />;
+    return isMobile ? <MobileAppLayout /> : <DesktopShell />;
 }

@@ -12,6 +12,7 @@ import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsMo
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
 import WebAgendaLayout from '../../components/staff/calendar/WebAgendaLayout';
 import { useAgendaViewModel } from '../../features/agenda/viewmodels/useAgendaViewModel';
+import { useRegisterMobileAction } from '../../hooks/useMobileActions';
 import { AgendaItem } from '../../features/agenda/domain/types';
 import AgendaDebugPanel from '../../features/agenda/dev/AgendaDebugPanel';
 
@@ -25,6 +26,9 @@ const statusColumns = [
 export default function AgendaSPA() {
     const location = useLocation();
     const { state, actions } = useAgendaViewModel({ domain: 'SPA' });
+
+    // Register mobile FAB action
+    useRegisterMobileAction('new_appointment', () => actions.openCreateModal());
 
     const {
         appointments: filteredAppointments,

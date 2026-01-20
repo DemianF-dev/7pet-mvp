@@ -1,12 +1,12 @@
 import { useIsMobile } from '../hooks/useIsMobile';
 import ClientDesktopShell from './ClientDesktopShell';
-import MobileShell from './MobileShell';
+import MobileAppLayout from './MobileAppLayout';
 
 /**
  * Client-specific app shell that switches between mobile/desktop layouts.
- * Uses the same MobileShell for now as it's responsive.
+ * Uses the new MobileAppLayout for a premium mobile experience.
  */
 export default function ClientAppShell() {
     const isMobile = useIsMobile();
-    return isMobile ? <MobileShell /> : <ClientDesktopShell />;
+    return isMobile ? <MobileAppLayout /> : <ClientDesktopShell />;
 }

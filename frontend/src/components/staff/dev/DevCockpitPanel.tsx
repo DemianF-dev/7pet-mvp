@@ -13,8 +13,10 @@ import {
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useDevCockpitStore } from '../../../store/devCockpitStore';
+import { useEffect } from 'react';
 import { buildSystemReport } from '../../../utils/systemReport';
 import { DangerousActionModal } from '../../security/DangerousActionModal';
+import { TransportSimulatorWrapper } from './TransportSimulatorWrapper';
 
 export const DevCockpitPanel: React.FC = () => {
     const { user } = useAuthStore();
@@ -42,6 +44,25 @@ export const DevCockpitPanel: React.FC = () => {
         }
         window.location.reload();
     };
+
+    const toggleOverflowDebug = () => {
+        const isActive = document.body.classList.contains('debug-overflow');
+        if (isActive) {
+            document.body.classList.remove('debug-overflow');
+            localStorage.setItem('debug_overflow_active', '0');
+            toast.success('Audit Mode: OFF');
+        } else {
+            document.body.classList.add('debug-overflow');
+            localStorage.setItem('debug_overflow_active', '1');
+            toast.success('Audit Mode: ON (Red items = layout; Orange = fixed width)');
+        }
+    };
+
+    useEffect(() => {
+        if (localStorage.getItem('debug_overflow_active') === '1') {
+            document.body.classList.add('debug-overflow');
+        }
+    }, []);
 
     const handleCopyReport = async () => {
         try {
@@ -134,7 +155,20 @@ export const DevCockpitPanel: React.FC = () => {
                                             <span className={`inline-block h-9 w-9 transform rounded-full bg-white shadow-2xl transition-transform duration-300 ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'translate-x-10' : 'translate-x-1'}`} />
                                         </button>
                                         <span className={`text-xs font-black uppercase tracking-[0.25em] ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'text-green-400' : 'text-slate-500'}`}>
-                                            {localStorage.getItem('agenda_debug_enabled') === '1' ? 'ACTIVE' : 'INACTIVE'}
+                                            Agendas {localStorage.getItem('agenda_debug_enabled') === '1' ? 'ACTIVE' : 'INACTIVE'}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center xl:items-end gap-6 shrink-0 bg-slate-950/30 p-8 rounded-[36px] border border-white/5 min-w-[160px] shadow-2xl">
+                                        <button
+                                            type="button"
+                                            onClick={toggleOverflowDebug}
+                                            className={`relative inline-flex h-11 w-20 items-center rounded-full transition-all focus:outline-none ring-offset-slate-900 focus:ring-2 focus:ring-orange-500 shadow-inner ${localStorage.getItem('debug_overflow_active') === '1' ? 'bg-orange-500' : 'bg-slate-700'}`}
+                                        >
+                                            <span className={`inline-block h-9 w-9 transform rounded-full bg-white shadow-2xl transition-transform duration-300 ${localStorage.getItem('debug_overflow_active') === '1' ? 'translate-x-10' : 'translate-x-1'}`} />
+                                        </button>
+                                        <span className={`text-xs font-black uppercase tracking-[0.25em] ${localStorage.getItem('debug_overflow_active') === '1' ? 'text-orange-400' : 'text-slate-500'}`}>
+                                            Overflow {localStorage.getItem('debug_overflow_active') === '1' ? 'ACTIVE' : 'INACTIVE'}
                                         </span>
                                     </div>
                                 </div>
@@ -183,6 +217,11 @@ export const DevCockpitPanel: React.FC = () => {
                             </div>
                         </section>
                     </div>
+
+                    {/* Transport Simulator Section */}
+                    <section className="space-y-6 pt-8 border-t border-white/5">
+                        <TransportSimulatorWrapper />
+                    </section>
 
                     {/* Bottom Row: Critical Operations */}
                     <section className="space-y-8 pt-8 border-t border-white/5">

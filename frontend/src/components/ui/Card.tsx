@@ -5,7 +5,7 @@ import React from 'react';
  * Apple-style card with multiple variants
  */
 
-export type CardVariant = 'default' | 'elevated' | 'glass' | 'outline';
+export type CardVariant = 'default' | 'elevated' | 'glass' | 'outline' | 'flat';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: CardVariant;
@@ -18,11 +18,11 @@ const variantStyles: Record<CardVariant, string> = {
     default: `
         bg-[var(--color-bg-surface)]
         border border-[var(--color-border)]
-        shadow-[var(--shadow-card)]
+        shadow-[var(--shadow-xs)]
     `,
     elevated: `
         bg-[var(--color-bg-elevated)]
-        shadow-[var(--shadow-lg)]
+        shadow-[var(--shadow-md)]
     `,
     glass: `
         glass-surface
@@ -31,13 +31,16 @@ const variantStyles: Record<CardVariant, string> = {
         bg-transparent
         border border-[var(--color-border)]
     `,
+    flat: `
+        bg-[var(--color-bg-secondary)]
+    `,
 };
 
 const paddingStyles: Record<'none' | 'sm' | 'md' | 'lg', string> = {
     none: '',
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-6',
+    sm: 'p-[var(--space-3)]',
+    md: 'p-[var(--space-4)]',
+    lg: 'p-[var(--space-6)]',
 };
 
 export function Card({

@@ -1,11 +1,12 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, MoreHorizontal, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { safeBack } from '../../utils/safeBack';
+import { MOBILE_TABS } from '../../navigation/mobileNav';
 
 /**
  * Route configuration for mobile top bar titles and actions
  */
-const routeConfig: Record<string, { title: string; showBack?: boolean; showSearch?: boolean }> = {
+const routeConfig: Record<string, { title: string; showBack?: boolean; showSearch?: boolean; fallback?: string }> = {
     '/staff/dashboard': { title: 'Home' },
     '/staff/agenda-spa': { title: 'Agenda SPA', showSearch: true },
     '/staff/agenda-log': { title: 'Transporte', showSearch: true },
@@ -20,13 +21,13 @@ const routeConfig: Record<string, { title: string; showBack?: boolean; showSearc
     '/staff/reports': { title: 'Relatórios' },
     '/staff/users': { title: 'Usuários' },
     '/staff/notifications': { title: 'Notificações' },
-    '/staff/profile': { title: 'Perfil', showBack: true },
+    '/staff/profile': { title: 'Meu Perfil', showBack: true },
     '/staff/support': { title: 'Suporte' },
     '/staff/feed': { title: 'Feed' },
-    '/staff/my-hr': { title: 'Meu RH', showBack: true },
+    '/staff/my-hr': { title: 'Meu RH', showBack: true, fallback: '/staff/dashboard' },
     '/staff/menu': { title: 'Menu' },
-    '/staff/hr/collaborators': { title: 'Colaboradores', showBack: true },
-    '/staff/hr/pay-periods': { title: 'Períodos de Pagamento', showBack: true },
+    '/staff/hr/collaborators': { title: 'Colaboradores', showBack: true, fallback: '/staff/my-hr' },
+    '/staff/hr/pay-periods': { title: 'Pagamentos', showBack: true, fallback: '/staff/my-hr' },
 };
 
 interface MobileTopBarProps {
@@ -34,63 +35,67 @@ interface MobileTopBarProps {
     onMoreClick?: () => void;
 }
 
-/**
- * Compact mobile top bar with title and actions.
- * Bitrix-like pattern: Large title left, actions right.
- */
 export default function MobileTopBar({ onSearchClick, onMoreClick }: MobileTopBarProps) {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Get config for current route, fallback to path-based title
+    // Check if it's a detail page (e.g. /staff/customers/:id)
+    const isDetail = /^\/staff\/(customers|quotes|hr\/collaborators)\/[^/]+$/.test(location.pathname);
+
+    // Get config for current route
     const config = routeConfig[location.pathname] || {
-        title: location.pathname.split('/').pop()?.replace(/-/g, ' ') || 'Menu',
-        showBack: true,
+        title: isDetail ? 'Detalhes' : (location.pathname.split('/').pop()?.replace(/-/g, ' ') || '7Pet'),
+        showBack: isDetail || location.pathname.split('/').length > 2,
     };
 
     const handleBack = () => {
-        navigate(-1);
+        // Fallback calculation
+        let fallback = config.fallback;
+        if (!fallback) {
+            if (location.pathname.startsWith('/staff/customers/')) fallback = '/staff/customers';
+            else if (location.pathname.startsWith('/staff/quotes/')) fallback = '/staff/quotes';
+            else fallback = '/staff/dashboard';
+        }
+        safeBack(navigate, fallback);
     };
 
     return (
         <header
-            className="shrink-0 flex items-center justify-between px-4 py-3 bg-[var(--color-bg-surface)] border-b border-[var(--color-border)]"
-            style={{ paddingTop: 'max(env(safe-area-inset-top, 12px), 12px)' }}
+            className="shrink-0 flex items-center justify-between px-4 h-16 landscape-compact bg-[var(--color-bg-surface)]/80 backdrop-blur-xl border-b border-[var(--color-border-subtle)] z-50 sticky top-0"
+            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
-            {/* Left: Back button or Title */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
                 {config.showBack && (
                     <button
                         onClick={handleBack}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] hover:bg-[var(--color-fill-tertiary)] transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-2xl text-[var(--color-text-secondary)] active:bg-[var(--color-fill-secondary)] active:scale-90 transition-all"
                         aria-label="Voltar"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={22} strokeWidth={2.5} />
                     </button>
                 )}
-                <h1 className="text-xl font-bold text-[var(--color-text-primary)] capitalize">
+                <h1 className="text-lg font-[var(--font-weight-black)] text-[var(--color-text-primary)] uppercase tracking-tight">
                     {config.title}
                 </h1>
             </div>
 
-            {/* Right: Actions */}
             <div className="flex items-center gap-1">
-                {config.showSearch && onSearchClick && (
+                {config.showSearch && (
                     <button
                         onClick={onSearchClick}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] hover:bg-[var(--color-fill-tertiary)] transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-2xl text-[var(--color-text-tertiary)] active:bg-[var(--color-fill-secondary)] active:scale-90 transition-all"
                         aria-label="Pesquisar"
                     >
-                        <Search size={20} />
+                        <Search size={22} strokeWidth={2.5} />
                     </button>
                 )}
                 {onMoreClick && (
                     <button
                         onClick={onMoreClick}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] hover:bg-[var(--color-fill-tertiary)] transition-colors"
-                        aria-label="Mais opções"
+                        className="w-10 h-10 flex items-center justify-center rounded-2xl text-[var(--color-text-tertiary)] active:bg-[var(--color-fill-secondary)] active:scale-90 transition-all"
+                        aria-label="Mais"
                     >
-                        <MoreHorizontal size={20} />
+                        <MoreHorizontal size={22} strokeWidth={2.5} />
                     </button>
                 )}
             </div>

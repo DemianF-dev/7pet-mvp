@@ -36,6 +36,8 @@ import Skeleton from '../../components/Skeleton';
 import { NotificationControlPanel } from '../../components/admin/NotificationControlPanel';
 import { UserNotificationMatrix } from '../../components/admin/UserNotificationMatrix';
 import { useAuthStore } from '../../store/authStore';
+import { Card, Badge, IconButton, Button, GlassSurface } from '../../components/ui';
+import QueryState from '../../components/system/QueryState';
 
 // Use CSS variable-based colors from design system
 const COLORS = [
@@ -140,320 +142,297 @@ export default function ManagementDashboard() {
 
     const barData = kpis?.services?.slice(0, 5) || [];
 
-    if (isLoading) {
-        return (
-            <main className="p-6 md:p-10" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
-                <header className="mb-10">
-                    <Skeleton variant="text" className="w-64 h-10 mb-4" />
-                    <Skeleton variant="text" className="w-96 h-4" />
-                </header>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    {[1, 2, 3, 4].map(i => (
-                        <div
-                            key={i}
-                            className="p-8 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)] h-48 flex flex-col justify-center gap-4"
-                            style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-                        >
-                            <Skeleton variant="rounded" className="w-12 h-12" />
-                            <Skeleton variant="text" className="w-24 h-4" />
-                            <Skeleton variant="text" className="w-32 h-8" />
-                        </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div
-                        className="lg:col-span-2 p-8 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)] h-[400px]"
-                        style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-                    >
-                        <Skeleton variant="rounded" className="w-full h-full" />
-                    </div>
-                    <div className="space-y-6">
-                        <Skeleton variant="rounded" className="h-[300px]" />
-                        <Skeleton variant="rounded" className="h-[200px]" />
-                    </div>
-                </div>
-            </main>
-        );
-    }
-
     return (
-        <main className="p-6 md:p-10" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+        <main className="p-[var(--space-6)] md:p-[var(--space-10)] max-w-7xl mx-auto w-full pb-28 md:pb-10">
             <header className="mb-10">
-                <BackButton className="mb-4 ml-[-1rem]" />
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-4xl font-extrabold text-secondary">Painel de <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Gestão</span></h1>
-                        <p className="text-gray-500 mt-3 font-medium">Análise de desempenho, financeiro e crescimento.</p>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                            <BackButton className="!p-0 !m-0 !bg-transparent !border-none" />
+                            <h1 className="text-3xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">
+                                Painel de <span className="text-[var(--color-accent-primary)]">Gestão</span>
+                            </h1>
+                        </div>
+                        <p className="text-[var(--color-text-tertiary)] font-medium">Análise de desempenho, financeiro e crescimento.</p>
                     </div>
 
-                    <div className="flex gap-4">
-                        <button
+                    <div className="flex flex-wrap items-center gap-3">
+                        <IconButton
+                            icon={RefreshCw}
                             onClick={fetchKPIs}
-                            className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 hover:bg-gray-50 transition-colors text-secondary font-bold text-sm"
-                            title="Atualizar Dados"
-                        >
-                            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-                            Atualizar
-                        </button>
+                            variant="secondary"
+                            className={isLoading ? 'animate-spin' : ''}
+                            aria-label="Atualizar Dados"
+                        />
 
-                        <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span className="text-sm font-bold text-secondary">Dados em tempo real</span>
-                        </div>
+                        <Badge variant="success" className="h-11 px-4 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                            Tempo Real
+                        </Badge>
 
-                        <button
+                        <Button
+                            variant="primary"
                             onClick={() => navigate('/staff/marketing')}
-                            className="bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-lg border border-blue-500 flex items-center gap-2 hover:bg-blue-700 transition-all font-bold text-sm"
+                            icon={Bell}
+                            className="hidden md:flex"
                         >
-                            <Bell size={18} />
-                            Marketing Center
-                        </button>
+                            Marketing
+                        </Button>
                     </div>
                 </div>
             </header>
 
-            <div className="space-y-10">
-                {/* High Level Cards */}
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-                >
-                    <motion.div variants={itemVariants}>
-                        <KPICard
-                            title="Faturamento (Mês)"
-                            value={kpis?.revenue.current || 0}
-                            isCurrency
-                            growth={kpis?.revenue.growth || 0}
-                            icon={<DollarSign className="text-green-500" />}
-                            bg="bg-green-50"
-                        />
+            <QueryState
+                isLoading={isLoading}
+                isEmpty={!kpis}
+                error={null}
+                onRetry={fetchKPIs}
+            >
+                <div className="space-y-10">
+                    {/* High Level Cards */}
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+                    >
+                        <motion.div variants={itemVariants}>
+                            <KPICard
+                                title="Faturamento (Mês)"
+                                value={kpis?.revenue.current || 0}
+                                isCurrency
+                                growth={kpis?.revenue.growth || 0}
+                                icon={<DollarSign className="text-[var(--color-success)]" />}
+                                theme="success"
+                            />
+                        </motion.div>
+                        <motion.div variants={itemVariants}>
+                            <KPICard
+                                title="Ticket Médio (30d)"
+                                value={kpis?.ticketMedio || 0}
+                                isCurrency
+                                icon={<Activity className="text-[var(--color-accent-primary)]" />}
+                                theme="primary"
+                            />
+                        </motion.div>
+                        <motion.div variants={itemVariants}>
+                            <KPICard
+                                title="Taxa de No-Show"
+                                value={kpis?.noShowRate || 0}
+                                isPercent
+                                icon={<AlertCircle className="text-[var(--color-error)]" />}
+                                theme="error"
+                            />
+                        </motion.div>
+                        <motion.div variants={itemVariants}>
+                            <KPICard
+                                title="Receita Pendente"
+                                value={kpis?.pendingBalance || 0}
+                                isCurrency
+                                icon={<Clock className="text-orange-500" />}
+                                theme="warning"
+                            />
+                        </motion.div>
                     </motion.div>
-                    <motion.div variants={itemVariants}>
-                        <KPICard
-                            title="Ticket Médio (30d)"
-                            value={kpis?.ticketMedio || 0}
-                            isCurrency
-                            icon={<Activity className="text-blue-500" />}
-                            bg="bg-blue-50"
-                        />
-                    </motion.div>
-                    <motion.div variants={itemVariants}>
-                        <KPICard
-                            title="Taxa de No-Show"
-                            value={kpis?.noShowRate || 0}
-                            isPercent
-                            icon={<AlertCircle className="text-red-500" />}
-                            bg="bg-red-50"
-                        />
-                    </motion.div>
-                    <motion.div variants={itemVariants}>
-                        <KPICard
-                            title="Receita Pendente"
-                            value={kpis?.pendingBalance || 0}
-                            isCurrency
-                            icon={<Clock className="text-orange-500" />}
-                            bg="bg-orange-50"
-                        />
-                    </motion.div>
-                </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Revenue Trend Chart */}
-                    <div className="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-xl font-bold text-secondary flex items-center gap-2">
-                                <BarChart2 className="text-primary" size={20} />
-                                Tendência de Receita (30 dias)
-                            </h2>
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                                Total: R$ {kpis?.revenue.current.toLocaleString('pt-BR')}
-                            </span>
-                        </div>
-
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs>
-                                        <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                                    <XAxis
-                                        dataKey="formattedDate"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#9CA3AF', fontWeight: 'bold' }}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#9CA3AF', fontWeight: 'bold' }}
-                                        tickFormatter={(value) => `R$ ${value}`}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: '#FFF',
-                                            borderRadius: '16px',
-                                            border: 'none',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            fontSize: '12px',
-                                            fontWeight: 'bold'
-                                        }}
-                                        formatter={(value) => [`R$ ${value}`, 'Receita']}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="amount"
-                                        stroke="#3B82F6"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorAmount)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Status Distribution Pie Chart */}
-                    <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold text-secondary mb-8 flex items-center gap-2">
-                            <Activity className="text-primary" size={20} />
-                            Status dos Atendimentos
-                        </h2>
-                        <div className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pieData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: '#FFF',
-                                            borderRadius: '16px',
-                                            border: 'none',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            fontSize: '12px',
-                                            fontWeight: 'bold'
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="mt-4 space-y-2">
-                            {pieData.map((item, index) => (
-                                <div key={index} className="flex justify-between items-center text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                                        <span className="text-gray-500 font-bold uppercase tracking-widest">{item.name}</span>
-                                    </div>
-                                    <span className="font-black text-secondary">{item.value}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Services Bar Chart */}
-                    <div className="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold text-secondary mb-8 flex items-center gap-2">
-                            <CheckCircle2 className="text-primary" size={20} />
-                            Serviços Mais Populares
-                        </h2>
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={barData} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F3F4F6" />
-                                    <XAxis type="number" hide />
-                                    <YAxis
-                                        dataKey="name"
-                                        type="category"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        width={150}
-                                        tick={{ fontSize: 11, fill: '#4B5563', fontWeight: 'bold' }}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: '#F9FAFB' }}
-                                        contentStyle={{
-                                            backgroundColor: '#FFF',
-                                            borderRadius: '16px',
-                                            border: 'none',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            fontSize: '12px',
-                                            fontWeight: 'bold'
-                                        }}
-                                    />
-                                    <Bar dataKey="count" fill="#3B82F6" radius={[0, 10, 10, 0]} barSize={20} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Top Customers & Alerts */}
-                    <div className="space-y-6">
-                        <div className="bg-secondary p-8 rounded-[40px] text-white shadow-xl flex flex-col justify-between h-[300px]">
-                            <div>
-                                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
-                                    <BarChart2 className="text-primary" />
-                                </div>
-                                <h3 className="text-2xl font-black mb-2">Insight do Mês</h3>
-                                <p className="text-gray-400 text-sm leading-relaxed">
-                                    Seu faturamento cresceu <span className="text-primary font-bold">{kpis?.revenue.growth?.toFixed(1) || '0.0'}%</span> em relação ao mês anterior.
-                                    Continue focando em serviços de alto valor agregado para aumentar seu Ticket Médio.
-                                </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Revenue Trend Chart */}
+                        <Card className="lg:col-span-2 p-8">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--color-text-primary)] flex items-center gap-2">
+                                    <BarChart2 className="text-[var(--color-accent-primary)]" size={20} />
+                                    Tendência de Receita (30 dias)
+                                </h2>
+                                <Badge variant="neutral" size="sm" className="font-[var(--font-weight-black)] text-[10px] uppercase tracking-widest px-3 py-1">
+                                    Total: R$ {kpis?.revenue.current.toLocaleString('pt-BR')}
+                                </Badge>
                             </div>
-                            <button className="mt-6 flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all text-sm uppercase tracking-widest">
-                                Ver Relatório <ChevronRight size={16} />
-                            </button>
-                        </div>
 
-                        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                            <h2 className="text-lg font-black text-secondary mb-6 flex items-center gap-2 uppercase tracking-tight">
-                                <Users className="text-primary" size={20} />
-                                Top 5 Clientes
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--color-accent-primary)" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="var(--color-accent-primary)" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                                        <XAxis
+                                            dataKey="formattedDate"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 10, fill: 'var(--color-text-tertiary)', fontWeight: 'bold' }}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 10, fill: 'var(--color-text-tertiary)', fontWeight: 'bold' }}
+                                            tickFormatter={(value) => `R$ ${value}`}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'var(--color-bg-surface)',
+                                                borderRadius: 'var(--radius-xl)',
+                                                border: '1px solid var(--color-border)',
+                                                boxShadow: 'var(--shadow-lg)',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}
+                                            formatter={(value) => [`R$ ${value}`, 'Receita']}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="amount"
+                                            stroke="var(--color-accent-primary)"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorAmount)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card>
+
+                        {/* Status Distribution Pie Chart */}
+                        <Card className="p-8">
+                            <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--color-text-primary)] mb-8 flex items-center gap-2">
+                                <Activity className="text-[var(--color-accent-primary)]" size={20} />
+                                Status de Atendimentos
                             </h2>
-                            <div className="space-y-4">
-                                {kpis?.topCustomers.map((c, idx) => (
-                                    <div key={idx} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-gray-100">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-secondary">{c.name}</span>
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Total Gasto</span>
+                            <div className="h-[250px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'var(--color-bg-surface)',
+                                                borderRadius: 'var(--radius-xl)',
+                                                border: '1px solid var(--color-border)',
+                                                boxShadow: 'var(--shadow-lg)',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                                {pieData.map((item, index) => (
+                                    <div key={index} className="flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                            <span className="text-[var(--color-text-tertiary)] font-[var(--font-weight-bold)] uppercase tracking-widest">{item.name}</span>
                                         </div>
-                                        <span className="text-sm font-black text-primary">R$ {c.totalSpent.toLocaleString('pt-BR')}</span>
+                                        <span className="font-[var(--font-weight-black)] text-[var(--color-text-primary)]">{item.value}</span>
                                     </div>
                                 ))}
                             </div>
+                        </Card>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Services Bar Chart */}
+                        <Card className="lg:col-span-2 p-8">
+                            <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--color-text-primary)] mb-8 flex items-center gap-2">
+                                <CheckCircle2 className="text-[var(--color-accent-primary)]" size={20} />
+                                Serviços Mais Populares
+                            </h2>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={barData} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
+                                        <XAxis type="number" hide />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            width={150}
+                                            tick={{ fontSize: 11, fill: 'var(--color-text-secondary)', fontWeight: 'bold' }}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: 'var(--color-fill-secondary)' }}
+                                            contentStyle={{
+                                                backgroundColor: 'var(--color-bg-surface)',
+                                                borderRadius: 'var(--radius-xl)',
+                                                border: '1px solid var(--color-border)',
+                                                boxShadow: 'var(--shadow-lg)',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}
+                                        />
+                                        <Bar dataKey="count" fill="var(--color-accent-primary)" radius={[0, 10, 10, 0]} barSize={20} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card>
+
+                        {/* Top Customers & Alerts */}
+                        <div className="flex flex-col gap-8">
+                            <Card className="p-8 bg-[var(--color-accent-primary)] text-white relative overflow-hidden flex flex-col justify-between h-[300px]">
+                                <div className="relative z-10">
+                                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+                                        <BarChart2 className="text-white" />
+                                    </div>
+                                    <h3 className="text-2xl font-[var(--font-weight-black)] mb-2">Insight do Mês</h3>
+                                    <p className="text-white/80 text-sm leading-relaxed">
+                                        Seu faturamento cresceu <span className="text-white font-bold">{kpis?.revenue.growth?.toFixed(1) || '0.0'}%</span> em relação ao mês anterior.
+                                        Foque em serviços de alto valor para aumentar o Ticket Médio.
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    className="mt-6 border-white/20 text-white hover:bg-white/10 w-fit"
+                                    size="sm"
+                                    onClick={() => { }}
+                                >
+                                    Ver Relatório <ChevronRight size={16} className="ml-2" />
+                                </Button>
+                                <Activity size={180} className="absolute -right-16 -bottom-16 text-white opacity-5" />
+                            </Card>
+
+                            <Card className="p-8">
+                                <h2 className="text-lg font-[var(--font-weight-black)] text-[var(--color-text-primary)] mb-6 flex items-center gap-2 uppercase tracking-tight">
+                                    <Users className="text-[var(--color-accent-primary)]" size={20} />
+                                    Top 5 Clientes
+                                </h2>
+                                <div className="space-y-4">
+                                    {kpis?.topCustomers.map((c, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-3 hover:bg-[var(--color-fill-secondary)] rounded-2xl transition-colors border border-transparent hover:border-[var(--color-border)]">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-[var(--font-weight-bold)] text-[var(--color-text-primary)]">{c.name}</span>
+                                                <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold uppercase tracking-widest">Total Gasto</span>
+                                            </div>
+                                            <span className="text-sm font-[var(--font-weight-black)] text-[var(--color-accent-primary)]">R$ {c.totalSpent.toLocaleString('pt-BR')}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
                         </div>
                     </div>
-                </div>
 
-                {/* Notification Control Panel - MASTER ONLY */}
-                {isMaster && (
-                    <>
-                        <div className="mt-12">
+                    {/* Notification Control Panel - MASTER ONLY */}
+                    {isMaster && (
+                        <div className="space-y-8 mt-12">
                             <NotificationControlPanel />
-                        </div>
-                        <div className="mt-8">
                             <UserNotificationMatrix />
                         </div>
-                    </>
-                )}
-            </div>
+                    )}
+                </div>
+            </QueryState>
 
 
             {/* Debug Info */}
@@ -467,85 +446,76 @@ export default function ManagementDashboard() {
     );
 }
 
-function KPICard({ title, value, growth, icon, bg, isCurrency, isPercent }: any) {
+function KPICard({ title, value, growth, icon, isCurrency, isPercent, theme = 'primary' }: any) {
+    const themeColors = {
+        primary: {
+            bg: 'var(--color-accent-primary-alpha)',
+            text: 'var(--color-accent-primary)'
+        },
+        success: {
+            bg: 'rgba(34, 197, 94, 0.1)',
+            text: 'var(--color-success)'
+        },
+        error: {
+            bg: 'rgba(239, 68, 68, 0.1)',
+            text: 'var(--color-error)'
+        },
+        warning: {
+            bg: 'rgba(245, 158, 11, 0.1)',
+            text: 'var(--color-warning)'
+        }
+    } as any;
+
+    const colors = themeColors[theme] || themeColors.primary;
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-[var(--radius-2xl)] shadow-[var(--shadow-card)] flex flex-col gap-4 relative overflow-hidden group transition-all duration-[var(--duration-normal)]"
-            style={{
-                backgroundColor: 'var(--color-bg-surface)',
-                border: '1px solid var(--color-border)',
-            }}
-            whileHover={{
-                scale: 1.02,
-                boxShadow: 'var(--shadow-lg)',
-            }}
-        >
+        <Card className="p-6 flex flex-col gap-4 relative overflow-hidden group" hover>
             <div
-                className={`w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-[var(--duration-fast)]`}
-                style={{ backgroundColor: bg ? undefined : 'var(--color-fill-secondary)' }}
+                className="w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-[var(--duration-fast)]"
+                style={{ backgroundColor: colors.bg, color: colors.text }}
             >
                 {icon}
             </div>
             <div>
-                <p
-                    className="text-[var(--font-size-caption2)] font-[var(--font-weight-semibold)] uppercase tracking-widest mb-1"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                >
+                <p className="text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-1">
                     {title}
                 </p>
-                <h3
-                    className="text-[var(--font-size-title1)] font-[var(--font-weight-bold)]"
-                    style={{ color: 'var(--color-text-primary)' }}
-                >
-                    {isCurrency && 'R$ '}
-                    {value.toLocaleString('pt-BR')}
-                    {isPercent && '%'}
-                </h3>
+                <div className="flex items-baseline gap-2">
+                    <h3 className="text-2xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">
+                        {isCurrency && 'R$ '}
+                        {value.toLocaleString('pt-BR')}
+                        {isPercent && '%'}
+                    </h3>
+                </div>
             </div>
             {growth !== undefined && (
-                <div className="flex items-center gap-1">
-                    {growth >= 0 ? (
-                        <div
-                            className="p-1 rounded-full"
-                            style={{ backgroundColor: 'var(--color-success)', opacity: 0.1 }}
-                        >
-                            <ArrowUpRight size={12} style={{ color: 'var(--color-success)' }} />
-                        </div>
-                    ) : (
-                        <div
-                            className="p-1 rounded-full"
-                            style={{ backgroundColor: 'var(--color-error)', opacity: 0.1 }}
-                        >
-                            <ArrowDownRight size={12} style={{ color: 'var(--color-error)' }} />
-                        </div>
-                    )}
+                <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-[var(--color-border)]">
+                    <div
+                        className={`p-0.5 rounded-full ${growth >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}
+                    >
+                        {growth >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                    </div>
                     <span
-                        className="text-[var(--font-size-caption1)] font-[var(--font-weight-bold)]"
-                        style={{ color: growth >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}
+                        className={`text-xs font-[var(--font-weight-black)] ${growth >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}
                     >
                         {Math.abs(growth)}%
                     </span>
-                    <span
-                        className="text-[var(--font-size-caption2)] font-[var(--font-weight-medium)] ml-1"
-                        style={{ color: 'var(--color-text-tertiary)' }}
-                    >
-                        vs mês ant.
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-medium">
+                        vs mês anterior
                     </span>
                 </div>
             )}
-        </motion.div>
+        </Card>
     );
 }
 
 function AlertItem({ label, count, urgent }: { label: string, count: number, urgent: boolean }) {
     return (
-        <div className={`flex items-center justify-between p-4 rounded-2xl border ${urgent ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-            <span className={`text-[11px] font-bold uppercase ${urgent ? 'text-red-600' : 'text-gray-500'}`}>{label}</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-black ${urgent ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+        <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${urgent ? 'bg-[var(--color-error-alpha)] border-[var(--color-error-alpha)]' : 'bg-[var(--color-fill-secondary)] border-[var(--color-border)]'}`}>
+            <span className={`text-[11px] font-[var(--font-weight-black)] uppercase tracking-wider ${urgent ? 'text-[var(--color-error)]' : 'text-[var(--color-text-tertiary)]'}`}>{label}</span>
+            <Badge variant={urgent ? 'error' : 'neutral'} size="sm" className="font-[var(--font-weight-black)]">
                 {count}
-            </span>
+            </Badge>
         </div>
     );
 }

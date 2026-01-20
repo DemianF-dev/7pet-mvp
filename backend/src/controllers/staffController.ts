@@ -203,7 +203,15 @@ export const staffController = {
 
     async listTransports(req: Request, res: Response) {
         try {
+            const { status } = req.query;
+
+            const whereClause: any = {};
+            if (status) {
+                whereClause.status = status;
+            }
+
             const transports = await prisma.transportDetails.findMany({
+                where: whereClause,
                 include: {
                     appointment: {
                         include: {
@@ -287,6 +295,61 @@ export const staffController = {
 
         } catch (error) {
             console.error('Error fetching feed widgets:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
+    async updateTransportStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+
+            console.log(`[updateTransportStatus] ID: ${id} Status: ${status}`);
+
+            const existing = await prisma.transportDetails.findUnique({ where: { id } });
+            if (!existing) return res.status(404).json({ error: 'Transporte não encontrado' });
+
+            const updateData: any = { status };
+            if (status === 'INICIADO' && !existing.startedAt) {
+                updateData.startedAt = new Date();
+            }
+            if (status === 'CONCLUIDO') {
+                updateData.completedAt = new Date();
+            }
+
+            const transport = await prisma.transportDetails.update({
+                where: { id },
+                data: updateData,
+                include: {
+                    appointment: true
+                }
+            });
+
+            return res.json(transport);
+        } catch (error) {
+            console.error('Error updating transport status:', error);
+            return res.status(500).json({ error: (error as Error).message });
+        }
+    },
+
+    async logTransportOccurrence(req: Request, res: Response) {
+        return res.status(501).json({ error: 'Funcionalidade desabilitada temporariamente devido a limitações de ambiente' });
+    },
+
+    async getTransportDetails(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const transport = await prisma.transportDetails.findUnique({
+                where: { id },
+                include: {
+                    appointment: {
+                        include: { pet: true, customer: true }
+                    }
+                }
+            });
+            if (!transport) return res.status(404).json({ error: 'Não encontrado' });
+            return res.json(transport);
+        } catch (error) {
             return res.status(500).json({ error: 'Internal server error' });
         }
     }

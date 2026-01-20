@@ -6,6 +6,10 @@ import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, 
 import { useAuthStore } from '../../store/authStore';
 
 import { Message } from '../../types/chat';
+import AppImage from '../ui/AppImage';
+import QueryState from '../system/QueryState';
+import RouteSkeleton from '../system/RouteSkeleton';
+
 
 interface ChatWindowProps {
     conversationId: string;
@@ -340,7 +344,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                                             <div className="mb-2">
                                                 {m.fileType?.startsWith('image/') ? (
                                                     <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg group">
-                                                        <img src={m.fileUrl} alt={m.fileName} className="max-w-full h-auto max-h-60 object-cover transition-transform group-hover:scale-105" />
+                                                        <AppImage src={m.fileUrl} alt={m.fileName} className="max-w-full h-auto max-h-60 object-cover transition-transform group-hover:scale-105" />
                                                     </a>
                                                 ) : (
                                                     <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border ${isMe ? 'bg-blue-700/50 border-blue-400' : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'} hover:opacity-90 transition-opacity`}>

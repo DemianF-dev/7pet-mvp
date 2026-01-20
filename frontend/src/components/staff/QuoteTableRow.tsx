@@ -68,120 +68,130 @@ const QuoteTableRow = React.memo(({
     onViewAppointment
 }: QuoteTableRowProps) => {
     return (
-        <tr className={`hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-all group ${isSelected ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
-            <td className="px-8 py-6">
-                {(isBulkMode || isSelected) && (
-                    <button
-                        onClick={(e) => onToggleSelect(quote.id, e)}
-                        className={`transition-all ${isSelected ? 'text-primary' : 'text-gray-200 group-hover:text-gray-400'}`}
-                    >
-                        {isSelected ? <CheckSquare size={20} strokeWidth={3} /> : <Square size={20} strokeWidth={3} />}
-                    </button>
-                )}
-            </td>
-            <td className="px-8 py-6">
+        <div
+            className={`flex flex-col md:flex-row md:items-center px-[var(--space-6)] py-[var(--space-5)] transition-all group border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-fill-secondary)] ${isSelected ? 'bg-[var(--color-accent-primary-alpha)]' : 'bg-transparent'}`}
+            onClick={() => onViewDetails(quote.id)}
+        >
+            {/* selection & ID */}
+            <div className="flex items-center gap-4 mb-4 md:mb-0 md:w-48 lg:w-64">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleSelect(quote.id, e); }}
+                    className={`flex-shrink-0 transition-all ${isSelected ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'}`}
+                >
+                    {isSelected ? <CheckSquare size={22} strokeWidth={2.5} /> : <Square size={22} strokeWidth={2} />}
+                </button>
+
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onViewCustomer(quote.customerId); }}
-                            className="font-black text-secondary dark:text-white uppercase tracking-tighter text-lg hover:text-primary transition-colors text-left truncate max-w-[120px] md:max-w-none"
-                        >
-                            {quote.customer?.name ? (quote.customer.name.length > 18 ? quote.customer.name.slice(0, 18) + '...' : quote.customer.name) : 'Cliente'}
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onViewDetails(quote.id); }}
-                            className="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest hover:bg-secondary dark:hover:bg-gray-600 hover:text-white transition-colors"
-                        >
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onViewCustomer(quote.customerId); }}
+                        className="font-[var(--font-weight-black)] text-[var(--color-text-primary)] uppercase tracking-tight text-base hover:text-[var(--color-accent-primary)] transition-colors text-left truncate"
+                    >
+                        {quote.customer?.name || 'Cliente'}
+                    </button>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest">
                             OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
-                        </button>
+                        </span>
+                        {quote.pet && (
+                            <Badge variant="surface" size="sm" className="bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] border-transparent leading-none py-0.5 px-1.5 h-auto font-bold">
+                                {quote.pet.name}
+                            </Badge>
+                        )}
                     </div>
-                    {quote.pet && (
-                        <span className="text-[10px] font-black text-primary bg-primary/5 dark:bg-primary/10 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
-                            Pet: {quote.pet.name || 'Desconhecido'}
-                        </span>
-                    )}
                 </div>
-            </td>
-            <td className="px-8 py-6 text-center">
-                <div className="flex flex-col gap-1 items-center">
-                    <div className="flex flex-col items-center">
-                        <span className="text-[11px] font-black text-secondary dark:text-white uppercase tracking-widest">
-                            {quote.desiredAt ? new Date(quote.desiredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Sem data'}
-                        </span>
-                        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">Criado em {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('pt-BR') : '-'}</span>
-                    </div>
-                    {quote.type && (
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-[0.1em] ${quote.type === 'SPA' ? 'bg-blue-100 text-blue-600' : quote.type === 'TRANSPORTE' ? 'bg-orange-100 text-orange-600' : 'bg-purple-100 text-purple-600'}`}>
-                            {quote.type.replace('_', ' ')}
-                        </span>
-                    )}
+            </div>
+
+            {/* Date & Type */}
+            <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-center md:flex-1 mb-4 md:mb-0 text-center">
+                <div className="flex flex-col items-start md:items-center">
+                    <span className="text-[11px] font-[var(--font-weight-black)] text-[var(--color-text-primary)] uppercase tracking-widest">
+                        {quote.desiredAt ? new Date(quote.desiredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Sem data'}
+                    </span>
+                    <span className="text-[9px] font-bold text-[var(--color-text-tertiary)]">
+                        {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('pt-BR') : '-'}
+                    </span>
                 </div>
-            </td>
-            <td className="px-8 py-6 text-center">
+                {quote.type && (
+                    <Badge
+                        variant="surface"
+                        size="sm"
+                        className={`mt-1 font-[var(--font-weight-black)] text-[9px] uppercase tracking-wider ${quote.type === 'SPA' ? 'text-blue-500' : quote.type === 'TRANSPORTE' ? 'text-orange-500' : 'text-purple-500'}`}
+                    >
+                        {quote.type.replace('_', ' ')}
+                    </Badge>
+                )}
+            </div>
+
+            {/* Status */}
+            <div className="flex justify-between md:justify-center items-center md:w-32 lg:w-40 mb-4 md:mb-0">
+                <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest md:hidden">Status</span>
                 {quote.status === 'AGENDADO' && quote.appointments && quote.appointments.length > 0 ? (
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onViewAppointment(quote);
-                        }}
-                        className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getQuoteStatusColor(quote.status)} hover:ring-2 hover:ring-offset-2 hover:ring-green-500 transition-all cursor-pointer`}
+                        onClick={(e) => { e.stopPropagation(); onViewAppointment(quote); }}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest ${getQuoteStatusColor(quote.status)} hover:ring-2 hover:ring-[var(--color-accent-primary-alpha)] transition-all cursor-pointer`}
                     >
                         {quote.status}
                     </button>
                 ) : (
-                    <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getQuoteStatusColor(quote.status)}`}>
+                    <Badge
+                        variant="surface"
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest ${getQuoteStatusColor(quote.status)}`}
+                    >
                         {quote.status}
-                    </span>
+                    </Badge>
                 )}
-            </td>
-            <td className="px-8 py-6 text-right font-black text-secondary dark:text-white text-lg">
-                R$ {(quote.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </td>
-            <td className="px-8 py-6 text-right">
-                <div className="flex justify-end gap-2">
-                    {view === 'trash' ? (
-                        <>
-                            <button
-                                onClick={() => onRestore(quote.id)}
-                                className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-500 rounded-xl transition-all"
-                                title="Restaurar"
+            </div>
+
+            {/* Total */}
+            <div className="flex justify-between md:justify-end items-center md:w-32 lg:w-40 mb-4 md:mb-0">
+                <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest md:hidden">Valor</span>
+                <span className="font-[var(--font-weight-black)] text-[var(--color-text-primary)] text-lg">
+                    R$ {(quote.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-1 md:w-48 lg:w-56" onClick={e => e.stopPropagation()}>
+                {view === 'trash' ? (
+                    <>
+                        <IconButton icon={RefreshCcw} onClick={() => onRestore(quote.id)} variant="surface" size="sm" className="text-green-500" aria-label="Restaurar" />
+                        <IconButton icon={Trash2} onClick={() => onPermanentDelete(quote.id)} variant="surface" size="sm" className="text-red-500" aria-label="Excluir Permanente" />
+                    </>
+                ) : view === 'history' ? (
+                    <>
+                        <IconButton icon={Copy} onClick={() => onDuplicate(quote.id)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 hidden md:flex" aria-label="Duplicar" />
+                        <Button
+                            onClick={() => onReactivate(quote.id)}
+                            variant="surface"
+                            size="sm"
+                            className="text-green-600 font-[var(--font-weight-black)] text-[10px] py-1 px-3 h-9"
+                            icon={RefreshCcw}
+                        >
+                            REATIVAR
+                        </Button>
+                        <IconButton icon={Edit} onClick={() => onViewDetails(quote.id)} variant="surface" size="sm" aria-label="Editar" />
+                    </>
+                ) : (
+                    <>
+                        <IconButton icon={Copy} onClick={() => onDuplicate(quote.id)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 hidden md:flex" aria-label="Duplicar" />
+                        <IconButton icon={Share2} onClick={() => onShare(quote)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 text-green-600 hidden md:flex" aria-label="Compartilhar" />
+                        <IconButton icon={Trash2} onClick={() => onDelete(quote.id)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 text-red-500 hidden md:flex" aria-label="Mover para Lixeira" />
+                        <IconButton icon={Edit} onClick={() => onViewDetails(quote.id)} variant="surface" size="sm" aria-label="Editar" />
+                        {quote.status === 'APROVADO' && (
+                            <Button
+                                onClick={(e) => { e.stopPropagation(); onSchedule(quote); }}
+                                variant="primary"
+                                size="sm"
+                                className="h-9 px-3 font-[var(--font-weight-black)] text-[10px]"
+                                icon={Calendar}
                             >
-                                <RefreshCcw size={18} />
-                            </button>
-                            <button onClick={() => onPermanentDelete(quote.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-xl transition-all" title="Excluir Permanente"><Trash2 size={18} /></button>
-                        </>
-                    ) : view === 'history' ? (
-                        <>
-                            <button onClick={() => onDuplicate(quote.id)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Duplicar Orçamento"><Copy size={18} /></button>
-                            <button
-                                onClick={() => onReactivate(quote.id)}
-                                className="px-3 py-2 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 rounded-xl transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-2"
-                                title="Reativar Orçamento"
-                            >
-                                <RefreshCcw size={14} /> Reativar
-                            </button>
-                            <button onClick={() => onViewDetails(quote.id)} className="p-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-secondary dark:text-white rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
-                        </>
-                    ) : (
-                        <>
-                            <button onClick={() => onDuplicate(quote.id)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Duplicar"><Copy size={18} /></button>
-                            <button onClick={() => onShare(quote)} className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Compartilhar no WhatsApp"><Share2 size={18} /></button>
-                            <button onClick={() => onDelete(quote.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100" title="Mover para Lixeira"><Trash2 size={18} /></button>
-                            <button onClick={() => onViewDetails(quote.id)} className="p-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-secondary dark:text-white rounded-xl transition-all" title="Ver Detalhes"><Edit size={18} /></button>
-                            {quote.status === 'APROVADO' && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onSchedule(quote); }}
-                                    className="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-2"
-                                    title="Agendar Agora"
-                                >
-                                    <Calendar size={14} /> Agendar
-                                </button>
-                            )}
-                        </>
-                    )}
-                </div>
-            </td>
-        </tr>
+                                AGENDAR
+                            </Button>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
     );
 });
 

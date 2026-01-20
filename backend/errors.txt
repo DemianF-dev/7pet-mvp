@@ -1,9 +1,214 @@
-
-[41m                                                                               [0m
-[41m[37m                This is not the tsc command you are looking for                [0m
-[41m                                                                               [0m
-
-To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
-
-- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
-- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+src/controllers/appreciationController.ts(19,13): error TS2322: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; badgeType: any; senderId: any; receiverId: any; comment: any; }' is not assignable to type '(Without<AppreciationCreateInput, AppreciationUncheckedCreateInput> & AppreciationUncheckedCreateInput) | (Without<...> & AppreciationCreateInput)'.
+  Type '{ id: `${string}-${string}-${string}-${string}-${string}`; badgeType: any; senderId: any; receiverId: any; comment: any; }' is not assignable to type 'Without<AppreciationUncheckedCreateInput, AppreciationCreateInput> & AppreciationCreateInput'.
+    Type '{ id: `${string}-${string}-${string}-${string}-${string}`; badgeType: any; senderId: any; receiverId: any; comment: any; }' is not assignable to type 'Without<AppreciationUncheckedCreateInput, AppreciationCreateInput>'.
+      Types of property 'senderId' are incompatible.
+        Type 'any' is not assignable to type 'never'.
+src/controllers/appreciationController.ts(38,84): error TS2551: Property 'sender' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; badgeType: string; senderId: string; receiverId: string; comment: string; }'. Did you mean 'senderId'?
+src/controllers/appreciationController.ts(45,54): error TS2551: Property 'receiver' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; badgeType: string; senderId: string; receiverId: string; comment: string; }'. Did you mean 'receiverId'?
+src/controllers/appreciationController.ts(45,184): error TS2551: Property 'sender' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; badgeType: string; senderId: string; receiverId: string; comment: string; }'. Did you mean 'senderId'?
+src/controllers/appreciationController.ts(47,13): error TS2322: Type '{ content: string; authorId: any; attachments: undefined[]; }' is not assignable to type '(Without<PostCreateInput, PostUncheckedCreateInput> & PostUncheckedCreateInput) | (Without<...> & PostCreateInput)'.
+  Type '{ content: string; authorId: any; attachments: undefined[]; }' is not assignable to type 'Without<PostUncheckedCreateInput, PostCreateInput> & PostCreateInput'.
+    Type '{ content: string; authorId: any; attachments: undefined[]; }' is not assignable to type 'Without<PostUncheckedCreateInput, PostCreateInput>'.
+      Types of property 'authorId' are incompatible.
+        Type 'any' is not assignable to type 'never'.
+src/controllers/customerController.ts(174,17): error TS2322: Type '{ userId: string; type: any; title: string; message: string; relatedId: string; priority: any; }[]' is not assignable to type 'NotificationCreateManyInput | NotificationCreateManyInput[]'.
+  Type '{ userId: string; type: any; title: string; message: string; relatedId: string; priority: any; }[]' is not assignable to type 'NotificationCreateManyInput[]'.
+    Property 'id' is missing in type '{ userId: string; type: any; title: string; message: string; relatedId: string; priority: any; }' but required in type 'NotificationCreateManyInput'.
+src/controllers/customerController.ts(564,21): error TS2345: Argument of type 'Omit<PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>, "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends">' is not assignable to parameter of type 'boolean'.
+src/controllers/customerController.ts(842,17): error TS2322: Type '{ customerId: string; type: any; title: any; message: any; createdBy: any; }' is not assignable to type '(Without<CustomerAlertCreateInput, CustomerAlertUncheckedCreateInput> & CustomerAlertUncheckedCreateInput) | (Without<...> & CustomerAlertCreateInput)'.
+  Type '{ customerId: string; type: any; title: any; message: any; createdBy: any; }' is not assignable to type 'Without<CustomerAlertUncheckedCreateInput, CustomerAlertCreateInput> & CustomerAlertCreateInput'.
+    Type '{ customerId: string; type: any; title: any; message: any; createdBy: any; }' is not assignable to type 'Without<CustomerAlertUncheckedCreateInput, CustomerAlertCreateInput>'.
+      Types of property 'customerId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/controllers/feedController.ts(38,13): error TS2322: Type '{ content: any; attachments: any; authorId: any; }' is not assignable to type '(Without<PostCreateInput, PostUncheckedCreateInput> & PostUncheckedCreateInput) | (Without<...> & PostCreateInput)'.
+  Type '{ content: any; attachments: any; authorId: any; }' is not assignable to type 'Without<PostUncheckedCreateInput, PostCreateInput> & PostCreateInput'.
+    Type '{ content: any; attachments: any; authorId: any; }' is not assignable to type 'Without<PostUncheckedCreateInput, PostCreateInput>'.
+      Types of property 'authorId' are incompatible.
+        Type 'any' is not assignable to type 'never'.
+src/controllers/feedController.ts(115,17): error TS2322: Type '{ postId: string; authorId: any; type: any; }' is not assignable to type '(Without<ReactionCreateInput, ReactionUncheckedCreateInput> & ReactionUncheckedCreateInput) | (Without<...> & ReactionCreateInput)'.
+  Type '{ postId: string; authorId: any; type: any; }' is not assignable to type 'Without<ReactionUncheckedCreateInput, ReactionCreateInput> & ReactionCreateInput'.
+    Type '{ postId: string; authorId: any; type: any; }' is not assignable to type 'Without<ReactionUncheckedCreateInput, ReactionCreateInput>'.
+      Types of property 'authorId' are incompatible.
+        Type 'any' is not assignable to type 'never'.
+src/controllers/managementController.ts(404,28): error TS2554: Expected 5-8 arguments, but got 2.
+src/controllers/managementController.ts(513,28): error TS2554: Expected 5-8 arguments, but got 2.
+src/controllers/managementController.ts(648,28): error TS2554: Expected 5-8 arguments, but got 2.
+src/controllers/managementController.ts(703,28): error TS2554: Expected 5-8 arguments, but got 2.
+src/controllers/managementController.ts(856,28): error TS2554: Expected 5-8 arguments, but got 2.
+src/controllers/marketingController.ts(77,17): error TS2353: Object literal may only specify known properties, and 'priority' does not exist in type '{ title: string; body: string; type: string; referenceId?: string; icon?: string; data?: any; }'.
+src/controllers/notificationSettingsController.ts(91,13): error TS2322: Type '{ userId: string; notificationType: string; enabled: any; channels: string; }' is not assignable to type '(Without<UserNotificationPreferenceCreateInput, UserNotificationPreferenceUncheckedCreateInput> & UserNotificationPreferenceUncheckedCreateInput) | (Without<...> & UserNotificationPreferenceCreateInput)'.
+  Type '{ userId: string; notificationType: string; enabled: any; channels: string; }' is not assignable to type 'Without<UserNotificationPreferenceUncheckedCreateInput, UserNotificationPreferenceCreateInput> & UserNotificationPreferenceCreateInput'.
+    Type '{ userId: string; notificationType: string; enabled: any; channels: string; }' is not assignable to type 'Without<UserNotificationPreferenceUncheckedCreateInput, UserNotificationPreferenceCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/controllers/notificationSettingsController.ts(131,17): error TS2322: Type '{ userId: any; notificationType: any; enabled: any; channels: string; }' is not assignable to type '(Without<UserNotificationPreferenceCreateInput, UserNotificationPreferenceUncheckedCreateInput> & UserNotificationPreferenceUncheckedCreateInput) | (Without<...> & UserNotificationPreferenceCreateInput)'.
+  Type '{ userId: any; notificationType: any; enabled: any; channels: string; }' is not assignable to type 'Without<UserNotificationPreferenceUncheckedCreateInput, UserNotificationPreferenceCreateInput> & UserNotificationPreferenceCreateInput'.
+    Type '{ userId: any; notificationType: any; enabled: any; channels: string; }' is not assignable to type 'Without<UserNotificationPreferenceUncheckedCreateInput, UserNotificationPreferenceCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'any' is not assignable to type 'never'.
+src/controllers/notificationSettingsController.ts(234,17): error TS2322: Type '{ OR?: ({ name: { contains: string; mode: string; }; email?: undefined; } | { email: { contains: string; mode: string; }; name?: undefined; })[]; division?: string; role?: string; deletedAt: any; active: boolean; }' is not assignable to type 'UserWhereInput'.
+  Types of property 'OR' are incompatible.
+    Type '({ name: { contains: string; mode: string; }; email?: undefined; } | { email: { contains: string; mode: string; }; name?: undefined; })[]' is not assignable to type 'UserWhereInput[]'.
+      Type '{ name: { contains: string; mode: string; }; email?: undefined; } | { email: { contains: string; mode: string; }; name?: undefined; }' is not assignable to type 'UserWhereInput'.
+        Type '{ name: { contains: string; mode: string; }; email?: undefined; }' is not assignable to type 'UserWhereInput'.
+          Types of property 'name' are incompatible.
+            Type '{ contains: string; mode: string; }' is not assignable to type 'string | StringNullableFilter<"User">'.
+              Type '{ contains: string; mode: string; }' is not assignable to type 'StringNullableFilter<"User">'.
+                Types of property 'mode' are incompatible.
+                  Type 'string' is not assignable to type 'QueryMode'.
+src/controllers/notificationSettingsController.ts(256,33): error TS2322: Type '{ OR?: ({ name: { contains: string; mode: string; }; email?: undefined; } | { email: { contains: string; mode: string; }; name?: undefined; })[]; division?: string; role?: string; deletedAt: any; active: boolean; }' is not assignable to type 'UserWhereInput'.
+  Types of property 'OR' are incompatible.
+    Type '({ name: { contains: string; mode: string; }; email?: undefined; } | { email: { contains: string; mode: string; }; name?: undefined; })[]' is not assignable to type 'UserWhereInput[]'.
+      Type '{ name: { contains: string; mode: string; }; email?: undefined; } | { email: { contains: string; mode: string; }; name?: undefined; }' is not assignable to type 'UserWhereInput'.
+        Type '{ name: { contains: string; mode: string; }; email?: undefined; }' is not assignable to type 'UserWhereInput'.
+          Types of property 'name' are incompatible.
+            Type '{ contains: string; mode: string; }' is not assignable to type 'string | StringNullableFilter<"User">'.
+              Type '{ contains: string; mode: string; }' is not assignable to type 'StringNullableFilter<"User">'.
+                Types of property 'mode' are incompatible.
+                  Type 'string' is not assignable to type 'QueryMode'.
+src/controllers/quoteController.ts(1035,62): error TS2304: Cannot find name 'id'.
+src/controllers/quoteController.ts(1037,33): error TS2304: Cannot find name 'address'.
+src/controllers/quoteController.ts(1037,50): error TS2304: Cannot find name 'destinationAddress'.
+src/controllers/quoteController.ts(1327,11): error TS2300: Duplicate identifier 'calculateTransport'.
+src/controllers/staffController.ts(313,52): error TS2339: Property 'startedAt' does not exist on type '{ origin: string; id: string; status: string; type: string; appointmentId: string; destination: string; requestedPeriod: TransportPeriod; confirmedTime: Date; }'.
+src/measure-perf-opt.ts(29,65): error TS2353: Object literal may only specify known properties, and 'transport' does not exist in type 'AppointmentSelect<DefaultArgs>'.
+src/routes/invoiceRoutes.ts(47,9): error TS2322: Type '{ customerId: any; amount: any; dueDate: Date; quotes: { connect: any; }; appointmentId: any; }' is not assignable to type '(Without<InvoiceCreateInput, InvoiceUncheckedCreateInput> & InvoiceUncheckedCreateInput) | (Without<...> & InvoiceCreateInput)'.
+  Type '{ customerId: any; amount: any; dueDate: Date; quotes: { connect: any; }; appointmentId: any; }' is not assignable to type 'Without<InvoiceUncheckedCreateInput, InvoiceCreateInput> & InvoiceCreateInput'.
+    Type '{ customerId: any; amount: any; dueDate: Date; quotes: { connect: any; }; appointmentId: any; }' is not assignable to type 'Without<InvoiceUncheckedCreateInput, InvoiceCreateInput>'.
+      Types of property 'customerId' are incompatible.
+        Type 'any' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(67,13): error TS2322: Type '{ invoiceId: string; amount: number; method: any; }' is not assignable to type '(Without<PaymentRecordCreateInput, PaymentRecordUncheckedCreateInput> & PaymentRecordUncheckedCreateInput) | (Without<...> & PaymentRecordCreateInput)'.
+  Type '{ invoiceId: string; amount: number; method: any; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput> & PaymentRecordCreateInput'.
+    Type '{ invoiceId: string; amount: number; method: any; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput>'.
+      Types of property 'invoiceId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(91,21): error TS2322: Type '{ invoiceId: string; amount: number; method: string; }' is not assignable to type '(Without<PaymentRecordCreateInput, PaymentRecordUncheckedCreateInput> & PaymentRecordUncheckedCreateInput) | (Without<...> & PaymentRecordCreateInput)'.
+  Type '{ invoiceId: string; amount: number; method: string; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput> & PaymentRecordCreateInput'.
+    Type '{ invoiceId: string; amount: number; method: string; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput>'.
+      Types of property 'invoiceId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(123,17): error TS2322: Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type '(Without<NotificationCreateInput, NotificationUncheckedCreateInput> & NotificationUncheckedCreateInput) | (Without<...> & NotificationCreateInput)'.
+  Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput> & NotificationCreateInput'.
+    Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(146,21): error TS2322: Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type '(Without<NotificationCreateInput, NotificationUncheckedCreateInput> & NotificationUncheckedCreateInput) | (Without<...> & NotificationCreateInput)'.
+  Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput> & NotificationCreateInput'.
+    Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(193,21): error TS2322: Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type '(Without<NotificationCreateInput, NotificationUncheckedCreateInput> & NotificationUncheckedCreateInput) | (Without<...> & NotificationCreateInput)'.
+  Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput> & NotificationCreateInput'.
+    Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(377,13): error TS2322: Type '{ customerId: string; amount: number; dueDate: Date; quotes: { connect: { id: any; }[]; }; appointmentId: string; status: "PENDENTE"; }' is not assignable to type '(Without<InvoiceCreateInput, InvoiceUncheckedCreateInput> & InvoiceUncheckedCreateInput) | (Without<...> & InvoiceCreateInput)'.
+  Type '{ customerId: string; amount: number; dueDate: Date; quotes: { connect: { id: any; }[]; }; appointmentId: string; status: "PENDENTE"; }' is not assignable to type 'Without<InvoiceUncheckedCreateInput, InvoiceCreateInput> & InvoiceCreateInput'.
+    Type '{ customerId: string; amount: number; dueDate: Date; quotes: { connect: { id: any; }[]; }; appointmentId: string; status: "PENDENTE"; }' is not assignable to type 'Without<InvoiceUncheckedCreateInput, InvoiceCreateInput>'.
+      Types of property 'customerId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(408,13): error TS2322: Type '{ invoiceId: string; amount: number; method: any; }' is not assignable to type '(Without<PaymentRecordCreateInput, PaymentRecordUncheckedCreateInput> & PaymentRecordUncheckedCreateInput) | (Without<...> & PaymentRecordCreateInput)'.
+  Type '{ invoiceId: string; amount: number; method: any; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput> & PaymentRecordCreateInput'.
+    Type '{ invoiceId: string; amount: number; method: any; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput>'.
+      Types of property 'invoiceId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(430,21): error TS2322: Type '{ invoiceId: string; amount: number; method: string; }' is not assignable to type '(Without<PaymentRecordCreateInput, PaymentRecordUncheckedCreateInput> & PaymentRecordUncheckedCreateInput) | (Without<...> & PaymentRecordCreateInput)'.
+  Type '{ invoiceId: string; amount: number; method: string; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput> & PaymentRecordCreateInput'.
+    Type '{ invoiceId: string; amount: number; method: string; }' is not assignable to type 'Without<PaymentRecordUncheckedCreateInput, PaymentRecordCreateInput>'.
+      Types of property 'invoiceId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/routes/invoiceRoutes.ts(596,17): error TS2322: Type '{ customerId: string; amount: number; dueDate: Date; status: "PENDENTE"; quotes: { connect: { id: string; }[]; }; }' is not assignable to type '(Without<InvoiceCreateInput, InvoiceUncheckedCreateInput> & InvoiceUncheckedCreateInput) | (Without<...> & InvoiceCreateInput)'.
+  Type '{ customerId: string; amount: number; dueDate: Date; status: "PENDENTE"; quotes: { connect: { id: string; }[]; }; }' is not assignable to type 'Without<InvoiceUncheckedCreateInput, InvoiceCreateInput> & InvoiceCreateInput'.
+    Type '{ customerId: string; amount: number; dueDate: Date; status: "PENDENTE"; quotes: { connect: { id: string; }[]; }; }' is not assignable to type 'Without<InvoiceUncheckedCreateInput, InvoiceCreateInput>'.
+      Types of property 'customerId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/scripts/debug_client_quotes_v3.ts(40,25): error TS2322: Type '{ description: string; quantity: number; price: number; }' is not assignable to type '(Without<QuoteItemCreateWithoutQuoteInput, QuoteItemUncheckedCreateWithoutQuoteInput> & QuoteItemUncheckedCreateWithoutQuoteInput) | (Without<...> & QuoteItemCreateWithoutQuoteInput) | QuoteItemCreateWithoutQuoteInput[] | QuoteItemUncheckedCreateWithoutQuoteInput[]'.
+  Type '{ description: string; quantity: number; price: number; }' is not assignable to type 'Without<QuoteItemCreateWithoutQuoteInput, QuoteItemUncheckedCreateWithoutQuoteInput> & QuoteItemUncheckedCreateWithoutQuoteInput'.
+    Property 'id' is missing in type '{ description: string; quantity: number; price: number; }' but required in type 'QuoteItemUncheckedCreateWithoutQuoteInput'.
+src/scripts/debug_client_quotes_v3.ts(43,25): error TS2322: Type '{ oldStatus: string; newStatus: string; changedBy: string; }' is not assignable to type '(Without<StatusHistoryCreateWithoutQuoteInput, StatusHistoryUncheckedCreateWithoutQuoteInput> & StatusHistoryUncheckedCreateWithoutQuoteInput) | (Without<...> & StatusHistoryCreateWithoutQuoteInput) | StatusHistoryCreateWithoutQuoteInput[] | StatusHistoryUncheckedCreateWithoutQuoteInput[]'.
+  Type '{ oldStatus: string; newStatus: string; changedBy: string; }' is not assignable to type 'Without<StatusHistoryCreateWithoutQuoteInput, StatusHistoryUncheckedCreateWithoutQuoteInput> & StatusHistoryUncheckedCreateWithoutQuoteInput'.
+    Property 'id' is missing in type '{ oldStatus: string; newStatus: string; changedBy: string; }' but required in type 'StatusHistoryUncheckedCreateWithoutQuoteInput'.
+src/services/appointmentService.ts(3,10): error TS2305: Module '"./auditService"' has no exported member 'auditService'.
+src/services/appointmentService.ts(85,13): error TS2322: Type '{ create: { origin: string; destination: string; requestedPeriod: $Enums.TransportPeriod; }; }' is not assignable to type 'TransportDetailsUncheckedCreateNestedOneWithoutAppointmentInput | TransportDetailsCreateNestedOneWithoutAppointmentInput'.
+  Types of property 'create' are incompatible.
+    Type '{ origin: string; destination: string; requestedPeriod: $Enums.TransportPeriod; }' is not assignable to type '(Without<TransportDetailsCreateWithoutAppointmentInput, TransportDetailsUncheckedCreateWithoutAppointmentInput> & TransportDetailsUncheckedCreateWithoutAppointmentInput) | (Without<...> & TransportDetailsCreateWithoutAppointmentInput)'.
+      Type '{ origin: string; destination: string; requestedPeriod: $Enums.TransportPeriod; }' is not assignable to type 'Without<TransportDetailsUncheckedCreateWithoutAppointmentInput, TransportDetailsCreateWithoutAppointmentInput> & TransportDetailsCreateWithoutAppointmentInput'.
+        Property 'id' is missing in type '{ origin: string; destination: string; requestedPeriod: $Enums.TransportPeriod; }' but required in type 'TransportDetailsCreateWithoutAppointmentInput'.
+src/services/appointmentService.ts(211,13): error TS2322: Type '{ upsert: { create: { origin: any; destination: any; requestedPeriod: any; }; update: { origin: any; destination: any; requestedPeriod: any; }; }; }' is not assignable to type 'TransportDetailsUncheckedUpdateOneWithoutAppointmentNestedInput | TransportDetailsUpdateOneWithoutAppointmentNestedInput'.
+  The types of 'upsert.create' are incompatible between these types.
+    Type '{ origin: any; destination: any; requestedPeriod: any; }' is not assignable to type '(Without<TransportDetailsCreateWithoutAppointmentInput, TransportDetailsUncheckedCreateWithoutAppointmentInput> & TransportDetailsUncheckedCreateWithoutAppointmentInput) | (Without<...> & TransportDetailsCreateWithoutAppointmentInput)'.
+      Type '{ origin: any; destination: any; requestedPeriod: any; }' is not assignable to type 'Without<TransportDetailsUncheckedCreateWithoutAppointmentInput, TransportDetailsCreateWithoutAppointmentInput> & TransportDetailsCreateWithoutAppointmentInput'.
+        Property 'id' is missing in type '{ origin: any; destination: any; requestedPeriod: any; }' but required in type 'TransportDetailsCreateWithoutAppointmentInput'.
+src/services/appointmentService.ts(542,17): error TS2322: Type '{ oldStatus: "ENCERRADO" | "FATURAR" | "SOLICITADO" | "EM_PRODUCAO" | "CALCULADO" | "ENVIADO" | "APROVADO" | "REJEITADO" | "AGENDAR" | "RASCUNHO"; newStatus: string; changedBy: string; reason: string; }' is not assignable to type '(Without<StatusHistoryCreateWithoutQuoteInput, StatusHistoryUncheckedCreateWithoutQuoteInput> & StatusHistoryUncheckedCreateWithoutQuoteInput) | (Without<...> & StatusHistoryCreateWithoutQuoteInput) | StatusHistoryCreateWithoutQuoteInput[] | StatusHistoryUncheckedCreateWithoutQuoteInput[]'.
+  Type '{ oldStatus: "ENCERRADO" | "FATURAR" | "SOLICITADO" | "EM_PRODUCAO" | "CALCULADO" | "ENVIADO" | "APROVADO" | "REJEITADO" | "AGENDAR" | "RASCUNHO"; newStatus: string; changedBy: string; reason: string; }' is not assignable to type 'Without<StatusHistoryCreateWithoutQuoteInput, StatusHistoryUncheckedCreateWithoutQuoteInput> & StatusHistoryUncheckedCreateWithoutQuoteInput'.
+    Property 'id' is missing in type '{ oldStatus: "ENCERRADO" | "FATURAR" | "SOLICITADO" | "EM_PRODUCAO" | "CALCULADO" | "ENVIADO" | "APROVADO" | "REJEITADO" | "AGENDAR" | "RASCUNHO"; newStatus: string; changedBy: string; reason: string; }' but required in type 'StatusHistoryUncheckedCreateWithoutQuoteInput'.
+src/services/auditService.ts(268,78): error TS2353: Object literal may only specify known properties, and 'deletedAt' does not exist in type '(Without<PetUpdateInput, PetUncheckedUpdateInput> & PetUncheckedUpdateInput) | (Without<PetUncheckedUpdateInput, PetUpdateInput> & PetUpdateInput)'.
+src/services/authService.ts(414,13): error TS2322: Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type '(Without<NotificationCreateInput, NotificationUncheckedCreateInput> & NotificationUncheckedCreateInput) | (Without<...> & NotificationCreateInput)'.
+  Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput> & NotificationCreateInput'.
+    Type '{ userId: string; title: string; message: string; type: string; }' is not assignable to type 'Without<NotificationUncheckedCreateInput, NotificationCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/services/financialService.ts(27,9): error TS2322: Type '{ description: string; category?: "QUOTE" | "PAYMENT" | "ADJUSTMENT" | "DISCOUNT" | "PENALTY"; relatedQuoteId?: string; relatedInvoiceId?: string; notes?: string; customerId: string; type: "DEBIT" | "CREDIT"; amount: number; createdBy: string; }' is not assignable to type '(Without<FinancialTransactionCreateInput, FinancialTransactionUncheckedCreateInput> & FinancialTransactionUncheckedCreateInput) | (Without<...> & FinancialTransactionCreateInput)'.
+  Type '{ description: string; category?: "QUOTE" | "PAYMENT" | "ADJUSTMENT" | "DISCOUNT" | "PENALTY"; relatedQuoteId?: string; relatedInvoiceId?: string; notes?: string; customerId: string; type: "DEBIT" | "CREDIT"; amount: number; createdBy: string; }' is not assignable to type 'Without<FinancialTransactionUncheckedCreateInput, FinancialTransactionCreateInput> & FinancialTransactionCreateInput'.
+    Type '{ description: string; category?: "QUOTE" | "PAYMENT" | "ADJUSTMENT" | "DISCOUNT" | "PENALTY"; relatedQuoteId?: string; relatedInvoiceId?: string; notes?: string; customerId: string; type: "DEBIT" | "CREDIT"; amount: number; createdBy: string; }' is not assignable to type 'Without<FinancialTransactionUncheckedCreateInput, FinancialTransactionCreateInput>'.
+      Types of property 'customerId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/services/hrService.ts(193,9): error TS2322: Type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: { reason: string; changes: { status?: string; checkInAt?: Date; checkOutAt?: Date; notes?: string; }; }; }' is not assignable to type '(Without<HrAuditLogCreateInput, HrAuditLogUncheckedCreateInput> & HrAuditLogUncheckedCreateInput) | (Without<...> & HrAuditLogCreateInput)'.
+  Type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: { reason: string; changes: { status?: string; checkInAt?: Date; checkOutAt?: Date; notes?: string; }; }; }' is not assignable to type 'Without<HrAuditLogUncheckedCreateInput, HrAuditLogCreateInput> & HrAuditLogCreateInput'.
+    Property 'id' is missing in type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: { reason: string; changes: { status?: string; checkInAt?: Date; checkOutAt?: Date; notes?: string; }; }; }' but required in type 'HrAuditLogCreateInput'.
+src/services/hrService.ts(338,9): error TS2322: Type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: {}; }' is not assignable to type '(Without<HrAuditLogCreateInput, HrAuditLogUncheckedCreateInput> & HrAuditLogUncheckedCreateInput) | (Without<...> & HrAuditLogCreateInput)'.
+  Type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: {}; }' is not assignable to type 'Without<HrAuditLogUncheckedCreateInput, HrAuditLogCreateInput> & HrAuditLogCreateInput'.
+    Property 'id' is missing in type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: {}; }' but required in type 'HrAuditLogCreateInput'.
+src/services/hrService.ts(364,9): error TS2322: Type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: { reason: string; }; }' is not assignable to type '(Without<HrAuditLogCreateInput, HrAuditLogUncheckedCreateInput> & HrAuditLogUncheckedCreateInput) | (Without<...> & HrAuditLogCreateInput)'.
+  Type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: { reason: string; }; }' is not assignable to type 'Without<HrAuditLogUncheckedCreateInput, HrAuditLogCreateInput> & HrAuditLogCreateInput'.
+    Property 'id' is missing in type '{ actorUserId: string; action: string; entityType: string; entityId: string; metaJson: { reason: string; }; }' but required in type 'HrAuditLogCreateInput'.
+src/services/hrService.ts(600,298): error TS2339: Property 'pet' does not exist on type '{ quote: { items: { description: string; id: string; performerId: string; quoteId: string; quantity: number; price: number; serviceId: string; discount: number; productId: string; }[]; } & { id: string; ... 34 more ...; taxPercent: number; }; } & { ...; }'.
+src/services/hrService.ts(600,337): error TS2551: Property 'customer' does not exist on type '{ quote: { items: { description: string; id: string; performerId: string; quoteId: string; quantity: number; price: number; serviceId: string; discount: number; productId: string; }[]; } & { id: string; ... 34 more ...; taxPercent: number; }; } & { ...; }'. Did you mean 'customerId'?
+src/services/hrService.ts(620,43): error TS2339: Property 'pet' does not exist on type '{ quote: { items: { description: string; id: string; performerId: string; quoteId: string; quantity: number; price: number; serviceId: string; discount: number; productId: string; }[]; } & { id: string; ... 34 more ...; taxPercent: number; }; } & { ...; }'.
+src/services/hrService.ts(621,48): error TS2551: Property 'customer' does not exist on type '{ quote: { items: { description: string; id: string; performerId: string; quoteId: string; quantity: number; price: number; serviceId: string; discount: number; productId: string; }[]; } & { id: string; ... 34 more ...; taxPercent: number; }; } & { ...; }'. Did you mean 'customerId'?
+src/services/metricsService.ts(103,17): error TS2322: Type '{ type: string; data: any; timestamp: Date; }' is not assignable to type '(Without<MetricCreateInput, MetricUncheckedCreateInput> & MetricUncheckedCreateInput) | (Without<...> & MetricCreateInput)'.
+  Type '{ type: string; data: any; timestamp: Date; }' is not assignable to type 'Without<MetricUncheckedCreateInput, MetricCreateInput> & MetricCreateInput'.
+    Property 'id' is missing in type '{ type: string; data: any; timestamp: Date; }' but required in type 'MetricCreateInput'.
+src/services/notificationSettingsService.ts(136,17): error TS2322: Type '{ userId: string; notificationType: string; enabled: true; channels: string; }' is not assignable to type '(Without<UserNotificationPreferenceCreateInput, UserNotificationPreferenceUncheckedCreateInput> & UserNotificationPreferenceUncheckedCreateInput) | (Without<...> & UserNotificationPreferenceCreateInput)'.
+  Type '{ userId: string; notificationType: string; enabled: true; channels: string; }' is not assignable to type 'Without<UserNotificationPreferenceUncheckedCreateInput, UserNotificationPreferenceCreateInput> & UserNotificationPreferenceCreateInput'.
+    Type '{ userId: string; notificationType: string; enabled: true; channels: string; }' is not assignable to type 'Without<UserNotificationPreferenceUncheckedCreateInput, UserNotificationPreferenceCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+src/services/packageService.ts(197,13): error TS2322: Type '"PACKAGE"' is not assignable to type '"PET" | "QUOTE" | "APPOINTMENT" | "USER" | "CUSTOMER" | "INVOICE"'.
+src/services/packageService.ts(220,33): error TS2561: Object literal may only specify known properties, but 'service' does not exist in type 'PackageItemInclude<DefaultArgs>'. Did you mean to write 'Service'?
+src/services/packageService.ts(273,13): error TS2322: Type '"PACKAGE"' is not assignable to type '"PET" | "QUOTE" | "APPOINTMENT" | "USER" | "CUSTOMER" | "INVOICE"'.
+src/services/packageService.ts(275,13): error TS2322: Type '"UPDATE_STATUS"' is not assignable to type '"DELETE" | "CREATE" | "UPDATE" | "CANCEL" | "CONFIRM" | "CONVERT" | "APPROVE" | "REJECT" | "COMPLETE" | "STATUS_CHANGE" | "DUPLICATE"'.
+src/services/packageService.ts(350,13): error TS2322: Type '"PACKAGE"' is not assignable to type '"PET" | "QUOTE" | "APPOINTMENT" | "USER" | "CUSTOMER" | "INVOICE"'.
+src/services/packageService.ts(352,13): error TS2322: Type '"SCHEDULE_MONTH"' is not assignable to type '"DELETE" | "CREATE" | "UPDATE" | "CANCEL" | "CONFIRM" | "CONVERT" | "APPROVE" | "REJECT" | "COMPLETE" | "STATUS_CHANGE" | "DUPLICATE"'.
+src/services/packageService.ts(481,13): error TS2322: Type '"ADD_SERVICE"' is not assignable to type '"DELETE" | "CREATE" | "UPDATE" | "CANCEL" | "CONFIRM" | "CONVERT" | "APPROVE" | "REJECT" | "COMPLETE" | "STATUS_CHANGE" | "DUPLICATE"'.
+src/services/packageService.ts(507,13): error TS2353: Object literal may only specify known properties, and 'package' does not exist in type 'DebitCreditNoteInclude<DefaultArgs>'.
+src/services/packageService.ts(604,17): error TS2322: Type '{ description: string; quantity: number; price: number; serviceId: string; discount: number; }[]' is not assignable to type '(Without<QuoteItemCreateWithoutQuoteInput, QuoteItemUncheckedCreateWithoutQuoteInput> & QuoteItemUncheckedCreateWithoutQuoteInput) | (Without<...> & QuoteItemCreateWithoutQuoteInput) | QuoteItemCreateWithoutQuoteInput[] | QuoteItemUncheckedCreateWithoutQuoteInput[]'.
+  Type '{ description: string; quantity: number; price: number; serviceId: string; discount: number; }[]' is not assignable to type 'QuoteItemCreateWithoutQuoteInput[]'.
+    Property 'id' is missing in type '{ description: string; quantity: number; price: number; serviceId: string; discount: number; }' but required in type 'QuoteItemCreateWithoutQuoteInput'.
+src/services/timeTrackingService.ts(62,13): error TS2353: Object literal may only specify known properties, and 'breakDuration' does not exist in type '(Without<AttendanceRecordCreateInput, AttendanceRecordUncheckedCreateInput> & AttendanceRecordUncheckedCreateInput) | (Without<...> & AttendanceRecordCreateInput)'.
+src/services/timeTrackingService.ts(114,52): error TS2339: Property 'breakDuration' does not exist on type '{ staff: { user: { name: string; id: string; }; } & { userId: string; id: string; createdAt: Date; updatedAt: Date; address: string; isActive: boolean; birthday: Date; notes: string; ... 23 more ...; hiringDate: Date; }; } & { ...; }'.
+src/services/timeTrackingService.ts(131,13): error TS2353: Object literal may only specify known properties, and 'workDuration' does not exist in type '(Without<AttendanceRecordUpdateInput, AttendanceRecordUncheckedUpdateInput> & AttendanceRecordUncheckedUpdateInput) | (Without<...> & AttendanceRecordUpdateInput)'.
+src/services/timeTrackingService.ts(224,13): error TS2353: Object literal may only specify known properties, and 'adjustedBy' does not exist in type 'AttendanceRecordInclude<DefaultArgs>'.
+src/services/timeTrackingService.ts(231,59): error TS2339: Property 'workDuration' does not exist on type '{ id: string; status: string; createdAt: Date; updatedAt: Date; notes: string; staffId: string; date: Date; checkInAt: Date; checkOutAt: Date; createdById: string; updatedById: string; updateReason: string; }'.
+src/services/timeTrackingService.ts(232,67): error TS2339: Property 'overtimeMinutes' does not exist on type '{ id: string; status: string; createdAt: Date; updatedAt: Date; notes: string; staffId: string; date: Date; checkInAt: Date; checkOutAt: Date; createdById: string; updatedById: string; updateReason: string; }'.
+src/services/timeTrackingService.ts(233,68): error TS2339: Property 'undertimeMinutes' does not exist on type '{ id: string; status: string; createdAt: Date; updatedAt: Date; notes: string; staffId: string; date: Date; checkInAt: Date; checkOutAt: Date; createdById: string; updatedById: string; updateReason: string; }'.
+src/services/timeTrackingService.ts(266,67): error TS2339: Property 'breakDuration' does not exist on type '{ staff: { userId: string; id: string; createdAt: Date; updatedAt: Date; address: string; isActive: boolean; birthday: Date; notes: string; department: string; payModel: string; ... 21 more ...; hiringDate: Date; }; } & { ...; }'.
+src/services/timeTrackingService.ts(286,41): error TS2339: Property 'overtimeMinutes' does not exist on type '{ staff: { userId: string; id: string; createdAt: Date; updatedAt: Date; address: string; isActive: boolean; birthday: Date; notes: string; department: string; payModel: string; ... 21 more ...; hiringDate: Date; }; } & { ...; }'.
+src/services/timeTrackingService.ts(287,42): error TS2339: Property 'undertimeMinutes' does not exist on type '{ staff: { userId: string; id: string; createdAt: Date; updatedAt: Date; address: string; isActive: boolean; birthday: Date; notes: string; department: string; payModel: string; ... 21 more ...; hiringDate: Date; }; } & { ...; }'.
+src/services/timeTrackingService.ts(297,13): error TS2353: Object literal may only specify known properties, and 'breakDuration' does not exist in type '(Without<AttendanceRecordUpdateInput, AttendanceRecordUncheckedUpdateInput> & AttendanceRecordUncheckedUpdateInput) | (Without<...> & AttendanceRecordUpdateInput)'.
+src/services/timeTrackingService.ts(314,13): error TS2353: Object literal may only specify known properties, and 'adjustedBy' does not exist in type 'AttendanceRecordInclude<DefaultArgs>'.
+src/services/timeTrackingService.ts(346,33): error TS2339: Property 'hourBank' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(358,33): error TS2339: Property 'hourBank' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(401,19): error TS2339: Property 'hourBankTransaction' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(431,18): error TS2339: Property 'hourBank' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(437,19): error TS2339: Property 'hourBankTransaction' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(610,39): error TS2339: Property 'hourBankTransaction' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(618,39): error TS2339: Property 'hourBank' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(620,26): error TS2339: Property 'hourBank' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/timeTrackingService.ts(628,18): error TS2339: Property 'hourBankTransaction' does not exist on type 'PrismaClient<PrismaClientOptions, LogLevel, DefaultArgs>'.
+src/services/transportCalculationService.ts(79,33): error TS2339: Property 'routeCache' does not exist on type 'PrismaClient<{ log: ("error" | "warn" | "query")[]; }, "error" | "warn" | "query", DefaultArgs>'.
+src/services/transportCalculationService.ts(112,18): error TS2339: Property 'routeCache' does not exist on type 'PrismaClient<{ log: ("error" | "warn" | "query")[]; }, "error" | "warn" | "query", DefaultArgs>'.
+src/services/transportCalculationService.ts(161,13): error TS2339: Property 'kmRate' does not exist on type '{ id: string; updatedAt: Date; handlingTimeLeva: number; handlingTimeTraz: number; kmPriceLargada: number; kmPriceLeva: number; kmPriceTraz: number; kmPriceRetorno: number; minPriceLargada: number; ... 4 more ...; handlingTimeRetorno: number; }'.
+src/services/transportCalculationService.ts(161,21): error TS2339: Property 'minRate' does not exist on type '{ id: string; updatedAt: Date; handlingTimeLeva: number; handlingTimeTraz: number; kmPriceLargada: number; kmPriceLeva: number; kmPriceTraz: number; kmPriceRetorno: number; minPriceLargada: number; ... 4 more ...; handlingTimeRetorno: number; }'.
+src/services/transportCalculationService.ts(161,30): error TS2339: Property 'taxPercent' does not exist on type '{ id: string; updatedAt: Date; handlingTimeLeva: number; handlingTimeTraz: number; kmPriceLargada: number; kmPriceLeva: number; kmPriceTraz: number; kmPriceRetorno: number; minPriceLargada: number; ... 4 more ...; handlingTimeRetorno: number; }'.
+src/services/transportCalculationService.ts(161,42): error TS2339: Property 'providerSharePercent' does not exist on type '{ id: string; updatedAt: Date; handlingTimeLeva: number; handlingTimeTraz: number; kmPriceLargada: number; kmPriceLeva: number; kmPriceTraz: number; kmPriceRetorno: number; minPriceLargada: number; ... 4 more ...; handlingTimeRetorno: number; }'.

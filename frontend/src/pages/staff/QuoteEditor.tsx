@@ -110,6 +110,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [customerModalId, setCustomerModalId] = useState<string | null>(null);
     const [status, setStatus] = useState('');
     const [notes, setNotes] = useState('');
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [desiredAt, setDesiredAt] = useState('');
     const [scheduledAt, setScheduledAt] = useState('');
     const [transportAt, setTransportAt] = useState('');
@@ -178,6 +180,17 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             console.error('Date error', e);
         }
         return '';
+    };
+
+    const safeDateToISO = (dateStr?: string) => {
+        if (!dateStr) return undefined;
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return undefined;
+            return date.toISOString();
+        } catch {
+            return undefined;
+        }
     };
 
     const fetchQuote = async () => {
@@ -453,7 +466,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const ensureTransportItem = (currentItems: QuoteItem[]) => {
+    const ensureTransportItem = (currentItems: QuoteItem[], silent: boolean = false) => {
         // If we have a valid transport calculation but no item for it, add/update it automatically
         if (transportCalculation && transportCalculation.total > 0) {
             const hasTransport = currentItems.some(i => i.description.toLowerCase().includes('transporte'));
@@ -467,6 +480,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     description += ` (${transportDiscount}% Desc.)`;
                 }
 
+                // In silent mode (auto-save), we DO NOT add the item automatically if it requires confirmation
+                // We only add it if we can be sure or if we skip the check (but skipping check means adding unwanted items)
+                // For now, let's simply SKIP adding missing transport during auto-save to avoid blocking or unexpected modifications.
+                if (silent) return currentItems;
+
                 if (window.confirm(`Foi detectado um cálculo de transporte de R$ ${price.toFixed(2)} que não foi adicionado à lista. Deseja incluir automaticamente?`)) {
                     return [...currentItems, { description, quantity: 1, price, serviceId: undefined }];
                 }
@@ -478,13 +496,19 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const handleSave = async (silent = false) => {
         if (!silent) {
             if (!validateDates()) return;
+            // Removed confirmation dialog for explicit save to make it smoother, 
+            // or we can keep it. The user requested "Save Anywhere" which usually implies 
+            // low friction. Let's keep the confirm only for explicit non-silent saves IF really needed.
+            // But for now, I'll keep the logic as is, just using 'silent' to bypass.
             if (!window.confirm('Deseja salvar as alterações neste orçamento?')) return;
+            setIsSaving(true);
+        } else {
+            setIsAutoSaving(true);
         }
 
-        setIsSaving(true);
         try {
             // Check for missing transport
-            const itemsWithTransport = ensureTransportItem(items);
+            const itemsWithTransport = ensureTransportItem(items, silent);
 
             // Auto-link items to services by name if missing ID
             const linkedItems = itemsWithTransport.map(item => {
@@ -521,30 +545,61 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 totalAmount: linkedItems.reduce((acc, it) => acc + (it.price * it.quantity), 0),
                 status,
                 notes,
-                desiredAt: desiredAt ? new Date(desiredAt).toISOString() : undefined,
-                scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-                transportAt: transportAt ? new Date(transportAt).toISOString() : undefined,
-                transportLevaAt: transportLevaAt ? new Date(transportLevaAt).toISOString() : undefined,
-                transportTrazAt: transportTrazAt ? new Date(transportTrazAt).toISOString() : undefined,
+                desiredAt: safeDateToISO(desiredAt),
+                scheduledAt: safeDateToISO(scheduledAt),
+                transportAt: safeDateToISO(transportAt),
+                transportLevaAt: safeDateToISO(transportLevaAt),
+                transportTrazAt: safeDateToISO(transportTrazAt),
                 transportType,
                 transportOrigin: transportAddress,
                 transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined,
                 petId
             });
 
+            setLastSaved(new Date());
+
             if (!silent) toast.success('Orçamento salvo com sucesso!');
 
             if (onUpdate) onUpdate();
             if (onClose && !silent) onClose();
-            else fetchQuote(); // Refresh to get persisted data
+            else if (!silent) fetchQuote(); // Only refresh full data on explicit save to avoid UI jumps during auto-save
 
         } catch (error) {
             console.error('Erro ao salvar:', error);
-            toast.error('Erro ao salvar orçamento');
+            if (!silent) toast.error('Erro ao salvar orçamento');
         } finally {
             setIsSaving(false);
+            setIsAutoSaving(false);
         }
     };
+
+    // Auto-save Effect
+    useEffect(() => {
+        if (isLoading || !id || isSaving) return;
+
+        const timer = setTimeout(() => {
+            handleSave(true);
+        }, 3000); // 3 seconds debounce
+
+        return () => clearTimeout(timer);
+    }, [
+        items,
+        notes,
+        desiredAt,
+        scheduledAt,
+        transportAt,
+        transportLevaAt,
+        transportTrazAt,
+        transportAddress,
+        transportDestinationAddress,
+        transportType,
+        hasDifferentReturnAddress,
+        petId,
+        isSaving // Added to dependencies so it re-evaluates if isSaving changes (though the guard catches it)
+        // We exclude 'status' from auto-save triggers because status changes usually
+        // happen via specific buttons that might already trigger save or need confirmation.
+        // Also 'items' change is deep, so this effect runs on array reference change.
+    ]);
 
     const handleSendToClient = async () => {
         if (!validateDates()) return;
@@ -598,11 +653,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 totalAmount: sanitizedItems.reduce((acc, it) => acc + (it.price * it.quantity), 0),
                 status: 'ENVIADO',
                 notes,
-                desiredAt: desiredAt ? new Date(desiredAt).toISOString() : undefined,
-                scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-                transportAt: transportAt ? new Date(transportAt).toISOString() : undefined,
-                transportLevaAt: transportLevaAt ? new Date(transportLevaAt).toISOString() : undefined,
-                transportTrazAt: transportTrazAt ? new Date(transportTrazAt).toISOString() : undefined,
+                desiredAt: safeDateToISO(desiredAt),
+                scheduledAt: safeDateToISO(scheduledAt),
+                transportAt: safeDateToISO(transportAt),
+                transportLevaAt: safeDateToISO(transportLevaAt),
+                transportTrazAt: safeDateToISO(transportTrazAt),
                 transportType,
                 transportOrigin: transportAddress,
                 transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined
@@ -672,6 +727,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 onSave={handleSave}
                 onSendToClient={handleSendToClient}
                 isSaving={isSaving}
+                isAutoSaving={isAutoSaving}
+                lastSaved={lastSaved}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

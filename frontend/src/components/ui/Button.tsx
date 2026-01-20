@@ -22,47 +22,47 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const variantStyles: Record<ButtonVariant, string> = {
     primary: `
         bg-[var(--color-accent-primary)] text-white
-        hover:brightness-110 
-        active:scale-[0.98]
+        hover:opacity-90 
+        active:scale-[0.97]
         disabled:opacity-50 disabled:cursor-not-allowed
-        shadow-sm hover:shadow-md
+        shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]
     `,
     secondary: `
         bg-[var(--color-fill-secondary)] text-[var(--color-text-primary)]
         hover:bg-[var(--color-fill-primary)]
-        active:scale-[0.98]
+        active:scale-[0.97]
         disabled:opacity-50 disabled:cursor-not-allowed
     `,
     tertiary: `
         bg-transparent text-[var(--color-accent-primary)]
         hover:bg-[var(--color-fill-quaternary)]
-        active:scale-[0.98]
+        active:scale-[0.97]
         disabled:opacity-50 disabled:cursor-not-allowed
     `,
     outline: `
         bg-transparent text-[var(--color-text-primary)]
         border border-[var(--color-border)]
         hover:bg-[var(--color-fill-quaternary)] hover:border-[var(--color-border-opaque)]
-        active:scale-[0.98]
+        active:scale-[0.97]
         disabled:opacity-50 disabled:cursor-not-allowed
     `,
     destructive: `
         bg-[var(--color-error)] text-white
-        hover:brightness-110
-        active:scale-[0.98]
+        hover:opacity-90
+        active:scale-[0.97]
         disabled:opacity-50 disabled:cursor-not-allowed
-        shadow-sm
+        shadow-[var(--shadow-sm)]
     `,
     ghost: `
         bg-transparent text-[var(--color-text-secondary)]
         hover:text-[var(--color-text-primary)] hover:bg-[var(--color-fill-quaternary)]
-        active:scale-[0.98]
+        active:scale-[0.97]
         disabled:opacity-50 disabled:cursor-not-allowed
     `,
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-    sm: 'px-3 py-1.5 text-[var(--font-size-footnote)] rounded-[var(--radius-md)] gap-1.5 min-h-[32px]',
+    sm: 'px-3 py-1.5 text-[var(--font-size-footnote)] rounded-[var(--radius-md)] gap-1.5 min-h-[44px]',
     md: 'px-4 py-2 text-[var(--font-size-body)] rounded-[var(--radius-lg)] gap-2 min-h-[44px]',
     lg: 'px-6 py-3 text-[var(--font-size-headline)] rounded-[var(--radius-xl)] gap-2.5 min-h-[52px]',
 };

@@ -12,6 +12,7 @@ import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsMo
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
 import WebAgendaLayout from '../../components/staff/calendar/WebAgendaLayout';
 import { useAgendaViewModel } from '../../features/agenda/viewmodels/useAgendaViewModel';
+import { useRegisterMobileAction } from '../../hooks/useMobileActions';
 import AgendaDebugPanel from '../../features/agenda/dev/AgendaDebugPanel';
 
 const statusColumns = [
@@ -24,6 +25,9 @@ const statusColumns = [
 export default function AgendaLOG() {
     const location = useLocation();
     const { state, actions } = useAgendaViewModel({ domain: 'LOG' });
+
+    // Register mobile FAB action
+    useRegisterMobileAction('new_appointment', () => actions.openCreateModal());
 
     const {
         appointments: filteredAppointments,
@@ -402,7 +406,7 @@ export default function AgendaLOG() {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-6 py-4 md:px-8 md:py-5 rounded-[32px] md:rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-10 w-[min(calc(100%-2rem),800px)]"
                     >
                         <div className="flex items-center gap-4">
                             <button

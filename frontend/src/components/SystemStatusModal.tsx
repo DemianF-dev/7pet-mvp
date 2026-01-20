@@ -22,7 +22,7 @@ export default function SystemStatusModal({ isOpen, onClose }: SystemStatusModal
     const fetchBackendStatus = async () => {
         setLoading(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
             const { data } = await axios.get(`${apiUrl}/health`);
             setBackendStatus(data);
         } catch (error) {
@@ -76,10 +76,10 @@ export default function SystemStatusModal({ isOpen, onClose }: SystemStatusModal
                         <div className="p-6 space-y-6">
                             {/* Sync Status */}
                             <div className={`p-4 rounded-2xl flex items-center gap-4 border ${isSynced
-                                    ? 'bg-green-500/5 border-green-500/20 text-green-600'
-                                    : backendStatus?.error
-                                        ? 'bg-red-500/5 border-red-500/20 text-red-600'
-                                        : 'bg-amber-500/5 border-amber-500/20 text-amber-600'
+                                ? 'bg-green-500/5 border-green-500/20 text-green-600'
+                                : backendStatus?.error
+                                    ? 'bg-red-500/5 border-red-500/20 text-red-600'
+                                    : 'bg-amber-500/5 border-amber-500/20 text-amber-600'
                                 }`}>
                                 {isSynced ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
                                 <div className="flex-1">

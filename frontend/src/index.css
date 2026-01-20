@@ -16,9 +16,45 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Prevent horizontal scroll on mobile */
   overflow-x: hidden;
-  min-height: 100vh;
-  min-height: 100dvh;
   /* Dynamic viewport height for mobile */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* =========================================
+   WAVE B: ERGONOMICS & LANDSCAPE
+   ========================================= */
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Landscape Optimize */
+  @media (max-height: 480px) and (orientation: landscape) {
+    .landscape-hide {
+      display: none !important;
+    }
+
+    .landscape-compact {
+      height: var(--tap-target-min) !important;
+    }
+
+    :root {
+      --nav-bottom-height: var(--tap-target-min);
+      --nav-top-height: var(--tap-target-min);
+    }
+
+    .landscape-text-xs {
+      font-size: 0.75rem !important;
+    }
+  }
 }
 
 /* =========================================

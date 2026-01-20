@@ -1,6 +1,7 @@
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { Download } from 'lucide-react';
 
 export function useServiceWorkerUpdate() {
     const {
@@ -8,31 +9,32 @@ export function useServiceWorkerUpdate() {
         needRefresh: [needRefresh, setNeedRefresh],
         updateServiceWorker,
     } = useRegisterSW({
-        immediate: true, // Force immediate activation
+        immediate: true,
         onRegistered(r) {
             console.log('✅ Service Worker registered');
-            // In development, skip the cache and force reload
             if (import.meta.env.DEV && r) {
-                console.log('🔧 DEV MODE: Unregistering SW to avoid cache issues');
+                console.log('🔧 DEV MODE: Unregistering SW');
                 r.unregister();
             } else {
-                // Check for updates every 60 seconds in production
                 r && setInterval(() => {
-                    console.log('🔍 Checking for SW update...');
                     r.update();
-                }, 60000);
+                }, 60 * 1000);
             }
-        },
-        onRegisterError(error) {
-            console.error('❌ SW registration error:', error);
         },
     });
 
     useEffect(() => {
         if (offlineReady) {
-            toast.success('Aplicativo pronto para funcionar offline!', {
-                duration: 3000,
+            toast.success('Pronto para uso offline!', {
                 icon: '📱',
+                style: {
+                    borderRadius: '16px',
+                    background: '#1D1D1F',
+                    color: '#fff',
+                    padding: '12px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                }
             });
             setOfflineReady(false);
         }
@@ -42,27 +44,32 @@ export function useServiceWorkerUpdate() {
         if (needRefresh) {
             toast(
                 (t) => (
-                    <div className="flex flex-col gap-2">
-                        <div className="font-bold">🎉 Nova versão disponível!</div>
-                        <div className="text-sm text-gray-600">
-                            Clique em "Atualizar" para obter as últimas melhorias.
+                    <div className="flex flex-col gap-3 min-w-[280px]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
+                                <Download size={20} />
+                            </div>
+                            <div>
+                                <h4 className="font-black text-secondary text-sm">Nova versão pronta!</h4>
+                                <p className="text-xs text-gray-400">Clique para atualizar o 7Pet.</p>
+                            </div>
                         </div>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 h-10">
                             <button
                                 onClick={() => {
                                     updateServiceWorker(true);
                                     toast.dismiss(t.id);
                                 }}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition"
+                                className="flex-1 bg-primary text-white text-[10px] uppercase tracking-widest font-black rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
                             >
-                                Atualizar Agora
+                                Atualizar
                             </button>
                             <button
                                 onClick={() => {
                                     toast.dismiss(t.id);
                                     setNeedRefresh(false);
                                 }}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition"
+                                className="px-4 bg-gray-50 text-gray-400 text-[10px] uppercase tracking-widest font-black rounded-xl"
                             >
                                 Depois
                             </button>
@@ -72,6 +79,12 @@ export function useServiceWorkerUpdate() {
                 {
                     duration: Infinity,
                     position: 'bottom-center',
+                    style: {
+                        borderRadius: '24px',
+                        padding: '16px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                        border: '1px solid rgba(0,0,0,0.05)'
+                    }
                 }
             );
         }

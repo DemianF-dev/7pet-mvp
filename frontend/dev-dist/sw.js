@@ -67,10 +67,13 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-e3645d1c'], (function (workbox) { 'use strict';
+define(['./workbox-519b168a'], (function (workbox) { 'use strict';
 
-  self.skipWaiting();
-  workbox.clientsClaim();
+  self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+      self.skipWaiting();
+    }
+  });
 
   /**
    * The precacheAndRoute() method efficiently caches and responds to
@@ -81,46 +84,35 @@ define(['./workbox-e3645d1c'], (function (workbox) { 'use strict';
     "url": "registerSW.js",
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
-    "url": "index.html",
-    "revision": "0.oechb4mspck"
+    "url": "/index.html",
+    "revision": "0.07a0v1vphv8"
   }], {});
   workbox.cleanupOutdatedCaches();
-  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
+  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/index.html"), {
     allowlist: [/^\/$/],
-    denylist: [/^\/api/]
+    denylist: [/^\/api/, /^\/socket\.io/]
   }));
-  workbox.registerRoute(({
-    url
-  }) => url.pathname.startsWith("/api"), new workbox.NetworkFirst({
-    "cacheName": "api-cache",
-    "networkTimeoutSeconds": 10,
+  workbox.registerRoute(/^https:\/\/.*\/api\/.*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/\/api\/.*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/\/socket\.io\/.*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/\.(?:js|css)$/i, new workbox.StaleWhileRevalidate({
+    "cacheName": "assets-cache",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 200,
-      maxAgeSeconds: 604800
-    }), new workbox.CacheableResponsePlugin({
-      statuses: [0, 200]
-    }), new workbox.BackgroundSyncPlugin("api-sync-queue", {
-      maxRetentionTime: 1440
+      maxEntries: 100,
+      maxAgeSeconds: 2592000
     })]
   }), 'GET');
-  workbox.registerRoute(/\.(png|jpg|jpeg|svg|gif|webp|avif)$/i, new workbox.CacheFirst({
+  workbox.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp|avif|ico)$/i, new workbox.CacheFirst({
     "cacheName": "images-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 100,
       maxAgeSeconds: 2592000
     })]
   }), 'GET');
-  workbox.registerRoute(/\.(woff|woff2|ttf|eot)$/i, new workbox.CacheFirst({
+  workbox.registerRoute(/\.(?:woff|woff2|ttf|eot)$/i, new workbox.CacheFirst({
     "cacheName": "fonts-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 20,
-      maxAgeSeconds: 31536000
-    })]
-  }), 'GET');
-  workbox.registerRoute(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i, new workbox.CacheFirst({
-    "cacheName": "google-fonts-cache",
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 10,
       maxAgeSeconds: 31536000
     })]
   }), 'GET');

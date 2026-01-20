@@ -171,7 +171,7 @@ export const customerController = {
             }));
 
             await prisma.notification.createMany({
-                data: notifications
+                data: notifications as any
             });
 
             // Add to customer's internal notes
@@ -395,7 +395,13 @@ export const customerController = {
 
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return res.status(400).json({ errors: error.issues });
+                return res.status(400).json({
+                    error: 'Dados inválidos',
+                    details: error.issues.map(issue => ({
+                        field: issue.path.join('.'),
+                        message: issue.message
+                    }))
+                });
             }
             console.error('Erro ao criar cliente:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });

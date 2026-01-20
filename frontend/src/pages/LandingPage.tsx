@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { User, ShieldCheck, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import AppImage from '../components/ui/AppImage';
+
 
 export default function LandingPage() {
     const navigate = useNavigate();
@@ -29,7 +31,13 @@ export default function LandingPage() {
             >
                 <div className="flex-1 space-y-6 text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-                        <img src="/logo.png" className="w-10 h-10 rounded-xl object-contain" alt="Logo" />
+                        <AppImage
+                            src="/logo.png"
+                            alt="7Pet Logo"
+                            className="h-12 w-auto"
+                            aspectRatio="3/1"
+                            fetchPriority="high"
+                        />
                         <h1 className="text-3xl font-bold text-secondary">7Pet</h1>
                     </div>
 
@@ -150,10 +158,12 @@ export default function LandingPage() {
                     className="flex-1 hidden md:block"
                     aria-label="Imagem de um Golden Retriever feliz"
                 >
-                    <img
-                        src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=1000"
-                        alt="Golden Retriever feliz representando o cuidado da 7Pet"
-                        className="rounded-[40px] shadow-2xl border-8 border-white"
+                    <AppImage
+                        src="https://images.unsplash.com/photo-1541591047372-51731590497e?auto=format&fit=crop&q=80"
+                        alt="Pet Care Center"
+                        className="w-full h-full object-cover"
+                        aspectRatio="1/1"
+                        fetchPriority="high"
                     />
                 </motion.section>
             </motion.div>

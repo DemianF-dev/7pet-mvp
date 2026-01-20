@@ -30,6 +30,8 @@ interface QuoteHeaderProps {
     onSave: () => void;
     onSendToClient: () => void;
     isSaving: boolean;
+    isAutoSaving?: boolean;
+    lastSaved?: Date | null;
 }
 
 const QuoteHeader: React.FC<QuoteHeaderProps> = ({
@@ -49,6 +51,8 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
     onSave,
     onSendToClient,
     isSaving,
+    isAutoSaving,
+    lastSaved
 }) => {
     return (
         <header className="mb-10 bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden">
@@ -79,6 +83,15 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
                                 >
                                     {status}
                                 </button>
+                                {isAutoSaving ? (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                                        <RefreshCcw size={10} className="animate-spin" /> Salvando...
+                                    </span>
+                                ) : lastSaved ? (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                                        <CheckCircle2 size={10} className="text-green-500" /> Salvo às {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                ) : null}
                             </div>
                             <h1 className="text-3xl font-black text-secondary dark:text-white mt-2">
                                 {customerName}

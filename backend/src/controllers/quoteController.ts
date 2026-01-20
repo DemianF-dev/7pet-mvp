@@ -9,6 +9,7 @@ import { mapsService, MapsError } from '../services/googleMapsService';
 import * as authService from '../services/authService';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
+import * as transportCalc from '../services/transportCalculationService';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
 
@@ -610,6 +611,7 @@ export const quoteController = {
                 if (currentQuote && currentQuote.status !== data.status) {
                     updateData.statusHistory = {
                         create: {
+                            id: randomUUID(),
                             oldStatus: currentQuote.status,
                             newStatus: data.status,
                             changedBy: user.id,
@@ -668,22 +670,40 @@ export const quoteController = {
                     : [];
                 const validServiceIds = new Set(validServices.map(s => s.id));
 
+                // VALIDATION: Performer IDs
+                const performerIds = data.items
+                    .map(i => i.performerId)
+                    .filter((id): id is string => !!id);
+
+                const validPerformers = performerIds.length > 0
+                    ? await prisma.user.findMany({ where: { id: { in: performerIds } }, select: { id: true } })
+                    : [];
+                const validPerformerIds = new Set(validPerformers.map(p => p.id));
+
                 updateData.items = {
                     deleteMany: {},
                     create: data.items.map(item => {
                         // Fallback to null if service ID is invalid/not found
                         let validServiceId = item.serviceId;
                         if (validServiceId && !validServiceIds.has(validServiceId)) {
-                            console.warn(`[QuoteUpdate] Warning: Service ID ${validServiceId} not found.Setting to null.`);
+                            console.warn(`[QuoteUpdate] Warning: Service ID ${validServiceId} not found. Setting to null.`);
                             validServiceId = null;
                         }
 
+                        // Fallback to null if performer ID is invalid/not found
+                        let validPerformerId = item.performerId;
+                        if (validPerformerId && !validPerformerIds.has(validPerformerId)) {
+                            console.warn(`[QuoteUpdate] Warning: Performer ID ${validPerformerId} not found. Setting to null.`);
+                            validPerformerId = null;
+                        }
+
                         return {
+                            id: randomUUID(),
                             description: item.description,
                             quantity: item.quantity,
                             price: item.price,
                             serviceId: validServiceId || null,
-                            performerId: item.performerId || null
+                            performerId: validPerformerId || null
                         };
                     })
                 };
@@ -1296,6 +1316,72 @@ export const quoteController = {
                 error: 'Erro interno ao processar orçamento manual',
                 message: error.message,
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+        }
+    },
+
+    /**
+     * Calculate transport pricing with detailed breakdown
+     * POST /transport/calculate
+     */
+    async calculateTransport(req: Request, res: Response) {
+        try {
+            console.log('[TransportCalc] Request:', JSON.stringify(req.body, null, 2));
+
+            // Validation schema
+            const schema = z.object({
+                plan: z.enum(['TL1', 'TL2']),
+                mode: z.enum(['LEVA', 'TRAZ', 'LEVA_TRAZ']),
+                destinationIsThePet: z.boolean(),
+                address1: z.string().min(5, 'Endereço do cliente é obrigatório'),
+                address2: z.string().optional(),
+                stopAddress: z.string().optional(),
+                discountPercent: z.number().min(0).max(100).optional().default(0)
+            });
+
+            const data = schema.parse(req.body);
+
+            // Additional validation
+            if (data.plan === 'TL2' && !data.destinationIsThePet && !data.address2) {
+                return res.status(422).json({
+                    error: 'address2 é obrigatório para TL2 quando o destino não é The Pet'
+                });
+            }
+
+            // Call calculation service
+            const result = await transportCalc.calculateTransportQuote(data);
+
+            console.log('[TransportCalc] Success:', result.totals);
+            return res.json(result);
+
+        } catch (error) {
+            console.error('[TransportCalc] Error:', error);
+
+            if (error instanceof z.ZodError) {
+                return res.status(400).json({
+                    error: 'Validação falhou',
+                    details: error.issues
+                });
+            }
+
+            if (error instanceof Error) {
+                // Check if it's a validation error from service
+                if (error.message.includes('requires') || error.message.includes('obrigatório')) {
+                    return res.status(422).json({ error: error.message });
+                }
+
+                // Check if it's a Maps error
+                if (error.message.includes('Google Maps') || error.message.includes('route')) {
+                    return res.status(503).json({
+                        error: 'Erro ao calcular rota',
+                        message: error.message
+                    });
+                }
+            }
+
+            return res.status(500).json({
+                error: 'Erro ao calcular transporte',
+                message: error instanceof Error ? error.message : 'Erro desconhecido'
             });
         }
     }

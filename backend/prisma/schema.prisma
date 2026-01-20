@@ -660,50 +660,62 @@ model PushSubscription {
 }
 
 model Quote {
-  id                     String                 @id @default(uuid())
-  customerId             String
-  petId                  String?
-  status                 QuoteStatus            @default(SOLICITADO)
-  totalAmount            Float                  @default(0)
-  desiredAt              DateTime?
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
-  deletedAt              DateTime?
-  transportDestination   String?                @default("7Pet")
-  transportOrigin        String?
-  transportPeriod        TransportPeriod?
-  type                   QuoteType              @default(SPA)
-  hairLength             String?
-  hasKnots               Boolean                @default(false)
-  hasParasites           Boolean                @default(false)
-  knotRegions            String?
-  petQuantity            Int                    @default(1)
-  transportReturnAddress String?
-  seqId                  Int                    @unique @default(autoincrement())
-  scheduledAt            DateTime?
-  transportAt            DateTime?
-  invoiceId              String?
-  parasiteComments       String?
-  parasiteTypes          String?
-  wantsMedicatedBath     Boolean                @default(false)
-  transportType          TransportType?
-  transportLevaAt        DateTime?
-  transportTrazAt        DateTime?
-  notes                  String?
-  isRecurring            Boolean                @default(false)
-  frequency              PackageFrequency?
-  packageDiscount        Float?
-  cardFeePercent         Float?
-  taxPercent             Float?
-  recurringPackageId     String?
-  appointments           Appointment[]
-  financialTransactions  FinancialTransaction[]
-  customer               Customer               @relation(fields: [customerId], references: [id])
-  invoice                Invoice?               @relation(fields: [invoiceId], references: [id])
-  pet                    Pet?                   @relation(fields: [petId], references: [id])
-  recurringPackage       RecurringPackage?      @relation(fields: [recurringPackageId], references: [id])
-  items                  QuoteItem[]
-  statusHistory          StatusHistory[]
+  id                          String                 @id @default(uuid())
+  customerId                  String
+  petId                       String?
+  status                      QuoteStatus            @default(SOLICITADO)
+  totalAmount                 Float                  @default(0)
+  desiredAt                   DateTime?
+  createdAt                   DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  deletedAt                   DateTime?
+  transportDestination        String?                @default("7Pet")
+  transportOrigin             String?
+  transportPeriod             TransportPeriod?
+  type                        QuoteType              @default(SPA)
+  hairLength                  String?
+  hasKnots                    Boolean                @default(false)
+  hasParasites                Boolean                @default(false)
+  knotRegions                 String?
+  petQuantity                 Int                    @default(1)
+  transportReturnAddress      String?
+  seqId                       Int                    @unique @default(autoincrement())
+  scheduledAt                 DateTime?
+  transportAt                 DateTime?
+  invoiceId                   String?
+  parasiteComments            String?
+  parasiteTypes               String?
+  wantsMedicatedBath          Boolean                @default(false)
+  transportType               TransportType?
+  transportLevaAt             DateTime?
+  transportTrazAt             DateTime?
+  notes                       String?
+  isRecurring                 Boolean                @default(false)
+  frequency                   PackageFrequency?
+  packageDiscount             Float?
+  cardFeePercent              Float?
+  taxPercent                  Float?
+  recurringPackageId          String?
+  // New transport calculation fields
+  transportPlan               String?                // TL1 or TL2
+  transportMode               String?                // LEVA, TRAZ, or LEVA_TRAZ
+  transportStopAddress        String?                // Optional stop before final destination
+  transportDiscountPercent    Float?                 @default(0)
+  transportTotalBefore        Float?                 // Total before discount
+  transportTotalAfter         Float?                 // Total after discount
+  transportLevaTotalBefore    Float?                 // LEVA subtotal before discount
+  transportLevaTotalAfter     Float?                 // LEVA subtotal after discount
+  transportTrazTotalBefore    Float?                 // TRAZ subtotal before discount
+  transportTrazTotalAfter     Float?                 // TRAZ subtotal after discount
+  appointments                Appointment[]
+  financialTransactions       FinancialTransaction[]
+  customer                    Customer               @relation(fields: [customerId], references: [id])
+  invoice                     Invoice?               @relation(fields: [invoiceId], references: [id])
+  pet                         Pet?                   @relation(fields: [petId], references: [id])
+  recurringPackage            RecurringPackage?      @relation(fields: [recurringPackageId], references: [id])
+  items                       QuoteItem[]
+  statusHistory               StatusHistory[]
+  transportLegs               TransportLeg[]
 
   @@index([customerId])
   @@index([deletedAt])
@@ -931,6 +943,8 @@ model TransportDetails {
   confirmedTime   DateTime?
   status          String          @default("SOLICITADO")
   type            String?
+  startedAt       DateTime?
+  completedAt     DateTime?
   appointment     Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 }
 
@@ -945,11 +959,48 @@ model TransportLegExecution {
   createdAt     DateTime     @default(now())
   appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-
   @@unique([appointmentId, staffId, legType])
   @@index([appointmentId])
   @@index([completedAt])
   @@index([staffId])
+}
+
+model TransportLeg {
+  id                   String   @id @default(uuid())
+  quoteId              String
+  kind                 String   // PARTIDA, LEVA, LEVA2, TRAZ, TRAZ2, RETORNO
+  originAddress        String
+  destinationAddress   String
+  distanceKm           Float    // Actual distance from Google Maps
+  durationMin          Int      // Actual duration from Google Maps
+  chargeKm             Float    // KM charged (sometimes same as distanceKm)
+  chargeMin            Int      // MIN charged (sometimes 0 for KM-only legs)
+  kmRate               Float    // Rate per KM at time of calculation
+  minRate              Float    // Rate per MIN at time of calculation
+  subtotal             Float    // Calculated subtotal for this leg
+  assignedProviderId   String?  // Provider assigned to this leg
+  createdAt            DateTime @default(now())
+  quote                Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  assignedProvider     User?    @relation(fields: [assignedProviderId], references: [id])
+
+  @@index([quoteId])
+  @@index([assignedProviderId])
+  @@index([kind])
+}
+
+model RouteCache {
+  id                 String   @id @default(uuid())
+  routeKey           String   @unique // hash(origin|dest|stop|plan)
+  originAddress      String
+  destinationAddress String
+  stopAddress        String?  // Optional intermediate stop
+  distanceKm         Float
+  durationMin        Int
+  cachedAt           DateTime @default(now())
+  expiresAt          DateTime // TTL: 7 days from cachedAt
+
+  @@index([routeKey])
+  @@index([expiresAt])
 }
 
 model TransportSettings {
@@ -967,6 +1018,11 @@ model TransportSettings {
   minPriceRetorno     Float    @default(1.5)
   handlingTimeLargada Int      @default(0)
   handlingTimeRetorno Int      @default(0)
+  // New unified rates for TL1/TL2 calculations
+  kmRate              Float    @default(2.0)  // Unified KM rate
+  minRate             Float    @default(1.5)  // Unified MIN rate
+  taxPercent          Float    @default(5.0)  // Tax percentage for calculations
+  providerSharePercent Float   @default(60.0) // Provider's share percentage
 }
 
 model User {
@@ -1018,7 +1074,8 @@ model User {
   reactions               Reaction[]
   assignedServices        Service[]
   staffProfile            StaffProfile?
-  notificationPreferences UserNotificationPreference[]
+  notificationPreferences UserNotificationPreference[]\r
+  transportLegs           TransportLeg[]
 
   @@index([division])
   @@index([email])

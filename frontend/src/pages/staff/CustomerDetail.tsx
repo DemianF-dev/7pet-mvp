@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     User, Mail, Phone, MapPin, Save, Calendar,
     Trash2, Plus, X, MessageSquare,
-    Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield
+    Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield, DollarSign
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
@@ -14,6 +14,10 @@ import CustomerFinancialSection from '../../components/staff/CustomerFinancialSe
 import CustomerAlertsSection from '../../components/staff/CustomerAlertsSection';
 import ClientAuditTimeline from '../../components/client/ClientAuditTimeline';
 import { Award, Star, Heart, Zap, Trophy, History } from 'lucide-react';
+import QueryState from '../../components/system/QueryState';
+import RouteSkeleton from '../../components/system/RouteSkeleton';
+import AppImage from '../../components/ui/AppImage';
+
 
 interface Appreciation {
     id: string;
@@ -148,6 +152,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     const [totalSpent, setTotalSpent] = useState(0);
     const [userId, setUserId] = useState<string | null>(null);
 
+    // Activity History State
+    const [appointments, setAppointments] = useState<any[]>([]);
+    const [quotes, setQuotes] = useState<any[]>([]);
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
     useEffect(() => {
         if (id && id !== 'new') {
             fetchCustomer();
@@ -206,6 +216,17 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         }
     };
 
+    const formatDateForInput = (date: any) => {
+        if (!date) return '';
+        try {
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return '';
+            return d.toISOString().split('T')[0];
+        } catch {
+            return '';
+        }
+    };
+
     const fetchCustomer = async () => {
         try {
             const response = await api.get(`/customers/${id}`);
@@ -220,7 +241,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             setExtraPhones(u.extraPhones || []);
             setAddress(u.address || '');
             setExtraAddresses(u.extraAddresses || []);
-            setBirthday(u.birthday ? new Date(u.birthday).toISOString().split('T')[0] : '');
+            setBirthday(formatDateForInput(u.birthday));
             setDocument(u.document || '');
             setDiscoverySource(data.discoverySource || '');
             setCommunicationPrefs(data.communicationPrefs || []);
@@ -250,11 +271,11 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             setBillingPreference(data.billingPreference || '');
             setBillingOther(data.billingOther || '');
             setPaymentMethod(data.paymentMethod || '');
-            setLegacyCreatedAt(data.legacyCreatedAt ? new Date(data.legacyCreatedAt).toISOString().split('T')[0] : '');
+            setLegacyCreatedAt(formatDateForInput(data.legacyCreatedAt));
             setLegacySource(data.legacySource || '');
             setNegotiationDiscount(data.negotiationDiscount || 0);
             setIsActive(data.isActive ?? true);
-            setSecondaryGuardianBirthday(data.secondaryGuardianBirthday ? new Date(data.secondaryGuardianBirthday).toISOString().split('T')[0] : '');
+            setSecondaryGuardianBirthday(formatDateForInput(data.secondaryGuardianBirthday));
             setDiscoverySourceDetail(data.discoverySourceDetail || '');
 
             // Load pets
@@ -278,7 +299,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     // Migration pet fields
                     sex: p.sex || '',
                     size: p.size || '',
-                    birthDate: p.birthDate ? new Date(p.birthDate).toISOString().split('T')[0] : '',
+                    birthDate: formatDateForInput(p.birthDate),
                     hasSpecialNeeds: p.hasSpecialNeeds || false,
                     specialNeedsDescription: p.specialNeedsDescription || '',
                     isCastrated: p.isCastrated || false,
@@ -307,6 +328,11 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     isExpanded: false
                 })));
             }
+
+            // Load Activities
+            setAppointments(data.appointments || []);
+            setQuotes(data.quotes || []);
+            setInvoices(data.invoices || []);
         } catch (error) {
             console.error('Erro ao buscar cliente:', error);
             toast.error('Erro ao carregar dados do cliente');
@@ -359,14 +385,27 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             console.log('💾 Salvando cliente com payload:', JSON.stringify(payload, null, 2));
 
             if (id === 'new') {
-                await api.post('/customers', payload);
+                if (!email) {
+                    toast.error('O e-mail é obrigatório para novos clientes.');
+                    setSaving(false);
+                    return;
+                }
+                const response = await api.post('/customers', payload);
                 toast.success('Cliente criado com sucesso!');
+                if (isModal && onClose) {
+                    onClose();
+                } else {
+                    navigate('/staff/customers');
+                }
             } else {
                 await api.patch(`/customers/${id}`, payload);
                 toast.success('Perfil atualizado com sucesso!');
+                if (isModal && onClose) {
+                    onClose();
+                } else if (!isModal) {
+                    navigate('/staff/customers');
+                }
             }
-            if (!isModal) navigate('/staff/customers');
-            // If modal, maybe just toast and remain open? Or close? User usually wants to keep working. I'll just toast.
         } catch (error: any) {
             console.error('❌ Erro ao salvar cliente:', error);
             console.error('📊 Resposta do servidor:', error.response?.data);
@@ -398,7 +437,28 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         }
     };
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
+    const handleDuplicateActivity = async (type: 'quote' | 'appointment', activityId: string) => {
+        setDuplicatingId(activityId);
+        try {
+            const endpoint = type === 'quote' ? `/quotes/${activityId}/duplicate` : `/appointments/${activityId}/duplicate`;
+            const response = await api.post(endpoint);
+            toast.success(`${type === 'quote' ? 'Orçamento' : 'Agendamento'} duplicado com sucesso!`);
+
+            // Redirect or refresh
+            if (type === 'quote') {
+                navigate(`/staff/quotes/${response.data.id}`);
+            } else {
+                fetchCustomer(); // Refresh list
+                setActiveTab('ATIVIDADES');
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Erro ao duplicar registro');
+        } finally {
+            setDuplicatingId(null);
+        }
+    };
+
+    if (loading) return <RouteSkeleton />;
 
     const content = (
         <div className="max-w-[1400px] mx-auto">
@@ -497,9 +557,9 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
             {/* NAVIGATION TABS - Move to prominent location */}
             <div className="flex items-center gap-1 mb-8 bg-white p-2 rounded-[32px] border border-gray-100 shadow-sm w-fit overflow-x-auto no-scrollbar mx-auto lg:mx-0">
-                {['PERFIL', 'PETS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'HISTORICO']
-                    .filter((t): t is string => typeof t === 'string')
-                    .map(tab => (
+                {['PERFIL', id !== 'new' && 'PETS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'ATIVIDADES', id !== 'new' && 'AUDITORIA']
+                    .filter(Boolean)
+                    .map((tab: string) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -508,7 +568,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                 : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
                                 }`}
                         >
-                            {tab === 'HISTORICO' ? 'Histórico' : tab}
+                            {tab === 'AUDITORIA' ? 'Auditoria' : tab === 'ATIVIDADES' ? 'Atividades' : tab}
                         </button>
                     ))}
             </div>
@@ -1240,10 +1300,167 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                         </div>
                     )}
 
-                    {activeTab === 'HISTORICO' && id !== 'new' && (
+                    {activeTab === 'ATIVIDADES' && id !== 'new' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* APPOINTMENTS LIST */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Calendar size={16} /> Últimos Agendamentos
+                                    </h3>
+                                    <button
+                                        onClick={() => navigate('/staff/appointments/new', { state: { customerId: id } })}
+                                        className="text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-70 flex items-center gap-1"
+                                    >
+                                        <Plus size={14} /> Novo Agendamento
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {appointments.length === 0 ? (
+                                        <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-3xl border border-dashed border-gray-200">Nenhum agendamento encontrado.</p>
+                                    ) : (
+                                        appointments.map(appt => (
+                                            <div key={appt.id} className="flex items-center justify-between p-5 bg-gray-50/50 border border-gray-100 rounded-[24px] hover:bg-white hover:shadow-md transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${appt.status === 'FINALIZADO' ? 'bg-green-100 text-green-600' :
+                                                        appt.status === 'CANCELADO' ? 'bg-red-100 text-red-600' :
+                                                            'bg-primary/10 text-primary'
+                                                        }`}>
+                                                        <Calendar size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                            {new Date(appt.startAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{appt.category}</span>
+                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${appt.status === 'FINALIZADO' ? 'text-green-500' :
+                                                                appt.status === 'CANCELADO' ? 'text-red-500' :
+                                                                    'text-primary'
+                                                                }`}>{appt.status}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDuplicateActivity('appointment', appt.id)}
+                                                    disabled={duplicatingId === appt.id}
+                                                    className="p-3 bg-white text-gray-400 hover:text-primary rounded-xl border border-gray-100 shadow-sm transition-all hover:scale-110 active:scale-95 flex items-center gap-2"
+                                                    title="Copiar para novo agendamento"
+                                                >
+                                                    <History size={16} />
+                                                    <span className="text-[10px] font-black uppercase tracking-tighter">Refazer</span>
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </section>
+
+                            {/* QUOTES LIST */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <FileText size={16} /> Orçamentos Recentes
+                                    </h3>
+                                    <button
+                                        onClick={() => navigate('/staff/quotes/new', { state: { customerId: id } })}
+                                        className="text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-70 flex items-center gap-1"
+                                    >
+                                        <Plus size={14} /> Novo Orçamento
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {quotes.length === 0 ? (
+                                        <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-3xl border border-dashed border-gray-200">Nenhum orçamento encontrado.</p>
+                                    ) : (
+                                        quotes.map(q => (
+                                            <div key={q.id} className="flex items-center justify-between p-5 bg-gray-50/50 border border-gray-100 rounded-[24px] hover:bg-white hover:shadow-md transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                                        <FileText size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                            Orçamento #{String(q.seqId).padStart(4, '0')}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">R$ {q.totalAmount?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{q.status}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => navigate(`/staff/quotes/${q.id}`)}
+                                                        className="p-3 bg-white text-gray-400 hover:text-indigo-600 rounded-xl border border-gray-100 shadow-sm transition-all"
+                                                        title="Ver Detalhes"
+                                                    >
+                                                        <Info size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDuplicateActivity('quote', q.id)}
+                                                        disabled={duplicatingId === q.id}
+                                                        className="p-3 bg-white text-gray-400 hover:text-primary rounded-xl border border-gray-100 shadow-sm transition-all hover:scale-110 active:scale-95 flex items-center gap-2"
+                                                        title="Copiar para novo orçamento"
+                                                    >
+                                                        <Zap size={16} />
+                                                        <span className="text-[10px] font-black uppercase tracking-tighter">Copiar</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </section>
+
+                            {/* INVOICES LIST */}
+                            <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8 flex items-center gap-2">
+                                    <CreditCard size={16} /> Faturas & Notas
+                                </h3>
+                                <div className="space-y-3">
+                                    {invoices.length === 0 ? (
+                                        <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-3xl border border-dashed border-gray-200">Nenhuma fatura encontrada.</p>
+                                    ) : (
+                                        invoices.map(inv => (
+                                            <div key={inv.id} className="flex items-center justify-between p-5 bg-gray-50/50 border border-gray-100 rounded-[24px] hover:bg-white hover:shadow-md transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${inv.status === 'PAGO' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                                                        }`}>
+                                                        <DollarSign size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                            Fatura #{String(inv.seqId).padStart(4, '0')}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[10px] font-bold text-gray-400">R$ {inv.amount?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${inv.status === 'PAGO' ? 'text-emerald-500' : 'text-red-500'
+                                                                }`}>{inv.status}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => navigate(`/staff/invoices/${inv.id}`)}
+                                                    className="p-3 bg-white text-gray-400 hover:text-primary rounded-xl border border-gray-100 shadow-sm transition-all"
+                                                >
+                                                    < ChevronDown size={18} className="-rotate-90" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {activeTab === 'AUDITORIA' && id !== 'new' && (
                         <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 animate-in fade-in slide-in-from-right-4 duration-300">
                             <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <History size={16} /> Histórico de Alterações
+                                <History size={16} /> Trilhas de Auditoria (Logs)
                             </h3>
                             <ClientAuditTimeline clientId={id} />
                         </div>
@@ -1304,35 +1521,27 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             </div>
                         </div>
                     </div>
-                )
-            }
+                )}
         </div>
     );
 
-    if (isModal) {
-        return (
-            <div className="bg-gray-50 h-full overflow-y-auto px-6 py-6 rounded-[40px] shadow-none">
-                {content}
-                <RecurrenceCelebrationModal
-                    isOpen={showCelebration}
-                    onClose={() => setShowCelebration(false)}
-                    onConfirm={(freq, discount) => {
-                        setType('RECORRENTE');
-                        setRecurringFrequency(freq);
-                        setRecurrenceDiscount(discount);
-                        setShowCelebration(false);
-                        toast.success('Cliente promovido a Recorrente!');
-                    }}
-                />
-            </div>
-        );
-    }
-
     return (
-        <main className="p-6 md:p-10 pb-28 md:pb-10">
-            <Breadcrumbs />
-            <BackButton className="mb-4 ml-[-1rem]" />
-            {content}
+        <QueryState
+            isLoading={loading}
+            skeleton={<RouteSkeleton />}
+        >
+            {isModal ? (
+                <div className="overflow-y-auto bg-[#F8FAFC]">
+                    <div className="p-4 sm:p-8">
+                        {content}
+                    </div>
+                </div>
+            ) : (
+                <main className="p-8 sm:p-12 bg-[#F8FAFC] min-h-screen">
+                    {content}
+                </main>
+            )}
+
             <RecurrenceCelebrationModal
                 isOpen={showCelebration}
                 onClose={() => setShowCelebration(false)}
@@ -1344,6 +1553,6 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     toast.success('Cliente promovido a Recorrente!');
                 }}
             />
-        </main>
+        </QueryState>
     );
 }

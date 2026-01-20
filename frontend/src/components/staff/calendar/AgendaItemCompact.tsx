@@ -1,5 +1,6 @@
 import React from 'react';
-import { RefreshCw, Truck } from 'lucide-react';
+import { RefreshCw, Truck, Clock, ChevronRight } from 'lucide-react';
+import { GlassSurface } from '../../ui';
 
 interface AgendaItemCompactProps {
     appointment: any;
@@ -49,52 +50,58 @@ export default function AgendaItemCompact({ appointment, onClick }: AgendaItemCo
         : serviceName;
 
     return (
-        <div
+        <button
             onClick={() => onClick(appointment)}
-            className="flex w-full bg-[var(--color-bg-primary)] active:bg-[var(--color-bg-secondary)] transition-all min-h-[64px] border-b border-[var(--color-border)]/50"
+            className="flex w-full bg-[var(--color-bg-surface)] active:bg-[var(--color-bg-secondary)] transition-all min-h-[80px] border-b border-[var(--color-border)] text-left"
         >
-            {/* Left Vertical Bar */}
+            {/* Left Status Bar - Modern thin version */}
             <div
-                className="w-[5px] shrink-0"
+                className="w-[4px] shrink-0"
                 style={{ backgroundColor: barColor }}
             />
 
             {/* Content Area */}
-            <div className="flex-1 py-3.5 px-5 flex items-start gap-4">
-                {/* Colored Dot at the beginning of the line */}
-                <div
-                    className="w-3 h-3 rounded-full mt-1.5 shrink-0 shadow-sm"
-                    style={{ backgroundColor: dotColor }}
-                />
+            <div className="flex-1 py-[var(--space-4)] px-[var(--space-5)] flex items-center gap-[var(--space-4)]">
+                {/* Visual Indicator Layer */}
+                <div className="relative shrink-0 flex flex-col items-center">
+                    <div
+                        className="w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-[var(--color-bg-surface)] z-10"
+                        style={{ backgroundColor: dotColor }}
+                    />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-current opacity-[0.08]" style={{ color: dotColor }} />
+                </div>
 
-                {/* Text Content */}
+                {/* Main Info */}
                 <div className="flex-1 min-w-0">
-                    {/* Title Row */}
-                    <div className="flex items-start justify-between gap-2">
-                        <span className="text-[var(--color-text-primary)] font-bold text-[15px] leading-tight truncate flex-1 tracking-tight">
-                            {isTransport && appointment.transport?.type ? `${appointment.transport.type}: ` : ''}
-                            {isRecurring ? '(R)' : '(A)'} {customerName.split(' ')[0]} - {petName}
-                        </span>
-                        <span className="text-[var(--color-text-tertiary)] text-[12px] font-medium whitespace-nowrap shrink-0 ml-2">
-                            {isAllDay ? 'o dia todo' : timeString}
+                    <div className="flex items-baseline gap-2 mb-0.5">
+                        <span className="text-[var(--font-size-lg)] font-[var(--font-weight-bold)] text-[var(--color-text-primary)] tracking-tight truncate leading-tight">
+                            {isTransport && appointment.transport?.type && (
+                                <span className="text-[var(--color-accent-primary)] font-[var(--font-weight-black)] text-[var(--font-size-xs)] mr-1">
+                                    {appointment.transport.type.toUpperCase()}:
+                                </span>
+                            )}
+                            {isRecurring ? '(R)' : '(A)'} {customerName.split(' ')[0]} <span className="text-[var(--color-text-tertiary)] mx-0.5 font-medium">/</span> {petName}
                         </span>
                     </div>
 
-                    {/* Subtitle Row */}
-                    {subtitle && (
-                        <div className="flex items-start justify-between gap-2 mt-1">
-                            <span className="text-[var(--color-text-secondary)] text-[13px] truncate flex-1 opacity-80">
-                                {subtitle}
-                            </span>
-                            {!isAllDay && (
-                                <span className="text-[var(--color-text-tertiary)] text-[11px] whitespace-nowrap shrink-0 opacity-50 font-light">
-                                    {timeString}
-                                </span>
-                            )}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                        <span className="text-[var(--font-size-sm)] text-[var(--color-text-secondary)] font-[var(--font-weight-medium)] truncate opacity-80">
+                            {subtitle}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right Side: Time & Action */}
+                <div className="flex flex-col items-end shrink-0 gap-1.5 ml-2">
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-[var(--color-bg-tertiary)] rounded-full border border-[var(--color-border)]">
+                        {!isAllDay && <Clock size={10} className="text-[var(--color-text-tertiary)]" />}
+                        <span className="text-[11px] font-[var(--font-weight-black)] text-[var(--color-text-secondary)] uppercase tracking-wide">
+                            {isAllDay ? 'O DIA TODO' : timeString}
+                        </span>
+                    </div>
+                    <ChevronRight size={14} className="text-[var(--color-text-quaternary)] mr-1" />
                 </div>
             </div>
-        </div>
+        </button>
     );
 }

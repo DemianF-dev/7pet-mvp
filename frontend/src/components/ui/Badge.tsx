@@ -43,8 +43,8 @@ const variantStyles: Record<BadgeVariant, string> = {
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
-    sm: 'px-1.5 py-0.5 text-[10px] rounded-[var(--radius-sm)]',
-    md: 'px-2 py-1 text-[var(--font-size-caption1)] rounded-[var(--radius-md)]',
+    sm: 'px-[var(--space-1.5)] py-0.5 text-[10px] rounded-[var(--radius-sm)]',
+    md: 'px-[var(--space-2)] py-[var(--space-1)] text-[var(--font-size-caption1)] rounded-[var(--radius-md)]',
 };
 
 export function Badge({
@@ -99,7 +99,7 @@ export function Tag({
         <span
             className={`
                 inline-flex items-center gap-1
-                px-2 py-1
+                px-[var(--space-2)] py-[var(--space-1)]
                 text-[var(--font-size-caption1)]
                 font-[var(--font-weight-medium)]
                 rounded-[var(--radius-md)]

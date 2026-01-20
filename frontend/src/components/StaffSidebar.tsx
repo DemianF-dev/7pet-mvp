@@ -42,6 +42,8 @@ import ConfirmModal from './ConfirmModal';
 import { useInMobileShell } from '../context/MobileShellContext';
 import { APP_VERSION } from '../constants/version';
 import SystemStatusModal from './SystemStatusModal';
+import { prefetchRoute } from '../utils/routePrefetch';
+
 
 const SidebarContext = createContext({ isCollapsed: false });
 
@@ -124,6 +126,7 @@ export default function StaffSidebar() {
                             label="Dashboard"
                             active={location.pathname === '/staff/dashboard'}
                             onClick={() => { navigate('/staff/dashboard'); setIsOpen(false); }}
+                            routeKey="dashboard"
                         />
                     )}
                     {checkPermission('chat') && (
@@ -132,6 +135,7 @@ export default function StaffSidebar() {
                             label="Bate-papo"
                             active={location.pathname === '/staff/chat'}
                             onClick={() => { navigate('/staff/chat'); setIsOpen(false); }}
+                            routeKey="chat"
                         />
                     )}
                     {checkPermission('feed') && (
@@ -140,6 +144,7 @@ export default function StaffSidebar() {
                             label="Mural"
                             active={location.pathname === '/staff/feed'}
                             onClick={() => { navigate('/staff/feed'); setIsOpen(false); }}
+                            routeKey="feed"
                         />
                     )}
                     {checkPermission('quotes') && (
@@ -148,6 +153,7 @@ export default function StaffSidebar() {
                             label="Orçamentos"
                             active={location.pathname === '/staff/quotes'}
                             onClick={() => { navigate('/staff/quotes'); setIsOpen(false); }}
+                            routeKey="quotes"
                         />
                     )}
                     {checkPermission('agenda-spa') && (
@@ -156,6 +162,7 @@ export default function StaffSidebar() {
                             label="Agenda SPA"
                             active={location.pathname === '/staff/agenda-spa'}
                             onClick={() => { navigate('/staff/agenda-spa'); setIsOpen(false); }}
+                            routeKey="agenda-spa"
                         />
                     )}
                     {checkPermission('agenda-log') && (
@@ -164,6 +171,7 @@ export default function StaffSidebar() {
                             label="Agenda LOG"
                             active={location.pathname === '/staff/agenda-log'}
                             onClick={() => { navigate('/staff/agenda-log'); setIsOpen(false); }}
+                            routeKey="agenda-log"
                         />
                     )}
                     {checkPermission('customers') && (
@@ -172,6 +180,7 @@ export default function StaffSidebar() {
                             label="Clientes"
                             active={location.pathname.startsWith('/staff/customers')}
                             onClick={() => { navigate('/staff/customers'); setIsOpen(false); }}
+                            routeKey="customers"
                         />
                     )}
                     {(user?.role === 'MASTER' || user?.role === 'ADMIN') && (
@@ -191,6 +200,7 @@ export default function StaffSidebar() {
                             label="Serviços"
                             active={location.pathname === '/staff/services'}
                             onClick={() => { navigate('/staff/services'); setIsOpen(false); }}
+                            routeKey="services"
                         />
                     )}
                     {checkPermission('management') && (
@@ -199,6 +209,7 @@ export default function StaffSidebar() {
                             label="Produtos"
                             active={location.pathname === '/staff/products'}
                             onClick={() => { navigate('/staff/products'); setIsOpen(false); }}
+                            routeKey="products"
                         />
                     )}
                     {checkPermission('billing') && (
@@ -242,6 +253,7 @@ export default function StaffSidebar() {
                             label="Transporte"
                             active={location.pathname === '/staff/transport'}
                             onClick={() => { navigate('/staff/transport'); setIsOpen(false); }}
+                            routeKey="agenda-log"
                         />
                     )}
                     {checkPermission('transport-config') && (
@@ -258,6 +270,7 @@ export default function StaffSidebar() {
                             label="Usuários / Cargos"
                             active={location.pathname === '/staff/users'}
                             onClick={() => { navigate('/staff/users'); setIsOpen(false); }}
+                            routeKey="users"
                         />
                     )}
                 </SidebarGroup>
@@ -543,7 +556,7 @@ function SidebarGroup({ label, children, isCollapsed }: { label: string, childre
     );
 }
 
-function SidebarItem({ icon, label, active = false, onClick, badge, id }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number, id?: string }) {
+function SidebarItem({ icon, label, active = false, onClick, badge, id, routeKey }: { icon: any, label: string, active?: boolean, onClick: () => void, badge?: number, id?: string, routeKey?: string }) {
     const { isCollapsed } = useContext(SidebarContext);
 
     return (
@@ -551,6 +564,7 @@ function SidebarItem({ icon, label, active = false, onClick, badge, id }: { icon
             id={id}
             type="button"
             onClick={onClick}
+            onMouseEnter={() => routeKey && prefetchRoute(routeKey as any)}
             className={`flex items-center relative h-[var(--sidebar-item-height)] rounded-xl transition-all duration-200 group w-full ${isCollapsed ? 'justify-center px-0' : 'px-3 gap-3'
                 } ${active
                     ? 'bg-[var(--sidebar-item-bg-active)] text-[var(--sidebar-item-text-active)] font-bold sidebar-item-active-glow'
@@ -559,6 +573,7 @@ function SidebarItem({ icon, label, active = false, onClick, badge, id }: { icon
             aria-current={active ? 'page' : undefined}
             title={isCollapsed ? label : undefined}
         >
+
             {/* Active Accent Bar - Glassy gradient style */}
             {active && (
                 <motion.div

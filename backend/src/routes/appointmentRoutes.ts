@@ -17,6 +17,7 @@ router.post('/bulk-permanent', appointmentController.bulkPermanentRemove);
 
 // ID paths
 router.get('/:id', appointmentController.get);
+router.post('/:id/duplicate', appointmentController.duplicate);
 router.patch('/:id/status', appointmentController.updateStatus);
 router.patch('/:id/restore', appointmentController.restore);
 router.delete('/:id/permanent', appointmentController.permanentRemove);
