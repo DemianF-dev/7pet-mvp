@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260118-0239",
+  "version": "BETA20260118-0337",
   "stage": "BETA",
-  "timestamp": "2026-01-18T02:39:46.000Z",
-  "commit": "e331117",
-  "buildNumber": 84,
-  "releaseNotes": "Auto-generated from commit: feat: integrate Railway socket client for real-time events"
+  "timestamp": "2026-01-18T03:37:29.000Z",
+  "commit": "c456cfc",
+  "buildNumber": 85,
+  "releaseNotes": "Auto-generated from commit: feat: complete realtime socket integration and google maps service refactor"
 }
