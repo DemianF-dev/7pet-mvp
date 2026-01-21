@@ -4,11 +4,12 @@ dotenv.config();
 // 🔒 SECURITY: Validate critical environment variables at startup
 // Security: Removed sensitive environment variable logging
 import { validateEnvironment } from './utils/envValidation';
+import logger from './utils/logger';
 
 try {
     validateEnvironment();
 } catch (error) {
-    console.error('⚠️ Startup Warning: Environment validation failed!');
+    logger.error('Startup Warning: Environment validation failed!');
     if (process.env.NODE_ENV === 'production') {
         process.exit(1); // 🚫 Stop in production if critical envs are missing
     }
@@ -139,8 +140,7 @@ app.use(cors({
         if (allowedOrigins.indexOf(sanitizedOrigin) !== -1 || (isDev && localIpRegex.test(sanitizedOrigin))) {
             callback(null, true);
         } else {
-            console.warn(`[CORS] ❌ Blocked request from: ${origin}`);
-            Logger.warn(`CORS blocked request from origin: ${origin}`);
+            logger.warn(`CORS blocked request from origin: ${origin}`);
             metricsService.incrementBlockedCORS(); // 📊 Track CORS blocks
             callback(new Error('Not allowed by CORS'));
         }
