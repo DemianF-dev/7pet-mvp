@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Card from '../ui/Card';
 
 export interface Column<T> {
@@ -9,6 +9,8 @@ export interface Column<T> {
     render?: (item: T) => React.ReactNode;
     className?: string;
     mobileHidden?: boolean;
+    sortable?: boolean; // New: Enable sorting for this column
+    sortKey?: string; // New: Override the sorting key (e.g. for nested objects)
 }
 
 interface ResponsiveTableProps<T> {
@@ -24,6 +26,9 @@ interface ResponsiveTableProps<T> {
     selectedIds?: string[];
     onSelectRow?: (id: string) => void;
     onSelectAll?: () => void;
+    // Sorting support
+    sortConfig?: { key: string; direction: 'asc' | 'desc' } | null;
+    onSort?: (key: string) => void;
 }
 
 /**
@@ -42,7 +47,9 @@ export function ResponsiveTable<T>({
     selectable = false,
     selectedIds = [],
     onSelectRow,
-    onSelectAll
+    onSelectAll,
+    sortConfig,
+    onSort
 }: ResponsiveTableProps<T>) {
 
     if (isLoading) {
@@ -83,9 +90,21 @@ export function ResponsiveTable<T>({
                             {columns.map((col, idx) => (
                                 <th
                                     key={idx}
-                                    className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-tertiary)] ${col.className || ''}`}
+                                    onClick={() => col.sortable && onSort ? onSort(col.sortKey || (col.key as string)) : undefined}
+                                    className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-tertiary)] ${col.className || ''} ${col.sortable ? 'cursor-pointer hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] transition-colors select-none' : ''}`}
                                 >
-                                    {col.header}
+                                    <div className="flex items-center gap-1.5">
+                                        {col.header}
+                                        {col.sortable && (
+                                            <span className="text-[var(--color-text-tertiary)]">
+                                                {sortConfig?.key === (col.sortKey || col.key) ? (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                                                ) : (
+                                                    <ArrowUpDown size={12} className="opacity-30" />
+                                                )}
+                                            </span>
+                                        )}
+                                    </div>
                                 </th>
                             ))}
                         </tr>
@@ -128,6 +147,7 @@ export function ResponsiveTable<T>({
 
             {/* Mobile View: Cards */}
             <div className="md:hidden space-y-4 pb-10">
+                {/* Mobile Sort Controls can be added here if needed, or rely on Header controls */}
                 {data.map((item) => (
                     <motion.div
                         key={keyExtractor(item)}

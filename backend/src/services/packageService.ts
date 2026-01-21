@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
+import { randomUUID } from 'crypto';
 import { createTransaction } from './financialService';
 import { messagingService } from './messagingService';
 import { createAuditLog } from '../utils/auditLogger';
@@ -176,6 +177,7 @@ export const createPackage = async (input: CreatePackageInput) => {
                 notes,
                 items: {
                     create: calculation.breakdown.map(item => ({
+                        id: randomUUID(),
                         serviceId: item.serviceId,
                         description: item.description,
                         unitPrice: item.unitPrice,
@@ -602,6 +604,7 @@ export const createRecurringQuote = async (
             notes: options.notes,
             items: {
                 create: calculation.breakdown.map(item => ({
+                    id: randomUUID(),
                     description: item.description,
                     quantity: item.quantity,
                     price: item.finalPrice,

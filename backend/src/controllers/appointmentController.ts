@@ -2,7 +2,7 @@ import { Response } from 'express';
 import * as appointmentService from '../services/appointmentService';
 import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
-import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '../generated';
 import Logger from '../lib/logger';
 import * as auditService from '../services/auditService';
 
@@ -18,7 +18,9 @@ const appointmentSchema = z.object({
     }).optional(),
     customerId: z.string().uuid().optional(),
     quoteId: z.string().uuid().optional(),
-    performerId: z.string().uuid().nullable().optional()
+    performerId: z.string().uuid().nullable().optional(),
+    pickupProviderId: z.string().uuid().nullable().optional(),
+    dropoffProviderId: z.string().uuid().nullable().optional()
 });
 
 export const create = async (req: any, res: Response) => {
@@ -36,7 +38,9 @@ export const create = async (req: any, res: Response) => {
             ...validatedData,
             customerId,
             startAt: new Date(validatedData.startAt),
-            performerId: validatedData.performerId,
+            performerId: validatedData.performerId || undefined,
+            pickupProviderId: validatedData.pickupProviderId || undefined,
+            dropoffProviderId: validatedData.dropoffProviderId || undefined,
             overridePastDateCheck: req.body.overridePastDateCheck || false // **NOVO**
         };
 

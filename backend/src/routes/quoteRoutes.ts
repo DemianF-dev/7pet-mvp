@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { quoteLimiter, transportLimiter } from '../utils/rateLimiters';
 import { quoteController } from '../controllers/quoteController';
 import { authenticate } from '../middlewares/authMiddleware';
 
@@ -6,7 +7,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post('/', quoteController.create);
+router.post('/', quoteLimiter, quoteController.create);
 router.get('/', quoteController.list);
 router.get('/trash', quoteController.listTrash);
 router.post('/bulk-delete', quoteController.bulkDelete);
@@ -22,8 +23,8 @@ router.delete('/:id/permanent', quoteController.permanentRemove);
 // Cascading delete routes
 router.get('/:id/dependencies', quoteController.checkDependencies);
 router.post('/:id/cascade-delete', quoteController.cascadeDelete);
-router.post('/:id/calculate-transport', quoteController.calculateTransport);
-router.post('/transport/calculate', quoteController.calculateTransport); // Dedicated transport pricing
+router.post('/:id/calculate-transport', transportLimiter, quoteController.calculateTransport);
+router.post('/transport/calculate', transportLimiter, quoteController.calculateTransportDetailed); // Dedicated transport pricing
 router.post('/manual', quoteController.createManual);
 router.post('/:id/approve-and-schedule', quoteController.approveAndSchedule);
 

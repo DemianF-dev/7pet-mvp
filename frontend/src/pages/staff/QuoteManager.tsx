@@ -109,6 +109,18 @@ export default function QuoteManager() {
     const [valueRange, setValueRange] = useState({ min: 0, max: 0 });
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+    // Sorting
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    const handleSort = (key: string) => {
+        setSortConfig(current => {
+            if (current?.key === key) {
+                return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+            }
+            return { key, direction: 'asc' };
+        });
+    };
+
     // React Query Hooks
     const { data: quotes = [], isLoading, isFetching } = useQuotes(view);
     const bulkDeleteMutation = useBulkDeleteQuotes();
@@ -252,9 +264,21 @@ export default function QuoteManager() {
             if (view === 'active' && q.status === 'ENCERRADO') return false;
             if (view === 'history' && q.status !== 'ENCERRADO') return false;
 
-            const name = q.customer.name || '';
-            const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                String(q.id || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const term = searchTerm.toLowerCase();
+            const name = (q.customer.name || '').toLowerCase();
+            const petName = (q.pet?.name || '').toLowerCase();
+            const id = String(q.id || '').toLowerCase();
+            const seqId = String(q.seqId || '');
+            const formattedSeqId = String((q.seqId || 0) + 1000); // OC-xxxx format
+            const customerId = String(q.customerId || '').toLowerCase();
+
+            const matchesSearch =
+                name.includes(term) ||
+                petName.includes(term) ||
+                id.includes(term) ||
+                seqId.includes(term) ||
+                formattedSeqId.includes(term) ||
+                customerId.includes(term);
 
             const matchesStatus = statusFilter === 'ALL' || q.status === statusFilter;
 
@@ -269,10 +293,52 @@ export default function QuoteManager() {
             return matchesSearch && matchesStatus && matchesDate && matchesValue;
         });
 
+    const sortedQuotes = [...filteredQuotes].sort((a, b) => {
+        if (!sortConfig) return 0;
+        const { key, direction } = sortConfig;
+
+        const getValue = (obj: any, path: string) => {
+            return path.split('.').reduce((o, i) => (o as any)?.[i], obj);
+        };
+
+        let aValue = getValue(a, key);
+        let bValue = getValue(b, key);
+
+        // Handle nulls/undefined - always put them last
+        if (aValue === bValue) return 0;
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        // Handle specific types
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return direction === 'asc'
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        }
+
+        // Default comparison (numbers, dates, etc)
+        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
     const columns: Column<Quote>[] = [
         {
+            header: 'Ref',
+            key: 'seqId',
+            sortable: true,
+            className: 'w-24', // Fixed width for alignment
+            render: (quote) => (
+                <span className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest">
+                    OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
+                </span>
+            )
+        },
+        {
             header: 'Cliente / Pet',
-            key: 'customer',
+            key: 'customer.name', // Used for sorting
+            sortable: true,
+            sortKey: 'customer.name',
             render: (quote) => (
                 <div className="flex flex-col">
                     <button
@@ -282,9 +348,6 @@ export default function QuoteManager() {
                         {quote.customer?.name || 'Cliente'}
                     </button>
                     <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest">
-                            OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
-                        </span>
                         {quote.pet && (
                             <Badge variant="neutral" size="sm" className="bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] border-transparent leading-none py-0.5 px-1.5 h-auto font-bold">
                                 {quote.pet.name}
@@ -297,6 +360,7 @@ export default function QuoteManager() {
         {
             header: 'Data / Tipo',
             key: 'desiredAt',
+            sortable: true,
             className: 'text-center',
             render: (quote) => (
                 <div className="flex flex-col items-center">
@@ -318,6 +382,7 @@ export default function QuoteManager() {
         {
             header: 'Status',
             key: 'status',
+            sortable: true,
             className: 'text-center',
             render: (quote) => (
                 quote.status === 'AGENDADO' && quote.appointments && quote.appointments.length > 0 ? (
@@ -342,6 +407,7 @@ export default function QuoteManager() {
         {
             header: 'Total',
             key: 'totalAmount',
+            sortable: true,
             className: 'text-right',
             render: (quote) => (
                 <span className="font-[var(--font-weight-black)] text-[var(--color-text-primary)] text-lg">
@@ -644,7 +710,7 @@ export default function QuoteManager() {
                     <div className="bg-[var(--color-bg-surface)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)] border border-[var(--color-border)] overflow-hidden p-4 md:p-8">
                         <ResponsiveTable
                             columns={columns}
-                            data={filteredQuotes}
+                            data={sortedQuotes}
                             isLoading={isLoading}
                             keyExtractor={(q) => q.id}
                             onRowClick={(q) => navigate(`/staff/quotes/${q.id}`)}
@@ -652,6 +718,8 @@ export default function QuoteManager() {
                             selectedIds={selectedIds}
                             onSelectRow={toggleSelect}
                             onSelectAll={handleSelectAll}
+                            sortConfig={sortConfig}
+                            onSort={handleSort}
                             emptyMessage={searchTerm ? "Nenhum orçamento encontrado para os termos da busca." : "Nenhum orçamento encontrado."}
                             renderMobileCard={(quote) => (
                                 <Card

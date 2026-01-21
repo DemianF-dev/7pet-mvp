@@ -60,7 +60,7 @@ function generateChecksum(scenario: any): string {
  */
 router.post('/transport/simulate', async (req: Request, res: Response) => {
     try {
-        console.log('[DevTransportSim] Request:', JSON.stringify(req.body, null, 2));
+        // Security: Removed sensitive request body logging
 
         // Validation
         const schema = z.object({

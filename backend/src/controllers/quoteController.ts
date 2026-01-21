@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, QuoteStatus } from '@prisma/client';
+import { PrismaClient, QuoteStatus } from '../generated';
 import prisma from '../lib/prisma';
 import * as auditService from '../services/auditService';
 import { notificationService } from '../services/notificationService';
@@ -70,7 +70,7 @@ export const quoteController = {
                 }
             }
 
-            console.log('[QuoteCreate] Raw request body:', JSON.stringify(req.body, null, 2));
+            // Security: Removed sensitive request body logging
             const data = quoteSchema.parse(req.body);
             console.log(`[DEBUG] Criando orçamento para CustomerID: ${customerId}`, data);
 
@@ -280,7 +280,7 @@ export const quoteController = {
             console.error('[QuoteCreate] Error stack:', error instanceof Error ? error.stack : 'No stack');
 
             // Log raw body for better debugging of production issues
-            console.error('[QuoteCreate] Failed Body Context:', JSON.stringify(req.body));
+            // Security: Removed sensitive request body logging from error context
             console.error('[QuoteCreate] User Context:', JSON.stringify({
                 id: (req as any).user?.id,
                 role: (req as any).user?.role,
@@ -546,7 +546,7 @@ export const quoteController = {
 
     async update(req: Request, res: Response) {
         try {
-            console.log(`[QUOTE_UPDATE] ID: ${req.params.id}, Body: `, JSON.stringify(req.body, null, 2));
+            // Security: Removed sensitive request body logging
             const { id } = req.params;
             const data = z.object({
                 items: z.array(z.object({
@@ -668,7 +668,7 @@ export const quoteController = {
                 const validServices = serviceIds.length > 0
                     ? await prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true } })
                     : [];
-                const validServiceIds = new Set(validServices.map(s => s.id));
+                const validServiceIds = new Set(validServices.map((s: { id: string }) => s.id));
 
                 // VALIDATION: Performer IDs
                 const performerIds = data.items
@@ -678,7 +678,7 @@ export const quoteController = {
                 const validPerformers = performerIds.length > 0
                     ? await prisma.user.findMany({ where: { id: { in: performerIds } }, select: { id: true } })
                     : [];
-                const validPerformerIds = new Set(validPerformers.map(p => p.id));
+                const validPerformerIds = new Set(validPerformers.map((p: { id: string }) => p.id));
 
                 updateData.items = {
                     deleteMany: {},
@@ -803,7 +803,7 @@ export const quoteController = {
                     status: 'SOLICITADO',
                     totalAmount: original.totalAmount,
                     items: {
-                        create: original.items.map(item => ({
+                        create: original.items.map((item: any) => ({
                             id: randomUUID(),
                             description: item.description + ' (Cópia)',
                             quantity: item.quantity,
@@ -1002,6 +1002,10 @@ export const quoteController = {
                 return res.status(400).json({ error: 'Endereço de origem é obrigatório' });
             }
 
+            // Capture vars for error handling
+            const originAddress = address;
+            const destAddress = destinationAddress;
+
             // Verify quote exists
             const quote = await prisma.quote.findUnique({
                 where: { id }
@@ -1032,9 +1036,9 @@ export const quoteController = {
 
             // Handle structured MapsError
             if (error instanceof MapsError) {
-                console.error(`[Quote] MapsError for Quote ${id}: code=${error.code}, status=${error.upstreamStatus
+                console.error(`[Quote] MapsError for Quote ${req.params.id}: code=${error.code}, status=${error.upstreamStatus
 
-                    }, origin=${address}, dest=${destinationAddress || 'N/A'}`);
+                    }, origin=${req.body.address}, dest=${req.body.destinationAddress || 'N/A'}`);
 
                 const statusCode = error.code === 'MAPS_AUTH' ? 502 :
                     error.code === 'MAPS_QUOTA' ? 503 :
@@ -1110,7 +1114,7 @@ export const quoteController = {
                 return res.status(400).json({ error: 'Dados do cliente (nome e email) são obrigatórios.' });
             }
 
-            const result = await prisma.$transaction(async (tx) => {
+            const result = await prisma.$transaction(async (tx: any) => {
                 // 1. Register/Get Customer and Pet
                 console.log('[createManual] Registrando/Localizando cliente e pet...');
                 const { customer: dbCustomer, pet: dbPet } = await authService.registerManual(tx as any, { customer, pet });
@@ -1160,8 +1164,8 @@ export const quoteController = {
                         'rabo': 10.00
                     };
 
-                    const patas = knotRegions.filter(r => r.includes('pata'));
-                    const outrasRegioes = knotRegions.filter(r => !r.includes('pata'));
+                    const patas = knotRegions.filter((r: string) => r.includes('pata'));
+                    const outrasRegioes = knotRegions.filter((r: string) => !r.includes('pata'));
 
                     if (patas.length > 0) {
                         processedItems.push({
@@ -1172,7 +1176,7 @@ export const quoteController = {
                         });
                     }
 
-                    outrasRegioes.forEach(region => {
+                    outrasRegioes.forEach((region: string) => {
                         const price = KNOT_PRICES[region];
                         if (price) {
                             processedItems.push({
@@ -1324,9 +1328,9 @@ export const quoteController = {
      * Calculate transport pricing with detailed breakdown
      * POST /transport/calculate
      */
-    async calculateTransport(req: Request, res: Response) {
+    async calculateTransportDetailed(req: Request, res: Response) {
         try {
-            console.log('[TransportCalc] Request:', JSON.stringify(req.body, null, 2));
+            // Security: Removed sensitive request body logging
 
             // Validation schema
             const schema = z.object({

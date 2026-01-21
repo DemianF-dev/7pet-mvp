@@ -23,7 +23,7 @@ export default function AddressAutocomplete({
     const [isLoading, setIsLoading] = useState(true);
     const [autocompleteReady, setAutocompleteReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+    const autocompleteRef = useRef<any | null>(null);
 
     useEffect(() => {
         let mounted = true;

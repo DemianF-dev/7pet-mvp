@@ -52,7 +52,7 @@ const petSchema = z.object({
 
 export const create = async (req: any, res: Response) => {
     try {
-        console.log('RECEBENDO PET:', JSON.stringify(req.body));
+        // Security: Removed sensitive request body logging
         const data = petSchema.parse(req.body);
 
         // If client, force their own customerId

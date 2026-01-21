@@ -55,7 +55,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
             origin: '',
             destination: '7Pet',
             requestedPeriod: 'MANHA'
-        }
+        },
+        pickupProviderId: '',
+        dropoffProviderId: ''
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -112,7 +114,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     origin: appointment.transport.origin || '',
                     destination: appointment.transport.destination || '7Pet',
                     requestedPeriod: appointment.transport.requestedPeriod || 'MANHA'
-                } : { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
+                } : { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
+                pickupProviderId: appointment.pickupProviderId || '',
+                dropoffProviderId: appointment.dropoffProviderId || ''
             });
             // We set selectedCustomer in effect #4 based on customerId
         } else if (preFill) {
@@ -151,7 +155,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     origin: preFill.transportOrigin || '',
                     destination: preFill.transportDestination || '7Pet',
                     requestedPeriod: preFill.transportPeriod || 'MANHA'
-                }
+                },
+                pickupProviderId: '',
+                dropoffProviderId: ''
             });
 
             // FIX: Fetch and set selectedCustomer immediately to avoid empty UI
@@ -191,7 +197,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 agendaLogistica: false,
                 performerId: '',
                 logisticPerformerId: '',
-                transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
+                transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
+                pickupProviderId: '',
+                dropoffProviderId: ''
             });
             setSelectedCustomer(null);
             setPets([]);
@@ -376,6 +384,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     performerId: (appointment.category === 'LOGISTICA' && formData.logisticPerformerId)
                         ? (formData.logisticPerformerId || undefined)
                         : (formData.performerId || undefined),
+                    pickupProviderId: formData.pickupProviderId || undefined,
+                    dropoffProviderId: formData.dropoffProviderId || undefined,
                     category,
                     transport: formData.agendaLogistica ? formData.transport : undefined
                 };
@@ -414,6 +424,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                         petId: formData.petId,
                         serviceIds: logServiceIds,
                         performerId: formData.logisticPerformerId || formData.performerId, // Profissional Logístico
+                        pickupProviderId: formData.pickupProviderId || undefined,
+                        dropoffProviderId: formData.dropoffProviderId || undefined,
                         startAt: formData.logisticStartAt || formData.startAt, // Horário da Logística
                         category: 'LOGISTICA',
                         transport: formData.transport,
@@ -477,6 +489,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                         petId: formData.petId,
                         serviceIds: logServiceIds,
                         performerId: formData.logisticPerformerId || formData.performerId,
+                        pickupProviderId: formData.pickupProviderId || undefined,
+                        dropoffProviderId: formData.dropoffProviderId || undefined,
                         startAt: formData.logisticStartAt || formData.startAt,
                         category: 'LOGISTICA',
                         transport: formData.transport,
@@ -565,6 +579,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                         agendaLogistica: false,
                                         performerId: '',
                                         logisticPerformerId: '',
+                                        pickupProviderId: '',
+                                        dropoffProviderId: '',
                                         transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
                                     });
                                     setSelectedCustomer(null);
@@ -771,38 +787,84 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
 
                             {/* Professional Selection - Logística */}
                             {formData.agendaLogistica && (
-                                <div className="space-y-3 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
-                                    <label className="text-sm font-bold text-orange-500 uppercase flex items-center gap-2">
-                                        <Truck size={16} /> Responsável Logística
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, logisticPerformerId: '' })}
-                                            className={`p-3 rounded-2xl border text-left transition-all ${!formData.logisticPerformerId ? 'bg-orange-50 border-orange-200 shadow-md ring-2 ring-orange-500/10' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                        >
-                                            <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
-                                            <div className={`font-bold text-sm ${!formData.logisticPerformerId ? 'text-orange-600' : 'text-gray-400'}`}>Ninguém fixo</div>
-                                        </button>
-                                        {(staffUsers || [])
-                                            .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
-                                            .map(u => u && (
-                                                <button
-                                                    key={u.id}
-                                                    type="button"
-                                                    onClick={() => setFormData({ ...formData, logisticPerformerId: u.id })}
-                                                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.logisticPerformerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-orange-500/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                                    style={formData.logisticPerformerId === u.id ? { borderLeft: `6px solid ${u.color || '#F97316'}` } : {}}
-                                                >
-                                                    <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
-                                                    <div className={`font-bold text-sm truncate ${formData.logisticPerformerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
-                                                    {formData.logisticPerformerId === u.id && (
-                                                        <div className="absolute top-2 right-2 text-orange-500">
-                                                            <CheckCircle size={14} />
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            ))}
+                                <div className="space-y-6 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
+                                    {/* Primary Logistics Provider (Optional fallback) */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-bold text-orange-500 uppercase flex items-center gap-2">
+                                            <Truck size={16} /> Responsável Logística (Geral)
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, logisticPerformerId: '' })}
+                                                className={`p-3 rounded-2xl border text-left transition-all ${!formData.logisticPerformerId ? 'bg-orange-50 border-orange-200 shadow-md ring-2 orange-500/10' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                            >
+                                                <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
+                                                <div className={`font-bold text-sm ${!formData.logisticPerformerId ? 'text-orange-600' : 'text-gray-400'}`}>Ninguém fixo</div>
+                                            </button>
+                                            {(staffUsers || [])
+                                                .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
+                                                .map(u => u && (
+                                                    <button
+                                                        key={u.id}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, logisticPerformerId: u.id })}
+                                                        className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.logisticPerformerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-orange-500/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                                        style={formData.logisticPerformerId === u.id ? { borderLeft: `6px solid ${u.color || '#F97316'}` } : {}}
+                                                    >
+                                                        <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
+                                                        <div className={`font-bold text-sm truncate ${formData.logisticPerformerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
+                                                        {formData.logisticPerformerId === u.id && (
+                                                            <div className="absolute top-2 right-2 text-orange-500">
+                                                                <CheckCircle size={14} />
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Separate Legs Selection */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50/30 rounded-[32px] border border-orange-100">
+                                        {/* LEVA */}
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-orange-500" /> Motorista LEVA
+                                            </label>
+                                            <select
+                                                value={formData.pickupProviderId}
+                                                onChange={(e) => setFormData({ ...formData, pickupProviderId: e.target.value })}
+                                                className="w-full bg-white border-none rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
+                                            >
+                                                <option value="">Mesmo do Geral</option>
+                                                {(staffUsers || [])
+                                                    .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
+                                                    .map(u => (
+                                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                                    ))
+                                                }
+                                            </select>
+                                        </div>
+
+                                        {/* TRAZ */}
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500" /> Motorista TRAZ
+                                            </label>
+                                            <select
+                                                value={formData.dropoffProviderId}
+                                                onChange={(e) => setFormData({ ...formData, dropoffProviderId: e.target.value })}
+                                                className="w-full bg-white border-none rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
+                                            >
+                                                <option value="">Mesmo do Geral</option>
+                                                {(staffUsers || [])
+                                                    .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
+                                                    .map(u => (
+                                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                                    ))
+                                                }
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             )}

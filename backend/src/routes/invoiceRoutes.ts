@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
+import { randomUUID } from 'crypto';
 import { authenticate, authorize } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -45,8 +46,10 @@ router.post('/', staffOnly, async (req, res) => {
     const { customerId, amount, dueDate, quoteIds, appointmentId } = req.body;
     const invoice = await prisma.invoice.create({
         data: {
+            id: randomUUID(),
             customerId,
             amount,
+            updatedAt: new Date(),
             dueDate: new Date(dueDate),
             quotes: quoteIds ? {
                 connect: quoteIds.map((id: string) => ({ id }))
@@ -375,8 +378,10 @@ router.post('/:id/duplicate', staffOnly, async (req: Request, res: Response) => 
 
         const duplicate = await prisma.invoice.create({
             data: {
+                id: randomUUID(),
                 customerId: original.customerId,
                 amount: original.amount,
+                updatedAt: new Date(),
                 dueDate: newDueDate,
                 quotes: original.quotes ? {
                     connect: original.quotes.map((q: any) => ({ id: q.id }))
@@ -594,8 +599,10 @@ router.post('/batch', staffOnly, async (req: Request, res: Response) => {
             // Create the consolidated invoice
             const invoice = await prisma.invoice.create({
                 data: {
+                    id: randomUUID(),
                     customerId,
                     amount: totalAmount,
+                    updatedAt: new Date(),
                     dueDate: targetDueDate,
                     status: 'PENDENTE',
                     quotes: {

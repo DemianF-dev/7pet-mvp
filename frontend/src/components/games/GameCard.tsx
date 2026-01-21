@@ -1,22 +1,7 @@
-/**
- * GameCard - Interactive card for game selection
- * 
- * Premium liquid glass design following Apple's design language.
- * Used in PausaPage to display available games.
- * Follows design system guidelines and uses only CSS tokens.
- */
-
-import { GameMetadata } from '../../types/game.types';
-import '../../styles/design-system-base.css';
-
-interface GameCardProps {
-    game: GameMetadata;
-    onClick?: () => void;
-}
-
 import { GameMetadata } from '../../types/game.types';
 import { Card, Badge } from '../ui';
 import { motion } from 'framer-motion';
+import '../../styles/design-system-base.css';
 
 interface GameCardProps {
     game: GameMetadata;
@@ -106,8 +91,5 @@ export default function GameCard({ game, onClick }: GameCardProps) {
                 )}
             </Card>
         </motion.div>
-    );
-}
-
     );
 }

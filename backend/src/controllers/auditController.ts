@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import * as auditService from '../services/auditService';
-import { AuditTargetType, AuditSeverity } from '@prisma/client';
+import { AuditTargetType, AuditSeverity, Prisma } from '../generated';
 
 export const auditController = {
     /**
@@ -75,8 +75,8 @@ export const auditController = {
 
             if (q) {
                 where.OR = [
-                    { summary: { contains: String(q), mode: 'insensitive' } },
-                    { actorNameSnapshot: { contains: String(q), mode: 'insensitive' } },
+                    { summary: { contains: String(q), mode: Prisma.QueryMode.insensitive } },
+                    { actorNameSnapshot: { contains: String(q), mode: Prisma.QueryMode.insensitive } },
                     { targetId: { contains: String(q) } }
                 ];
             }

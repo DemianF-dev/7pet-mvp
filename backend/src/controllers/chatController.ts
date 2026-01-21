@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
 import { socketService } from '../services/socketService';
 import { railwaySocketClient } from '../services/railwaySocketClient';
+import { Prisma } from '../generated';
 
 export const getConversations = async (req: Request, res: Response) => {
     try {
@@ -256,8 +257,8 @@ export const searchUsers = async (req: Request, res: Response) => {
 
         if (query && typeof query === 'string') {
             whereClause.OR = [
-                { name: { contains: query, mode: 'insensitive' } },
-                { email: { contains: query, mode: 'insensitive' } }
+                { name: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                { email: { contains: query, mode: Prisma.QueryMode.insensitive } }
             ];
         }
 

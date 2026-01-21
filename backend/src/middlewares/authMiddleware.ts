@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
+import logger from '../utils/logger';
 
 // CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -15,12 +16,16 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
         // console.log(`[Auth] Header: ${authHeader ? 'Present' : 'Missing'}`);
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.log('[Auth] No Bearer token');
+            // Security: Removed authentication token logging
             return res.status(401).json({ error: 'Não autorizado' });
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded: any = jwt.verify(token, JWT_SECRET);
+        
+        // JWT Hardening: Fix algorithm to prevent confusion attacks
+        const decoded: any = jwt.verify(token, JWT_SECRET, {
+            algorithms: ['HS256'] // Force algorithm to prevent 'none' or other algorithm attacks
+        });
         // console.log(`[Auth] Token decoded for UserID: ${decoded.userId}`);
 
         const user = await prisma.user.findUnique({
@@ -29,8 +34,14 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
         });
 
         if (!user) {
-            console.log('[Auth] User not found in DB');
+            logger.warn({ userId: decoded.userId }, 'Authentication failed: User not found');
             return res.status(401).json({ error: 'Usuário não encontrado' });
+        }
+
+        // JWT Hardening: Additional checks
+        if (!decoded.exp || decoded.exp < Math.floor(Date.now() / 1000)) {
+            logger.warn({ userId: decoded.userId }, 'Authentication failed: Token expired');
+            return res.status(401).json({ error: 'Token expirado' });
         }
 
         req.user = user;
@@ -48,7 +59,7 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
 
         next();
     } catch (error) {
-        console.log('[Auth] Token Validation Error:', error);
+        logger.error({ err: error }, 'Authentication failed: Token validation error');
         res.status(401).json({ error: 'Token inválido' });
     }
 };
@@ -56,13 +67,12 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
 export const authorize = (divisions: string[]) => {
     return (req: any, res: Response, next: NextFunction) => {
         if (!req.user) {
-            console.log('[Authz] No user attached to request');
+            logger.warn('Authorization failed: No user attached to request');
             return res.status(403).json({ error: 'Acesso negado' });
         }
 
         // Use division if available, fallback to role for backward compatibility
         const userDivision = req.user.division || req.user.role;
-        console.log(`[Authz] User Division: ${userDivision}, Required: ${divisions.join(',')}`);
 
         // ADMIN has access to everything
         if (userDivision === 'ADMIN' || userDivision === 'MASTER') {
@@ -70,7 +80,7 @@ export const authorize = (divisions: string[]) => {
         }
 
         if (!divisions.includes(userDivision)) {
-            console.log('[Authz] Insufficient permissions');
+            logger.warn({ userDivision, required: divisions }, 'Authorization failed: Insufficient permissions');
             return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
         }
         next();

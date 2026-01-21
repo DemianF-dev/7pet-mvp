@@ -1,7 +1,8 @@
 import prisma from '../lib/prisma';
-import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
-import { auditService } from './auditService';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '../generated';
+import * as auditService from './auditService';
 import hrService from './hrService';
+import { randomUUID } from 'crypto';
 
 export const create = async (data: {
     customerId: string;
@@ -15,6 +16,8 @@ export const create = async (data: {
         requestedPeriod?: TransportPeriod;
     };
     performerId?: string;
+    pickupProviderId?: string;
+    dropoffProviderId?: string;
     quoteId?: string;
     overridePastDateCheck?: boolean; // Flag para operadores confirmarem agendamento no passado
 }, isStaff: boolean = false) => {
@@ -74,9 +77,11 @@ export const create = async (data: {
 
     const appointment = await prisma.appointment.create({
         data: {
+            id: randomUUID(),
             customerId: data.customerId,
             petId: data.petId,
             startAt: data.startAt,
+            updatedAt: new Date(),
             status: isStaff ? AppointmentStatus.CONFIRMADO : AppointmentStatus.PENDENTE,
             category: data.category || AppointmentCategory.SPA,
             services: data.serviceIds ? {
@@ -84,19 +89,24 @@ export const create = async (data: {
             } : undefined,
             transportDetails: data.transport ? {
                 create: {
+                    id: randomUUID(),
                     origin: data.transport.origin || 'Endereço não informado',
                     destination: data.transport.destination || '7Pet',
                     requestedPeriod: data.transport.requestedPeriod || TransportPeriod.MANHA
                 }
             } : undefined,
             quoteId: data.quoteId,
-            performerId: data.performerId || undefined
+            performerId: data.performerId || undefined,
+            pickupProviderId: data.pickupProviderId || undefined,
+            dropoffProviderId: data.dropoffProviderId || undefined
         },
         include: {
             pet: true,
             services: true,
             transportDetails: true,
             performer: true,
+            pickupProvider: true,
+            dropoffProvider: true,
             customer: {
                 include: { pets: true }
             }
@@ -105,14 +115,12 @@ export const create = async (data: {
 
     // Logging
     if (data.customerId) {
-        await auditService.log({
-            entityType: 'Appointment',
-            entityId: appointment.id,
-            action: 'CREATE',
-            performedBy: 'SYSTEM', // Default, should be passed from controller
-            newData: appointment,
-            reason: 'Agendamento criado'
-        });
+        await auditService.logAppointmentEvent(
+            { source: 'SYSTEM', actorUserId: 'SYSTEM' },
+            appointment,
+            'APPOINTMENT_CREATED',
+            'Agendamento criado'
+        );
     }
 
     return appointment;
@@ -180,6 +188,8 @@ export const get = async (id: string) => {
             services: true,
             transportDetails: true,
             performer: true,
+            pickupProvider: true,
+            dropoffProvider: true,
             invoice: {
                 include: { payments: true, customer: true }
             },
@@ -211,6 +221,7 @@ export const update = async (id: string, data: any, userId?: string) => {
             transportDetails: data.transport ? {
                 upsert: {
                     create: {
+                        id: randomUUID(),
                         origin: data.transport.origin || 'Endereço não informado',
                         destination: data.transport.destination || '7Pet',
                         requestedPeriod: data.transport.requestedPeriod || TransportPeriod.MANHA
@@ -222,13 +233,17 @@ export const update = async (id: string, data: any, userId?: string) => {
                     }
                 }
             } : undefined,
-            performerId: data.performerId !== undefined ? (data.performerId || null) : undefined
+            performerId: data.performerId !== undefined ? (data.performerId || null) : undefined,
+            pickupProviderId: data.pickupProviderId !== undefined ? (data.pickupProviderId || null) : undefined,
+            dropoffProviderId: data.dropoffProviderId !== undefined ? (data.dropoffProviderId || null) : undefined
         },
         include: {
             pet: true,
             services: true,
             transportDetails: true,
             performer: true,
+            pickupProvider: true,
+            dropoffProvider: true,
             customer: {
                 include: { pets: true }
             }
@@ -236,15 +251,13 @@ export const update = async (id: string, data: any, userId?: string) => {
     });
 
     if (userId) {
-        await auditService.log({
-            entityType: 'Appointment',
-            entityId: id,
-            action: 'UPDATE',
-            performedBy: userId,
-            previousData: previous,
-            newData: updated,
-            reason: data.reason || 'Atualização de agendamento'
-        });
+        await auditService.logAppointmentEvent(
+            { source: 'SYSTEM', actorUserId: userId },
+            updated,
+            'APPOINTMENT_STATUS_CHANGED',
+            data.reason || 'Atualização de agendamento',
+            { changes: auditService.calculateDiff(previous, updated) }
+        );
     }
 
     return updated;
@@ -264,15 +277,13 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
     });
 
     if (userId) {
-        await auditService.log({
-            entityType: 'Appointment',
-            entityId: id,
-            action: 'UPDATE',
-            performedBy: userId,
-            previousData: { status: previous?.status },
-            newData: { status: updated.status },
-            reason: reason || `Alteração de status para ${status}`
-        });
+        await auditService.logAppointmentEvent(
+            { source: 'SYSTEM', actorUserId: userId },
+            updated,
+            'APPOINTMENT_STATUS_CHANGED',
+            reason || `Alteração de status para ${status}`,
+            { oldStatus: previous?.status, newStatus: updated.status }
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -347,78 +358,95 @@ export const updateLogisticsStatus = async (id: string, logisticsStatus: string,
     });
 
     if (userId) {
-        await auditService.log({
-            entityType: 'Appointment',
-            entityId: id,
-            action: 'UPDATE_LOGISTICS',
-            performedBy: userId,
-            previousData: { logisticsStatus: previous?.logisticsStatus },
-            newData: { logisticsStatus: updated.logisticsStatus },
-            reason: reason || `Alteração de status logístico para ${logisticsStatus}`
-        });
+        await auditService.logAppointmentEvent(
+            { source: 'SYSTEM', actorUserId: userId },
+            updated,
+            'APPOINTMENT_STATUS_CHANGED',
+            reason || `Alteração de status logístico para ${logisticsStatus}`,
+            { oldLogisticsStatus: previous?.logisticsStatus, newLogisticsStatus: updated.logisticsStatus }
+        );
     }
 
     // HR INTEGRATION for Logistics status
-    if (updated.performerId) {
+    if (updated.logisticsStatus === 'EXECUTED') {
         try {
-            const staff = await hrService.getStaffProfileByUserId(updated.performerId);
-            if (staff && staff.isActive) {
-                if (logisticsStatus === 'EXECUTED') {
-                    // Record full commission (Leva + Traz)
-                    const existingLegs = await hrService.getTransportLegExecutions({ staffId: staff.id });
-                    const apptLegs = existingLegs.filter(l => l.appointmentId === updated.id);
+            // Determine providers for each leg
+            const pickupUserId = updated.pickupProviderId || updated.performerId;
+            const dropoffUserId = updated.dropoffProviderId || updated.performerId;
 
-                    if (apptLegs.length === 0) {
+            if (pickupUserId) {
+                const pickupStaff = await hrService.getStaffProfileByUserId(pickupUserId);
+                if (pickupStaff && pickupStaff.isActive) {
+                    const existing = await hrService.getTransportLegExecutions({ staffId: pickupStaff.id });
+                    if (!existing.some(l => l.appointmentId === updated.id && l.legType === 'pickup')) {
+                        await hrService.createTransportLegExecution({
+                            appointmentId: updated.id,
+                            staffId: pickupStaff.id,
+                            legType: 'pickup',
+                            notes: `Logística Executada (Leva) - Agendamento #${updated.seqId}`
+                        });
+                    }
+                }
+            }
+
+            if (dropoffUserId) {
+                const dropoffStaff = await hrService.getStaffProfileByUserId(dropoffUserId);
+                if (dropoffStaff && dropoffStaff.isActive) {
+                    const existing = await hrService.getTransportLegExecutions({ staffId: dropoffStaff.id });
+                    if (!existing.some(l => l.appointmentId === updated.id && l.legType === 'dropoff')) {
+                        await hrService.createTransportLegExecution({
+                            appointmentId: updated.id,
+                            staffId: dropoffStaff.id,
+                            legType: 'dropoff',
+                            notes: `Logística Executada (Traz) - Agendamento #${updated.seqId}`
+                        });
+                    }
+                }
+            }
+
+            if (updated.category === 'LOGISTICA') {
+                await prisma.appointment.update({
+                    where: { id: updated.id },
+                    data: { status: 'FINALIZADO' }
+                });
+            }
+        } catch (hrError) {
+            console.error('[AppointmentService] Error recording HR logistics production (EXECUTED):', hrError);
+        }
+    } else if (updated.logisticsStatus === 'CANCELED_WITH_TRAVEL') {
+        try {
+            const largadaUserId = updated.pickupProviderId || updated.performerId;
+            if (largadaUserId) {
+                const staff = await hrService.getStaffProfileByUserId(largadaUserId);
+                if (staff && staff.isActive) {
+                    const existing = await hrService.getTransportLegExecutions({ staffId: staff.id });
+                    if (!existing.some(l => l.appointmentId === updated.id && l.legType === 'pickup')) {
                         await hrService.createTransportLegExecution({
                             appointmentId: updated.id,
                             staffId: staff.id,
                             legType: 'pickup',
-                            notes: `Logística Executada - Agendamento #${updated.seqId}`
-                        });
-                        await hrService.createTransportLegExecution({
-                            appointmentId: updated.id,
-                            staffId: staff.id,
-                            legType: 'dropoff',
-                            notes: `Logística Executada - Agendamento #${updated.seqId}`
+                            notes: `Cancelado com Viagem (Taxa de Largada) - Agendamento #${updated.seqId}`
                         });
                     }
-
-                    if (updated.category === 'LOGISTICA') {
-                        await prisma.appointment.update({
-                            where: { id: updated.id },
-                            data: { status: 'FINALIZADO' }
-                        });
-                    }
-                } else if (logisticsStatus === 'CANCELED_WITH_TRAVEL') {
-                    // Record only 'LARGADA' fee
-                    // We'll mark it as 'pickup' for simplicity, or we should ensure hrService knows it's a fixed fee
-                    await hrService.createTransportLegExecution({
-                        appointmentId: updated.id,
-                        staffId: staff.id,
-                        legType: 'pickup',
-                        notes: `Cancelado com Viagem (Taxa de Largada) - Agendamento #${updated.seqId}`
-                    });
-
-                    await prisma.appointment.update({
-                        where: { id: updated.id },
-                        data: { status: 'CANCELADO' }
-                    });
-                } else if (logisticsStatus === 'CANCELED_WITHOUT_TRAVEL') {
-                    await prisma.appointment.update({
-                        where: { id: updated.id },
-                        data: { status: 'CANCELADO' }
-                    });
-                } else if (logisticsStatus === 'RESCHEDULE') {
-                    // Reset standard status to PENDENTE to allow rescheduling
-                    await prisma.appointment.update({
-                        where: { id: updated.id },
-                        data: { status: 'PENDENTE' }
-                    });
                 }
             }
+            await prisma.appointment.update({
+                where: { id: updated.id },
+                data: { status: 'CANCELADO' }
+            });
         } catch (hrError) {
-            console.error('[AppointmentService] Error recording HR logistics production:', hrError);
+            console.error('[AppointmentService] Error recording HR logistics production (CANCELED_WITH_TRAVEL):', hrError);
         }
+    } else if (updated.logisticsStatus === 'CANCELED_WITHOUT_TRAVEL') {
+        await prisma.appointment.update({
+            where: { id: updated.id },
+            data: { status: 'CANCELADO' }
+        });
+    } else if (updated.logisticsStatus === 'RESCHEDULE') {
+        await prisma.appointment.update({
+            where: { id: updated.id },
+            data: { status: 'PENDENTE' }
+        });
     }
 
     return updated;
@@ -540,6 +568,7 @@ export const updateQuoteStatus = async (quoteId: string, appointmentId?: string)
             status: 'AGENDADO',
             statusHistory: {
                 create: {
+                    id: randomUUID(),
                     oldStatus: quote.status,
                     newStatus: 'AGENDADO',
                     changedBy: 'SYSTEM',
@@ -605,14 +634,12 @@ export const duplicate = async (id: string, performedBy: string) => {
 
     const duplicated = await create(duplicateData, true); // true as isStaff to allow creating with performer
 
-    await auditService.log({
-        entityType: 'Appointment',
-        entityId: duplicated.id,
-        action: 'CREATE',
-        performedBy,
-        newData: duplicated,
-        reason: `Duplicado a partir do agendamento #${original.seqId || original.id}`
-    });
+    await auditService.logAppointmentEvent(
+        { source: 'SYSTEM', actorUserId: performedBy },
+        duplicated,
+        'APPOINTMENT_CREATED',
+        `Duplicado a partir do agendamento #${original.seqId || original.id}`
+    );
 
     return duplicated;
 };

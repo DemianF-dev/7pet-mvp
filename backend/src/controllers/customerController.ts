@@ -3,6 +3,8 @@ import { z } from 'zod';
 import prisma from '../lib/prisma';
 import * as auditService from '../services/auditService';
 import * as customerService from '../services/customerService';
+import { Prisma } from '../generated';
+import { randomUUID } from 'crypto';
 
 const customerSchema = z.object({
     firstName: z.string().min(1, 'Primeiro nome é obrigatório').optional().nullable(),
@@ -61,10 +63,10 @@ export const customerController = {
                 where: {
                     deletedAt: null,
                     OR: [
-                        { name: { contains: q, mode: 'insensitive' } },
-                        { phone: { contains: q, mode: 'insensitive' } },
-                        { legacyBitrixId: { contains: q, mode: 'insensitive' } },
-                        { user: { email: { contains: q, mode: 'insensitive' } } }
+                        { name: { contains: q, mode: Prisma.QueryMode.insensitive } },
+                        { phone: { contains: q, mode: Prisma.QueryMode.insensitive } },
+                        { legacyBitrixId: { contains: q, mode: Prisma.QueryMode.insensitive } },
+                        { user: { email: { contains: q, mode: Prisma.QueryMode.insensitive } } }
                     ]
                 },
                 include: {
@@ -840,6 +842,7 @@ export const customerController = {
 
             const alert = await prisma.customerAlert.create({
                 data: {
+                    id: randomUUID(),
                     customerId: id,
                     type,
                     title,

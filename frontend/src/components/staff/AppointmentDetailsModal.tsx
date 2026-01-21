@@ -617,6 +617,26 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                                     </div>
                                 </div>
 
+                                {/* Seção dos Motoristas por Perna */}
+                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white dark:bg-gray-800 rounded-2xl border border-orange-100 dark:border-orange-500/10 shadow-sm">
+                                        <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" /> Motorista LEVA
+                                        </p>
+                                        <p className="text-xs font-black text-secondary dark:text-white">
+                                            {localAppointment.pickupProvider?.name || localAppointment.performer?.name || 'Não definido'}
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-white dark:bg-gray-800 rounded-2xl border border-orange-100 dark:border-orange-500/10 shadow-sm">
+                                        <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Motorista TRAZ
+                                        </p>
+                                        <p className="text-xs font-black text-secondary dark:text-white">
+                                            {localAppointment.dropoffProvider?.name || localAppointment.performer?.name || 'Não definido'}
+                                        </p>
+                                    </div>
+                                </div>
+
                                 {/* Logistics Status Actions */}
                                 {localAppointment.category === 'LOGISTICA' && (
                                     <div className="mt-6 pt-6 border-t border-orange-200/50">

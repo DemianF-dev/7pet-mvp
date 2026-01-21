@@ -21,7 +21,8 @@ export const create = async (req: Request, res: Response) => {
                 badgeType,
                 senderId,
                 receiverId,
-                comment
+                comment: comment ? String(comment) : undefined,
+                updatedAt: new Date()
             },
             include: {
                 sender: { select: { id: true, name: true } },
@@ -47,7 +48,8 @@ export const create = async (req: Request, res: Response) => {
             data: {
                 content: postContent,
                 authorId: senderId, // The admin/executor
-                attachments: []
+                attachments: [],
+                updatedAt: new Date()
             },
             include: {
                 author: { select: { id: true, name: true, color: true } },

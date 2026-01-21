@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
+import { Prisma } from '../generated';
+import { randomUUID } from 'crypto';
 
 /**
  * Controller for notification settings management (MASTER only)
@@ -89,14 +91,17 @@ export const updateUserPreference = async (req: Request, res: Response) => {
                 }
             },
             create: {
+                id: randomUUID(),
                 userId,
                 notificationType: type,
                 enabled,
-                channels: channels ? JSON.stringify(channels) : undefined
+                channels: channels ? JSON.stringify(channels) : undefined,
+                updatedAt: new Date()
             },
             update: {
                 enabled,
-                channels: channels ? JSON.stringify(channels) : undefined
+                channels: channels ? JSON.stringify(channels) : undefined,
+                updatedAt: new Date()
             }
         });
 
@@ -129,14 +134,17 @@ export const bulkUpdateUserPreferences = async (req: Request, res: Response) => 
                     }
                 },
                 create: {
+                    id: randomUUID(),
                     userId,
                     notificationType,
                     enabled,
-                    channels: channels ? JSON.stringify(channels) : JSON.stringify(['IN_APP', 'PUSH'])
+                    channels: channels ? JSON.stringify(channels) : JSON.stringify(['IN_APP', 'PUSH']),
+                    updatedAt: new Date()
                 },
                 update: {
                     enabled,
-                    channels: channels ? JSON.stringify(channels) : undefined
+                    channels: channels ? JSON.stringify(channels) : undefined,
+                    updatedAt: new Date()
                 }
             });
 
@@ -223,8 +231,8 @@ export const getAllUsersWithPreferences = async (req: Request, res: Response) =>
             ...(division ? { division: division as string } : {}),
             ...(search ? {
                 OR: [
-                    { name: { contains: search as string, mode: 'insensitive' } },
-                    { email: { contains: search as string, mode: 'insensitive' } }
+                    { name: { contains: search as string, mode: Prisma.QueryMode.insensitive } },
+                    { email: { contains: search as string, mode: Prisma.QueryMode.insensitive } }
                 ]
             } : {})
         };

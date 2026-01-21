@@ -5,7 +5,7 @@ import { mapsService, MapsError } from '../services/googleMapsService';
 export const mapsController = {
     async calculate(req: Request, res: Response) {
         try {
-            console.log('[MapsController] Received calculate request body:', req.body);
+            // Security: Removed sensitive request body logging
             const { address } = req.body;
 
             if (!address) {

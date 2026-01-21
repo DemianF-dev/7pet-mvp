@@ -32,7 +32,7 @@ describe('Manual Quote Creation', () => {
         };
 
         // Mock Transaction
-        prismaMock.$transaction.mockImplementation(async (callback) => {
+        prismaMock.$transaction.mockImplementation(async (callback: any) => {
             return callback(prismaMock);
         });
 

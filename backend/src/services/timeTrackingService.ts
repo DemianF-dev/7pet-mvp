@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
+import { Prisma } from '../generated';
 
 // ============================================
 // TIME TRACKING SERVICE
@@ -633,7 +632,7 @@ export async function revertHourBankProcessing(payPeriodId: string, adminUserId:
     await prisma.payAdjustment.deleteMany({
         where: {
             payPeriodId,
-            reason: { contains: 'banco de horas', mode: 'insensitive' }
+            reason: { contains: 'banco de horas', mode: Prisma.QueryMode.insensitive }
         }
     });
 
