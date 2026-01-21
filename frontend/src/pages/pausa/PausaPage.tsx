@@ -64,7 +64,9 @@ export default function PausaPage() {
     const { user } = useAuthStore();
 
     useEffect(() => {
-        if (user && user.pauseMenuEnabled === false) {
+        const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENTE';
+        // Only restrict non-clients (staff) if explicitly disabled
+        if (user && !isClient && user.pauseMenuEnabled === false) {
             toast.error('O menu de Pausa não está habilitado para seu perfil.');
             navigate('/staff/dashboard');
         }
@@ -85,7 +87,7 @@ export default function PausaPage() {
                 <IconButton
                     icon={ChevronLeft}
                     onClick={() => navigate(-1)}
-                    variant="surface"
+                    variant="secondary"
                     aria-label="Voltar"
                 />
             </div>

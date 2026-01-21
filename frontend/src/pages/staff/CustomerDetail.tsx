@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     User, Mail, Phone, MapPin, Save, Calendar,
     Trash2, Plus, X, MessageSquare,
-    Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield, DollarSign
+    Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield, DollarSign, FileText
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';

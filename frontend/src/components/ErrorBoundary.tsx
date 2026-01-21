@@ -9,6 +9,8 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { useErrorStore } from '../store/errorStore';
+import { queryClient } from '../lib/queryClient';
 
 interface Props {
     children: ReactNode;
@@ -37,12 +39,36 @@ export class ErrorBoundary extends Component<Props, State> {
         console.error('🔴 Component stack:', errorInfo.componentStack);
         this.setState({ errorInfo });
 
-        // Log to external service if configured (e.g., Sentry)
-        // sendErrorReport(error, errorInfo);
+        // Track error in ErrorStore (sanitized)
+        useErrorStore.getState().addError({
+            message: error.message,
+            name: error.name,
+            type: 'boundary',
+            stack: import.meta.env.DEV ? error.stack : undefined,
+        });
     }
 
     handleReload = () => {
         window.location.reload();
+    };
+
+    handleRestartApp = async () => {
+        try {
+            // Cancel any in-flight queries
+            await queryClient.cancelQueries();
+
+            // Clear React Query cache
+            queryClient.clear();
+
+            // Clear error store
+            useErrorStore.getState().clearErrors();
+
+            // Navigate to home with hard reload
+            window.location.href = '/';
+        } catch (err) {
+            console.error('Failed to restart app:', err);
+            window.location.reload();
+        }
     };
 
     handleGoHome = () => {
@@ -268,7 +294,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         </button>
 
                         <button
-                            onClick={this.handleGoHome}
+                            onClick={this.handleRestartApp}
                             style={{
                                 padding: '14px 28px',
                                 fontSize: '16px',
@@ -276,6 +302,29 @@ export class ErrorBoundary extends Component<Props, State> {
                                 background: 'transparent',
                                 color: 'var(--primary, #4B96C3)',
                                 border: '2px solid var(--primary, #4B96C3)',
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                transition: 'transform 0.1s, background 0.2s'
+                            }}
+                            onMouseDown={(e) => {
+                                e.currentTarget.style.transform = 'scale(0.98)';
+                            }}
+                            onMouseUp={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                        >
+                            🔄 Reiniciar App
+                        </button>
+
+                        <button
+                            onClick={this.handleGoHome}
+                            style={{
+                                padding: '14px 28px',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                background: 'transparent',
+                                color: 'var(--foreground, #666)',
+                                border: '2px solid var(--border, #ddd)',
                                 borderRadius: '10px',
                                 cursor: 'pointer',
                                 transition: 'transform 0.1s, background 0.2s'

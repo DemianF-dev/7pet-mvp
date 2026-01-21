@@ -401,15 +401,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
         });
 
         // Audit Log
-        await auditService.logSecurityEvent((req as any).audit, {
-            targetId: id,
-            action: 'PERMISSION_CHANGED',
-            summary: `Cargo de ${user.name} alterado para ${role}`,
-            before: { role: targetUser.role },
-            after: { role },
-            revertible: true,
-            revertStrategy: 'PATCH'
-        });
+        await auditService.logSecurityEvent((req as any).audit, 'USER' as any, id, 'PERMISSION_CHANGED', `Cargo de ${user.name} alterado para ${role}`, { role: targetUser.role }, { role });
 
         res.json(user);
 
@@ -510,13 +502,7 @@ export const createUser = async (req: Request, res: Response) => {
         });
 
         // Audit Log
-        await auditService.logSecurityEvent((req as any).audit, {
-            targetId: user.id,
-            action: 'USER_CREATED',
-            summary: `Novo usuário ${user.name} (${user.role}) criado`,
-            after: user,
-            revertible: false
-        });
+        await auditService.logSecurityEvent((req as any).audit, 'USER' as any, user.id, 'USER_CREATED', `Novo usuário ${user.name} (${user.role}) criado`, undefined, user);
 
         res.status(201).json(user);
 
@@ -645,15 +631,7 @@ export const updateUser = async (req: Request, res: Response) => {
         }
 
         // Audit Log
-        await auditService.logSecurityEvent((req as any).audit, {
-            targetId: id,
-            action: 'USER_UPDATED',
-            summary: `Dados de ${updatedUser?.name} atualizados`,
-            before: targetUser,
-            after: updatedUser,
-            revertible: true,
-            revertStrategy: 'PATCH'
-        });
+        await auditService.logSecurityEvent((req as any).audit, 'USER' as any, id, 'USER_UPDATED', `Dados de ${updatedUser?.name} atualizados`, targetUser, updatedUser);
 
         res.json(updatedUser);
 
@@ -700,13 +678,7 @@ export const deleteUser = async (req: Request, res: Response) => {
         });
 
         // Audit Log
-        await auditService.logSecurityEvent((req as any).audit, {
-            targetId: id,
-            action: 'USER_DELETED_SOFT',
-            summary: `Usuário ${targetUser.name} movido para a lixeira`,
-            revertible: true,
-            revertStrategy: 'RESTORE_SOFT_DELETE'
-        });
+        await auditService.logSecurityEvent((req as any).audit, 'USER' as any, id, 'USER_DELETED_SOFT', `Usuário ${targetUser.name} movido para a lixeira`);
 
         res.json({ message: 'Usuário excluído com sucesso' });
 
@@ -853,12 +825,7 @@ export const permanentDeleteUser = async (req: Request, res: Response) => {
         });
 
         // Audit Log - mark as NOT revertible since it's permanent
-        await auditService.logSecurityEvent((req as any).audit, {
-            targetId: id,
-            action: 'USER_DELETED_PERMANENT',
-            summary: `Usuário ${userInfo.name} (${userInfo.email}) foi excluído permanentemente do sistema`,
-            revertible: false
-        });
+        await auditService.logSecurityEvent((req as any).audit, 'USER' as any, id, 'USER_DELETED_PERMANENT' as any, `Usuário ${userInfo.name} (${userInfo.email}) foi excluído permanentemente do sistema`);
 
         res.json({
             message: 'Usuário excluído permanentemente. O e-mail está agora disponível para reutilização.',

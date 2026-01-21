@@ -49,11 +49,11 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({ goal }) => {
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1.5">
-                            <Badge variant="surface" size="sm" className="font-[var(--font-weight-black)] text-[8px] uppercase tracking-widest px-2">
+                            <Badge variant="neutral" size="sm" className="font-[var(--font-weight-black)] text-[8px] uppercase tracking-widest px-2">
                                 Meta Ativa
                             </Badge>
                             {isExceeded && (
-                                <Badge variant="primary" size="sm" className="bg-emerald-500 text-white font-black text-[8px] uppercase tracking-widest animate-pulse border-none">
+                                <Badge variant="success" size="sm" className="bg-emerald-500 text-white font-black text-[8px] uppercase tracking-widest animate-pulse border-none">
                                     <Trophy size={10} className="mr-1" /> Batida!
                                 </Badge>
                             )}

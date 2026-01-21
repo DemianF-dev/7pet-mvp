@@ -24,7 +24,7 @@ import {
     Unlock
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useSocket } from '../../context/SocketContext';
+import { socketManager } from '../../services/socketManager';
 import { PERMISSION_MODULES } from '../../constants/permissions'; // Import unified permissions
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -86,7 +86,6 @@ export default function UserManager() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const { user: currentUser } = useAuthStore();
-    const { socket } = useSocket();
 
     // STRICT ROLE CHECK (Email + Role)
     const isMaster = currentUser?.role === 'MASTER' || currentUser?.email === 'oidemianf@gmail.com';
@@ -146,26 +145,22 @@ export default function UserManager() {
 
     // --- REALTIME STATUS UPDATES ---
     useEffect(() => {
-        if (!socket) return;
-
         const handleStatusUpdate = (data: { userId: string, status: 'online' | 'offline' }) => {
-            // console.log(`[UserManager] User status update: ${data.userId} is ${data.status}`);
             setUsers(prevUsers => prevUsers.map(u =>
                 u.id === data.userId ? { ...u, isOnline: data.status === 'online' } : u
             ));
 
-            // Also update selectedUser if open
             if (selectedUser && selectedUser.id === data.userId) {
                 setSelectedUser(prev => prev ? { ...prev, isOnline: data.status === 'online' } : null);
             }
         };
 
-        socket.on('user_status', handleStatusUpdate);
+        socketManager.on('user_status', handleStatusUpdate);
 
         return () => {
-            socket.off('user_status', handleStatusUpdate);
+            socketManager.off('user_status', handleStatusUpdate);
         };
-    }, [socket, selectedUser]);
+    }, [selectedUser]);
 
     // --- LOAD INITIAL DATA ---
     const fetchUsers = async () => {

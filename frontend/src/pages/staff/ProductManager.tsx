@@ -105,11 +105,11 @@ export default function ProductManager() {
             toast.error('O nome do produto é obrigatório.');
             return;
         }
-        if (formData.price < 0) {
+        if (Number(formData.price) < 0) {
             toast.error('O preço não pode ser negativo.');
             return;
         }
-        if (formData.stock < 0) {
+        if (Number(formData.stock) < 0) {
             toast.error('O estoque não pode ser negativo.');
             return;
         }

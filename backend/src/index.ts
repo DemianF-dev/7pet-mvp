@@ -172,6 +172,7 @@ app.use(auditContextMiddleware);
 // NOTE: helmet(), compression(), and express.json() are already applied above (lines 69-70, 119)
 
 app.use('/auth', authRoutes);
+app.use('/customers', customerRoutes);
 app.use('/quotes', quoteRoutes);
 app.use('/pets', petRoutes);
 app.use('/services', serviceRoutes);

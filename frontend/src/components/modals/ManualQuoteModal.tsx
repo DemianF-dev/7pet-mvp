@@ -727,8 +727,8 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
     const productDiscount = customer.type === 'AVULSO' ? allItems.reduce((acc, item) => {
         // Desconto estratégico para AVULSO em todos os itens (SPA + Transporte)
-        if (strategicDiscount > 0) {
-            return acc + (item.price * item.quantity * (strategicDiscount / 100));
+        if (Number(strategicDiscount) > 0) {
+            return acc + (item.price * item.quantity * (Number(strategicDiscount) / 100));
         }
         return acc;
     }, 0) : 0;
@@ -2027,8 +2027,8 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                         // Desconto estratégico (Manual - apenas para AVULSO conforme regra do usuário)
                                         const strategicDiscountAmount = customer.type === 'AVULSO' ? spaItems.reduce((acc, item) => {
                                             // Aplica o desconto estratégico no subtotal do SPA para AVULSO
-                                            if (strategicDiscount > 0) {
-                                                return acc + (item.price * item.quantity * (strategicDiscount / 100));
+                                            if (Number(strategicDiscount) > 0) {
+                                                return acc + (item.price * item.quantity * (Number(strategicDiscount) / 100));
                                             }
                                             return acc;
                                         }, 0) : 0;
@@ -2110,7 +2110,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
                                         // Desconto no transporte conforme tipo de cliente
                                         const transportRecurrenceDiscount = customer.type === 'RECORRENTE' ? (transportSubtotal * discountRate) : 0;
-                                        const transportStrategicDiscount = customer.type === 'AVULSO' ? (transportSubtotal * (strategicDiscount / 100)) : 0;
+                                        const transportStrategicDiscount = customer.type === 'AVULSO' ? (transportSubtotal * (Number(strategicDiscount) / 100)) : 0;
 
                                         // Usar o maior desconto ou o de transporte específico se houver
                                         const transportDiscount = Math.max(
@@ -2183,10 +2183,10 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                                     <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">%</span>
                                                 </div>
                                             </div>
-                                            {creditCardFee > 0 && (
+                                            {Number(creditCardFee) > 0 && (
                                                 <div className="text-right">
                                                     <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Valor da Taxa</p>
-                                                    <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">+ R$ {(total * (creditCardFee / 100)).toFixed(2)}</p>
+                                                    <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">+ R$ {(total * (Number(creditCardFee) / 100)).toFixed(2)}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -2197,7 +2197,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-sm font-black text-white uppercase tracking-widest mb-1">VALOR TOTAL FINAL</p>
-                                                {creditCardFee > 0 && (
+{Number(creditCardFee) > 0 && (
                                                     <p className="text-[10px] text-blue-100">Inclui taxa de cartão ({creditCardFee}%)</p>
                                                 )}
                                                 {totalDiscount > 0 && (
@@ -2206,7 +2206,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-4xl font-black text-white drop-shadow-lg">
-                                                    R$ {(total + (total * (creditCardFee / 100))).toFixed(2)}
+                                                    R$ {(total + (total * (Number(creditCardFee) / 100))).toFixed(2)}
                                                 </p>
                                             </div>
                                         </div>

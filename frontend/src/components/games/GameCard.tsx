@@ -25,7 +25,7 @@ export default function GameCard({ game, onClick }: GameCardProps) {
                 {/* Status badge */}
                 {game.status === 'coming-soon' && (
                     <Badge
-                        variant="surface"
+                        variant="neutral"
                         className="absolute top-4 right-4 font-[var(--font-weight-black)] text-[9px] uppercase tracking-widest"
                     >
                         Em breve
@@ -75,7 +75,7 @@ export default function GameCard({ game, onClick }: GameCardProps) {
                         {game.tags.map((tag) => (
                             <Badge
                                 key={tag}
-                                variant="surface"
+                                variant="neutral"
                                 size="sm"
                                 className="text-[9px] font-[var(--font-weight-black)] uppercase tracking-wider py-0.5 px-2"
                             >

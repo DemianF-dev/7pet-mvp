@@ -3,7 +3,8 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSocket } from './context/SocketContext';
+import { socketManager } from './services/socketManager';
+import { useSocketLifecycle } from './hooks/useSocketLifecycle';
 import { useAuthStore } from './store/authStore';
 import api from './services/api';
 import { AnimatePresence } from 'framer-motion';
@@ -60,6 +61,7 @@ const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
 const MarketingCenter = lazy(() => import('./pages/staff/marketing/MarketingCenter'));
 const StrategyManager = lazy(() => import('./pages/staff/StrategyManager'));
 const AuditConsole = lazy(() => import('./pages/staff/AuditConsole'));
+const MasterDiagnostics = lazy(() => import('./components/MasterDiagnostics'));
 
 // ⚡ LAYOUT SYSTEM - Shell for mobile/desktop
 import AppShell from './layouts/AppShell';
@@ -79,6 +81,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWASettings from './components/PWASettings';
 import RouteSkeleton from './components/system/RouteSkeleton';
 import NetworkStatus from './components/NetworkStatus';
+import SocketStatusPill from './components/SocketStatusPill';
 
 import { NotificationProvider } from './context/NotificationContext';
 import { ServicesProvider } from './context/ServicesContext';
@@ -97,26 +100,24 @@ function App() {
     const location = useLocation();
 
     const queryClient = useQueryClient();
-    const { socket } = useSocket();
     const { user, updateUser } = useAuthStore();
+
+    // 🔄 Socket.io Lifecycle (Singleton)
+    useSocketLifecycle();
 
     // 🔄 PWA Auto-Update Detection
     useServiceWorkerUpdate();
 
     useEffect(() => {
-        if (!socket) return;
-
+        // Handle websocket events through singleton manager
         const handleNewMessage = (message: any) => {
             if (import.meta.env.DEV) console.log('💬 Nova mensagem recebida socket:', message);
-            // Invalidate conversations list to update unread counts/order
             queryClient.invalidateQueries({ queryKey: ['conversations'] });
-            // Invalidate specific chat messages if open (React Query handles active observers)
             queryClient.invalidateQueries({ queryKey: ['messages', message.conversationId] });
         };
 
         const handleNotification = (notification: any) => {
-            if (import.meta.env.DEV) console.log('🔔 Notificação recebida no App (invalidando cache):', notification);
-            // Always invalidate conversations when a notification arrives (e.g. from a new message)
+            if (import.meta.env.DEV) console.log('🔔 Notificação recebida no App:', notification);
             if (notification.type === 'chat') {
                 queryClient.invalidateQueries({ queryKey: ['conversations'] });
             }
@@ -125,36 +126,33 @@ function App() {
         const handlePermissionsUpdate = async (data: any) => {
             if (import.meta.env.DEV) console.log('🔐 Permissões atualizadas via socket:', data);
             try {
-                // Fetch the absolute latest user data to be sure
                 const response = await api.get('/auth/me');
                 if (response.data) {
                     updateUser(response.data);
-                    toast.success('Suas permissões foram atualizadas por um administrador.', {
-                        icon: '🔐',
-                        duration: 5000
-                    });
+                    toast.success('Suas permissões foram atualizadas.', { icon: '🔐' });
                 }
             } catch (err) {
-                console.error('Erro ao atualizar permissões via socket:', err);
+                console.error('Erro ao atualizar permissões:', err);
             }
         };
 
-        socket.on('chat:new_message', handleNewMessage);
-        socket.on('notification:new', handleNotification);
-        socket.on('USER_PERMISSIONS_UPDATED', handlePermissionsUpdate);
+        socketManager.on('chat:new_message', handleNewMessage);
+        socketManager.on('notification:new', handleNotification);
+        socketManager.on('USER_PERMISSIONS_UPDATED', handlePermissionsUpdate);
 
         return () => {
-            socket.off('chat:new_message', handleNewMessage);
-            socket.off('notification:new', handleNotification);
-            socket.off('USER_PERMISSIONS_UPDATED', handlePermissionsUpdate);
+            socketManager.off('chat:new_message', handleNewMessage);
+            socketManager.off('notification:new', handleNotification);
+            socketManager.off('USER_PERMISSIONS_UPDATED', handlePermissionsUpdate);
         };
-    }, [socket, queryClient]);
+    }, [queryClient]);
 
     return (
         <ThemeProvider defaultTheme="system" storageKey="7pet-theme">
             <Toaster position="top-right" reverseOrder={false} />
             <FeedbackWidget />
             <NetworkStatus />
+            <SocketStatusPill />
             <PWAInstallPrompt />
 
             <ServicesProvider>
@@ -208,6 +206,10 @@ function App() {
                                     <Route path="/staff/hr" element={<LazyPage><MyHR /></LazyPage>} />
                                     <Route path="/staff/strategy" element={<LazyPage><StrategyManager /></LazyPage>} />
                                     <Route path="/staff/audit" element={<LazyPage><AuditConsole /></LazyPage>} />
+                                    {/* Double Guard for Diagnostics */}
+                                    <Route element={<ProtectedRoute allowedRoles={['MASTER']} />}>
+                                        <Route path="/staff/diagnostics" element={<LazyPage><MasterDiagnostics /></LazyPage>} />
+                                    </Route>
                                     <Route path="/staff/reports" element={<LazyPage><FinancialReports /></LazyPage>} />
                                     <Route path="/staff/users" element={<LazyPage><UserManager /></LazyPage>} />
                                     <Route path="/staff/notifications" element={<LazyPage><StaffNotificationList /></LazyPage>} />

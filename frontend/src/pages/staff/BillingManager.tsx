@@ -32,7 +32,7 @@ interface Invoice {
     quote?: { seqId: number };
     appointmentId?: string;
     appointment?: { seqId: number };
-    payments: Array<{
+    paymentRecords: Array<{
         id: string;
         amount: number;
         method: string;
@@ -166,8 +166,8 @@ export default function BillingManager() {
             // Auto open receipt for the new payment
             const refreshed = await api.get('/invoices');
             const updatedInvoice = refreshed.data.find((i: any) => i.id === selectedInvoice.id);
-            if (updatedInvoice && updatedInvoice.payments.length > 0 && !isNegative) {
-                const lastPayment = updatedInvoice.payments[updatedInvoice.payments.length - 1];
+            if (updatedInvoice && updatedInvoice.paymentRecords.length > 0 && !isNegative) {
+                const lastPayment = updatedInvoice.paymentRecords[updatedInvoice.paymentRecords.length - 1];
                 setSelectedPayment(lastPayment);
                 setShowReceipt(true);
             }
@@ -292,12 +292,12 @@ export default function BillingManager() {
         return matchesSearch && matchesStatus && matchesDate;
     }).sort((a, b) => {
         const aValue = sortConfig.key === 'amount' ? a.amount :
-            sortConfig.key === 'paid' ? (Array.isArray(a.payments) ? a.payments.reduce((acc, p) => acc + p.amount, 0) : 0) :
+            sortConfig.key === 'paid' ? (Array.isArray(a.paymentRecords) ? a.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0) :
                 sortConfig.key === 'dueDate' ? new Date(a.dueDate).getTime() :
                     0;
 
         const bValue = sortConfig.key === 'amount' ? b.amount :
-            sortConfig.key === 'paid' ? (Array.isArray(b.payments) ? b.payments.reduce((acc, p) => acc + p.amount, 0) : 0) :
+            sortConfig.key === 'paid' ? (Array.isArray(b.paymentRecords) ? b.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0) :
                 sortConfig.key === 'dueDate' ? new Date(b.dueDate).getTime() :
                     0;
 
@@ -305,7 +305,7 @@ export default function BillingManager() {
     }) : [];
 
     const totalAmount = filteredInvoices.reduce((acc, i) => acc + i.amount, 0);
-    const totalReceived = filteredInvoices.reduce((acc, i) => acc + (Array.isArray(i.payments) ? i.payments.reduce((pAcc, p) => pAcc + p.amount, 0) : 0), 0);
+    const totalReceived = filteredInvoices.reduce((acc, i) => acc + (Array.isArray(i.paymentRecords) ? i.paymentRecords.reduce((pAcc, p) => pAcc + p.amount, 0) : 0), 0);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -324,7 +324,7 @@ export default function BillingManager() {
 
     // Calculate totals
     // Calculate totals for modal
-    const totalReceivedModal = Array.isArray(selectedInvoice?.payments) ? selectedInvoice.payments.reduce((acc, p) => acc + p.amount, 0) : 0;
+    const totalReceivedModal = Array.isArray(selectedInvoice?.paymentRecords) ? selectedInvoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
     const remaining = selectedInvoice ? selectedInvoice.amount - totalReceivedModal : 0;
 
     return (
@@ -479,7 +479,7 @@ export default function BillingManager() {
                                 </td>
                             </tr>
                         ) : filteredInvoices.map(invoice => {
-                            const paid = Array.isArray(invoice.payments) ? invoice.payments.reduce((acc, p) => acc + p.amount, 0) : 0;
+                            const paid = Array.isArray(invoice.paymentRecords) ? invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
                             const isSelected = selectedIds.includes(invoice.id);
                             return (
                                 <tr
@@ -681,11 +681,11 @@ export default function BillingManager() {
                                         <h3 className="font-bold text-secondary mb-4 flex items-center gap-2">
                                             <CheckCircle size={18} className="text-primary" /> Histórico de Recebimentos
                                         </h3>
-                                        {selectedInvoice.payments.length === 0 ? (
+                                        {selectedInvoice.paymentRecords.length === 0 ? (
                                             <p className="text-gray-400 text-sm italic">Nenhum pagamento registrado.</p>
                                         ) : (
                                             <div className="space-y-3">
-                                                {selectedInvoice.payments.map(payment => (
+                                                {selectedInvoice.paymentRecords.map(payment => (
                                                     <div key={payment.id} className="bg-white border border-gray-100 p-4 rounded-xl flex justify-between items-center">
                                                         <div>
                                                             <p className="font-bold text-secondary">R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>

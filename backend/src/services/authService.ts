@@ -2,19 +2,21 @@ import prisma from '../lib/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
-import Logger from '../lib/logger';
+import logger from '../utils/logger';
 import { OAuth2Client } from 'google-auth-library';
 import axios from 'axios';
 
 // CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET as string;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-console.log('[Auth Service] 🔑 JWT_SECRET present:', !!JWT_SECRET);
-console.log('[Auth Service] 🆔 GOOGLE_CLIENT_ID present:', !!GOOGLE_CLIENT_ID);
+// Security: Use structured logger instead of console.log
+if (process.env.NODE_ENV !== 'production') {
+    logger.debug({ jwtSecret: !!JWT_SECRET, googleClientId: !!GOOGLE_CLIENT_ID }, 'Auth env check');
+}
 
 if (!JWT_SECRET) {
-    console.warn('⚠️ Warning: JWT_SECRET is not defined in this environment.');
+    logger.warn('JWT_SECRET is not defined in this environment');
     // Don't throw here, allow diag route to show it
 }
 
@@ -89,7 +91,7 @@ export const register = async (data: any) => {
         });
     }
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
 
     return { user, token };
 };
@@ -294,8 +296,9 @@ export const login = async (email: string, password: string, rememberMe: boolean
         include: { customer: true }
     });
 
-    if (user) {
-        console.log(`[AuthService] Login attempt for ${email}. Found role: ${user.role}`);
+    // Security: Only log in non-production, don't log email or role
+    if (user && process.env.NODE_ENV !== 'production') {
+        logger.debug({ userId: user.id }, 'Login attempt');
     }
 
     if (!user || !user.passwordHash) throw new Error('Credenciais inválidas');
@@ -309,7 +312,7 @@ export const login = async (email: string, password: string, rememberMe: boolean
     }
 
     const expiresIn = rememberMe ? '30d' : '7d';
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn });
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn, algorithm: 'HS256' });
 
     return { user, token };
 };
@@ -327,7 +330,7 @@ export const loginWithGoogle = async (token: string) => {
             payload = ticket.getPayload();
         } catch (e) {
             // Fallback: treat as Access Token and fetch profile
-            Logger.info('Token não é um ID Token válido, tentando como Access Token...');
+            logger.info('Token não é um ID Token válido, tentando como Access Token...');
             const response = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -367,9 +370,9 @@ export const loginWithGoogle = async (token: string) => {
                 },
                 include: { customer: true }
             });
-            Logger.info(`Novo usuário criado via Google: ${email}`);
+            logger.info({ email }, 'Novo usuário criado via Google');
         } else {
-            Logger.info(`Usuário logado via Google: ${email}`);
+            logger.info({ email }, 'Usuário logado via Google');
         }
 
         // Check if client is blocked
@@ -378,11 +381,11 @@ export const loginWithGoogle = async (token: string) => {
         }
 
         // Generate our own JWT
-        const tokenResult = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+        const tokenResult = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d', algorithm: 'HS256' });
 
         return { user, token: tokenResult };
     } catch (error: any) {
-        Logger.error(`Erro no Google Login: ${error.message}`);
+        logger.error({ err: error }, 'Erro no Google Login');
         throw new Error('Falha na autenticação com o Google');
     }
 };
@@ -422,7 +425,7 @@ export const forgotPassword = async (email: string) => {
 
     await Promise.all(notificationPromises);
 
-    Logger.info(`[NOTIFICAÇÃO ADMIN] Solicitação de senha para ${email} enviada aos admins.`);
+    logger.info({ email }, '[NOTIFICAÇÃO ADMIN] Solicitação de senha enviada aos admins');
 
     return {
         message: 'Sua solicitação foi enviada ao administrador. Por favor, aguarde o contato para receber sua nova senha.'

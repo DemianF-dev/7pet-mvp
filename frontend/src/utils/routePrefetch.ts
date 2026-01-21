@@ -12,7 +12,7 @@
  * ```
  */
 
-type RouteKey =
+export type RouteKey =
     | 'agenda-spa'
     | 'agenda-log'
     | 'customers'

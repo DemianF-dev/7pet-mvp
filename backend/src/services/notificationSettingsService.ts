@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger from '../utils/logger';
 
 /**
  * Service for managing notification settings and user preferences
@@ -17,7 +17,7 @@ export const notificationSettingsService = {
             });
 
             if (!globalSetting || !globalSetting.enabled || globalSetting.frequency === 'DISABLED') {
-                Logger.info(`[NotifSettings] ${notificationType} disabled globally`);
+                logger.info({ notificationType }, '[NotifSettings] notification disabled globally');
                 return false;
             }
 
@@ -32,7 +32,7 @@ export const notificationSettingsService = {
             });
 
             if (userPref && !userPref.enabled) {
-                Logger.info(`[NotifSettings] ${notificationType} disabled for user ${userId}`);
+                logger.info({ notificationType, userId }, '[NotifSettings] notification disabled for user');
                 return false;
             }
 
@@ -49,7 +49,7 @@ export const notificationSettingsService = {
                 : [];
 
             if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-                Logger.info(`[NotifSettings] User role ${user.role} not allowed for ${notificationType}`);
+                logger.info({ role: user.role, notificationType }, '[NotifSettings] User role not allowed for notification');
                 return false;
             }
 
@@ -67,14 +67,14 @@ export const notificationSettingsService = {
                 });
 
                 if (recentNotif) {
-                    Logger.info(`[NotifSettings] ${notificationType} rate-limited for user ${userId}`);
+                    logger.info({ notificationType, userId }, '[NotifSettings] notification rate-limited for user');
                     return false;
                 }
             }
 
             return true;
         } catch (error) {
-            Logger.error('[NotifSettings] Error checking notification permission:', error);
+            logger.error({ err: error }, '[NotifSettings] Error checking notification permission');
             return true; // Fail open - allow notification on error
         }
     },
@@ -115,7 +115,7 @@ export const notificationSettingsService = {
             });
         }
 
-        Logger.info('[NotifSettings] Default settings initialized');
+        logger.info('[NotifSettings] Default settings initialized');
     },
 
     /**
@@ -138,12 +138,12 @@ export const notificationSettingsService = {
                     notificationType: setting.notificationType,
                     enabled: true,
                     channels: JSON.stringify(['IN_APP', 'PUSH'])
-                },
+                } as any,
                 update: {}
             });
         }
 
-        Logger.info(`[NotifSettings] Synced preferences for user ${userId}`);
+        logger.info({ userId }, '[NotifSettings] Synced preferences for user');
     },
 
     /**
@@ -192,7 +192,7 @@ export const notificationSettingsService = {
                 .filter(u => !disabledUserIds.has(u.id))
                 .map(u => u.id);
         } catch (error) {
-            Logger.error('[NotifSettings] Error getting users for notification type:', error);
+            logger.error({ err: error }, '[NotifSettings] Error getting users for notification type');
             return [];
         }
     }

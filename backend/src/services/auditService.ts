@@ -262,13 +262,13 @@ export const revertEvent = async (context: AuditContext, eventId: string, reason
             }
         } else if (event.revertStrategy === 'RESTORE_SOFT_DELETE' && event.targetId) {
             if (event.targetType === 'USER') {
-                await tx.user.update({ where: { id: event.targetId }, data: { deletedAt: null } });
+                await (tx.user as any).update({ where: { id: event.targetId }, data: { deletedAt: null } });
                 success = true;
             } else if (event.targetType === 'PET') {
-                await tx.pet.update({ where: { id: event.targetId }, data: { deletedAt: null } });
+                await (tx.pet as any).update({ where: { id: event.targetId }, data: { deletedAt: null } });
                 success = true;
             } else if (event.targetType === 'SERVICE') {
-                await tx.service.update({ where: { id: event.targetId }, data: { deletedAt: null } });
+                await (tx.service as any).update({ where: { id: event.targetId }, data: { deletedAt: null } });
                 success = true;
             }
         }
@@ -289,9 +289,9 @@ export const revertEvent = async (context: AuditContext, eventId: string, reason
 
         // Log the reversion itself
         await logEvent(context, {
-            targetType: event.targetType,
-            targetId: event.targetId,
-            clientId: event.clientId,
+            targetType: event.targetType as any,
+            targetId: event.targetId || undefined,
+            clientId: event.clientId || undefined,
             action: 'EVENT_REVERTED',
             severity: 'WARNING',
             summary: `Reversão do evento: ${event.summary}`,

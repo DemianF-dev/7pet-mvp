@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { createNotification } from './notificationController';
-import Logger from '../lib/logger';
+import logger from '../utils/logger';
 
 /**
  * 📣 Marketing & Bulk Notifications Controller
@@ -55,7 +55,7 @@ export const sendBulkNotification = async (req: Request, res: Response) => {
         }
 
         // 2. Audit the action
-        await prisma.auditLog.create({
+        await (prisma as any).auditLog.create({
             data: {
                 entityType: 'MARKETING_BULK',
                 entityId: 'SYSTEM',
@@ -74,8 +74,9 @@ export const sendBulkNotification = async (req: Request, res: Response) => {
                 body,
                 type,
                 data: { url, senderId, isBulk: true },
-                priority
-            })
+                // Cast to any because the notification options type target might not include priority
+                priority: priority as any
+            } as any)
         );
 
         // Splitting into chunks to avoid database connection exhaustion if set is huge
@@ -85,7 +86,7 @@ export const sendBulkNotification = async (req: Request, res: Response) => {
             const chunk = sendPromises.slice(i, i + chunkSize);
             await Promise.all(chunk);
             successCount += chunk.length;
-            Logger.info(`[BulkNotif] Sent ${successCount}/${targetIds.length} notifications`);
+            logger.info({ successCount, total: targetIds.length }, '[BulkNotif] notifications sent chunk');
         }
 
         res.json({
@@ -95,7 +96,7 @@ export const sendBulkNotification = async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        Logger.error('❌ Erro ao enviar notificação em massa:', error);
+        logger.error({ err: error }, 'Erro ao enviar notificação em massa');
         res.status(500).json({ error: 'Erro interno ao processar envio em massa' });
     }
 };

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger from '../utils/logger';
 import { socketService } from '../services/socketService';
 
 export const getFeed = async (req: Request, res: Response) => {
@@ -23,7 +23,7 @@ export const getFeed = async (req: Request, res: Response) => {
         });
         res.json(posts);
     } catch (error) {
-        Logger.error('Error fetching feed', error);
+        logger.error({ err: error }, 'Error fetching feed');
         res.status(500).json({ error: 'Failed to fetch feed' });
     }
 };
@@ -39,7 +39,7 @@ export const createPost = async (req: Request, res: Response) => {
                 content,
                 attachments: attachments || [],
                 authorId
-            },
+            } as any,
             include: {
                 author: { select: { id: true, name: true, color: true } },
                 comments: true,
@@ -50,7 +50,7 @@ export const createPost = async (req: Request, res: Response) => {
         socketService.emit('feed:new_post', post);
         res.status(201).json(post);
     } catch (error) {
-        Logger.error('Error creating post', error);
+        logger.error({ err: error }, 'Error creating post');
         res.status(500).json({ error: 'Failed to create post' });
     }
 };
@@ -67,7 +67,7 @@ export const addComment = async (req: Request, res: Response) => {
                 content,
                 postId: id,
                 authorId
-            },
+            } as any,
             include: {
                 author: { select: { id: true, name: true } }
             }
@@ -76,7 +76,7 @@ export const addComment = async (req: Request, res: Response) => {
         socketService.emit(`feed:post_updated`, { postId: id, type: 'comment', comment });
         res.status(201).json(comment);
     } catch (error) {
-        Logger.error('Error adding comment', error);
+        logger.error({ err: error }, 'Error adding comment');
         res.status(500).json({ error: 'Failed to add comment' });
     }
 };
@@ -116,7 +116,7 @@ export const toggleReaction = async (req: Request, res: Response) => {
                     postId: id,
                     authorId,
                     type
-                }
+                } as any
             });
         }
 
@@ -124,7 +124,7 @@ export const toggleReaction = async (req: Request, res: Response) => {
 
         res.json({ success: true });
     } catch (error) {
-        Logger.error('Error toggling reaction', error);
+        logger.error({ err: error }, 'Error toggling reaction');
         res.status(500).json({ error: 'Failed to react' });
     }
 };

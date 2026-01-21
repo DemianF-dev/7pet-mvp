@@ -336,13 +336,13 @@ export default function QuoteList() {
                                                     <div className="flex gap-2">
                                                         <button
                                                             className="flex-1 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-500 hover:border-primary hover:text-primary transition-colors"
-                                                            onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero pagar o orçamento ${selectedQuote.id.substring(0, 8)} com Link de Cartão`, '_blank')}
+                                                            onClick={() => window.open(`https://wa.me/5511983966451?text=Olá, quero pagar o orçamento ${selectedQuote.id.substring(0, 8)} com Link de Cartão`, '_blank')}
                                                         >
                                                             Link de Pagamento
                                                         </button>
                                                         <button
                                                             className="flex-1 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-500 hover:border-primary hover:text-primary transition-colors"
-                                                            onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero pagar o orçamento ${selectedQuote.id.substring(0, 8)} na Maquininha`, '_blank')}
+                                                            onClick={() => window.open(`https://wa.me/5511983966451?text=Olá, quero pagar o orçamento ${selectedQuote.id.substring(0, 8)} na Maquininha`, '_blank')}
                                                         >
                                                             Pedir Maquininha
                                                         </button>
@@ -372,7 +372,7 @@ export default function QuoteList() {
                                                 </p>
                                             </div>
                                             <button
-                                                onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, quero agendar o serviço do orçamento ${selectedQuote.id.substring(0, 8)}`, '_blank')}
+                                                onClick={() => window.open(`https://wa.me/5511983966451?text=Olá, quero agendar o serviço do orçamento ${selectedQuote.id.substring(0, 8)}`, '_blank')}
                                                 className={`w-full py-3 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${selectedQuote.status === 'AGENDAR'
                                                     ? 'bg-emerald-500 hover:bg-emerald-600'
                                                     : 'bg-green-500 hover:bg-green-600'

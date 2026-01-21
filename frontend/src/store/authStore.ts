@@ -8,7 +8,7 @@ interface User {
     email: string;
     extraEmails?: string[];
     role?: 'CLIENTE' | 'OPERACIONAL' | 'GESTAO' | 'ADMIN' | 'SPA' | 'MASTER' | string;
-    division: 'CLIENTE' | 'SPA' | 'COMERCIAL' | 'LOGISTICA' | 'GERENCIA' | 'DIRETORIA' | 'ADMIN';
+    division: 'CLIENTE' | 'SPA' | 'COMERCIAL' | 'LOGISTICA' | 'GERENCIA' | 'DIRETORIA' | 'ADMIN' | 'MASTER';
     name?: string;
     firstName?: string;
     lastName?: string;
@@ -51,10 +51,12 @@ interface AuthState {
     token: string | null;
     isTutorialActive: boolean;
     tutorialStep: number;
+    isInitialized: boolean;
     setAuth: (user: User, token: string) => void;
     updateUser: (user: User) => void;
     setTutorial: (active: boolean, step?: number) => void;
     logout: () => void;
+    setInitialized: (val: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -64,6 +66,7 @@ export const useAuthStore = create<AuthState>()(
             token: null,
             isTutorialActive: false,
             tutorialStep: 0,
+            isInitialized: false,
             setAuth: (user, token) => {
                 // Ensure permissions is a proper array
                 if (typeof user.permissions === 'string') {
@@ -99,9 +102,13 @@ export const useAuthStore = create<AuthState>()(
                 useDevCockpitStore.getState().lock();
                 set({ user: null, token: null, isTutorialActive: false, tutorialStep: 0 });
             },
+            setInitialized: (val: boolean) => set({ isInitialized: val }),
         }),
         {
             name: '7pet-auth-storage',
+            onRehydrateStorage: () => (state) => {
+                state?.setInitialized(true);
+            },
         }
     )
 );

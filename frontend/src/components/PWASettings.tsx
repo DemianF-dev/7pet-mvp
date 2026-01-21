@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bell, BellOff, Download, Wifi, WifiOff, Smartphone, Check, X, ArrowLeft } from 'lucide-react';
+import { Bell, BellOff, Download, Wifi, WifiOff, Smartphone, Check, X, ArrowLeft, Terminal, Activity } from 'lucide-react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { toast } from 'react-hot-toast';
 import ThemePicker from './ThemePicker';

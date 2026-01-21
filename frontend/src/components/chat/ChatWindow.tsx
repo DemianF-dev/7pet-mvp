@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSocket } from '../../context/SocketContext';
+import { socketManager } from '../../services/socketManager';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon, Image as ImageIcon, File as FileIcon, Loader2, X } from 'lucide-react';
@@ -18,7 +18,6 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({ conversationId, onBack, className = '' }: ChatWindowProps) {
-    const { socket } = useSocket();
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -85,32 +84,26 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
 
     // Listen for new messages
     useEffect(() => {
-        if (!socket) return;
+        if (!conversationId) return;
 
-        socket.emit('join_chat', conversationId);
+        socketManager.emit('join_chat', conversationId);
 
         const handleMsg = (message: Message) => {
             if (message.conversationId !== conversationId) return;
             queryClient.setQueryData(['messages', conversationId], (old: Message[] | undefined) => {
-                // If we already have this message (by proper ID), ignore
                 if (old?.find(m => m.id === message.id)) return old;
-
-                // Check if we have a temp message with same content (optimistic) and replace it
-                // Logic: Find a temp message from 'me' with same content
                 const isMyMessage = message.senderId === user?.id;
                 if (isMyMessage) {
                     const tempMsgIndex = old?.findIndex(m => m.id.startsWith('temp-') && m.content === message.content);
                     if (tempMsgIndex !== undefined && tempMsgIndex !== -1 && old) {
                         const newCache = [...old];
-                        newCache[tempMsgIndex] = message; // Swap temp for real
+                        newCache[tempMsgIndex] = message;
                         return newCache;
                     }
                 }
-
                 return [...(old || []), message];
             });
 
-            // If new message arrives and we are in the chat, mark as read immediately
             api.post(`/chat/${conversationId}/read`).catch(() => { });
             queryClient.setQueryData(['conversations'], (old: any) => {
                 if (!old) return old;
@@ -119,17 +112,16 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                 );
             });
 
-            // Force scroll to bottom
             setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
         };
 
-        socket.on('chat:new_message', handleMsg);
+        socketManager.on('chat:new_message', handleMsg);
 
         return () => {
-            socket.off('chat:new_message', handleMsg);
-            socket.emit('leave_chat', conversationId);
+            socketManager.off('chat:new_message', handleMsg);
+            socketManager.emit('leave_chat', conversationId);
         }
-    }, [conversationId, socket, queryClient, user?.id]);
+    }, [conversationId, queryClient, user?.id]);
 
     // Scroll on load and mark as read
     useEffect(() => {

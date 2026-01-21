@@ -29,7 +29,10 @@ export class CustomersService {
 
     async list(): Promise<Customer[]> {
         const response = await this.api.get('/customers');
-        return Array.isArray(response.data) ? response.data : (response.data.data || []);
+        console.log('[DEBUG] Customers API Response:', response.data);
+        const result = Array.isArray(response.data) ? response.data : (response.data.data || []);
+        console.log('[DEBUG] Processed Customers List:', result);
+        return result;
     }
 
     async listTrash(): Promise<Customer[]> {

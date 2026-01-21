@@ -4,9 +4,11 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
+import { queryClient } from './lib/queryClient'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ErrorBoundary from './components/ErrorBoundary'
 import { initChunkRecovery } from './utils/chunkRecovery'
+import { installGlobalErrorHandlers } from './utils/globalErrorHandlers'
 import App from './App.tsx'
 // Theme System - Base tokens + all themes
 import './styles/tokens.base.css'
@@ -24,25 +26,10 @@ import './styles/sidebar-collapsible.css'   // Collapsible sidebar support
 import './styles/sidebar.glass.css'
 import './styles/mobile-fixes.css'          // Mobile-specific fixes (iOS/Android)
 import './index.css'
-import { SocketProvider } from './context/SocketContext'
+import './index.css'
+// import { SocketProvider } from './context/SocketContext' // Removed in favor of SocketManager singleton
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 5 * 60 * 1000,
-            gcTime: 24 * 60 * 60 * 1000,
-            retry: (failureCount, error: any) => {
-                // Only retry on network errors or server-side issues
-                if (failureCount >= 2) return false;
-                return !error.response || error.response.status >= 500;
-            },
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: true,
-        },
-    },
-})
 
 const persister = createSyncStoragePersister({
     storage: window.localStorage,
@@ -51,30 +38,8 @@ const persister = createSyncStoragePersister({
 // 🛡️ Initialize chunk error recovery system BEFORE rendering
 initChunkRecovery();
 
-// 📝 Global Error Diagnostics
-window.addEventListener('unhandledrejection', (event) => {
-    import('./store/diagnosticsStore').then(({ useDiagnosticsStore }) => {
-        useDiagnosticsStore.getState().addLog({
-            type: 'error',
-            message: `Unhandled Rejection: ${event.reason?.message || 'Unknown reason'}`,
-            details: event.reason
-        });
-    });
-});
-
-window.addEventListener('error', (event) => {
-    import('./store/diagnosticsStore').then(({ useDiagnosticsStore }) => {
-        useDiagnosticsStore.getState().addLog({
-            type: 'error',
-            message: `Global Error: ${event.message}`,
-            details: {
-                filename: event.filename,
-                lineno: event.lineno,
-                colno: event.colno
-            }
-        });
-    });
-});
+// 🛡️ Install global error handlers
+installGlobalErrorHandlers();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -85,9 +50,7 @@ createRoot(document.getElementById('root')!).render(
                     persistOptions={{ persister }}
                 >
                     <BrowserRouter>
-                        <SocketProvider>
-                            <App />
-                        </SocketProvider>
+                        <App />
                     </BrowserRouter>
                 </PersistQueryClientProvider>
             </GoogleOAuthProvider>

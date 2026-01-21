@@ -12,7 +12,7 @@ const getApiUrl = (): string => {
         return '/api';
     }
 
-    const defaultUrl = 'http://localhost:3000';
+    const defaultUrl = import.meta.env.PROD ? '/api' : 'http://localhost:3000';
     let apiUrl = envUrl || defaultUrl;
 
 // 🚀 Robustness Fix: Ensure the URL has a protocol if it's not a relative path

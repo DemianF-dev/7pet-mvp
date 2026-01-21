@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { prefetchRoute } from '../../utils/routePrefetch';
+import { prefetchRoute, RouteKey } from '../../utils/routePrefetch';
 import { MOBILE_TABS, CLIENT_MOBILE_TABS } from '../../navigation/mobileNav';
 import { useAuthStore } from '../../store/authStore';
 
@@ -58,7 +58,7 @@ export default function MobileBottomNav({ badges = {}, onMoreClick }: MobileBott
                                 }
                             }}
                             onPointerDown={() => {
-                                if (tab.path !== '#more') prefetchRoute(tab.key);
+                                if (tab.path !== '#more') prefetchRoute(tab.key as RouteKey);
                             }}
                             className={`flex-1 relative flex flex-col items-center justify-center gap-1.5 transition-all duration-300 tap-highlight-none ${isActive ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-tertiary)]'
                                 }`}

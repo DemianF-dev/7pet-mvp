@@ -103,7 +103,7 @@ export default function StaffSidebar() {
 
     const checkPermission = (module: string) => {
         if (!user) return false;
-        if (user.role === 'MASTER' || user.division === 'MASTER' || user.email === 'oidemianf@gmail.com') return true;
+        if ((user.role as any) === 'MASTER' || user.division === 'MASTER' || user.email === 'oidemianf@gmail.com') return true;
         let perms: string[] | null = null;
         if (user.permissions) {
             if (Array.isArray(user.permissions)) perms = user.permissions;
@@ -533,6 +533,17 @@ export default function StaffSidebar() {
                     </div>
                 </div>
             </aside>
+
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Sair do Sistema"
+                description="Tem certeza que deseja sair do sistema?"
+                confirmText="Sair"
+                confirmColor="bg-red-500"
+                cancelText="Cancelar"
+            />
         </>
     );
 }

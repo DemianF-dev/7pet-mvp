@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
 import { createTransaction } from './financialService';
 import { messagingService } from './messagingService';
@@ -196,9 +196,9 @@ export const createPackage = async (input: CreatePackageInput) => {
 
         // Audit log
         await createAuditLog({
-            entityType: 'PACKAGE',
+            entityType: 'PACKAGE' as any,
             entityId: pkg.id,
-            action: 'CREATE',
+            action: 'CREATE' as any,
             performedBy: createdBy,
             reason: `Pacote ${frequency} criado para ${pkg.pet.name}`
         }, tx);
@@ -206,7 +206,7 @@ export const createPackage = async (input: CreatePackageInput) => {
         return pkg;
     });
 
-    Logger.info(`[PackageService] Package created: ${result.id} for customer ${customerId}`);
+    logger.info({ packageId: result.id, customerId }, '[PackageService] Package created');
     return result;
 };
 
@@ -219,14 +219,14 @@ export const getPackageById = async (packageId: string) => {
         include: {
             customer: { include: { user: true } },
             pet: true,
-            items: { include: { service: true } },
+            items: { include: { Service: true } } as any,
             appointments: {
                 where: { deletedAt: null },
                 orderBy: { startAt: 'asc' },
                 include: { transportDetails: true }
             },
             quotes: true,
-            debitCredits: {
+            debitCreditNotes: {
                 orderBy: { createdAt: 'desc' }
             }
         }
@@ -272,9 +272,9 @@ export const updatePackageStatus = async (
         });
 
         await createAuditLog({
-            entityType: 'PACKAGE',
+            entityType: 'PACKAGE' as any,
             entityId: packageId,
-            action: 'UPDATE_STATUS',
+            action: 'STATUS_CHANGE' as any,
             performedBy: updatedBy,
             reason: `Status alterado de ${pkg.status} para ${status}: ${reason}`
         }, tx);
@@ -282,7 +282,7 @@ export const updatePackageStatus = async (
         return result;
     });
 
-    Logger.info(`[PackageService] Package ${packageId} status updated to ${status}`);
+    logger.info({ packageId, status }, '[PackageService] Package status updated');
     return updated;
 };
 
@@ -349,9 +349,9 @@ export const schedulePackageMonth = async (input: SchedulePackageInput) => {
 
         // Audit log
         await createAuditLog({
-            entityType: 'PACKAGE',
+            entityType: 'PACKAGE' as any,
             entityId: packageId,
-            action: 'SCHEDULE_MONTH',
+            action: 'UPDATE' as any,
             performedBy: createdBy,
             reason: `${createdAppointments.length} agendamentos criados para o pacote`
         }, tx);
@@ -376,7 +376,7 @@ export const schedulePackageMonth = async (input: SchedulePackageInput) => {
         }
     }
 
-    Logger.info(`[PackageService] Scheduled ${result.length} appointments for package ${packageId}`);
+    logger.info({ appointmentCount: result.length, packageId }, '[PackageService] Scheduled appointments for package');
 
     return {
         success: true,
@@ -478,9 +478,9 @@ export const addServiceToAppointment = async (input: AddServiceToAppointmentInpu
 
         // Audit log
         await createAuditLog({
-            entityType: 'APPOINTMENT',
+            entityType: 'APPOINTMENT' as any,
             entityId: appointmentId,
-            action: 'ADD_SERVICE',
+            action: 'UPDATE' as any,
             performedBy: createdBy,
             reason: `Serviço adicional: ${description} - R$ ${price.toFixed(2)} - ${billingAction}`
         }, tx);
@@ -488,7 +488,7 @@ export const addServiceToAppointment = async (input: AddServiceToAppointmentInpu
         return note;
     });
 
-    Logger.info(`[PackageService] Service added to appointment ${appointmentId}: ${description}`);
+    logger.info({ appointmentId, description }, '[PackageService] Service added to appointment');
 
     return result;
 };
@@ -509,7 +509,7 @@ export const getPendingNotes = async (customerId: string) => {
             package: {
                 select: { id: true, frequency: true }
             }
-        },
+        } as any,
         orderBy: { createdAt: 'desc' }
     });
 };
@@ -548,7 +548,7 @@ export const settleNote = async (
         return result;
     });
 
-    Logger.info(`[PackageService] Note ${noteId} settled as ${action}`);
+    logger.info({ noteId, action }, '[PackageService] Note settled');
     return updated;
 };
 
@@ -620,7 +620,7 @@ export const createRecurringQuote = async (
         }
     });
 
-    Logger.info(`[PackageService] Recurring quote created: ${quote.id}`);
+    logger.info({ quoteId: quote.id }, '[PackageService] Recurring quote created');
 
     return {
         quote,

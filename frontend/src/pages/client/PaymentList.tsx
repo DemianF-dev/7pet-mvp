@@ -10,8 +10,11 @@ import {
     Wallet,
     Calendar,
     RefreshCw,
-    Info
+    Info,
+    Copy,
+    ExternalLink
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,7 +34,7 @@ interface Invoice {
     status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'MONITORAR' | 'NEGOCIADO' | 'ENCERRADO';
     dueDate: string;
     createdAt: string;
-    payments: Payment[];
+    paymentRecords: Payment[];
     appointment?: {
         pet: { name: string };
         services: { name: string }[];
@@ -94,7 +97,7 @@ export default function PaymentList() {
     const totalPending = Array.isArray(invoices) ? invoices
         .filter(inv => inv.status === 'PENDENTE' || inv.status === 'VENCIDO')
         .reduce((acc, inv) => {
-            const paid = Array.isArray(inv.payments) ? inv.payments.reduce((pAcc, p) => pAcc + p.amount, 0) : 0;
+            const paid = Array.isArray(inv.paymentRecords) ? inv.paymentRecords.reduce((pAcc, p) => pAcc + p.amount, 0) : 0;
             return acc + (inv.amount - paid);
         }, 0) : 0;
 
@@ -183,7 +186,7 @@ export default function PaymentList() {
                         </div>
                     ) : (
                         invoices.map((invoice) => {
-                            const totalPaid = Array.isArray(invoice.payments) ? invoice.payments.reduce((acc, p) => acc + p.amount, 0) : 0;
+                            const totalPaid = Array.isArray(invoice.paymentRecords) ? invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
                             const isPartiallyPaid = totalPaid > 0 && totalPaid < invoice.amount;
 
                             return (
@@ -249,7 +252,7 @@ export default function PaymentList() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="fixed inset-x-4 md:inset-auto md:w-full md:max-w-lg bg-white rounded-[40px] shadow-2xl z-[60] overflow-hidden"
+                            className="relative w-full mx-4 md:mx-0 md:max-w-lg bg-white rounded-[40px] shadow-2xl z-[60] overflow-hidden"
                         >
                             <div className="p-8">
                                 <div className="flex justify-between items-start mb-6">
@@ -272,11 +275,11 @@ export default function PaymentList() {
                                         <hr className="border-gray-200 border-dashed my-4" />
 
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Histórico de Amortização</p>
-                                        {selectedInvoice.payments.length === 0 ? (
+                                        {selectedInvoice.paymentRecords.length === 0 ? (
                                             <p className="text-sm text-gray-400 italic">Nenhum pagamento registrado ainda.</p>
                                         ) : (
                                             <div className="space-y-3">
-                                                {selectedInvoice.payments.map((p) => (
+                                                {selectedInvoice.paymentRecords.map((p) => (
                                                     <div key={p.id} className="flex justify-between items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
                                                         <div>
                                                             <p className="text-sm font-bold text-secondary">R$ {p.amount.toFixed(2)}</p>
@@ -301,20 +304,47 @@ export default function PaymentList() {
                                     <div className="flex justify-between items-center px-4">
                                         <span className="text-sm font-bold text-gray-500">Saldo Restante</span>
                                         <span className="text-2xl font-black text-primary">
-                                            R$ {(selectedInvoice.amount - (Array.isArray(selectedInvoice.payments) ? selectedInvoice.payments.reduce((a, b) => a + b.amount, 0) : 0)).toFixed(2)}
+                                            R$ {(selectedInvoice.amount - (Array.isArray(selectedInvoice.paymentRecords) ? selectedInvoice.paymentRecords.reduce((a, b) => a + b.amount, 0) : 0)).toFixed(2)}
                                         </span>
                                     </div>
 
                                     {selectedInvoice.status !== 'PAGO' && (
-                                        <div className="pt-4">
-                                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-3xl mb-4 flex gap-3 text-blue-700">
-                                                <Info size={20} className="shrink-0" />
-                                                <p className="text-xs font-medium leading-relaxed">
-                                                    Para realizar o pagamento ou contestar valores, entre em contato através do nosso WhatsApp ou utilize seu saldo em conta entrando em contato com a equipe.
-                                                </p>
+                                        <div className="pt-4 space-y-3">
+                                            {/* Opção Pix */}
+                                            <div className="bg-gray-50 border border-gray-100 p-5 rounded-3xl">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Wallet size={16} className="text-primary" />
+                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Pagar via Pix</span>
+                                                    </div>
+                                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Recomendado</span>
+                                                </div>
+
+                                                <div className="bg-white p-3 rounded-2xl border border-gray-100 mb-3 flex items-center justify-between gap-3">
+                                                    <code className="text-sm font-mono text-secondary font-bold truncate select-all">
+                                                        thepet@7pet.com.br
+                                                    </code>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText('thepet@7pet.com.br');
+                                                        toast.success('Chave Pix copiada para a área de transferência!', { icon: '🔑', duration: 3000 });
+                                                    }}
+                                                    className="w-full py-3 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                                                >
+                                                    <Copy size={16} />
+                                                    Copiar Chave Pix
+                                                </button>
                                             </div>
-                                            <button className="w-full py-4 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest">
-                                                Pagar via WhatsApp
+
+                                            {/* Botão WhatsApp Secundário */}
+                                            <button
+                                                onClick={() => window.open('https://wa.me/5511983966451', '_blank')}
+                                                className="w-full py-3 bg-white border border-gray-100 text-gray-400 font-bold rounded-xl hover:text-green-600 hover:border-green-100 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+                                            >
+                                                <ExternalLink size={14} />
+                                                Enviar Comprovante (WhatsApp)
                                             </button>
                                         </div>
                                     )}

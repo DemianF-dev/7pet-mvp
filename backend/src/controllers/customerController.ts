@@ -563,6 +563,7 @@ export const customerController = {
                     id,
                     customerBefore,
                     updated,
+                    false,
                     tx
                 );
 

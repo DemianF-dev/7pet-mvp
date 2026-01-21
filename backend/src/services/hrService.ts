@@ -595,7 +595,7 @@ async function calculateStaffStatement(
 
             totalCommission += driverCommission;
 
-            logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId}, Type ${quote.transportType} (${legsCount} legs). TotalPrice ${totalTransportPrice}. LegGross ${grossValuePerLeg.toFixed(2)}. Net ${netValuePerLeg.toFixed(2)}. Comm ${driverCommission.toFixed(2)} - Pet: ${leg.appointment?.pet?.name}, Client: ${leg.appointment?.customer?.name}`);
+            logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId}, Type ${(quote as any).transportType} (${legsCount} legs). TotalPrice ${totalTransportPrice}. LegGross ${grossValuePerLeg.toFixed(2)}. Net ${netValuePerLeg.toFixed(2)}. Comm ${driverCommission.toFixed(2)} - Pet: ${(leg as any).appointment?.pet?.name}, Client: ${(leg as any).appointment?.customer?.name}`);
         }
 
         baseTotal = totalCommission;
@@ -603,18 +603,18 @@ async function calculateStaffStatement(
         details.totalCommission = totalCommission;
 
         // Add detailed production list for transparency
-        details.productionDetails = legs.map(leg => {
+        details.productionDetails = legs.map((leg: any) => {
             const quote = leg.appointment?.quote;
-            const transportItems = quote?.items.filter(i =>
+            const transportItems = (quote as any)?.items.filter((i: any) =>
                 i.description.toLowerCase().includes('transporte') ||
                 i.description.toLowerCase().includes('leva') ||
                 i.description.toLowerCase().includes('traz')
             ) || [];
-            const totalTransportPrice = transportItems.reduce((sum, item) => sum + item.price, 0);
+            const totalTransportPrice = transportItems.reduce((sum: number, item: any) => sum + item.price, 0);
 
             return {
                 date: leg.completedAt,
-                quoteSeqId: quote?.seqId,
+                quoteSeqId: (quote as any)?.seqId,
                 petName: leg.appointment?.pet?.name,
                 customerName: leg.appointment?.customer?.name,
                 legType: leg.legType,

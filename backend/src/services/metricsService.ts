@@ -342,7 +342,10 @@ class MetricsService {
         const hasWarnings = checks.some(c => c.status === 'warn');
         const status = hasFailures ? 'unhealthy' : hasWarnings ? 'degraded' : 'healthy';
 
-        return { status, checks };
+        return {
+            status,
+            checks: checks as { name: string; status: 'pass' | 'fail' | 'warn'; message?: string }[]
+        };
     }
 
     /**

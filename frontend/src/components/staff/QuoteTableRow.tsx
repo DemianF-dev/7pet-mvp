@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckSquare, Square, Edit, Trash2, Copy, Share2, Calendar, RefreshCcw } from 'lucide-react';
 import { getQuoteStatusColor } from '../../utils/statusColors';
+import { Badge, Button, IconButton } from '../ui';
 
 interface QuoteItem {
     id: string;
@@ -93,7 +94,7 @@ const QuoteTableRow = React.memo(({
                             OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
                         </span>
                         {quote.pet && (
-                            <Badge variant="surface" size="sm" className="bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] border-transparent leading-none py-0.5 px-1.5 h-auto font-bold">
+                            <Badge variant="neutral" size="sm" className="bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] border-transparent leading-none py-0.5 px-1.5 h-auto font-bold">
                                 {quote.pet.name}
                             </Badge>
                         )}
@@ -113,7 +114,7 @@ const QuoteTableRow = React.memo(({
                 </div>
                 {quote.type && (
                     <Badge
-                        variant="surface"
+                        variant="neutral"
                         size="sm"
                         className={`mt-1 font-[var(--font-weight-black)] text-[9px] uppercase tracking-wider ${quote.type === 'SPA' ? 'text-blue-500' : quote.type === 'TRANSPORTE' ? 'text-orange-500' : 'text-purple-500'}`}
                     >
@@ -134,7 +135,7 @@ const QuoteTableRow = React.memo(({
                     </button>
                 ) : (
                     <Badge
-                        variant="surface"
+                        variant="neutral"
                         className={`px-3 py-1.5 rounded-xl text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest ${getQuoteStatusColor(quote.status)}`}
                     >
                         {quote.status}
@@ -154,29 +155,29 @@ const QuoteTableRow = React.memo(({
             <div className="flex justify-end gap-1 md:w-48 lg:w-56" onClick={e => e.stopPropagation()}>
                 {view === 'trash' ? (
                     <>
-                        <IconButton icon={RefreshCcw} onClick={() => onRestore(quote.id)} variant="surface" size="sm" className="text-green-500" aria-label="Restaurar" />
-                        <IconButton icon={Trash2} onClick={() => onPermanentDelete(quote.id)} variant="surface" size="sm" className="text-red-500" aria-label="Excluir Permanente" />
+                        <IconButton icon={RefreshCcw} onClick={() => onRestore(quote.id)} variant="secondary" size="sm" className="text-green-500" aria-label="Restaurar" />
+                        <IconButton icon={Trash2} onClick={() => onPermanentDelete(quote.id)} variant="secondary" size="sm" className="text-red-500" aria-label="Excluir Permanente" />
                     </>
                 ) : view === 'history' ? (
                     <>
                         <IconButton icon={Copy} onClick={() => onDuplicate(quote.id)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 hidden md:flex" aria-label="Duplicar" />
                         <Button
                             onClick={() => onReactivate(quote.id)}
-                            variant="surface"
+                            variant="secondary"
                             size="sm"
                             className="text-green-600 font-[var(--font-weight-black)] text-[10px] py-1 px-3 h-9"
                             icon={RefreshCcw}
                         >
                             REATIVAR
                         </Button>
-                        <IconButton icon={Edit} onClick={() => onViewDetails(quote.id)} variant="surface" size="sm" aria-label="Editar" />
+                        <IconButton icon={Edit} onClick={() => onViewDetails(quote.id)} variant="secondary" size="sm" aria-label="Editar" />
                     </>
                 ) : (
                     <>
                         <IconButton icon={Copy} onClick={() => onDuplicate(quote.id)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 hidden md:flex" aria-label="Duplicar" />
                         <IconButton icon={Share2} onClick={() => onShare(quote)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 text-green-600 hidden md:flex" aria-label="Compartilhar" />
                         <IconButton icon={Trash2} onClick={() => onDelete(quote.id)} variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 text-red-500 hidden md:flex" aria-label="Mover para Lixeira" />
-                        <IconButton icon={Edit} onClick={() => onViewDetails(quote.id)} variant="surface" size="sm" aria-label="Editar" />
+                        <IconButton icon={Edit} onClick={() => onViewDetails(quote.id)} variant="secondary" size="sm" aria-label="Editar" />
                         {quote.status === 'APROVADO' && (
                             <Button
                                 onClick={(e) => { e.stopPropagation(); onSchedule(quote); }}

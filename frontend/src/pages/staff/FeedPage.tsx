@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSocket } from '../../context/SocketContext';
+import { socketManager } from '../../services/socketManager';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
@@ -37,7 +37,6 @@ interface FeedWidgets {
 }
 
 export default function FeedPage() {
-    const { socket } = useSocket();
     const queryClient = useQueryClient();
     const [newPostContent, setNewPostContent] = useState('');
     const [activeTab, setActiveTab] = useState('mensagem');
@@ -62,22 +61,24 @@ export default function FeedPage() {
 
     // Socket Listeners
     useEffect(() => {
-        if (!socket) return;
-
-        socket.on('feed:new_post', (newPost: Post) => {
+        const handleNewPost = (newPost: Post) => {
             queryClient.setQueryData(['feed'], (old: Post[] | undefined) => [newPost, ...(old || [])]);
             toast.success('Novo post no feed!');
-        });
+        };
 
-        socket.on('feed:post_updated', () => queryClient.invalidateQueries({ queryKey: ['feed'] }));
-        socket.on('feed:post_reaction_updated', () => queryClient.invalidateQueries({ queryKey: ['feed'] }));
+        const handlePostUpdate = () => queryClient.invalidateQueries({ queryKey: ['feed'] });
+        const handleReactionUpdate = () => queryClient.invalidateQueries({ queryKey: ['feed'] });
+
+        socketManager.on('feed:new_post', handleNewPost);
+        socketManager.on('feed:post_updated', handlePostUpdate);
+        socketManager.on('feed:post_reaction_updated', handleReactionUpdate);
 
         return () => {
-            socket.off('feed:new_post');
-            socket.off('feed:post_updated');
-            socket.off('feed:post_reaction_updated');
+            socketManager.off('feed:new_post', handleNewPost);
+            socketManager.off('feed:post_updated', handlePostUpdate);
+            socketManager.off('feed:post_reaction_updated', handleReactionUpdate);
         };
-    }, [socket, queryClient]);
+    }, [queryClient]);
 
     // Create Post Mutation
     const createPostMutation = useMutation({

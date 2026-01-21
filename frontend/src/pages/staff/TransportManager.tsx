@@ -461,7 +461,7 @@ export default function TransportManager() {
                                         Transporte #{selectedTransport.id.slice(0, 8)}
                                     </p>
                                 </div>
-                                <IconButton icon={X} onClick={() => setSelectedTransport(null)} variant="secondary" />
+                                <IconButton icon={X} onClick={() => setSelectedTransport(null)} variant="secondary" aria-label="Fechar" />
                             </header>
 
                             <div className="flex-1 overflow-y-auto p-8">

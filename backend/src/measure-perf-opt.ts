@@ -18,7 +18,7 @@ async function measure() {
                 services: {
                     select: { id: true, name: true, basePrice: true, duration: true }
                 },
-                transport: true,
+                transportDetails: true,
                 performer: {
                     select: { id: true, name: true, color: true }
                 },
@@ -26,7 +26,7 @@ async function measure() {
                     select: {
                         appointments: {
                             where: { deletedAt: null },
-                            select: { id: true, category: true, transport: { select: { type: true } } }
+                            select: { id: true, category: true, transportDetails: { select: { type: true } } }
                         }
                     }
                 }

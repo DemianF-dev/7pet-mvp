@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { useSocket } from './SocketContext';
+import { socketManager } from '../services/socketManager';
+import { useSocketStore } from '../store/socketStore';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import { Bell, MessageCircle, FileText, AlertCircle } from 'lucide-react';
@@ -33,7 +34,8 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { socket, isConnected } = useSocket();
+    const { status } = useSocketStore();
+    const isConnected = status === 'connected';
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [permission, setPermission] = useState<NotificationPermission>('default');
 
@@ -134,21 +136,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // Handle new notification (from notification:new event)
     useEffect(() => {
-        if (!socket) return;
-
         const handleNewNotification = (notification: Notification) => {
             if (import.meta.env.DEV) console.log('🔔 Nova Notificação:', notification);
-
-            // Add to list
             setNotifications(prev => [notification, ...prev]);
-
-            // Play Sound
             playSound();
-
-            // Show Browser Notification
             showBrowserNotification(notification);
-
-            // Show Toast with styled content
             toast.custom(
                 (t) => (
                     <div
@@ -183,31 +175,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             );
         };
 
-        socket.on('notification:new', handleNewNotification);
+        socketManager.on('notification:new', handleNewNotification);
 
         return () => {
-            socket.off('notification:new', handleNewNotification);
+            socketManager.off('notification:new', handleNewNotification);
         };
-    }, [socket, playSound, showBrowserNotification]);
+    }, [playSound, showBrowserNotification]);
 
     // Handle chat messages directly (WhatsApp-style instant notification)
     useEffect(() => {
-        if (!socket) return;
-
         const handleChatMessage = (message: any) => {
             if (import.meta.env.DEV) console.log('💬 Chat message received:', message);
-
-            // Get current user ID from localStorage (zustand persist uses this key)
             const storedUser = localStorage.getItem('7pet-auth-storage');
             const currentUserId = storedUser ? JSON.parse(storedUser)?.state?.user?.id : null;
-
-            // Skip if message is from current user
             if (message.senderId === currentUserId) return;
-
-            // Play sound immediately
             playSound();
-
-            // Show toast for chat message
             const senderName = message.sender?.name || 'Nova mensagem';
             toast.custom(
                 (t) => (
@@ -249,26 +231,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             );
         };
 
-        socket.on('chat:new_message', handleChatMessage);
-
         const handleAttention = (data: any) => {
             if (import.meta.env.DEV) console.log('⚠️ Attention received:', data);
-
-            // Get current user ID
-            const storedUser = localStorage.getItem('7pet-auth-storage');
-            const currentUserId = storedUser ? JSON.parse(storedUser)?.state?.user?.id : null;
-
-            // Optional: skip if triggered by self (though controller handles other participants)
-
             playSound();
-
-            // Very prominent toast for Attention
             toast.custom(
                 (t) => (
                     <div
                         onClick={() => {
                             toast.dismiss(t.id);
-                            window.location.href = '/staff/chat'; // Redirect to chat
+                            window.location.href = '/staff/chat';
                         }}
                         className={`
                             ${t.visible ? 'animate-bounce' : 'animate-leave'}
@@ -281,7 +252,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     >
                         <div className="flex items-center gap-6">
                             <div className="bg-white/20 p-4 rounded-full">
-                                <AlertCircle size={40} className="text-white animate-pulse" />
+                                <Bell size={40} className="text-white animate-pulse" />
                             </div>
                             <div className="flex-1">
                                 <p className="font-[var(--font-weight-bold)] text-xl uppercase tracking-tighter leading-none mb-1">CHAMADA DE ATENÇÃO!</p>
@@ -295,13 +266,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             );
         };
 
-        socket.on('chat:attention', handleAttention);
+        socketManager.on('chat:new_message', handleChatMessage);
+        socketManager.on('chat:attention', handleAttention);
 
         return () => {
-            socket.off('chat:new_message', handleChatMessage);
-            socket.off('chat:attention', handleAttention);
+            socketManager.off('chat:new_message', handleChatMessage);
+            socketManager.off('chat:attention', handleAttention);
         };
-    }, [socket, playSound]);
+    }, [playSound]);
 
     const markAsRead = useCallback((id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));

@@ -1,10 +1,35 @@
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
+import jwt from 'jsonwebtoken';
 import Logger from '../lib/logger';
 
 class SocketService {
     private io: Server | null = null;
     private userSockets: Map<string, Set<string>> = new Map(); // userId -> Set<socketId>
+
+    // Private Helpers
+    private linkUser(userId: string, socket: Socket) {
+        if (!this.userSockets.has(userId)) {
+            this.userSockets.set(userId, new Set());
+            this.io?.emit('user_status', { userId, status: 'online' });
+        }
+        this.userSockets.get(userId)?.add(socket.id);
+        socket.join(`user:${userId}`);
+        socket.data.userId = userId;
+        Logger.info(`👤 User ${userId} linked to socket ${socket.id}. sessions: ${this.userSockets.get(userId)?.size}`);
+    }
+
+    private unlinkUser(userId: string | undefined, socketId: string) {
+        if (!userId) return;
+        const userSessions = this.userSockets.get(userId);
+        if (userSessions) {
+            userSessions.delete(socketId);
+            if (userSessions.size === 0) {
+                this.userSockets.delete(userId);
+                this.io?.emit('user_status', { userId, status: 'offline' });
+            }
+        }
+    }
 
     initialize(httpServer: HttpServer) {
         this.io = new Server(httpServer, {
@@ -24,35 +49,52 @@ class SocketService {
             }
         });
 
+        // 🛡️ Socket.io Handshake Middleware (Authentication)
+        this.io.use((socket, next) => {
+            const token = socket.handshake.auth.token;
+            const secret = process.env.JWT_SECRET;
+
+            if (!token || !secret) {
+                Logger.warn('🔌 Socket blocked: Missing token or JWT_SECRET');
+                return next(new Error('Authentication error: Missing token'));
+            }
+
+            try {
+                const decoded: any = jwt.verify(token, secret, {
+                    algorithms: ['HS256']
+                });
+                socket.data.userId = decoded.userId;
+                next();
+            } catch (err) {
+                Logger.error('🔌 Socket blocked: Invalid token');
+                next(new Error('Authentication error: Invalid token'));
+            }
+        });
+
         this.io.on('connection', (socket: Socket) => {
             Logger.info(`🔌 Socket connected: ${socket.id}`);
 
-            // Basic auth handshake or queryparam
-            const userId = socket.handshake.query.userId as string;
-            if (userId) {
-                if (!this.userSockets.has(userId)) {
-                    this.userSockets.set(userId, new Set());
-                    // Notify everyone that this user came online
-                    this.io?.emit('user_status', { userId, status: 'online' });
-                }
-                this.userSockets.get(userId)?.add(socket.id);
+            // User ID is now securely stored in socket.data from the middleware
+            const userId = socket.data.userId;
 
-                socket.join(`user:${userId}`);
-                Logger.info(`👤 User ${userId} linked to socket ${socket.id}. Online: ${this.userSockets.get(userId)?.size} sessions.`);
+            if (userId) {
+                this.linkUser(userId, socket);
             }
+
+            // Handle manual re-identification if needed (e.g. after temp token refresh)
+            socket.on('identify', (data: { userId: string }) => {
+                if (data.userId && data.userId !== userId) {
+                    Logger.info(`👤 Socket ${socket.id} re-identifying as ${data.userId}`);
+                    this.unlinkUser(userId, socket.id);
+                    this.linkUser(data.userId, socket);
+                }
+            });
 
             socket.on('disconnect', () => {
                 Logger.info(`🔌 Socket disconnected: ${socket.id}`);
-                if (userId) {
-                    const userSessions = this.userSockets.get(userId);
-                    if (userSessions) {
-                        userSessions.delete(socket.id);
-                        if (userSessions.size === 0) {
-                            this.userSockets.delete(userId);
-                            // Notify everyone that this user went offline
-                            this.io?.emit('user_status', { userId, status: 'offline' });
-                        }
-                    }
+                const currentUserId = socket.data.userId;
+                if (currentUserId) {
+                    this.unlinkUser(currentUserId, socket.id);
                 }
             });
 
