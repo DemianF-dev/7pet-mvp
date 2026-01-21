@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260120-0954",
+  "version": "BETA20260121-0129",
   "stage": "BETA",
-  "timestamp": "2026-01-20T09:54:08.000Z",
-  "commit": "748e52a",
-  "buildNumber": 86,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-21T01:29:29.000Z",
+  "commit": "479ad10",
+  "buildNumber": 87,
+  "releaseNotes": "Auto-generated from commit: fix(backend): Prisma 7 migration and connection fix"
 }
