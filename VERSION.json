@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260121-0129",
+  "version": "BETA20260121-0143",
   "stage": "BETA",
-  "timestamp": "2026-01-21T01:29:29.000Z",
-  "commit": "479ad10",
-  "buildNumber": 87,
-  "releaseNotes": "Auto-generated from commit: fix(backend): Prisma 7 migration and connection fix"
+  "timestamp": "2026-01-21T01:43:12.000Z",
+  "commit": "e24c5e3",
+  "buildNumber": 88,
+  "releaseNotes": "Auto-generated from commit: refactor: system-wide updates, security hardening and audit fixes"
 }
