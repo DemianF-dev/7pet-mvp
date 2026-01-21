@@ -4,18 +4,25 @@
         "module": "commonjs",
         "outDir": "./dist",
         "rootDir": "./src",
-        "strict": false,
+        "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
-        "noEmit": true
+        "noEmit": true,
+        "baseUrl": ".",
+        "paths": {
+            "@prisma/client": [
+                "./src/generated"
+            ]
+        }
     },
     "include": [
         "src/**/*"
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "src/scripts"
     ]
 }

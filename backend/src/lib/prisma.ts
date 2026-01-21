@@ -1,7 +1,15 @@
-import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../generated';
 
 const prismaClientSingleton = () => {
+    const pool = new Pool({
+        connectionString: process.env.DATABASE_URL
+    });
+    const adapter = new PrismaPg(pool);
+
     return new PrismaClient({
+        adapter,
         log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     });
 };
@@ -13,9 +21,6 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
-
-// Note: Prisma 6+ no longer supports prisma.$use middleware
-// Soft delete logic should be handled manually in queries or via extensions
 
 export default prisma;
 

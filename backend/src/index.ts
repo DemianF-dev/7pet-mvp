@@ -2,14 +2,17 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // 🔒 SECURITY: Validate critical environment variables at startup
+// Security: Removed sensitive environment variable logging
 import { validateEnvironment } from './utils/envValidation';
-/*
+
 try {
     validateEnvironment();
 } catch (error) {
-    console.error('⚠️ Startup Warning: Environment validation failed, but continuing for diagnostics...');
+    console.error('⚠️ Startup Warning: Environment validation failed!');
+    if (process.env.NODE_ENV === 'production') {
+        process.exit(1); // 🚫 Stop in production if critical envs are missing
+    }
 }
-*/
 
 import express from 'express';
 import { createServer } from 'http';
@@ -17,7 +20,7 @@ import { socketService } from './services/socketService';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import { generalLimiter } from './utils/rateLimiters';
 import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
 import petRoutes from './routes/petRoutes';
@@ -49,6 +52,7 @@ import devRoutes from './routes/devRoutes';
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
 import { auditContextMiddleware } from './middlewares/auditContext';
+import { authenticate, authorize } from './middlewares/authMiddleware';
 
 
 // 📊 MONITORING SYSTEM
@@ -69,17 +73,32 @@ socketService.initialize(httpServer);
 // 🛡️ TRUST PROXY: Needed for Vercel/proxies to get the real client IP
 app.set('trust proxy', 1);
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'production' ? 300 : 1000, // Higher limit in dev
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: 'Muitas requisições deste IP, tente novamente mais tarde.'
-});
+// Security: Moved to granular rate limiters in utils/rateLimiters.ts
 
-app.use(helmet());
+app.use(helmet({
+    // Security Headers Configuration
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"], // Required for Tailwind CSS
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"], // Allow images and data URIs
+            connectSrc: ["'self'", "https://api.google.com", "wss:"], // For APIs and WebSocket
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+        },
+    },
+    hsts: process.env.NODE_ENV === 'production' ? {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true
+    } : false, // Disable HSTS in development
+    crossOriginEmbedderPolicy: false, // Required for Vite dev mode
+}));
 app.use(compression());
-app.use(limiter); // 🛡️ Rate limiting enabled for security
+app.use(generalLimiter); // 🛡️ General rate limiting enabled for security
 
 // 📊 MONITORING - Capture all requests (must be before other middlewares)
 app.use(metricsMiddleware);
@@ -87,7 +106,7 @@ app.use(metricsMiddleware);
 app.get('/heartbeat', (req, res) => res.json({ status: 'live', time: new Date().toISOString() }));
 
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    // Security: Removed detailed request logging - use proper logging instead
     next();
 });
 
@@ -100,6 +119,7 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://localhost:5174'
 ];
 
@@ -152,7 +172,7 @@ app.use(auditContextMiddleware);
 // NOTE: helmet(), compression(), and express.json() are already applied above (lines 69-70, 119)
 
 app.use('/auth', authRoutes);
-app.use('/customers', customerRoutes);
+app.use('/quotes', quoteRoutes);
 app.use('/pets', petRoutes);
 app.use('/services', serviceRoutes);
 app.use('/appointments', appointmentRoutes);
@@ -207,7 +227,7 @@ app.get('/ping', (req, res) => {
     });
 });
 
-app.get('/diag', async (req, res) => {
+app.get('/diag', authenticate, authorize(['MASTER']), async (req, res) => {
     // 🛡️ Security: Only return keys, never values
     const envKeys = Object.keys(process.env).sort();
     const criticalKeys = ['DATABASE_URL', 'DIRECT_URL', 'JWT_SECRET', 'GOOGLE_MAPS_SERVER_KEY', 'GOOGLE_CLIENT_ID'];

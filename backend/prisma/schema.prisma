@@ -1,12 +1,11 @@
 generator client {
   provider        = "prisma-client-js"
+  output          = "../src/generated"
   previewFeatures = ["relationJoins"]
 }
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model Appointment {
@@ -25,12 +24,16 @@ model Appointment {
   category                AppointmentCategory     @default(SPA)
   seqId                   Int                     @unique @default(autoincrement())
   performerId             String?
+  pickupProviderId        String?
+  dropoffProviderId       String?
   quoteId                 String?
   logisticsStatus         String?
   logisticsLastRemindedAt DateTime?               @db.Timestamp(6)
   recurringPackageId      String?
   customer                Customer                @relation(fields: [customerId], references: [id])
   performer               User?                   @relation(fields: [performerId], references: [id])
+  pickupProvider          User?                   @relation("Appointment_pickupProvider", fields: [pickupProviderId], references: [id])
+  dropoffProvider         User?                   @relation("Appointment_dropoffProvider", fields: [dropoffProviderId], references: [id])
   pet                     Pet                     @relation(fields: [petId], references: [id])
   quote                   Quote?                  @relation(fields: [quoteId], references: [id])
   recurringPackage        RecurringPackage?       @relation(fields: [recurringPackageId], references: [id])
@@ -1074,7 +1077,7 @@ model User {
   reactions               Reaction[]
   assignedServices        Service[]
   staffProfile            StaffProfile?
-  notificationPreferences UserNotificationPreference[]\r
+  notificationPreferences UserNotificationPreference[]
   transportLegs           TransportLeg[]
 
   @@index([division])
@@ -1082,6 +1085,8 @@ model User {
   @@index([firstName])
   @@index([lastName])
   @@index([role], map: "idx_user_role_rls")
+  pickupAppointments      Appointment[]                @relation("Appointment_pickupProvider")
+  dropoffAppointments     Appointment[]                @relation("Appointment_dropoffProvider")
 }
 
 model UserNotificationPreference {
@@ -1137,6 +1142,7 @@ enum AuditAction {
   APPOINTMENT_CANCELLED
   APPOINTMENT_NO_SHOW
   APPOINTMENT_STATUS_CHANGED
+  APPOINTMENT_UPDATED
   USER_CREATED
   USER_UPDATED
   USER_DELETED_SOFT
