@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260121-0143",
+  "version": "BETA20260121-1033",
   "stage": "BETA",
-  "timestamp": "2026-01-21T01:43:12.000Z",
-  "commit": "e24c5e3",
-  "buildNumber": 88,
-  "releaseNotes": "Auto-generated from commit: refactor: system-wide updates, security hardening and audit fixes"
+  "timestamp": "2026-01-21T10:33:57.000Z",
+  "commit": "ccccc87",
+  "buildNumber": 89,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
