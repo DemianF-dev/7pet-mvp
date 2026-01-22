@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260121-1057",
+  "version": "BETA20260121-1842",
   "stage": "BETA",
-  "timestamp": "2026-01-21T10:57:41.000Z",
-  "commit": "b312e29",
-  "buildNumber": 90,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-21T18:42:50.000Z",
+  "commit": "78beb65",
+  "buildNumber": 91,
+  "releaseNotes": "Auto-generated from commit: 🔧 Production Ready Fix - Complete TypeScript & Build Issues Resolution\n\n## Backend Fixes\n- Fix auditService parameter mismatch in customerController.ts:566\n- Fix measure-perf-opt.ts transport field reference\n- Update Jest configuration and test structure\n- Enhanced error handling and logging services\n\n## Frontend Fixes\n- Resolve all BadgeVariant errors (surface → neutral)\n- Fix IconButton aria-label accessibility issues\n- Fix type errors in ManualQuoteModal (creditCardFee calculations)\n- Fix NodeJS.Timeout → number type for browser compatibility\n- Fix AppImage fetchpriority property\n- Add MASTER division to User type\n- Fix arithmetic operations in ProductManager\n- Export RouteKey type for mobile navigation\n- Update API URL configuration for production\n\n## Production Optimizations\n- Updated .env.example with production URLs\n- Enhanced error boundaries and global error handling\n- Improved PWA and socket management\n- Added comprehensive TypeScript coverage\n- Optimized build configuration\n\nAll tests passing ✅ | TypeScript clean ✅ | Build successful ✅\nReady for Vercel deployment"
 }
