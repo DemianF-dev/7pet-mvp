@@ -76,6 +76,48 @@ app.set('trust proxy', 1);
 
 // Security: Moved to granular rate limiters in utils/rateLimiters.ts
 
+// 🌐 CORS configuration - MUST be the first middleware
+const allowedOrigins = [
+    'https://my7.pet',
+    'https://www.my7.pet', // Production Frontend
+    'https://7pet-mvp.vercel.app',
+    'https://7pet-backend.vercel.app',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5174'
+];
+
+const isDev = process.env.NODE_ENV !== 'production';
+const localIpRegex = /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/;
+
+const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) return callback(null, true);
+
+        // Standardize origin (remove trailing slash)
+        const sanitizedOrigin = origin.replace(/\/$/, "");
+
+        if (allowedOrigins.indexOf(sanitizedOrigin) !== -1 || (isDev && localIpRegex.test(sanitizedOrigin))) {
+            callback(null, true);
+        } else {
+            logger.warn(`CORS blocked request from origin: ${origin}`);
+            metricsService.incrementBlockedCORS(); // 📊 Track CORS blocks
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'sentry-trace', 'baggage'],
+    optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight across-the-board
+
+
 app.use(helmet({
     // Security Headers Configuration
     contentSecurityPolicy: {
@@ -111,44 +153,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// CORS configuration - ONLY allow specific origins (security fix)
-const allowedOrigins = [
-    'https://my7.pet',
-    'https://www.my7.pet',
-    'https://7pet-mvp.vercel.app',
-    'https://7pet-backend.vercel.app',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5174'
-];
-
-
-// Em desenvolvimento, permitir IPs locais (192.168.x.x)
-const isDev = process.env.NODE_ENV !== 'production';
-const localIpRegex = /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/;
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or Postman)
-        if (!origin) return callback(null, true);
-
-        // Standardize origin (remove trailing slash)
-        const sanitizedOrigin = origin.replace(/\/$/, "");
-
-        if (allowedOrigins.indexOf(sanitizedOrigin) !== -1 || (isDev && localIpRegex.test(sanitizedOrigin))) {
-            callback(null, true);
-        } else {
-            logger.warn(`CORS blocked request from origin: ${origin}`);
-            metricsService.incrementBlockedCORS(); // 📊 Track CORS blocks
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-}));
+// CORS moved to top
 app.use(express.json({ limit: '10mb' }));
 
 // 📊 MONITORING Dashboard - Serve static files
