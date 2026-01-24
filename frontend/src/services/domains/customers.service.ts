@@ -60,4 +60,17 @@ export class CustomersService {
         const response = await this.api.get(`/customers/${id}`);
         return response.data;
     }
+
+    async search(query: string): Promise<Customer[]> {
+        const response = await this.api.get(`/customers/search?q=${query}`);
+        return Array.isArray(response.data) ? response.data : (response.data.data || []);
+    }
+
+    async create(data: { name: string; phone: string; email: string }): Promise<Customer> {
+        const response = await this.api.post('/customers', {
+            ...data,
+            type: 'AVULSO'
+        });
+        return response.data;
+    }
 }

@@ -8,7 +8,6 @@ import {
     RefreshCcw,
     AlertTriangle,
     MessageSquare,
-    CheckSquare,
     Users,
     PawPrint,
     DollarSign,
@@ -17,21 +16,20 @@ import {
     Zap,
     Target,
     Heart,
-    Briefcase
+    Briefcase,
+    ShoppingCart
 } from 'lucide-react';
-import { format, isToday, isTomorrow } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuthStore } from '../../store/authStore';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
-import Skeleton from '../../components/Skeleton';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
 import DashboardGreeting from '../../components/DashboardGreeting';
 import { GoalProgressCard } from '../../components/staff/GoalProgressCard';
-import { Card, Badge, IconButton, Button, GlassSurface } from '../../components/ui';
-import QueryState from '../../components/system/QueryState';
+import { Card, Badge, IconButton, Button } from '../../components/ui';
 
 interface DashboardMetrics {
     todayAppointments: number;
@@ -97,7 +95,7 @@ export default function StaffDashboard() {
         staleTime: 5 * 60 * 1000,
     });
 
-    const { data: goals, isLoading: isLoadingGoals } = useQuery({
+    const { data: goals } = useQuery({
         queryKey: ['staff-goals'],
         queryFn: async () => {
             const response = await api.get('/goals');
@@ -139,7 +137,7 @@ export default function StaffDashboard() {
     };
 
     return (
-        <main className="p-[var(--space-6)] md:p-[var(--space-10)] max-w-7xl mx-auto w-full space-y-[var(--space-8)] pb-28 md:pb-10">
+        <main className="p-4 md:p-6 w-full space-y-4 flex-1">
             <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
                 <div>
                     <Breadcrumbs />
@@ -167,7 +165,7 @@ export default function StaffDashboard() {
             </header>
 
             {isLoading ? (
-                <div className="space-y-8">
+                <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[1, 2, 3].map(i => <div key={i} className="h-32 bg-white dark:bg-gray-800 rounded-3xl animate-pulse" />)}
                     </div>
@@ -180,12 +178,12 @@ export default function StaffDashboard() {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="space-y-8"
+                    className="space-y-4"
                 >
                     {/* 🎯 Strategic Goals Section */}
                     {goals && goals.length > 0 && (
                         <section className="space-y-4">
-                            <div className="flex items-center justify-between ml-1">
+                            <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Target size={18} className="text-primary" />
                                     <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Minhas Metas & Objetivos</h2>
@@ -199,7 +197,7 @@ export default function StaffDashboard() {
                                     </button>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {goals.map((goal: any) => (
                                     <GoalProgressCard key={goal.id} goal={goal} />
                                 ))}
@@ -213,7 +211,7 @@ export default function StaffDashboard() {
                                 <DollarSign size={18} className="text-emerald-500" />
                                 <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Performance Financeira</h2>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {[
                                     { label: 'Faturamento Hoje', value: metrics?.revenue?.day || 0, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
                                     { label: 'Faturamento Semana', value: metrics?.revenue?.week || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10' },
@@ -251,7 +249,7 @@ export default function StaffDashboard() {
                             <Zap size={18} className="text-[var(--color-accent-primary)]" />
                             <h2 className="text-sm font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)]">Operações do Dia</h2>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
                             {[
                                 {
                                     label: 'SPA Hoje',
@@ -300,22 +298,31 @@ export default function StaffDashboard() {
                                     link: '/staff/support',
                                     trend: 'Ver chamados',
                                     urgent: (metrics?.newTickets || 0) > 0
+                                },
+                                {
+                                    label: 'PDV / Caixa',
+                                    value: 'ABERTO',
+                                    icon: <ShoppingCart size={22} />,
+                                    color: 'text-emerald-500',
+                                    bg: 'bg-emerald-500/10',
+                                    link: '/staff/pos',
+                                    trend: 'Iniciar Nova Venda'
                                 }
                             ].map((card, idx) => (
                                 <motion.div key={idx} variants={itemVariants}>
                                     <Card
                                         onClick={() => navigate(card.link)}
-                                        className={`p-6 border transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between ${card.urgent ? 'border-red-500/30 bg-red-500/5' : 'border-[var(--color-border)]'}`}
+                                        className={`p-4 border transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between ${card.urgent ? 'border-red-500/30 bg-red-500/5' : 'border-[var(--color-border)]'}`}
                                         hover
                                     >
                                         <div>
-                                            <div className={`w-12 h-12 ${card.bg} ${card.color} rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+                                            <div className={`w-12 h-12 ${card.bg} ${card.color} rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110`}>
                                                 {card.icon}
                                             </div>
                                             <p className="text-[var(--color-text-tertiary)] font-[var(--font-weight-black)] uppercase tracking-widest text-[9px] mb-1">{card.label}</p>
                                             <h3 className={`text-4xl font-[var(--font-weight-black)] ${card.urgent ? 'text-red-600' : 'text-[var(--color-text-primary)]'}`}>{card.value}</h3>
                                         </div>
-                                        <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent-primary)] transition-colors">
+                                        <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent-primary)] transition-colors">
                                             {card.trend} <ArrowRight size={12} className="group-hover:translate-x-1 transition-all" />
                                         </div>
                                     </Card>
@@ -328,18 +335,18 @@ export default function StaffDashboard() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Customer Growth */}
                         <div className="lg:col-span-2 space-y-4">
-                            <div className="flex items-center gap-2 ml-1">
+                            <div className="flex items-center gap-2">
                                 <Users size={18} className="text-[var(--color-accent-primary)]" />
                                 <h2 className="text-sm font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)]">Base de Clientes & Pets</h2>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {[
                                     { label: 'Total Clientes', value: metrics?.totalClientsServed || 0, icon: <Users size={20} />, sub: 'Base Ativa' },
                                     { label: 'Total Pets', value: metrics?.totalPetsServed || 0, icon: <PawPrint size={20} />, sub: 'Atendidos' },
                                     { label: 'Recorrentes', value: metrics?.recurrentClients || 0, icon: <RefreshCcw size={20} />, sub: 'Fidelizados' },
                                 ].map((stat, idx) => (
-                                    <Card key={idx} className="p-6 flex flex-col items-center text-center">
-                                        <div className="p-3 bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] rounded-full mb-3">
+                                    <Card key={idx} className="p-4 flex flex-col items-center text-center">
+                                        <div className="p-3 bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] rounded-full mb-2">
                                             {stat.icon}
                                         </div>
                                         <h4 className="text-2xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">{stat.value}</h4>
@@ -350,12 +357,12 @@ export default function StaffDashboard() {
                             </div>
 
                             {/* Kanban Quick Info */}
-                            <Card className="p-8">
-                                <h3 className="text-lg font-[var(--font-weight-bold)] mb-6 flex items-center gap-2">
+                            <Card className="p-5">
+                                <h3 className="text-lg font-[var(--font-weight-bold)] mb-4 flex items-center gap-2">
                                     <TrendingUp size={20} className="text-[var(--color-accent-primary)]" />
                                     Funil de Atendimento (Próximos 7 dias)
                                 </h3>
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     {metrics?.statusCounts?.map((s, idx) => (
                                         <div key={idx} className="space-y-2">
                                             <div className="flex justify-between text-[11px] font-[var(--font-weight-black)] uppercase tracking-wider">
@@ -381,8 +388,8 @@ export default function StaffDashboard() {
                                 <XCircle size={18} className="text-[var(--color-error)]" />
                                 <h2 className="text-sm font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)]">Conversão & Retenção</h2>
                             </div>
-                            <div className="space-y-4">
-                                <Card className="p-6 relative overflow-hidden" hover>
+                            <div className="space-y-3">
+                                <Card className="p-4 relative overflow-hidden" hover>
                                     <div className="relative z-10">
                                         <p className="text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-error)] mb-1">Orçamentos Recusados</p>
                                         <div className="flex items-end gap-2">
@@ -393,7 +400,7 @@ export default function StaffDashboard() {
                                     <XCircle size={60} className="absolute -right-4 -bottom-4 text-[var(--color-error)] opacity-5" />
                                 </Card>
 
-                                <Card className="p-6 relative overflow-hidden" hover>
+                                <Card className="p-4 relative overflow-hidden" hover>
                                     <div className="relative z-10">
                                         <p className="text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest text-orange-400 mb-1">Sem Retorno (+3 dias)</p>
                                         <div className="flex items-end gap-2">
@@ -414,10 +421,10 @@ export default function StaffDashboard() {
                             <h2 className="text-sm font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)]">Meu Espaço de Trabalho</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Next Appointments */}
-                            <Card className="p-8">
-                                <h3 className="text-lg font-[var(--font-weight-bold)] mb-6 flex items-center justify-between">
+                            <Card className="p-5">
+                                <h3 className="text-lg font-[var(--font-weight-bold)] mb-4 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Calendar size={20} className="text-[var(--color-accent-primary)]" />
                                         Minha Agenda Próxima
@@ -434,7 +441,7 @@ export default function StaffDashboard() {
 
                                 {/* Status Counters for User */}
                                 {!isLoadingWidgets && widgets?.myTasks && (
-                                    <div className="flex flex-wrap gap-2 mb-6">
+                                    <div className="flex flex-wrap gap-2 mb-4">
                                         {widgets.myTasks.map((task, idx) => (
                                             <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-fill-secondary)] border border-[var(--color-border)]">
                                                 <span className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-primary)]">{task.count}</span>
@@ -483,8 +490,8 @@ export default function StaffDashboard() {
                             </Card>
 
                             {/* Popular Posts */}
-                            <Card className="p-8">
-                                <h3 className="text-lg font-[var(--font-weight-bold)] mb-6 flex items-center justify-between">
+                            <Card className="p-5">
+                                <h3 className="text-lg font-[var(--font-weight-bold)] mb-4 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <TrendingUp size={20} className="text-[var(--color-accent-primary)]" />
                                         Mural de Destaques
@@ -499,7 +506,7 @@ export default function StaffDashboard() {
                                     </Button>
                                 </h3>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {isLoadingWidgets ? (
                                         [1, 2].map(i => <div key={i} className="h-24 bg-[var(--color-fill-secondary)] rounded-2xl animate-pulse" />)
                                     ) : widgets?.popularPosts.length === 0 ? (
@@ -508,7 +515,7 @@ export default function StaffDashboard() {
                                         widgets?.popularPosts.map((post) => (
                                             <div
                                                 key={post.id}
-                                                className="p-5 rounded-2xl bg-[var(--color-fill-secondary)] border border-transparent hover:border-[var(--color-accent-primary-alpha)] transition-all cursor-pointer"
+                                                className="p-4 rounded-2xl bg-[var(--color-fill-secondary)] border border-transparent hover:border-[var(--color-accent-primary-alpha)] transition-all cursor-pointer"
                                                 onClick={() => navigate('/staff/mural')}
                                             >
                                                 <div className="flex items-center gap-3 mb-3">

@@ -24,6 +24,7 @@ export const productController = {
             });
             res.json(products);
         } catch (error) {
+            console.error('Error listing products:', error);
             res.status(500).json({ error: 'Erro ao listar produtos' });
         }
     },

@@ -56,6 +56,40 @@ export const getConversations = async (req: Request, res: Response) => {
     }
 };
 
+export const getConversation = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        // @ts-ignore
+        const userId = req.user?.id;
+
+        const conversation = await prisma.conversation.findUnique({
+            where: { id },
+            include: {
+                participants: {
+                    include: {
+                        user: { select: { id: true, name: true, color: true } }
+                    }
+                }
+            }
+        });
+
+        if (!conversation) {
+            return res.status(404).json({ error: 'Conversation not found' });
+        }
+
+        // Verify participation
+        const isParticipant = conversation.participants.some(p => p.userId === userId);
+        if (!isParticipant) {
+            return res.status(403).json({ error: 'Access denied to this conversation' });
+        }
+
+        res.json(conversation);
+    } catch (error) {
+        Logger.error('Error fetching conversation', error);
+        res.status(500).json({ error: 'Failed to fetch conversation' });
+    }
+};
+
 export const getMessages = async (req: Request, res: Response) => {
     try {
         const { id } = req.params; // conversationId
@@ -253,18 +287,39 @@ export const getSupportAgents = async (req: Request, res: Response) => {
 export const searchUsers = async (req: Request, res: Response) => {
     try {
         const { query } = req.query;
-        const whereClause: any = { active: true };
+        // @ts-ignore
+        const currentUserId = req.user?.id;
 
-        if (query && typeof query === 'string') {
+        Logger.info(`🔍 Chat user search initiated by ${currentUserId}. Query: "${query || ''}"`);
+
+        // Debug: Primeiro contar todos os usuários ativos
+        const totalActiveUsers = await prisma.user.count({
+            where: { active: true }
+        });
+        Logger.info(`🐛 DEBUG: Total usuários ativos no banco: ${totalActiveUsers}`);
+
+        // Se não há query, retorna todos os usuários ativos (exceto o atual)
+        const whereClause: any = {
+            active: true
+        };
+
+        // Remover filtro de usuário atual temporariamente para debug
+        if (currentUserId && currentUserId !== 'test-debug') {
+            whereClause.id = { not: currentUserId };
+        }
+
+        // Se há query, aplica filtro
+        if (query && typeof query === 'string' && query.trim() !== '') {
+            const searchTerm = query.trim();
             whereClause.OR = [
-                { name: { contains: query, mode: Prisma.QueryMode.insensitive } },
-                { email: { contains: query, mode: Prisma.QueryMode.insensitive } }
+                { name: { contains: searchTerm, mode: 'insensitive' } },
+                { email: { contains: searchTerm, mode: 'insensitive' } }
             ];
         }
 
         const users = await prisma.user.findMany({
             where: whereClause,
-            take: 50,
+            take: 40,
             orderBy: { name: 'asc' },
             select: {
                 id: true,
@@ -275,10 +330,25 @@ export const searchUsers = async (req: Request, res: Response) => {
                 color: true
             }
         });
-        res.json(users);
+
+        Logger.info(`✅ Search returned ${users.length} users`);
+        
+        // Debug: Log dos primeiros usuários encontrados
+        if (users.length > 0) {
+            Logger.info(`🐛 DEBUG: Primeiros usuários: ${JSON.stringify(users.slice(0, 3), null, 2)}`);
+        }
+
+        res.json({
+            users: users,
+            debug: {
+                totalActive: totalActiveUsers,
+                query: query || null,
+                currentUserId: currentUserId || null
+            }
+        });
     } catch (error) {
-        Logger.error('Error searching users', error);
-        res.status(500).json({ error: 'Failed to search users' });
+        Logger.error('❌ Error searching users for chat', error);
+        res.status(500).json({ error: 'Failed to search users', debug: error.message });
     }
 };
 

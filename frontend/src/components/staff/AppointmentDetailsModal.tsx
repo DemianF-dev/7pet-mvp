@@ -1,7 +1,7 @@
 import {
     X, User, Dog, Calendar, Clock, MapPin,
     CheckCircle, Clock3, Printer, Send,
-    Edit, Trash2, Copy, RefreshCcw, DollarSign
+    Edit, Trash2, Copy, RefreshCcw, DollarSign, ShoppingCart
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
@@ -208,8 +208,19 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
                         </button>
                     </div>
 
-                    {/* Financial Receipt Status / Payment Trigger */}
+                    {/* Financial Receipt Status / Payment Trigger / POS Checkout */}
                     <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                        {/* New POS Checkout Button */}
+                        <button
+                            onClick={() => {
+                                onClose();
+                                window.location.href = `/staff/pos?appointmentId=${localAppointment.id}`;
+                            }}
+                            className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2 text-xs font-black uppercase tracking-wider shadow-lg shadow-blue-500/20"
+                        >
+                            <ShoppingCart size={16} /> Finalizar no Caixa (PDV)
+                        </button>
+
                         {(() => {
                             const activeInvoice = localAppointment.invoice || localAppointment.quote?.invoice;
 

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '../generated';
 import Logger from '../lib/logger';
 import * as auditService from '../services/auditService';
+import { logError } from '../utils/secureLogger';
 
 const appointmentSchema = z.object({
     petId: z.string().uuid(),
@@ -154,7 +155,17 @@ export const update = async (req: any, res: Response) => {
         res.json(updated);
 
     } catch (error: any) {
-        res.status(400).json({ error: error.message });
+        logError('Appointment update error', error, {
+            code: error.code,
+            meta: error.meta
+        });
+        res.status(400).json({ 
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? {
+                code: error.code,
+                meta: error.meta
+            } : undefined
+        });
     }
 };
 

@@ -94,9 +94,10 @@ async function getRouteWithCache(
 
     // TODO: If stopAddress is provided, need to calculate route with waypoint
     // For now, direct route only
-    const result = await mapsService.calculateTransportDetailed(origin, destination, 'PICK_UP');
+    // Using ROUND_TRIP as it populates 'largada' consistently in googleMapsService
+    const result = await mapsService.calculateTransportDetailed(origin, destination, 'ROUND_TRIP');
 
-    // Extract distance/duration from first leg
+    // Extract distance/duration from first leg (largada = Store -> Origin/Dest)
     const firstLeg = result.breakdown.largada;
     if (!firstLeg) {
         throw new Error('Failed to get route data from Google Maps');

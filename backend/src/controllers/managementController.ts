@@ -287,27 +287,65 @@ export const verifyMaster = async (req: Request, res: Response) => {
 
 export const getReports = async (req: Request, res: Response) => {
     try {
-        const { start, end } = req.query;
+        const { start, end, source } = req.query;
         const startDate = start ? new Date(start as string) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const endDate = end ? new Date(end as string) : new Date();
 
-        const invoices = await prisma.invoice.findMany({
-            where: {
-                createdAt: {
-                    gte: startDate,
-                    lte: endDate
-                }
-            },
-            include: {
-                customer: true,
-                appointment: {
-                    include: { services: true }
-                }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+        const includeInvoices = !source || source === 'all' || source === 'invoice';
+        const includePOS = !source || source === 'all' || source === 'pos';
 
-        res.json(invoices);
+        const [invoices, orders] = await Promise.all([
+            includeInvoices ? prisma.invoice.findMany({
+                where: {
+                    createdAt: {
+                        gte: startDate,
+                        lte: endDate
+                    }
+                },
+                include: {
+                    customer: true,
+                    appointment: {
+                        include: { services: true }
+                    },
+                    quotes: {
+                        select: { id: true }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            }) : Promise.resolve([]),
+            includePOS ? prisma.order.findMany({
+                where: {
+                    status: { in: ['PAID', 'CANCELLED'] },
+                    createdAt: {
+                        gte: startDate,
+                        lte: endDate
+                    }
+                },
+                include: {
+                    customer: true,
+                    items: true
+                },
+                orderBy: { createdAt: 'desc' }
+            }) : Promise.resolve([])
+        ]);
+
+        const normalizedOrders = orders.map((o: any) => ({
+            id: o.id,
+            amount: o.finalAmount,
+            status: o.status === 'PAID' ? 'PAGO' : 'CANCELADO',
+            createdAt: o.createdAt,
+            customer: o.customer || { name: 'Venda S/ Identificação' },
+            appointment: {
+                services: o.items.map((i: any) => ({ name: i.description }))
+            },
+            isPOS: true
+        }));
+
+        const combined = [...invoices, ...normalizedOrders].sort((a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        res.json(combined);
     } catch (error) {
         console.error('Error fetching reports:', error);
         res.status(500).json({ error: 'Erro ao gerar relatório.' });

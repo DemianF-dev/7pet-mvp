@@ -24,17 +24,20 @@ model Appointment {
   category                AppointmentCategory     @default(SPA)
   seqId                   Int                     @unique @default(autoincrement())
   performerId             String?
-  pickupProviderId        String?
-  dropoffProviderId       String?
   quoteId                 String?
   logisticsStatus         String?
   logisticsLastRemindedAt DateTime?               @db.Timestamp(6)
   recurringPackageId      String?
+  dropoffProviderId       String?
+  pickupProviderId        String?
+  posOrderId              String?                 @unique
+  appointmentInvoiceLink  AppointmentInvoiceLink?
   customer                Customer                @relation(fields: [customerId], references: [id])
-  performer               User?                   @relation(fields: [performerId], references: [id])
-  pickupProvider          User?                   @relation("Appointment_pickupProvider", fields: [pickupProviderId], references: [id])
   dropoffProvider         User?                   @relation("Appointment_dropoffProvider", fields: [dropoffProviderId], references: [id])
+  performer               User?                   @relation(fields: [performerId], references: [id])
   pet                     Pet                     @relation(fields: [petId], references: [id])
+  pickupProvider          User?                   @relation("Appointment_pickupProvider", fields: [pickupProviderId], references: [id])
+  posOrder                Order?                  @relation(fields: [posOrderId], references: [id])
   quote                   Quote?                  @relation(fields: [quoteId], references: [id])
   recurringPackage        RecurringPackage?       @relation(fields: [recurringPackageId], references: [id])
   debitCreditNotes        DebitCreditNote[]
@@ -52,7 +55,79 @@ model Appointment {
   @@index([performerId])
   @@index([startAt])
   @@index([status])
+  @@index([posOrderId])
   @@index([customerId], map: "idx_appointment_customerid")
+}
+
+model RecurrenceContract {
+  id                     String           @id @default(uuid())
+  customerId             String
+  type                   RecurrenceType
+  status                 ContractStatus   @default(ATIVO)
+  title                  String
+  frequency              PackageFrequency
+  billingDay             Int?
+  defaultDiscountPercent Float            @default(0)
+  notes                  String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  customer               Customer         @relation(fields: [customerId], references: [id])
+  invoices               PackageInvoice[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model PackageInvoice {
+  id            String                   @id @default(uuid())
+  customerId    String
+  contractId    String?
+  type          RecurrenceType
+  periodYear    Int
+  periodMonth   Int
+  status        PackageInvoiceStatus     @default(RASCUNHO)
+  dueDate       DateTime
+  subtotal      Float
+  discountTotal Float                    @default(0)
+  total         Float
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  customer      Customer                 @relation(fields: [customerId], references: [id])
+  contract      RecurrenceContract?      @relation(fields: [contractId], references: [id])
+  lines         PackageInvoiceLine[]
+  links         AppointmentInvoiceLink[]
+
+  @@index([customerId, periodYear, periodMonth])
+  @@index([status])
+}
+
+model PackageInvoiceLine {
+  id          String            @id @default(uuid())
+  invoiceId   String
+  sourceType  InvoiceSourceType
+  sourceId    String?
+  description String
+  qty         Float             @default(1)
+  unitPrice   Float
+  total       Float
+  invoice     PackageInvoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model AppointmentInvoiceLink {
+  id            String         @id @default(uuid())
+  appointmentId String         @unique
+  invoiceId     String
+  linkedAt      DateTime       @default(now())
+  linkedBy      String?
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id])
+  invoice       PackageInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([appointmentId])
 }
 
 model Appreciation {
@@ -244,9 +319,12 @@ model Customer {
   debitCreditNotes          DebitCreditNote[]
   financialTransactions     FinancialTransaction[]
   invoices                  Invoice[]
+  posOrders                 Order[]
   pets                      Pet[]
   quotes                    Quote[]
   recurringPackages         RecurringPackage[]
+  recurrenceContracts       RecurrenceContract[]
+  packageInvoices           PackageInvoice[]
 
   @@index([deletedAt])
   @@index([legacyBitrixId])
@@ -371,6 +449,8 @@ model Invoice {
   amount                Float
   status                InvoiceStatus          @default(PENDENTE)
   dueDate               DateTime
+  notes                 String?
+  billingPeriod         String? // e.g., 'INICIO_PACOTE', 'FIM_PACOTE'
   createdAt             DateTime               @default(now())
   updatedAt             DateTime
   deletedAt             DateTime?
@@ -635,17 +715,20 @@ model Post {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  seqId       Int         @unique @default(autoincrement())
-  name        String
-  description String?
-  price       Float
-  stock       Int         @default(0)
-  category    String?     @default("Geral")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
-  quoteItems  QuoteItem[]
+  id                 String              @id @default(uuid())
+  seqId              Int                 @unique @default(autoincrement())
+  name               String
+  description        String?
+  price              Float
+  stock              Int                 @default(0)
+  category           String?             @default("Geral")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  sku                String?             @unique
+  inventoryMovements InventoryMovement[]
+  orderItems         OrderItem[]
+  quoteItems         QuoteItem[]
 
   @@index([deletedAt])
 }
@@ -699,17 +782,16 @@ model Quote {
   cardFeePercent           Float?
   taxPercent               Float?
   recurringPackageId       String?
-  // New transport calculation fields
-  transportPlan            String? // TL1 or TL2
-  transportMode            String? // LEVA, TRAZ, or LEVA_TRAZ
-  transportStopAddress     String? // Optional stop before final destination
   transportDiscountPercent Float?                 @default(0)
-  transportTotalBefore     Float? // Total before discount
-  transportTotalAfter      Float? // Total after discount
-  transportLevaTotalBefore Float? // LEVA subtotal before discount
-  transportLevaTotalAfter  Float? // LEVA subtotal after discount
-  transportTrazTotalBefore Float? // TRAZ subtotal before discount
-  transportTrazTotalAfter  Float? // TRAZ subtotal after discount
+  transportLevaTotalAfter  Float?
+  transportLevaTotalBefore Float?
+  transportMode            String?
+  transportPlan            String?
+  transportStopAddress     String?
+  transportTotalAfter      Float?
+  transportTotalBefore     Float?
+  transportTrazTotalAfter  Float?
+  transportTrazTotalBefore Float?
   appointments             Appointment[]
   financialTransactions    FinancialTransaction[]
   customer                 Customer               @relation(fields: [customerId], references: [id])
@@ -849,6 +931,7 @@ model Service {
   notes            String?
   bathCategory     String?
   groomingType     String?
+  OrderItem        OrderItem[]
   PackageItem      PackageItem[]
   QuoteItem        QuoteItem[]
   responsible      User?              @relation(fields: [responsibleId], references: [id])
@@ -946,8 +1029,8 @@ model TransportDetails {
   confirmedTime   DateTime?
   status          String          @default("SOLICITADO")
   type            String?
-  startedAt       DateTime?
   completedAt     DateTime?
+  startedAt       DateTime?
   appointment     Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 }
 
@@ -972,20 +1055,20 @@ model TransportLegExecution {
 model TransportLeg {
   id                 String   @id @default(uuid())
   quoteId            String
-  kind               String // PARTIDA, LEVA, LEVA2, TRAZ, TRAZ2, RETORNO
+  kind               String
   originAddress      String
   destinationAddress String
-  distanceKm         Float // Actual distance from Google Maps
-  durationMin        Int // Actual duration from Google Maps
-  chargeKm           Float // KM charged (sometimes same as distanceKm)
-  chargeMin          Int // MIN charged (sometimes 0 for KM-only legs)
-  kmRate             Float // Rate per KM at time of calculation
-  minRate            Float // Rate per MIN at time of calculation
-  subtotal           Float // Calculated subtotal for this leg
-  assignedProviderId String? // Provider assigned to this leg
+  distanceKm         Float
+  durationMin        Int
+  chargeKm           Float
+  chargeMin          Int
+  kmRate             Float
+  minRate            Float
+  subtotal           Float
+  assignedProviderId String?
   createdAt          DateTime @default(now())
-  quote              Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   assignedProvider   User?    @relation(fields: [assignedProviderId], references: [id])
+  quote              Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@index([quoteId])
   @@index([assignedProviderId])
@@ -994,17 +1077,17 @@ model TransportLeg {
 
 model RouteCache {
   id                 String   @id @default(uuid())
-  routeKey           String   @unique // hash(origin|dest|stop|plan)
+  routeKey           String   @unique
   originAddress      String
   destinationAddress String
-  stopAddress        String? // Optional intermediate stop
+  stopAddress        String?
   distanceKm         Float
   durationMin        Int
+  handlingTime       Float?   @default(0)
   cachedAt           DateTime @default(now())
-  expiresAt          DateTime // TTL: 7 days from cachedAt
+  expiresAt          DateTime
 
   @@index([routeKey])
-  @@index([expiresAt])
 }
 
 model TransportSettings {
@@ -1022,11 +1105,10 @@ model TransportSettings {
   minPriceRetorno      Float    @default(1.5)
   handlingTimeLargada  Int      @default(0)
   handlingTimeRetorno  Int      @default(0)
-  // New unified rates for TL1/TL2 calculations
-  kmRate               Float    @default(2.0) // Unified KM rate
-  minRate              Float    @default(1.5) // Unified MIN rate
-  taxPercent           Float    @default(5.0) // Tax percentage for calculations
-  providerSharePercent Float    @default(60.0) // Provider's share percentage
+  kmRate               Float    @default(2.0)
+  minRate              Float    @default(1.5)
+  providerSharePercent Float    @default(60.0)
+  taxPercent           Float    @default(5.0)
 }
 
 model User {
@@ -1062,11 +1144,15 @@ model User {
   isSupportAgent          Boolean                      @default(false)
   allowedGames            Json?                        @default("[]")
   pauseMenuEnabled        Boolean                      @default(false)
+  dropoffAppointments     Appointment[]                @relation("Appointment_dropoffProvider")
   appointments            Appointment[]
+  pickupAppointments      Appointment[]                @relation("Appointment_pickupProvider")
   receivedAppreciations   Appreciation[]               @relation("Appreciation_receiverIdToUser")
   sentAppreciations       Appreciation[]               @relation("Appreciation_senderIdToUser")
   authenticators          Authenticator[]
   bugReports              BugReport[]
+  closedCashSessions      CashSession[]                @relation("CashSession_closedBy")
+  openedCashSessions      CashSession[]                @relation("CashSession_openedBy")
   comments                Comment[]
   customer                Customer?
   messages                Message[]
@@ -1078,10 +1164,8 @@ model User {
   reactions               Reaction[]
   assignedServices        Service[]
   staffProfile            StaffProfile?
-  notificationPreferences UserNotificationPreference[]
   transportLegs           TransportLeg[]
-  pickupAppointments      Appointment[]                @relation("Appointment_pickupProvider")
-  dropoffAppointments     Appointment[]                @relation("Appointment_dropoffProvider")
+  notificationPreferences UserNotificationPreference[]
 
   @@index([division])
   @@index([email])
@@ -1103,6 +1187,110 @@ model UserNotificationPreference {
   @@unique([userId, notificationType])
   @@index([notificationType])
   @@index([userId])
+}
+
+model CashSession {
+  id                     String            @id @default(uuid())
+  openedAt               DateTime          @default(now())
+  closedAt               DateTime?
+  status                 CashSessionStatus @default(OPEN)
+  openingBalance         Float
+  closingBalance         Float?
+  expectedClosingBalance Float?
+  notes                  String?
+  openedById             String
+  closedById             String?
+  closedBy               User?             @relation("CashSession_closedBy", fields: [closedById], references: [id])
+  openedBy               User              @relation("CashSession_openedBy", fields: [openedById], references: [id])
+  orders                 Order[]
+
+  @@index([status])
+  @@index([openedById])
+}
+
+model Order {
+  id              String           @id @default(uuid())
+  seqId           Int              @unique @default(autoincrement())
+  customerId      String?
+  cashSessionId   String
+  status          OrderStatus      @default(OPEN)
+  totalAmount     Float
+  discountAmount  Float            @default(0)
+  finalAmount     Float
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  returnReason    String?
+  appointment     Appointment?
+  fiscalDocuments FiscalDocument[]
+  cashSession     CashSession      @relation(fields: [cashSessionId], references: [id])
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  items           OrderItem[]
+  payments        OrderPayment[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([cashSessionId])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String?
+  serviceId   String?
+  description String
+  quantity    Float
+  unitPrice   Float
+  discount    Float    @default(0)
+  totalPrice  Float
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id])
+  service     Service? @relation(fields: [serviceId], references: [id])
+
+  @@index([orderId])
+}
+
+model OrderPayment {
+  id           String             @id @default(uuid())
+  orderId      String
+  method       OrderPaymentMethod
+  amount       Float
+  paidAt       DateTime           @default(now())
+  installments Int                @default(1)
+  notes        String?
+  order        Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model InventoryMovement {
+  id        String                @id @default(uuid())
+  productId String
+  type      InventoryMovementType
+  quantity  Float
+  reason    String?
+  orderId   String?
+  createdAt DateTime              @default(now())
+  product   Product               @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([type])
+}
+
+model FiscalDocument {
+  id           String               @id @default(uuid())
+  orderId      String
+  type         String
+  status       FiscalDocumentStatus @default(PENDING)
+  docKey       String?              @unique
+  xmlBody      String?
+  pdfUrl       String?
+  errorDetails String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  order        Order                @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
 }
 
 enum AppointmentCategory {
@@ -1143,7 +1331,6 @@ enum AuditAction {
   APPOINTMENT_CANCELLED
   APPOINTMENT_NO_SHOW
   APPOINTMENT_STATUS_CHANGED
-  APPOINTMENT_UPDATED
   USER_CREATED
   USER_UPDATED
   USER_DELETED_SOFT
@@ -1158,6 +1345,9 @@ enum AuditAction {
   PRODUCT_CREATED
   PRODUCT_UPDATED
   PRODUCT_DELETED
+  APPOINTMENT_UPDATED
+  ORDER_CANCELLED
+  ORDER_RETURNED
 }
 
 enum AuditSeverity {
@@ -1186,6 +1376,7 @@ enum AuditTargetType {
   OTHER
   SERVICE
   PRODUCT
+  ORDER
 }
 
 enum BillingAction {
@@ -1232,6 +1423,25 @@ enum PackageStatus {
   ENCERRADO
 }
 
+model ServicePriceConfig {
+  id          String                @id @default(uuid())
+  service     String                @unique
+  basePrice   Float
+  category    ServiceConfigCategory @default(GENERAL_SERVICE)
+  description String?
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([category, isActive])
+}
+
+enum ServiceConfigCategory {
+  KNOT_REMOVAL
+  MEDICATED_BATH
+  GENERAL_SERVICE
+}
+
 enum QuoteStatus {
   SOLICITADO
   EM_PRODUCAO
@@ -1262,4 +1472,69 @@ enum TransportType {
   PICK_UP
   DROP_OFF
   ROUND_TRIP
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum OrderStatus {
+  OPEN
+  PAID
+  CANCELLED
+}
+
+enum OrderPaymentMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  ACCOUNT_CREDIT
+  PIX_CPF
+  PIX_EMAIL
+  CREDIT_CARD_INSTALLMENT
+  DEFERRED
+  FUTURE
+  OTHER
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  SALE
+  RETURN
+}
+
+enum FiscalDocumentStatus {
+  PENDING
+  ISSUED
+  CANCELLED
+  ERROR
+}
+
+enum RecurrenceType {
+  SPA
+  TRANSPORTE
+}
+
+enum ContractStatus {
+  ATIVO
+  PAUSADO
+  CANCELADO
+}
+
+enum PackageInvoiceStatus {
+  RASCUNHO
+  EMITIDA
+  PAGA
+  PARCIAL
+  CANCELADA
+  VENCIDA
+}
+
+enum InvoiceSourceType {
+  AGENDAMENTO
+  AJUSTE_MANUAL
 }

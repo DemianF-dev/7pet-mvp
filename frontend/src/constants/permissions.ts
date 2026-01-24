@@ -21,6 +21,7 @@ export const PERMISSION_MODULES = [
     { id: 'support', label: 'Chamados Técnicos' },
     { id: 'my-hr', label: 'Meu RH' },
     { id: 'strategy', label: 'Estratégia' },
+    { id: 'pos', label: 'Caixa (PDV)' },
 
     // === CLIENT PERMISSIONS ===
     { id: 'client-dashboard', label: 'Dashboard (Cliente)' },
@@ -46,11 +47,11 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<string, string[]> = {
         'dashboard', 'chat', 'feed', 'quotes', 'agenda-spa', 'agenda-log',
         'customers', 'services', 'products', 'billing', 'reports', 'management',
         'transport', 'transport-config', 'hr-collaborators', 'hr-pay-periods', 'support',
-        'notifications', 'profile', 'my-hr', 'settings', 'users'
+        'notifications', 'profile', 'my-hr', 'settings', 'users', 'pos'
     ],
     'OPERACIONAL': [
         'dashboard', 'chat', 'feed', 'agenda-spa', 'agenda-log',
-        'transport', 'support', 'notifications', 'profile', 'my-hr', 'settings'
+        'transport', 'support', 'notifications', 'profile', 'my-hr', 'settings', 'pos'
     ],
     'SPA': [
         'agenda-spa', 'chat', 'feed', 'support', 'notifications',

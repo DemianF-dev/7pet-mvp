@@ -10,6 +10,9 @@ import * as authService from '../services/authService';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import * as transportCalc from '../services/transportCalculationService';
+import * as transportUnified from '../services/transportCalculationUnifiedService';
+import { logInfo, logError, logWarn } from '../utils/secureLogger';
+import { ServicePriceConfigService } from '../services/servicePriceConfigService';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
 
@@ -45,8 +48,10 @@ const quoteSchema = z.object({
 
 export const quoteController = {
     async create(req: Request, res: Response) {
-        console.log('[QuoteCreate] ========== START ==========');
-        console.log('[QuoteCreate] User:', (req as any).user?.id, (req as any).user?.role);
+        logInfo('Quote create started', {
+            userId: (req as any).user?.id,
+            userRole: (req as any).user?.role
+        });
         try {
             const user = (req as any).user;
             let customerId = user.customer?.id;
@@ -108,18 +113,8 @@ export const quoteController = {
             if (data.hasKnots && data.knotRegions) {
                 const knotRegions = data.knotRegions.toLowerCase().split(',').map(r => r.trim()).filter(r => r);
 
-                const KNOT_PRICES: Record<string, number> = {
-                    'orelhas': 7.50,
-                    'rostinho': 15.00,
-                    'pescoço': 15.00,
-                    'barriga': 12.50,
-                    'pata frontal esquerda': 7.50,
-                    'pata frontal direita': 7.50,
-                    'pata traseira esquerda': 7.50,
-                    'pata traseira direita': 7.50,
-                    'bumbum': 12.50,
-                    'rabo': 10.00
-                };
+                // Obter preços dinâmicos do banco com fallback para valores padrão
+                const KNOT_PRICES = await ServicePriceConfigService.getKnotRemovalPrices();
 
                 // Agrupa patas
                 const patas = knotRegions.filter(r => r.includes('pata'));
@@ -153,11 +148,12 @@ export const quoteController = {
 
             // Adicionar banho medicamentoso antipulgas se solicitado
             if (data.wantsMedicatedBath) {
+                const medicatedBathPrice = await ServicePriceConfigService.getMedicatedBathPrice();
                 processedItems.push({
                     id: randomUUID(),
                     description: '💊 Banho Medicamentoso Antipulgas',
                     quantity: 1,
-                    price: 45.00,
+                    price: medicatedBathPrice,
                     serviceId: undefined,
                     productId: undefined
                 });
@@ -573,7 +569,8 @@ export const quoteController = {
                 transportAt: z.string().optional(),
                 transportLevaAt: z.string().optional(),
                 transportTrazAt: z.string().optional(),
-                petId: z.string().optional()
+                petId: z.string().optional(),
+                transportLegs: z.any().optional()
             }).parse(req.body);
 
             const user = (req as any).user;
@@ -711,7 +708,26 @@ export const quoteController = {
 
             await prisma.quote.update({
                 where: { id },
-                data: updateData
+                data: {
+                    ...updateData,
+                    transportLegs: (req.body.transportLegs && Array.isArray(req.body.transportLegs)) ? {
+                        deleteMany: {},
+                        create: (req.body.transportLegs as any[]).map((leg: any) => ({
+                            id: randomUUID(),
+                            kind: leg.legType,
+                            originAddress: leg.origin,
+                            destinationAddress: leg.destination,
+                            distanceKm: Number(leg.distance || 0),
+                            durationMin: Math.round(Number(leg.duration || 0)),
+                            chargeKm: Number(leg.distance || 0),
+                            chargeMin: 0,
+                            kmRate: 0,
+                            minRate: 0,
+                            subtotal: Number(leg.price || 0),
+                            assignedProviderId: leg.assignedProviderId
+                        }))
+                    } : undefined
+                }
             });
 
             // Sync with Invoice if exists
@@ -728,7 +744,7 @@ export const quoteController = {
 
             const updated = await prisma.quote.findUnique({
                 where: { id },
-                include: { items: true }
+                include: { items: true, transportLegs: true }
             });
 
             return res.json(updated);
@@ -1025,12 +1041,54 @@ export const quoteController = {
             const validTypes = ['ROUND_TRIP', 'PICK_UP', 'DROP_OFF'];
             const transportType = (type && validTypes.includes(type)) ? type : 'ROUND_TRIP';
 
-            console.log(`[Quote] Calling mapsService with type: ${transportType} `);
+            console.log(`[Quote] Calling transportUnified with type: ${transportType} `);
 
-            const result = await mapsService.calculateTransportDetailed(address, destinationAddress, transportType as any);
+            const result = await transportUnified.calculateTransportQuoteUnified({
+                plan: 'TL1', // Default para backward compatibility
+                mode: transportType === 'PICK_UP' ? 'LEVA' : transportType === 'DROP_OFF' ? 'TRAZ' : 'LEVA_TRAZ',
+                destinationIsThePet: true,
+                address1: address,
+                address2: destinationAddress
+            });
             console.log(`[Quote] Calculation result: `, result);
 
-            return res.status(200).json(result);
+            return res.status(200).json({
+                total: result.totals.totalAfterDiscount,
+                totalBeforeDiscount: result.totals.totalBeforeDiscount,
+                totalDistance: result.legs.reduce((sum: number, leg) => sum + leg.distanceKm, 0).toFixed(2) + ' km',
+                totalDuration: result.legs.reduce((sum: number, leg) => sum + leg.durationMin, 0).toFixed(0) + ' min',
+                breakdown: {
+                    largada: {
+                        distance: result.legs.find(l => l.kind === 'PARTIDA')?.distanceKm.toFixed(1) + ' km',
+                        duration: result.legs.find(l => l.kind === 'PARTIDA')?.durationMin + ' min',
+                        price: result.legs.find(l => l.kind === 'PARTIDA')?.subtotal || 0,
+                        originAddress: result.legs.find(l => l.kind === 'PARTIDA')?.originAddress || '',
+                        destinationAddress: result.legs.find(l => l.kind === 'PARTIDA')?.destinationAddress || ''
+                    },
+                    leva: {
+                        distance: result.legs.find(l => l.kind === 'LEVA')?.distanceKm.toFixed(1) + ' km',
+                        duration: result.legs.find(l => l.kind === 'LEVA')?.durationMin + ' min',
+                        price: result.legs.find(l => l.kind === 'LEVA')?.subtotal || 0,
+                        originAddress: result.legs.find(l => l.kind === 'LEVA')?.originAddress || '',
+                        destinationAddress: result.legs.find(l => l.kind === 'LEVA')?.destinationAddress || ''
+                    },
+                    traz: {
+                        distance: result.legs.find(l => l.kind === 'TRAZ')?.distanceKm.toFixed(1) + ' km',
+                        duration: result.legs.find(l => l.kind === 'TRAZ')?.durationMin + ' min',
+                        price: result.legs.find(l => l.kind === 'TRAZ')?.subtotal || 0,
+                        originAddress: result.legs.find(l => l.kind === 'TRAZ')?.originAddress || '',
+                        destinationAddress: result.legs.find(l => l.kind === 'TRAZ')?.destinationAddress || ''
+                    },
+                    retorno: {
+                        distance: result.legs.find(l => l.kind === 'RETORNO')?.distanceKm.toFixed(1) + ' km',
+                        duration: result.legs.find(l => l.kind === 'RETORNO')?.durationMin + ' min',
+                        price: result.legs.find(l => l.kind === 'RETORNO')?.subtotal || 0,
+                        originAddress: result.legs.find(l => l.kind === 'RETORNO')?.originAddress || '',
+                        destinationAddress: result.legs.find(l => l.kind === 'RETORNO')?.destinationAddress || ''
+                    }
+                },
+                settings: result.settings
+            });
         } catch (error: any) {
             console.error('[Quote] Error calculating transport:', error);
 
@@ -1148,30 +1206,18 @@ export const quoteController = {
                 // Lógica de adição automática de itens (Knots/Nós e Banho Medicamentoso)
                 if (quoteData.hasKnots && quoteData.knotRegions) {
                     console.log('[createManual] Adicionando itens de desembolo...');
-                    const knotRegionsRaw = typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : '';
-                    const knotRegions = knotRegionsRaw.toLowerCase().split(',').map((r: string) => r.trim()).filter((r: string) => r);
-
-                    const KNOT_PRICES: Record<string, number> = {
-                        'orelhas': 7.50,
-                        'rostinho': 15.00,
-                        'pescoço': 15.00,
-                        'barriga': 12.50,
-                        'pata frontal esquerda': 7.50,
-                        'pata frontal direita': 7.50,
-                        'pata traseira esquerda': 7.50,
-                        'pata traseira direita': 7.50,
-                        'bumbum': 12.50,
-                        'rabo': 10.00
-                    };
+                    const knotRegions = quoteData.knotRegions.toLowerCase().split(',').map((r: string) => r.trim()).filter((r: string) => r);
+                    const KNOT_PRICES = await ServicePriceConfigService.getKnotRemovalPrices();
 
                     const patas = knotRegions.filter((r: string) => r.includes('pata'));
                     const outrasRegioes = knotRegions.filter((r: string) => !r.includes('pata'));
 
                     if (patas.length > 0) {
+                        const pawPrice = await ServicePriceConfigService.getDefaultPawKnotPrice();
                         processedItems.push({
                             description: `Desembolo - Patas (${patas.length}x)`,
                             quantity: patas.length,
-                            price: 7.50,
+                            price: pawPrice,
                             serviceId: undefined
                         });
                     }
@@ -1190,10 +1236,11 @@ export const quoteController = {
                 }
 
                 if (quoteData.wantsMedicatedBath) {
+                    const medicatedBathPrice = await ServicePriceConfigService.getMedicatedBathPrice();
                     processedItems.push({
                         description: '💊 Banho Medicamentoso Antipulgas',
                         quantity: 1,
-                        price: 45.00,
+                        price: medicatedBathPrice,
                         serviceId: undefined
                     });
                 }

@@ -32,12 +32,29 @@ const PWAInstallPrompt: React.FC = () => {
         const canShowAgain = now - dismissedAt > thirtyDays;
 
         const handler = (e: any) => {
+            // Prevent the default browser install prompt
             e.preventDefault();
             setInstallPrompt(e);
 
+            // Log for debugging
+            console.log('PWA: beforeinstallprompt event captured', { 
+                user: !!user, 
+                visitCount, 
+                isDismissed, 
+                canShowAgain 
+            });
+
             // Show after 3 visits and if not dismissed recently, and only for logged in users
             if (user && visitCount >= 3 && (!isDismissed || canShowAgain)) {
+                console.log('PWA: Showing install prompt after delay');
                 setTimeout(() => setIsVisible(true), 10000);
+            } else {
+                console.log('PWA: Not showing prompt', { 
+                    hasUser: !!user, 
+                    visitCount, 
+                    isDismissed, 
+                    canShowAgain 
+                });
             }
         };
 
@@ -60,14 +77,22 @@ const PWAInstallPrompt: React.FC = () => {
             return;
         }
 
-        if (!installPrompt) return;
+        if (!installPrompt) {
+            console.error('PWA: No install prompt event available');
+            return;
+        }
 
-        installPrompt.prompt();
-        const { outcome } = await installPrompt.userChoice;
-        console.log(`User response to the install prompt: ${outcome}`);
+        console.log('PWA: Showing native install prompt');
+        try {
+            installPrompt.prompt();
+            const { outcome } = await installPrompt.userChoice;
+            console.log(`PWA: User response to the install prompt: ${outcome}`);
 
-        setInstallPrompt(null);
-        setIsVisible(false);
+            setInstallPrompt(null);
+            setIsVisible(false);
+        } catch (error) {
+            console.error('PWA: Error showing install prompt:', error);
+        }
     };
 
     const handleDismiss = () => {

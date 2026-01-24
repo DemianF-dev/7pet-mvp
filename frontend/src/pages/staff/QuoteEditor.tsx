@@ -140,6 +140,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [transportCalculation, setTransportCalculation] = useState<any | null>(null);
     const [isCalculatingTransport, setIsCalculatingTransport] = useState(false);
     const [transportDiscount, setTransportDiscount] = useState(0);
+    const [levaDriverId, setLevaDriverId] = useState('');
+    const [trazDriverId, setTrazDriverId] = useState('');
 
     const isModal = !!quoteId;
 
@@ -232,6 +234,42 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 setTransportTrazAt(formatDateForInput(q.transportTrazAt));
             }
 
+            // Map persisted transport legs to calculation memory
+            if (q.transportLegs && Array.isArray(q.transportLegs) && q.transportLegs.length > 0) {
+                const breakdown: any = {};
+                let total = 0;
+                let totalDistance = 0;
+                let totalDuration = 0;
+                let settings = null;
+
+                q.transportLegs.forEach((leg: any) => {
+                    const key = leg.kind.toLowerCase();
+                    breakdown[key] = {
+                        originAddress: leg.originAddress,
+                        destinationAddress: leg.destinationAddress,
+                        distanceKm: leg.distanceKm,
+                        durationMin: leg.durationMin,
+                        price: leg.subtotal,
+                        distance: leg.distanceKm.toFixed(1) + ' km',
+                        duration: leg.durationMin + ' min'
+                    };
+                    total += leg.subtotal || 0;
+                    totalDistance += leg.distanceKm || 0;
+                    totalDuration += leg.durationMin || 0;
+
+                    if (leg.kind === 'LEVA' && leg.assignedProviderId) setLevaDriverId(leg.assignedProviderId);
+                    if (leg.kind === 'TRAZ' && leg.assignedProviderId) setTrazDriverId(leg.assignedProviderId);
+                });
+
+                setTransportCalculation({
+                    total,
+                    totalDistance: totalDistance.toFixed(2) + ' km',
+                    totalDuration: totalDuration.toFixed(0) + ' min',
+                    breakdown,
+                    settings
+                });
+            }
+
             // Fetch customer pets to allow manual selection/editing
             if (q.customerId) {
                 try {
@@ -277,36 +315,39 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         if (!transportCalculation) return;
 
         const discountMultiplier = (1 - transportDiscount / 100);
-        const price = transportCalculation.total * discountMultiplier;
-        let description = `Transporte (${transportType === 'ROUND_TRIP' ? 'Leva e Traz' : transportType === 'PICK_UP' ? 'Busca' : 'Entrega'}) - ${transportCalculation.totalDistance}`;
+        const { breakdown } = transportCalculation;
 
-        if (transportDiscount > 0) {
-            description += ` (${transportDiscount}% Desc.)`;
+        // Group 1: Leva (largada + leva)
+        const levaPrice = (Number(breakdown.largada?.price || 0) + Number(breakdown.leva?.price || 0)) * discountMultiplier;
+        const levaDist = breakdown.leva?.distance || breakdown.largada?.distance || '0 km';
+
+        // Group 2: Traz (traz + retorno)
+        const trazPrice = (Number(breakdown.traz?.price || 0) + Number(breakdown.retorno?.price || 0)) * discountMultiplier;
+        const trazDist = breakdown.traz?.distance || breakdown.retorno?.distance || '0 km';
+
+        // Filter out existing transport items to avoid duplicates
+        let newItems = items.filter(i => !i.description.toLowerCase().includes('transporte'));
+
+        if (transportType === 'ROUND_TRIP' || transportType === 'PICK_UP') {
+            newItems.push({
+                description: `Transporte (Busca/Leva) - ${levaDist}${transportDiscount > 0 ? ` [${transportDiscount}% Off]` : ''}`,
+                quantity: 1,
+                price: levaPrice,
+                performerId: levaDriverId || undefined
+            });
         }
 
-        // Check if item already exists
-        const existingIndex = items.findIndex(i => i.description.toLowerCase().includes('transporte'));
-
-        let newItems = [...items];
-        if (existingIndex >= 0) {
-            if (window.confirm('Já existe um item de transporte. Deseja atualizar o valor?')) {
-                newItems[existingIndex] = { ...newItems[existingIndex], price, description, quantity: 1 };
-            } else {
-                return;
-            }
-        } else {
-            // Auto-assign first logistics person if available
-            const firstDriver = staffUsers.find((u: any) => u.division === 'LOGISTICA');
+        if (transportType === 'ROUND_TRIP' || transportType === 'DROP_OFF') {
             newItems.push({
-                description,
+                description: `Transporte (Entrega/Traz) - ${trazDist}${transportDiscount > 0 ? ` [${transportDiscount}% Off]` : ''}`,
                 quantity: 1,
-                price,
-                performerId: firstDriver?.id
+                price: trazPrice,
+                performerId: trazDriverId || undefined
             });
         }
 
         setItems(newItems);
-        toast.success('Valor do transporte aplicado aos itens!');
+        toast.success('Transporte aplicado como itens separados!');
     };
 
     const handleLegChange = (leg: string, field: string, value: string) => {
@@ -553,7 +594,17 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 transportType,
                 transportOrigin: transportAddress,
                 transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined,
-                petId
+                petId,
+                transportLegs: transportCalculation?.breakdown ? Object.entries(transportCalculation.breakdown).map(([key, value]: [string, any]) => ({
+                    legType: key.toUpperCase(),
+                    origin: value.originAddress || '',
+                    destination: value.destinationAddress || '',
+                    distance: typeof value.distanceKm === 'number' ? value.distanceKm : parseFloat(value.distance),
+                    duration: typeof value.durationMin === 'number' ? value.durationMin : parseFloat(value.duration),
+                    price: typeof value.price === 'number' ? value.price : parseFloat(value.price),
+                    assignedProviderId: (key === 'largada' || key === 'leva') ? levaDriverId : (key === 'traz' || key === 'retorno') ? trazDriverId : undefined,
+                    settings: transportCalculation.settings
+                })) : undefined
             });
 
             setLastSaved(new Date());
@@ -785,6 +836,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                 discount={transportDiscount}
                                 setDiscount={setTransportDiscount}
                                 onApply={handleApplyTransport}
+                                staffUsers={staffUsers}
+                                levaDriverId={levaDriverId}
+                                setLevaDriverId={setLevaDriverId}
+                                trazDriverId={trazDriverId}
+                                setTrazDriverId={setTrazDriverId}
                             />
                         </section>
                     )}

@@ -12,16 +12,16 @@ const getApiUrl = (): string => {
         return '/api';
     }
 
-    const defaultUrl = import.meta.env.PROD ? '/api' : 'http://localhost:3000';
+    const defaultUrl = import.meta.env.PROD ? '/api' : 'http://localhost:3001';
     let apiUrl = envUrl || defaultUrl;
 
-// 🚀 Robustness Fix: Ensure the URL has a protocol if it's not a relative path
+    // 🚀 Robustness Fix: Ensure the URL has a protocol if it's not a relative path
     if (apiUrl && !apiUrl.startsWith('http') && !apiUrl.startsWith('/')) {
         logger.warn('API URL missing protocol, fixing', { url: apiUrl });
         apiUrl = `https://${apiUrl}`;
     }
 
-logger.debug('Using API URL', { url: apiUrl });
+    logger.debug('Using API URL', { url: apiUrl });
     return apiUrl;
 };
 
@@ -56,7 +56,7 @@ api.interceptors.response.use(
         const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
         const isRetriableStatus = response && RETRIABLE_STATUSES.includes(response.status);
 
-// 📝 Log failure to diagnostics (sanitized)
+        // 📝 Log failure to diagnostics (sanitized)
         useDiagnosticsStore.getState().addLog({
             type: 'request',
             message: `Failed: ${config?.url?.split('?')[0] || 'unknown'}`,
@@ -75,11 +75,11 @@ api.interceptors.response.use(
                 config._retryCount++;
                 const delay = Math.pow(2, config._retryCount) * 500; // 1s, 2s
 
-                logger.debug('Retrying request', { 
-                    url: config.url?.split('?')[0], 
-                    attempt: config._retryCount, 
-                    maxAttempts: MAX_RETRIES, 
-                    delay 
+                logger.debug('Retrying request', {
+                    url: config.url?.split('?')[0],
+                    attempt: config._retryCount,
+                    maxAttempts: MAX_RETRIES,
+                    delay
                 });
                 await new Promise(resolve => setTimeout(resolve, delay));
                 return api(config);
@@ -138,7 +138,7 @@ export const requestSafe = async <T = any>(config: any): Promise<T> => {
         const response = await api(finalConfig);
         return response.data;
     } catch (error: any) {
-if (axios.isCancel(error)) {
+        if (axios.isCancel(error)) {
             logger.debug('Request canceled', { url: config?.url?.split('?')[0] });
         }
         throw error;

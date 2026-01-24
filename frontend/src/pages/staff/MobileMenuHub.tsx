@@ -78,6 +78,7 @@ export default function MobileMenuHub() {
             items: [
                 { id: 'agenda-spa', label: 'Agenda SPA', icon: Calendar, path: '/staff/agenda-spa' },
                 { id: 'agenda-log', label: 'Agenda Transporte', icon: Truck, path: '/staff/agenda-log' },
+                { id: 'pos', label: 'Caixa (PDV)', icon: CreditCard, path: '/staff/pos' },
                 { id: 'transport', label: 'Transporte', icon: Truck, path: '/staff/transport' },
                 { id: 'quotes', label: 'Orçamentos', icon: FileText, path: '/staff/quotes' },
                 { id: 'customers', label: 'Clientes', icon: Users, path: '/staff/customers' },

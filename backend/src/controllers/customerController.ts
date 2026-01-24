@@ -5,6 +5,7 @@ import * as auditService from '../services/auditService';
 import * as customerService from '../services/customerService';
 import { Prisma } from '../generated';
 import { randomUUID } from 'crypto';
+import { logInfo, logError } from '../utils/secureLogger';
 
 const customerSchema = z.object({
     firstName: z.string().min(1, 'Primeiro nome é obrigatório').optional().nullable(),
@@ -52,10 +53,10 @@ export const customerController = {
     async search(req: Request, res: Response) {
         try {
             const { q } = req.query;
-            console.log(`[Customer Search] Iniciando busca com termo: "${q}"`);
+            logInfo('Customer search started', { query: q });
 
             if (!q || typeof q !== 'string') {
-                console.log('[Customer Search] Termo inválido ou vazio');
+                logInfo('Customer search invalid query', { query: q });
                 return res.json([]);
             }
 
@@ -88,7 +89,7 @@ export const customerController = {
 
             return res.json(customers);
         } catch (error: any) {
-            console.error('CRITICAL: Erro ao buscar clientes:', error);
+            logError('Critical error searching customers', error, { action: 'customerSearch' });
             // Don't crash the server, just return an error response
             return res.status(500).json({
                 error: 'Erro interno ao buscar clientes',
@@ -284,6 +285,11 @@ export const customerController = {
                         include: { items: true },
                         take: 50
                     },
+                    posOrders: {
+                        orderBy: { createdAt: 'desc' },
+                        include: { items: true },
+                        take: 50
+                    },
                     invoices: {
                         where: { deletedAt: null },
                         orderBy: { createdAt: 'desc' },
@@ -296,7 +302,13 @@ export const customerController = {
                 return res.status(404).json({ error: 'Cliente não encontrado' });
             }
 
-            return res.json(customer);
+            // Map posOrders to orders for frontend compatibility
+            const customerData = {
+                ...customer,
+                orders: (customer as any).posOrders
+            };
+
+            return res.json(customerData);
         } catch (error: any) {
             console.error('CRITICAL ERROR fetching customer:', error);
             return res.status(500).json({

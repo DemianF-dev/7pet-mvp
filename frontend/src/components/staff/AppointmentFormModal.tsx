@@ -45,19 +45,19 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
         customerId: '',
         petId: '',
         serviceIds: [] as string[],
-        performerId: '',
-        logisticPerformerId: '', // New field
         startAt: '',
-        logisticStartAt: '', // Separate time for logistics
+        logisticStartAt: '',
+        performerId: '',
         agendaSPA: false,
         agendaLogistica: false,
         transport: {
             origin: '',
             destination: '7Pet',
-            requestedPeriod: 'MANHA'
+            requestedPeriod: 'MANHA' as 'MANHA' | 'TARDE' | 'NOITE'
         },
         pickupProviderId: '',
-        dropoffProviderId: ''
+        dropoffProviderId: '',
+        transportSamePerformer: true // Novo estado para toggle
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -109,14 +109,15 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 agendaSPA: appointment.category === 'SPA' || appointment.category === 'SPA_TRANSPORTE',
                 agendaLogistica: appointment.category === 'LOGISTICA' || appointment.category === 'SPA_TRANSPORTE',
                 performerId: appointment.category === 'SPA' ? (appointment.performerId || '') : '',
-                logisticPerformerId: appointment.category === 'LOGISTICA' ? (appointment.performerId || '') : '',
+                // Logic for logistics provider initialization
+                pickupProviderId: appointment.pickupProviderId || (appointment.category === 'LOGISTICA' ? appointment.performerId : '') || '',
+                dropoffProviderId: appointment.dropoffProviderId || (appointment.category === 'LOGISTICA' ? appointment.performerId : '') || '',
+                transportSamePerformer: (appointment.pickupProviderId === appointment.dropoffProviderId) || (!appointment.pickupProviderId && !appointment.dropoffProviderId),
                 transport: appointment.transport ? {
                     origin: appointment.transport.origin || '',
                     destination: appointment.transport.destination || '7Pet',
                     requestedPeriod: appointment.transport.requestedPeriod || 'MANHA'
                 } : { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
-                pickupProviderId: appointment.pickupProviderId || '',
-                dropoffProviderId: appointment.dropoffProviderId || ''
             });
             // We set selectedCustomer in effect #4 based on customerId
         } else if (preFill) {
@@ -150,14 +151,14 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 agendaSPA: isSpa,
                 agendaLogistica: hasLogistica,
                 performerId,
-                logisticPerformerId: logisticPerformerId || '',
+                pickupProviderId: logisticPerformerId || '',
+                dropoffProviderId: logisticPerformerId || '',
+                transportSamePerformer: true,
                 transport: {
                     origin: preFill.transportOrigin || '',
                     destination: preFill.transportDestination || '7Pet',
                     requestedPeriod: preFill.transportPeriod || 'MANHA'
-                },
-                pickupProviderId: '',
-                dropoffProviderId: ''
+                }
             });
 
             // FIX: Fetch and set selectedCustomer immediately to avoid empty UI
@@ -196,10 +197,10 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 agendaSPA: false,
                 agendaLogistica: false,
                 performerId: '',
-                logisticPerformerId: '',
                 transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
                 pickupProviderId: '',
-                dropoffProviderId: ''
+                dropoffProviderId: '',
+                transportSamePerformer: true
             });
             setSelectedCustomer(null);
             setPets([]);
@@ -381,8 +382,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 const data = {
                     ...formData,
                     startAt: appointment.category === 'LOGISTICA' ? formData.logisticStartAt : formData.startAt,
-                    performerId: (appointment.category === 'LOGISTICA' && formData.logisticPerformerId)
-                        ? (formData.logisticPerformerId || undefined)
+                    performerId: (appointment.category === 'LOGISTICA')
+                        ? (formData.pickupProviderId || undefined) // Leva as primary performer for logistics
                         : (formData.performerId || undefined),
                     pickupProviderId: formData.pickupProviderId || undefined,
                     dropoffProviderId: formData.dropoffProviderId || undefined,
@@ -423,7 +424,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                         customerId: formData.customerId,
                         petId: formData.petId,
                         serviceIds: logServiceIds,
-                        performerId: formData.logisticPerformerId || formData.performerId, // Profissional Logístico
+                        performerId: formData.pickupProviderId || formData.performerId, // Use Pickup as main Performer
                         pickupProviderId: formData.pickupProviderId || undefined,
                         dropoffProviderId: formData.dropoffProviderId || undefined,
                         startAt: formData.logisticStartAt || formData.startAt, // Horário da Logística
@@ -488,7 +489,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                         customerId: formData.customerId,
                         petId: formData.petId,
                         serviceIds: logServiceIds,
-                        performerId: formData.logisticPerformerId || formData.performerId,
+                        performerId: formData.pickupProviderId || formData.performerId,
                         pickupProviderId: formData.pickupProviderId || undefined,
                         dropoffProviderId: formData.dropoffProviderId || undefined,
                         startAt: formData.logisticStartAt || formData.startAt,
@@ -578,9 +579,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                         agendaSPA: false,
                                         agendaLogistica: false,
                                         performerId: '',
-                                        logisticPerformerId: '',
                                         pickupProviderId: '',
                                         dropoffProviderId: '',
+                                        transportSamePerformer: true,
                                         transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
                                     });
                                     setSelectedCustomer(null);
@@ -788,57 +789,54 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                             {/* Professional Selection - Logística */}
                             {formData.agendaLogistica && (
                                 <div className="space-y-6 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
-                                    {/* Primary Logistics Provider (Optional fallback) */}
-                                    <div className="space-y-3">
+
+                                    {/* Header logic */}
+                                    <div className="flex items-center justify-between">
                                         <label className="text-sm font-bold text-orange-500 uppercase flex items-center gap-2">
-                                            <Truck size={16} /> Responsável Logística (Geral)
+                                            <Truck size={16} /> Responsáveis Logística (Leva & Traz)
                                         </label>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, logisticPerformerId: '' })}
-                                                className={`p-3 rounded-2xl border text-left transition-all ${!formData.logisticPerformerId ? 'bg-orange-50 border-orange-200 shadow-md ring-2 orange-500/10' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                            >
-                                                <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
-                                                <div className={`font-bold text-sm ${!formData.logisticPerformerId ? 'text-orange-600' : 'text-gray-400'}`}>Ninguém fixo</div>
-                                            </button>
-                                            {(staffUsers || [])
-                                                .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
-                                                .map(u => u && (
-                                                    <button
-                                                        key={u.id}
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, logisticPerformerId: u.id })}
-                                                        className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.logisticPerformerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-orange-500/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                                        style={formData.logisticPerformerId === u.id ? { borderLeft: `6px solid ${u.color || '#F97316'}` } : {}}
-                                                    >
-                                                        <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
-                                                        <div className={`font-bold text-sm truncate ${formData.logisticPerformerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
-                                                        {formData.logisticPerformerId === u.id && (
-                                                            <div className="absolute top-2 right-2 text-orange-500">
-                                                                <CheckCircle size={14} />
-                                                            </div>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                        </div>
+
+                                        <label className="flex items-center gap-2 cursor-pointer bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded text-orange-500 focus:ring-orange-500"
+                                                checked={formData.transportSamePerformer}
+                                                onChange={(e) => {
+                                                    const isSame = e.target.checked;
+                                                    setFormData({
+                                                        ...formData,
+                                                        transportSamePerformer: isSame,
+                                                        dropoffProviderId: isSame ? formData.pickupProviderId : formData.dropoffProviderId
+                                                    });
+                                                }}
+                                            />
+                                            <span className="text-xs font-bold text-orange-700">Mesmo Motorista</span>
+                                        </label>
                                     </div>
 
-                                    {/* Separate Legs Selection */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50/30 rounded-[32px] border border-orange-100">
                                         {/* LEVA */}
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-orange-500" /> Motorista LEVA
+                                                <div className="w-2 h-2 rounded-full bg-orange-500" /> Motorista LEVA (Coleta)
                                             </label>
                                             <select
+                                                required
                                                 value={formData.pickupProviderId}
-                                                onChange={(e) => setFormData({ ...formData, pickupProviderId: e.target.value })}
-                                                className="w-full bg-white border-none rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
+                                                onChange={(e) => {
+                                                    const newVal = e.target.value;
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        pickupProviderId: newVal,
+                                                        // Sync if toggle is ON
+                                                        dropoffProviderId: prev.transportSamePerformer ? newVal : prev.dropoffProviderId
+                                                    }));
+                                                }}
+                                                className="w-full bg-white border-white rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
                                             >
-                                                <option value="">Mesmo do Geral</option>
+                                                <option value="">Selecione o Motorista...</option>
                                                 {(staffUsers || [])
-                                                    .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
+                                                    .filter(u => u.isEligible !== false && (u.division === 'LOGISTICA' || u.division === 'OPERACIONAL'))
                                                     .map(u => (
                                                         <option key={u.id} value={u.id}>{u.name}</option>
                                                     ))
@@ -849,16 +847,21 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                         {/* TRAZ */}
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-blue-500" /> Motorista TRAZ
+                                                <div className="w-2 h-2 rounded-full bg-blue-500" /> Motorista TRAZ (Entrega)
                                             </label>
                                             <select
+                                                required
+                                                disabled={formData.transportSamePerformer}
                                                 value={formData.dropoffProviderId}
                                                 onChange={(e) => setFormData({ ...formData, dropoffProviderId: e.target.value })}
-                                                className="w-full bg-white border-none rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
+                                                className={`w-full border-white rounded-xl px-4 py-3 text-sm font-bold shadow-sm transition-all
+                                                    ${formData.transportSamePerformer
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-100'
+                                                        : 'bg-white text-secondary focus:ring-2 focus:ring-orange-500/20'}`}
                                             >
-                                                <option value="">Mesmo do Geral</option>
+                                                <option value="">{formData.transportSamePerformer ? '(Mesmo do Leva)' : 'Selecione o Motorista...'}</option>
                                                 {(staffUsers || [])
-                                                    .filter(u => u.isEligible !== false && u.division === 'LOGISTICA')
+                                                    .filter(u => u.isEligible !== false && (u.division === 'LOGISTICA' || u.division === 'OPERACIONAL'))
                                                     .map(u => (
                                                         <option key={u.id} value={u.id}>{u.name}</option>
                                                     ))

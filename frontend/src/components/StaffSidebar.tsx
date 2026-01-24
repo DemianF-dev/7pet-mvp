@@ -30,7 +30,8 @@ import {
     ChevronRight,
     History,
     Target,
-    Shield
+    Shield,
+    ShoppingCart
 } from 'lucide-react';
 
 import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
@@ -41,7 +42,6 @@ import { useNotification } from '../context/NotificationContext';
 import ConfirmModal from './ConfirmModal';
 import { useInMobileShell } from '../context/MobileShellContext';
 import { APP_VERSION } from '../constants/version';
-import SystemStatusModal from './SystemStatusModal';
 import { prefetchRoute } from '../utils/routePrefetch';
 
 
@@ -59,7 +59,6 @@ export default function StaffSidebar() {
     const { unreadCount } = useNotification();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem('staff-sidebar-collapsed');
         return saved === 'true';
@@ -183,6 +182,14 @@ export default function StaffSidebar() {
                             routeKey="customers"
                         />
                     )}
+                    {checkPermission('recurrence') && (
+                        <SidebarItem
+                            icon={<History size={18} />}
+                            label="Recorrentes"
+                            active={location.pathname.startsWith('/staff/recurrence')}
+                            onClick={() => { navigate('/staff/recurrence'); setIsOpen(false); }}
+                        />
+                    )}
                     {(user?.role === 'MASTER' || user?.role === 'ADMIN') && (
                         <SidebarItem
                             icon={<Shield size={18} />}
@@ -218,6 +225,15 @@ export default function StaffSidebar() {
                             label="Financeiro"
                             active={location.pathname === '/staff/billing'}
                             onClick={() => { navigate('/staff/billing'); setIsOpen(false); }}
+                        />
+                    )}
+                    {checkPermission('pos') && (
+                        <SidebarItem
+                            icon={<ShoppingCart size={18} />}
+                            label="Caixa (PDV)"
+                            active={location.pathname === '/staff/pos'}
+                            onClick={() => { navigate('/staff/pos'); setIsOpen(false); }}
+                            routeKey="pos"
                         />
                     )}
                     {checkPermission('reports') && (
@@ -479,7 +495,6 @@ export default function StaffSidebar() {
                             <div className="text-right">
                                 <p
                                     className="text-[9px] font-mono text-body-secondary/40 hover:text-accent transition-colors cursor-pointer"
-                                    onClick={() => setIsStatusModalOpen(true)}
                                 >
                                     v{APP_VERSION.split('-')[0]}
                                 </p>

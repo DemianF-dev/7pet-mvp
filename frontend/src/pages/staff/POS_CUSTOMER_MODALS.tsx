@@ -1,0 +1,145 @@
+
+{/* 5. Customer Search/Quick Add Modal */ }
+{
+    showCustomerSearch && (
+        <div className="fixed inset-0 bg-gray-950/90 backdrop-blur-md z-[120] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-[var(--color-bg-surface)] dark:bg-gray-900 w-full max-w-2xl rounded-[48px] p-10 border border-primary/20 shadow-2xl max-h-[90vh] overflow-y-auto"
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary"><User /></div>
+                        <h2 className="text-xl font-black text-[var(--color-text-primary)] dark:text-white uppercase">Selecionar Cliente</h2>
+                    </div>
+                    <button onClick={() => { setShowCustomerSearch(false); setCustQuery(''); setCustResults([]); }} className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><X /></button>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <button
+                        onClick={() => { setShowCustomerSearch(false); setShowQuickCustomerModal(true); }}
+                        className="p-6 border-2 border-dashed border-primary/30 rounded-3xl hover:border-primary hover:bg-primary/5 transition-all group"
+                    >
+                        <Plus className="mx-auto mb-2 text-primary" size={24} />
+                        <p className="text-xs font-black text-primary uppercase">Cadastro Rápido</p>
+                    </button>
+                    <button
+                        onClick={() => { setSelectedCustomer({ id: null, name: 'Venda Sem Identificação' }); setShowCustomerSearch(false); }}
+                        className="p-6 border-2 border-dashed border-gray-500/30 rounded-3xl hover:border-gray-500 hover:bg-gray-500/5 transition-all group"
+                    >
+                        <User className="mx-auto mb-2 text-gray-500" size={24} />
+                        <p className="text-xs font-black text-gray-500 uppercase">Sem Identificação</p>
+                    </button>
+                </div>
+
+                {/* Search */}
+                <div className="mb-6">
+                    <input
+                        type="text"
+                        placeholder="Buscar cliente por nome ou telefone..."
+                        value={custQuery}
+                        onChange={(e) => setCustQuery(e.target.value)}
+                        className="w-full p-4 bg-[var(--color-bg-primary)] dark:bg-black border border-[var(--color-border)] rounded-2xl text-sm font-bold text-[var(--color-text-primary)] dark:text-white outline-none focus:border-primary/50"
+                        autoFocus
+                    />
+                </div>
+
+                {/* Results */}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {custResults.length > 0 ? (
+                        custResults.map((customer: any) => (
+                            <button
+                                key={customer.id}
+                                onClick={() => { setSelectedCustomer(customer); setShowCustomerSearch(false); setCustQuery(''); setCustResults([]); }}
+                                className="w-full p-4 bg-[var(--color-bg-primary)] dark:bg-gray-800 hover:bg-primary/10 dark:hover:bg-primary/20 border border-[var(--color-border)] rounded-2xl transition-all text-left group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-black text-sm">
+                                        {customer.name.substring(0, 1).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-[var(--color-text-primary)] dark:text-white">{customer.name}</p>
+                                        <p className="text-xs text-[var(--color-text-tertiary)]">{customer.phone || customer.email || 'Sem contato'}</p>
+                                    </div>
+                                    <ChevronRight className="text-primary opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
+                                </div>
+                            </button>
+                        ))
+                    ) : custQuery.length > 2 ? (
+                        <p className="text-center text-[var(--color-text-tertiary)] py-8">Nenhum cliente encontrado</p>
+                    ) : (
+                        <p className="text-center text-[var(--color-text-tertiary)] py-8">Digite para buscar clientes</p>
+                    )}
+                </div>
+            </motion.div>
+        </div>
+    )
+}
+
+{/* 6. Quick Customer Modal */ }
+{
+    showQuickCustomerModal && (
+        <div className="fixed inset-0 bg-gray-950/90 backdrop-blur-md z-[130] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-[var(--color-bg-surface)] dark:bg-gray-900 w-full max-w-lg rounded-[48px] p-10 border border-primary/20 shadow-2xl"
+            >
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary"><Plus /></div>
+                    <h2 className="text-xl font-black text-[var(--color-text-primary)] dark:text-white uppercase">Cadastro Rápido</h2>
+                </div>
+                <div className="space-y-5">
+                    <div>
+                        <label className="text-[9px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest mb-2 block">Nome do Cliente</label>
+                        <input
+                            type="text"
+                            value={newCustomer.name}
+                            onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                            className="w-full p-4 bg-[var(--color-bg-primary)] dark:bg-black border border-[var(--color-border)] rounded-2xl text-sm font-bold text-white outline-none focus:border-primary/50"
+                            placeholder="Ex: João Silva"
+                            autoFocus
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[9px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest mb-2 block">Telefone</label>
+                        <input
+                            type="tel"
+                            value={newCustomer.phone}
+                            onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                            className="w-full p-4 bg-[var(--color-bg-primary)] dark:bg-black border border-[var(--color-border)] rounded-2xl text-sm font-bold text-white outline-none focus:border-primary/50"
+                            placeholder="(11) 99999-9999"
+                        />
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            onClick={() => { setShowQuickCustomerModal(false); setNewCustomer({ name: '', phone: '' }); }}
+                            className="flex-1 py-4 bg-[var(--color-bg-primary)] dark:bg-gray-800 text-[var(--color-text-tertiary)] rounded-2xl font-bold uppercase text-xs hover:bg-gray-700 transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (!newCustomer.name) return toast.error('Nome é obrigatório');
+                                try {
+                                    const customer = await customersService.create({ name: newCustomer.name, phone: newCustomer.phone, email: '' });
+                                    setSelectedCustomer(customer);
+                                    setShowQuickCustomerModal(false);
+                                    setNewCustomer({ name: '', phone: '' });
+                                    toast.success('Cliente cadastrado!');
+                                } catch (error: any) {
+                                    toast.error(error.response?.data?.error || 'Erro ao cadastrar');
+                                }
+                            }}
+                            className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs hover:scale-[1.02] active:scale-95 transition-all"
+                        >
+                            Salvar e Usar
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    )
+}

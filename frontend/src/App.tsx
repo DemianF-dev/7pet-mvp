@@ -51,6 +51,7 @@ const ProductManager = lazy(() => import('./pages/staff/ProductManager'));
 const SupportTicketList = lazy(() => import('./pages/staff/SupportTicketList'));
 const TransportConfig = lazy(() => import('./pages/staff/TransportConfig'));
 const FeedPage = lazy(() => import('./pages/staff/FeedPage'));
+const RecurrencePage = lazy(() => import('./pages/staff/RecurrencePage'));
 const ChatPage = lazy(() => import('./pages/staff/ChatPage'));
 const MyHR = lazy(() => import('./pages/staff/MyHR'));
 const StaffProfiles = lazy(() => import('./pages/staff/hr/StaffProfiles'));
@@ -61,6 +62,7 @@ const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
 const MarketingCenter = lazy(() => import('./pages/staff/marketing/MarketingCenter'));
 const StrategyManager = lazy(() => import('./pages/staff/StrategyManager'));
 const AuditConsole = lazy(() => import('./pages/staff/AuditConsole'));
+const POS = lazy(() => import('./pages/staff/POS'));
 const MasterDiagnostics = lazy(() => import('./components/MasterDiagnostics'));
 
 // ⚡ LAYOUT SYSTEM - Shell for mobile/desktop
@@ -190,6 +192,7 @@ function App() {
                             <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/staff/login" />}>
                                 <Route element={<AppShell />}>
                                     <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                                    <Route path="/staff/pos" element={<LazyPage><POS /></LazyPage>} />
                                     <Route path="/staff/menu" element={<LazyPage><MobileMenuHub /></LazyPage>} />
                                     <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
                                     <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />
@@ -199,6 +202,7 @@ function App() {
                                     <Route path="/staff/quotes/:id" element={<LazyPage><QuoteEditor /></LazyPage>} />
                                     <Route path="/staff/customers" element={<LazyPage><CustomerManager /></LazyPage>} />
                                     <Route path="/staff/customers/:id" element={<LazyPage><CustomerDetail /></LazyPage>} />
+                                    <Route path="/staff/recurrence/*" element={<LazyPage><RecurrencePage /></LazyPage>} />
                                     <Route path="/staff/services" element={<LazyPage><ServiceManager /></LazyPage>} />
                                     <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
                                     <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />

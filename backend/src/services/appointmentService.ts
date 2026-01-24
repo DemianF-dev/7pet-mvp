@@ -3,6 +3,7 @@ import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '../gene
 import * as auditService from './auditService';
 import hrService from './hrService';
 import { randomUUID } from 'crypto';
+import { logInfo, logError } from '../utils/secureLogger';
 
 export const create = async (data: {
     customerId: string;
@@ -46,6 +47,14 @@ export const create = async (data: {
         throw new Error('Agendamentos devem ser feitos com no mínimo 12h de antecedência.');
     }
 
+    // ⚠️ VALIDATION: Logistics Providers (Required for Staff)
+    // Se for LOGISTICA ou tiver transporte, exige os responsáveis
+    const isLogistics = data.category === 'LOGISTICA' || (data.category === 'SPA' && !!data.transport);
+    if (isStaff && isLogistics) {
+        if (!data.pickupProviderId) throw new Error('Obrigatório selecionar o motorista LEVA (Coleta).');
+        if (!data.dropoffProviderId) throw new Error('Obrigatório selecionar o motorista TRAZ (Entrega).');
+    }
+
     // Check if customer is blocked
     const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
     if (!isStaff && customer?.isBlocked) {
@@ -68,11 +77,11 @@ export const create = async (data: {
         });
 
         if (existingAppointment) {
-            console.log('[AppointmentService] Conflict found for non-staff:', { startAt: data.startAt, category: data.category });
+logInfo('Appointment conflict found for non-staff', { startAt: data.startAt, category: data.category });
             throw new Error('⚠️ Este horário já possui um agendamento nesta categoria. Por favor, escolha outro horário.');
         }
     } else {
-        console.log('[AppointmentService] Staff bypass for appointment creation:', { category: data.category });
+        logInfo('Appointment staff bypass for creation', { category: data.category });
     }
 
     const appointment = await prisma.appointment.create({
@@ -190,13 +199,13 @@ export const get = async (id: string) => {
             performer: true,
             pickupProvider: true,
             dropoffProvider: true,
-            invoice: {
-                include: { payments: true, customer: true }
+invoice: {
+                include: { paymentRecords: true, financialTransactions: true, customer: true }
             },
-            quote: {
+quote: {
                 include: {
                     invoice: {
-                        include: { payments: true, customer: true }
+                        include: { paymentRecords: true, financialTransactions: true, customer: true }
                     }
                 }
             },
@@ -207,6 +216,14 @@ export const get = async (id: string) => {
 
 export const update = async (id: string, data: any, userId?: string) => {
     const previous = await get(id);
+    
+    logInfo('Appointment update data', {
+        id,
+        performerId: data.performerId,
+        pickupProviderId: data.pickupProviderId,
+        dropoffProviderId: data.dropoffProviderId,
+        serviceIds: data.serviceIds
+    });
     const updated = await prisma.appointment.update({
         where: { id },
         data: {
@@ -233,9 +250,9 @@ export const update = async (id: string, data: any, userId?: string) => {
                     }
                 }
             } : undefined,
-            performerId: data.performerId !== undefined ? (data.performerId || null) : undefined,
-            pickupProviderId: data.pickupProviderId !== undefined ? (data.pickupProviderId || null) : undefined,
-            dropoffProviderId: data.dropoffProviderId !== undefined ? (data.dropoffProviderId || null) : undefined
+            performerId: data.performerId !== undefined ? (data.performerId && data.performerId !== '' ? data.performerId : null) : undefined,
+            pickupProviderId: data.pickupProviderId !== undefined ? (data.pickupProviderId && data.pickupProviderId !== '' ? data.pickupProviderId : null) : undefined,
+            dropoffProviderId: data.dropoffProviderId !== undefined ? (data.dropoffProviderId && data.dropoffProviderId !== '' ? data.dropoffProviderId : null) : undefined
         },
         include: {
             pet: true,
@@ -336,8 +353,8 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
                     }
                 }
             }
-        } catch (hrError) {
-            console.error('[AppointmentService] Error recording HR production:', hrError);
+} catch (hrError) {
+            logError('AppointmentService error recording HR production', hrError, { appointmentId: id });
         }
     }
 
@@ -411,7 +428,7 @@ export const updateLogisticsStatus = async (id: string, logisticsStatus: string,
                 });
             }
         } catch (hrError) {
-            console.error('[AppointmentService] Error recording HR logistics production (EXECUTED):', hrError);
+            logError('AppointmentService error recording HR logistics production (EXECUTED)', hrError, { appointmentId: id });
         }
     } else if (updated.logisticsStatus === 'CANCELED_WITH_TRAVEL') {
         try {
@@ -435,7 +452,7 @@ export const updateLogisticsStatus = async (id: string, logisticsStatus: string,
                 data: { status: 'CANCELADO' }
             });
         } catch (hrError) {
-            console.error('[AppointmentService] Error recording HR logistics production (CANCELED_WITH_TRAVEL):', hrError);
+            logError('AppointmentService error recording HR logistics production (CANCELED_WITH_TRAVEL)', hrError, { appointmentId: id });
         }
     } else if (updated.logisticsStatus === 'CANCELED_WITHOUT_TRAVEL') {
         await prisma.appointment.update({

@@ -2,11 +2,13 @@ import api from './api';
 import { AppointmentsService } from '../features/agenda/services/appointments.service';
 import { CustomersService } from './domains/customers.service';
 import { UsersService } from './domains/users.service';
+import { POSService } from './domains/pos.service';
 
 export interface Services {
     appointments: AppointmentsService;
     customers: CustomersService;
     users: UsersService;
+    pos: POSService;
 }
 
 export const createServices = (): Services => {
@@ -14,9 +16,11 @@ export const createServices = (): Services => {
         appointments: new AppointmentsService(api),
         customers: new CustomersService(api),
         users: new UsersService(api),
+        pos: new POSService(api),
     };
 };
 
 export * from '../features/agenda/services/appointments.service';
 export * from './domains/customers.service';
 export * from './domains/users.service';
+export * from './domains/pos.service';

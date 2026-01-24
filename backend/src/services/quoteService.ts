@@ -271,6 +271,14 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         if (quote.type === 'TRANSPORTE' || quote.type === 'SPA_TRANSPORTE') {
             const isRoundTrip = quote.transportType === 'ROUND_TRIP' || (!quote.transportType && quote.type === 'SPA_TRANSPORTE');
 
+            // Fetch legs to get assigned providers
+            const legs = await tx.transportLeg.findMany({
+                where: { quoteId: quote.id }
+            });
+
+            const levaDriver = legs.find(l => l.kind === 'LEVA')?.assignedProviderId || performerId;
+            const trazDriver = legs.find(l => l.kind === 'TRAZ')?.assignedProviderId || performerId;
+
             if (isRoundTrip) {
                 // Leg 1: LEVA (Pickup)
                 const apptLeva = await tx.appointment.create({
@@ -282,6 +290,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO',
                         category: 'LOGISTICA',
                         quote: { connect: { id } },
+                        performerId: levaDriver || undefined,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
@@ -294,11 +303,10 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         updatedAt: new Date()
                     }
                 });
-                Logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id}`);
+                Logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id} assigned to ${levaDriver || 'None'}`);
                 appointments.push(apptLeva);
 
                 // Leg 2: TRAZ (Return)
-                // Return time is usually after the service. Defaults to 4 hours later if not specified.
                 const returnTime = quote.transportTrazAt || new Date((quote.scheduledAt || quote.desiredAt || new Date()).getTime() + 4 * 60 * 60 * 1000);
 
                 const apptTraz = await tx.appointment.create({
@@ -310,6 +318,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO',
                         category: 'LOGISTICA',
                         quote: { connect: { id } },
+                        performerId: trazDriver || undefined,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
@@ -322,11 +331,13 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         updatedAt: new Date()
                     }
                 });
-                Logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id}`);
+                Logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id} assigned to ${trazDriver || 'None'}`);
                 appointments.push(apptTraz);
             } else {
                 // One way (Single appointment)
                 const legType = quote.transportType === 'DROP_OFF' ? 'TRAZ' : 'LEVA';
+                const driver = legType === 'LEVA' ? levaDriver : trazDriver;
+
                 const appt = await tx.appointment.create({
                     data: {
                         id: randomUUID(),
@@ -336,6 +347,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO',
                         category: 'LOGISTICA',
                         quote: { connect: { id } },
+                        performerId: driver || undefined,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
@@ -348,7 +360,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         updatedAt: new Date()
                     }
                 });
-                Logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id}`);
+                Logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id} assigned to ${driver || 'None'}`);
                 appointments.push(appt);
             }
         }

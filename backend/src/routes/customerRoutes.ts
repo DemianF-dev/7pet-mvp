@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { customerController } from '../controllers/customerController';
 import { authenticate, authorize } from '../middlewares/authMiddleware';
+import { validateCreateCustomer } from '../middlewares/validationMiddleware';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ const staffOnly = authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'COMERCIAL']);
 router.get('/search', staffOnly, customerController.search);
 router.get('/', staffOnly, customerController.list);
 router.get('/:id', staffOnly, customerController.get);
-router.post('/', staffOnly, customerController.create);
+router.post('/', staffOnly, validateCreateCustomer, customerController.create);
 router.patch('/:id', staffOnly, customerController.update);
 router.delete('/:id', staffOnly, customerController.delete);
 router.post('/bulk-delete', staffOnly, customerController.bulkDelete);

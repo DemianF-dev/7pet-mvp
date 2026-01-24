@@ -5,6 +5,7 @@ dotenv.config();
 // Security: Removed sensitive environment variable logging
 import { validateEnvironment } from './utils/envValidation';
 import logger from './utils/logger';
+import { logInfo, logWarn } from './utils/secureLogger';
 
 try {
     validateEnvironment();
@@ -49,6 +50,8 @@ import marketingRoutes from './routes/marketingRoutes';
 import goalRoutes from './routes/goalRoutes';
 import packageRoutes from './routes/packageRoutes';
 import devRoutes from './routes/devRoutes';
+import posRoutes from './routes/posRoutes';
+import recurrenceRoutes from './routes/recurrenceRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -100,10 +103,16 @@ const corsOptions: cors.CorsOptions = {
         // Standardize origin (remove trailing slash)
         const sanitizedOrigin = origin.replace(/\/$/, "");
 
+        // Allow all specified origins
         if (allowedOrigins.indexOf(sanitizedOrigin) !== -1 || (isDev && localIpRegex.test(sanitizedOrigin))) {
             callback(null, true);
         } else {
-            logger.warn(`CORS blocked request from origin: ${origin}`);
+            // Log the blocked attempt for debugging
+            logWarn('CORS blocked request', {
+                origin: sanitizedOrigin,
+                allowedOrigins
+            });
+            logger.warn(`CORS blocked request from origin: ${sanitizedOrigin}`);
             metricsService.incrementBlockedCORS(); // 📊 Track CORS blocks
             callback(new Error('Not allowed by CORS'));
         }
@@ -161,9 +170,15 @@ app.use(express.static('public'));
 
 // 1. Strip /api prefix if present (Must be FIRST to normalize paths for all other middlewares)
 app.use((req, res, next) => {
+    const originalUrl = req.url;
     if (req.url.startsWith('/api')) {
         req.url = req.url.replace('/api', '');
     }
+    logInfo('HTTP request', {
+        method: req.method,
+        originalUrl,
+        newUrl: req.url
+    });
     next();
 });
 
@@ -176,6 +191,7 @@ app.use(auditContextMiddleware);
 
 // NOTE: helmet(), compression(), and express.json() are already applied above (lines 69-70, 119)
 
+app.use('/pos', posRoutes); // Moved to top for priority
 app.use('/auth', authRoutes);
 app.use('/customers', customerRoutes);
 app.use('/quotes', quoteRoutes);
@@ -204,13 +220,14 @@ app.use('/hr', hrRoutes);
 app.use('/time-tracking', timeTrackingRoutes);
 app.use('/marketing', marketingRoutes);
 app.use('/packages', packageRoutes);
+app.use('/recurrence', recurrenceRoutes);
 app.use('/dev', devRoutes); // MASTER-only developer tools
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 startNotificationScheduler();
 
 app.get('/', (req, res) => {
-    console.log('Health Check Triggered');
+    logInfo('Health check triggered');
     res.send('🚀 7Pet API está Ativa!');
 });
 
@@ -253,8 +270,8 @@ app.get('/diag', authenticate, authorize(['MASTER']), async (req, res) => {
         database: dbStatus,
         allEnvKeys: envKeys,
         missingCriticalKeys: missingKeys,
-        mapsServerKeyPresent: !!process.env.GOOGLE_MAPS_SERVER_KEY,
-        mapsStage: process.env.GOOGLE_MAPS_SERVER_KEY ? 'enabled' : 'disabled',
+        mapsServerKeyPresent: !!(process.env.GOOGLE_MAPS_SERVER_KEY || process.env.GOOGLE_MAPS_API_KEY),
+        mapsStage: (process.env.GOOGLE_MAPS_SERVER_KEY || process.env.GOOGLE_MAPS_API_KEY) ? 'enabled' : 'disabled',
         nodeVersion: process.version,
         platform: process.platform
     });

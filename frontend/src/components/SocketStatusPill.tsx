@@ -60,7 +60,7 @@ const SocketStatusPill: React.FC = () => {
     const isDisabled = disabledUntil && disabledUntil > Date.now();
 
     return (
-        <div className="fixed bottom-20 right-4 z-[999]">
+        <div className="fixed bottom-4 md:bottom-4 right-4 z-[999] md:z-[5]">
             <AnimatePresence>
                 {!isExpanded ? (
                     <motion.button
@@ -72,7 +72,7 @@ const SocketStatusPill: React.FC = () => {
                         `}
                     >
                         {config.icon}
-                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/70">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-primary)] opacity-70">
                             Socket: {config.label}
                         </span>
                     </motion.button>

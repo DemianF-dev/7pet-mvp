@@ -17,6 +17,11 @@ interface QuoteTransportCalculatorProps {
     discount: number;
     setDiscount: (val: number) => void;
     onApply: () => void;
+    staffUsers: any[];
+    levaDriverId: string;
+    setLevaDriverId: (val: string) => void;
+    trazDriverId: string;
+    setTrazDriverId: (val: string) => void;
 }
 
 const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
@@ -34,8 +39,15 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
     onLegChange,
     discount,
     setDiscount,
-    onApply
+    onApply,
+    staffUsers,
+    levaDriverId,
+    setLevaDriverId,
+    trazDriverId,
+    setTrazDriverId
 }) => {
+    const drivers = staffUsers.filter(u => u.division === 'LOGISTICA' || u.role === 'OPERACIONAL');
+
     return (
         <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-black text-secondary dark:text-white mb-4 flex items-center gap-2">
@@ -96,7 +108,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                         </div>
                     )}
 
-                    <div className="flex justify-end mt-2">
+                    <div className="flex justify-end mt-2 text-right">
                         <button
                             onClick={onCalculate}
                             disabled={isCalculating}
@@ -110,6 +122,40 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
 
                 {calculation && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            {(transportType === 'ROUND_TRIP' || transportType === 'PICK_UP') && (
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl border border-purple-100 dark:border-purple-900/30">
+                                    <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Motorista (Busca/Leva)</label>
+                                    <select
+                                        value={levaDriverId}
+                                        onChange={(e) => setLevaDriverId(e.target.value)}
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border-transparent rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-purple-200 transition-all"
+                                    >
+                                        <option value="">Selecione o Motorista...</option>
+                                        {drivers.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {(transportType === 'ROUND_TRIP' || transportType === 'DROP_OFF') && (
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl border border-purple-100 dark:border-purple-900/30">
+                                    <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Motorista (Entrega/Traz)</label>
+                                    <select
+                                        value={trazDriverId}
+                                        onChange={(e) => setTrazDriverId(e.target.value)}
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border-transparent rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-purple-200 transition-all"
+                                    >
+                                        <option value="">Selecione o Motorista...</option>
+                                        {drivers.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="bg-white dark:bg-gray-800 rounded-3xl border border-purple-100 dark:border-purple-900/30 overflow-hidden shadow-sm">
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-purple-50/50 dark:bg-purple-900/20 text-[10px] uppercase font-black text-purple-400 tracking-widest">
@@ -157,13 +203,14 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={legData.price}
-                                                        onChange={(e) => onLegChange(leg, 'price', e.target.value)}
-                                                        className="w-28 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-black text-purple-600 dark:text-purple-400 focus:ring-2 focus:ring-purple-200 transition-all"
-                                                    />
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={legData.price}
+                                                onChange={(e) => onLegChange(leg, 'price', e.target.value)}
+                                                className="w-28 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-black text-purple-600 dark:text-purple-400 focus:ring-2 focus:ring-purple-200 transition-all"
+                                            />
                                                 </td>
                                             </tr>
                                         );
@@ -183,8 +230,11 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                                 <span className="font-bold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-widest mb-1">Desconto (%)</span>
                                                 <input
                                                     type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
                                                     value={discount}
-                                                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => setDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
                                                     className="w-20 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50 transition-colors"
                                                 />
                                             </div>
@@ -193,7 +243,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                     <tr>
                                         <td colSpan={3} className="px-6 py-4 text-right font-bold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-widest">Total com Desconto</td>
                                         <td className="px-6 py-4 text-right font-black text-xl text-purple-700 dark:text-purple-400">
-                                            R$ {(calculation.total * (1 - discount / 100)).toFixed(2)}
+                                            R$ {(calculation.totalAfterDiscount || (calculation.total * (1 - discount / 100))).toFixed(2)}
                                         </td>
                                     </tr>
                                     <tr>
@@ -203,7 +253,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                                 className="px-6 py-2 bg-green-500 text-white font-black rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ml-auto"
                                             >
                                                 <CheckCircle2 size={16} />
-                                                Aplicar ao Orçamento
+                                                Aplicar Itens Separados
                                             </button>
                                         </td>
                                     </tr>

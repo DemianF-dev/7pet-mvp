@@ -32,7 +32,7 @@ const Breadcrumbs: React.FC = () => {
     if (pathnames.length === 0) return null;
 
     return (
-        <nav className="flex mb-6 overflow-x-auto pb-2 scrollbar-none">
+        <nav className="flex mb-3 overflow-x-auto pb-2 scrollbar-none">
             <ol className="flex items-center space-x-2 text-xs font-black uppercase tracking-widest min-w-max">
                 <li>
                     <Link

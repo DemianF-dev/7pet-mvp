@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon, Image as ImageIcon, File as FileIcon, Loader2, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
-import { Message } from '../../types/chat';
+import { Message, Conversation } from '../../types/chat';
 import AppImage from '../ui/AppImage';
 import QueryState from '../system/QueryState';
 import RouteSkeleton from '../system/RouteSkeleton';
@@ -73,6 +73,16 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
             alert('Falha ao transferir chat.');
         }
     };
+
+    // Fetch conversation details
+    const { data: conversation } = useQuery({
+        queryKey: ['conversation', conversationId],
+        queryFn: async () => {
+            const res = await api.get(`/chat/${conversationId}`);
+            return res.data as Conversation;
+        },
+        enabled: !!conversationId
+    });
 
     const { data: messages = [] } = useQuery({
         queryKey: ['messages', conversationId],
@@ -196,18 +206,30 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
     };
 
     return (
-        <div className={`flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900/50 pb-20 md:pb-0 ${className}`}>
+        <div className={`flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900/50 overflow-hidden relative ${className}`}>
             {/* Toolbar */}
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between z-10 shadow-sm">
-                <div className="flex items-center gap-3">
+            <div className="h-16 shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between z-10 px-4 shadow-sm">
+                <div className="flex items-center gap-4">
                     {onBack && (
-                        <button onClick={onBack} className="md:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 hover:text-gray-800 dark:text-gray-400 transition-colors">
-                            <ChevronDown className="rotate-90" size={20} />
+                        <button onClick={onBack} className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 transition-colors">
+                            <ChevronDown className="rotate-90" size={24} />
                         </button>
                     )}
-                    <div className="flex flex-col">
-                        <span className="font-bold text-gray-800 dark:text-gray-100">Bate-papo</span>
-                        <span className="text-xs text-green-500 flex items-center gap-1">● Online</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-500/20 overflow-hidden">
+                            {conversation?.participants.find(p => p.user.id !== user?.id)?.user.name.charAt(0).toUpperCase() || 'BP'}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-gray-800 dark:text-gray-100 leading-tight">
+                                {conversation?.name ||
+                                    conversation?.participants.find(p => p.user.id !== user?.id)?.user.name ||
+                                    'Canal de Atendimento'}
+                            </span>
+                            <span className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                Online agora
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 text-gray-400">
@@ -279,95 +301,98 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
             {showTransferModal && <UserSelectionModal title="Transferir Atendimento" onSelect={handleTransferChat} onClose={() => setShowTransferModal(false)} />}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollRef}>
-                {messages.map((m, index) => {
-                    const isMe = m.senderId === user?.id;
-                    const msgDate = new Date(m.createdAt);
-                    const prevMsg = messages[index - 1];
-                    const prevDate = prevMsg ? new Date(prevMsg.createdAt) : null;
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 scroll-smooth custom-scrollbar" ref={scrollRef}>
+                <div className="flex flex-col gap-4">
+                    {messages.map((m, index) => {
+                        const isMe = m.senderId === user?.id;
+                        const msgDate = new Date(m.createdAt);
+                        const prevMsg = messages[index - 1];
+                        const prevDate = prevMsg ? new Date(prevMsg.createdAt) : null;
 
-                    // Check if we need a day separator
-                    const showDaySeparator = !prevDate ||
-                        msgDate.toDateString() !== prevDate.toDateString();
+                        // Check if we need a day separator
+                        const showDaySeparator = !prevDate ||
+                            msgDate.toDateString() !== prevDate.toDateString();
 
-                    // Format date for separator
-                    const formatDateSeparator = (date: Date) => {
-                        const today = new Date();
-                        const yesterday = new Date(today);
-                        yesterday.setDate(yesterday.getDate() - 1);
+                        // Format date for separator
+                        const formatDateSeparator = (date: Date) => {
+                            const today = new Date();
+                            const yesterday = new Date(today);
+                            yesterday.setDate(yesterday.getDate() - 1);
 
-                        if (date.toDateString() === today.toDateString()) {
-                            return 'Hoje';
-                        } else if (date.toDateString() === yesterday.toDateString()) {
-                            return 'Ontem';
-                        } else {
-                            return date.toLocaleDateString('pt-BR', {
-                                weekday: 'long',
-                                day: 'numeric',
-                                month: 'long'
+                            if (date.toDateString() === today.toDateString()) {
+                                return 'Hoje';
+                            } else if (date.toDateString() === yesterday.toDateString()) {
+                                return 'Ontem';
+                            } else {
+                                return date.toLocaleDateString('pt-BR', {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long'
+                                });
+                            }
+                        };
+
+                        // Format time
+                        const formatTime = (date: Date) => {
+                            return date.toLocaleTimeString('pt-BR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
                             });
-                        }
-                    };
+                        };
 
-                    // Format time
-                    const formatTime = (date: Date) => {
-                        return date.toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                    };
-
-                    return (
-                        <React.Fragment key={m.id}>
-                            {showDaySeparator && (
-                                <div className="flex justify-center my-4">
-                                    <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-1 rounded-full text-xs font-medium shadow-sm">
-                                        {formatDateSeparator(msgDate)}
-                                    </span>
-                                </div>
-                            )}
-                            <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                    <div className={`p-4 rounded-2xl max-w-[85%] relative ${isMe ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow-sm'}`}>
-                                        {!isMe && <span className="text-[10px] font-bold block mb-1 opacity-70">{m.sender.name}</span>}
-
-                                        {/* File Rendering */}
-                                        {m.fileUrl && (
-                                            <div className="mb-2">
-                                                {m.fileType?.startsWith('image/') ? (
-                                                    <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg group">
-                                                        <AppImage src={m.fileUrl} alt={m.fileName} className="max-w-full h-auto max-h-60 object-cover transition-transform group-hover:scale-105" />
-                                                    </a>
-                                                ) : (
-                                                    <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border ${isMe ? 'bg-blue-700/50 border-blue-400' : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'} hover:opacity-90 transition-opacity`}>
-                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isMe ? 'bg-blue-500' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600'}`}>
-                                                            <FileIcon size={20} />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-semibold truncate">{m.fileName}</p>
-                                                            <p className="text-[10px] opacity-70 uppercase">{m.fileType?.split('/')[1] || 'DOC'}</p>
-                                                        </div>
-                                                    </a>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {m.content && <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>}
-                                        <span className={`text-[10px] mt-1 block text-right opacity-60`}>
-                                            {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        return (
+                            <React.Fragment key={m.id}>
+                                {showDaySeparator && (
+                                    <div className="flex justify-center my-4">
+                                        <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-1 rounded-full text-xs font-medium shadow-sm">
+                                            {formatDateSeparator(msgDate)}
                                         </span>
                                     </div>
-                                    {!isMe && <span className="text-[10px] text-gray-400 mt-1 ml-1">{m.sender?.name}</span>}
+                                )}
+                                <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                        <div className={`p-4 rounded-2xl relative shadow-sm transition-all hover:shadow-md ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-tl-none'}`}>
+                                            {!isMe && <span className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-blue-600 dark:text-blue-400">{m.sender?.name}</span>}
+
+                                            {/* File Rendering */}
+                                            {m.fileUrl && (
+                                                <div className="mb-3">
+                                                    {m.fileType?.startsWith('image/') ? (
+                                                        <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-black/5 hover:border-black/10 transition-all">
+                                                            <AppImage src={m.fileUrl} alt={m.fileName} className="max-w-full h-auto max-h-80 object-cover" />
+                                                        </a>
+                                                    ) : (
+                                                        <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isMe ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}>
+                                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600'}`}>
+                                                                <FileIcon size={20} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-bold truncate">{m.fileName}</p>
+                                                                <p className="text-[10px] opacity-70 font-black uppercase tracking-tighter">{m.fileType?.split('/')[1] || 'DOC'}</p>
+                                                            </div>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {m.content && <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed tracking-tight">{m.content}</p>}
+                                            <div className={`flex items-center justify-end gap-1 mt-1.5 opacity-60`}>
+                                                <span className="text-[9px] font-bold">
+                                                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </React.Fragment>
-                    )
-                })}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
             </div>
 
-            {/* Input */}
+            {/* Input Area */}
             <div
-                className={`p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative ${isDragging ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                className={`p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 relative ${isDragging ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}

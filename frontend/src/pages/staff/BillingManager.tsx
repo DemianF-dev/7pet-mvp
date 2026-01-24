@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import PaymentReceiptModal from '../../components/PaymentReceiptModal';
+import InvoiceDetailsModal from '../../components/staff/InvoiceDetailsModal';
 
 interface Invoice {
     id: string;
@@ -44,20 +45,12 @@ export default function BillingManager() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-    // Payment Form
-    const [paymentAmount, setPaymentAmount] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState('PIX');
-    const [paymentBank, setPaymentBank] = useState('');
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
     // Filters & Sorting
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'dueDate', direction: 'asc' });
-
-    // Receipt State
-    const [showReceipt, setShowReceipt] = useState(false);
-    const [selectedPayment, setSelectedPayment] = useState<any>(null);
 
     // Bulk Selection
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -96,89 +89,7 @@ export default function BillingManager() {
         }
     };
 
-    const handleUpdateStatus = async (status: string) => {
-        if (!selectedInvoice) return;
 
-        // Block manual update to PAGO
-        if (status === 'PAGO') {
-            alert('Atenção: Para marcar como RECEBIDO, você deve registrar o pagamento no formulário ao lado.\n\nO sistema atualizará o status automaticamente quando o valor for integralizado.');
-            return;
-        }
-
-        if (!window.confirm(`Deseja realmente alterar o status desta fatura para ${status}?`)) return;
-
-        try {
-            await api.patch(`/invoices/${selectedInvoice.id}/status`, { status });
-            // Update local state
-            setInvoices(invoices.map(i => i.id === selectedInvoice.id ? { ...i, status: status as any } : i));
-            setSelectedInvoice({ ...selectedInvoice, status: status as any });
-            alert(`Status atualizado para ${status}`);
-        } catch (error) {
-            alert('Erro ao atualizar status');
-        }
-    };
-
-    const handleCancelPayment = async (paymentId: string) => {
-        if (!selectedInvoice) return;
-        if (!window.confirm('Deseja realmente cancelar este recebimento? O valor será estornado e o status da fatura reavaliado.')) return;
-
-        try {
-            await api.delete(`/invoices/${selectedInvoice.id}/payments/${paymentId}`);
-            alert('Recebimento cancelado com sucesso!');
-            fetchInvoices();
-            // Re-fetch selected invoice
-            const refreshed = await api.get('/invoices');
-            const updatedInvoice = refreshed.data.find((i: any) => i.id === selectedInvoice.id);
-            setSelectedInvoice(updatedInvoice || null);
-        } catch (error) {
-            alert('Erro ao cancelar recebimento');
-        }
-    };
-
-    const handleRegisterPayment = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedInvoice) return;
-
-        const isNegative = parseFloat(paymentAmount) < 0;
-        const confirmMsg = isNegative
-            ? `Confirmar AJUSTE NEGATIVO (Saída/Reembolso) de R$ ${Math.abs(parseFloat(paymentAmount))} via ${paymentMethod}?`
-            : `Confirmar o recebimento de R$ ${paymentAmount} via ${paymentMethod}?`;
-
-        if (!window.confirm(confirmMsg)) return;
-
-        try {
-            // Start - Custom logic to read checkbox manually since not in state
-            const form = e.target as HTMLFormElement;
-            const settleCheckbox = form.elements.namedItem('settle') as HTMLInputElement;
-            const useBalanceCheckbox = form.elements.namedItem('useBalance') as HTMLInputElement;
-            const settle = settleCheckbox ? settleCheckbox.checked : false;
-            const useBalance = useBalanceCheckbox ? useBalanceCheckbox.checked : false;
-
-            await api.post(`/invoices/${selectedInvoice.id}/payments`, {
-                amount: parseFloat(paymentAmount || '0'),
-                method: paymentMethod,
-                bank: paymentBank,
-                settle: settle,
-                useBalance: useBalance
-            });
-            alert('Movimentação registrada com sucesso!');
-
-            // Auto open receipt for the new payment
-            const refreshed = await api.get('/invoices');
-            const updatedInvoice = refreshed.data.find((i: any) => i.id === selectedInvoice.id);
-            if (updatedInvoice && updatedInvoice.paymentRecords.length > 0 && !isNegative) {
-                const lastPayment = updatedInvoice.paymentRecords[updatedInvoice.paymentRecords.length - 1];
-                setSelectedPayment(lastPayment);
-                setShowReceipt(true);
-            }
-
-            setPaymentAmount('');
-            fetchInvoices();
-            setSelectedInvoice(updatedInvoice || null);
-        } catch (error) {
-            alert('Erro ao registrar movimentação');
-        }
-    };
 
 
 
@@ -322,10 +233,7 @@ export default function BillingManager() {
         }
     };
 
-    // Calculate totals
-    // Calculate totals for modal
-    const totalReceivedModal = Array.isArray(selectedInvoice?.paymentRecords) ? selectedInvoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
-    const remaining = selectedInvoice ? selectedInvoice.amount - totalReceivedModal : 0;
+
 
     return (
         <main className="p-6 md:p-10">
@@ -485,7 +393,7 @@ export default function BillingManager() {
                                 <tr
                                     key={invoice.id}
                                     className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-primary/[0.02]' : ''}`}
-                                    onClick={() => setSelectedInvoice(invoice)}
+                                    onClick={() => setSelectedInvoiceId(invoice.id)}
                                 >
                                     <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                         <input
@@ -539,27 +447,7 @@ export default function BillingManager() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleDuplicate(invoice.id);
-                                                }}
-                                                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Duplicar"
-                                            >
-                                                <Copy size={16} className="text-blue-500" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(invoice.id);
-                                                }}
-                                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Excluir"
-                                            >
-                                                <Trash2 size={16} className="text-red-500" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedInvoice(invoice);
+                                                    setSelectedInvoiceId(invoice.id);
                                                 }}
                                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                                 title="Ver Detalhes"
@@ -589,285 +477,14 @@ export default function BillingManager() {
 
             {/* Detail Modal */}
             <AnimatePresence>
-                {selectedInvoice && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" onClick={() => setSelectedInvoice(null)}></div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-3xl w-full max-w-4xl relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto"
-                        >
-                            <div className="p-8 border-b border-gray-100 flex justify-between items-start">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-secondary mb-1">Detalhes Financeiros</h2>
-                                    <p className="text-gray-500">Gerencie o status e pagamentos deste registro.</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleDuplicate(selectedInvoice.id)}
-                                        className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="Duplicar Fatura"
-                                    >
-                                        <Copy size={20} className="text-blue-500" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(selectedInvoice.id)}
-                                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Excluir Fatura"
-                                    >
-                                        <Trash2 size={20} className="text-red-500" />
-                                    </button>
-                                    <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                        <X size={24} className="text-gray-400" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {/* Left Column: Info & Status */}
-                                <div className="col-span-2 space-y-8">
-                                    {/* Status Cards */}
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {[
-                                            { label: 'APROVADO / PENDENTE', value: 'PENDENTE', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-                                            { label: 'MONITORAR', value: 'MONITORAR', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-                                            { label: 'RECEBIDO', value: 'PAGO', color: 'bg-green-100 text-green-700 border-green-200' },
-                                            { label: 'ATRASADO', value: 'VENCIDO', color: 'bg-red-100 text-red-700 border-red-200' },
-                                            { label: 'FATURAR', value: 'FATURAR', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-                                            { label: 'NEGOCIADO', value: 'NEGOCIADO', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-                                            { label: 'ENCERRADO', value: 'ENCERRADO', color: 'bg-gray-100 text-gray-600 border-gray-200' },
-                                        ].map((status) => (
-                                            <button
-                                                key={status.value}
-                                                onClick={() => handleUpdateStatus(status.value)}
-                                                className={`p-4 rounded-xl border-2 text-left transition-all ${selectedInvoice.status === status.value ? status.color : 'border-gray-100 hover:border-gray-200 text-gray-400'}`}
-                                            >
-                                                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Definir como</span>
-                                                <span className="font-bold text-sm">{status.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Info Grid */}
-                                    <div className="bg-gray-50 rounded-2xl p-6 grid grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Cliente</label>
-                                            <p className="font-bold text-secondary text-lg">{selectedInvoice.customer.name}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Data Vencimento</label>
-                                            <div className="flex items-center gap-2 text-secondary">
-                                                <Calendar size={18} />
-                                                <span className="font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString('pt-BR')}</span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Valor Total</label>
-                                            <p className="font-bold text-secondary text-2xl">
-                                                R$ {selectedInvoice.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Restante a Receber</label>
-                                            <p className={`font-bold text-2xl ${remaining > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                                                R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Payment History */}
-                                    <div>
-                                        <h3 className="font-bold text-secondary mb-4 flex items-center gap-2">
-                                            <CheckCircle size={18} className="text-primary" /> Histórico de Recebimentos
-                                        </h3>
-                                        {selectedInvoice.paymentRecords.length === 0 ? (
-                                            <p className="text-gray-400 text-sm italic">Nenhum pagamento registrado.</p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {selectedInvoice.paymentRecords.map(payment => (
-                                                    <div key={payment.id} className="bg-white border border-gray-100 p-4 rounded-xl flex justify-between items-center">
-                                                        <div>
-                                                            <p className="font-bold text-secondary">R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                            <p className="text-xs text-gray-400">{new Date(payment.paidAt).toLocaleDateString()} - {payment.method}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {payment.method !== 'SALDO_CREDITO' && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setSelectedPayment(payment);
-                                                                        setShowReceipt(true);
-                                                                    }}
-                                                                    className="text-[10px] font-bold text-primary hover:underline uppercase"
-                                                                >
-                                                                    Ver Comprovante
-                                                                </button>
-                                                            )}
-                                                            <button
-                                                                onClick={() => handleCancelPayment(payment.id)}
-                                                                className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase"
-                                                            >
-                                                                Estornar
-                                                            </button>
-                                                            <div className={payment.amount < 0 ? "bg-red-100 text-red-700 p-2 rounded-full" : "bg-green-100 text-green-700 p-2 rounded-full"}>
-                                                                <CheckCircle size={16} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Right Column: Actions */}
-                                <div className="space-y-6">
-                                    <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
-                                        <h3 className="font-bold text-secondary mb-4">Registrar Pagamento</h3>
-                                        <form onSubmit={handleRegisterPayment} className="space-y-4">
-                                            <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Valor Recebido</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        required
-                                                        value={paymentAmount}
-                                                        onChange={(e) => setPaymentAmount(e.target.value)}
-                                                        className="input-field !pl-12 font-mono disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                        placeholder="0,00"
-                                                        disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <select
-                                                    value={paymentMethod}
-                                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                                    className="input-field disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                    disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
-                                                >
-                                                    <option value="PIX">PIX</option>
-                                                    <option value="DINHEIRO">Dinheiro</option>
-                                                    <option value="CARTAO_CREDITO">Cartão de Crédito</option>
-                                                    <option value="CARTAO_DEBITO">Cartão de Débito</option>
-                                                    <option value="BOLETO">Boleto</option>
-                                                    <option value="AJUSTE">Ajuste Manual</option>
-                                                    <option value="ESTORNO_REEMBOLSO">Estorno / Reembolso</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Banco / Destino</label>
-                                                <input
-                                                    type="text"
-                                                    value={paymentBank}
-                                                    onChange={(e) => setPaymentBank(e.target.value)}
-                                                    className="input-field disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                    placeholder="Ex: Inter, Nubank, Caixa..."
-                                                    disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
-                                                />
-                                            </div>
-
-                                            {/* Credit/Debt Warning */}
-                                            {paymentAmount && remaining - parseFloat(paymentAmount) < 0 && (
-                                                <div className="bg-green-100 p-3 rounded-xl border border-green-200">
-                                                    <p className="text-xs text-green-700 font-bold">
-                                                        Troco/Crédito: R$ {Math.abs(remaining - parseFloat(paymentAmount)).toFixed(2)}
-                                                    </p>
-                                                    <p className="text-[10px] text-green-600 mt-1">Este valor será adicionado como crédito ao cadastro do cliente.</p>
-                                                </div>
-                                            )}
-
-                                            {/* Credit/Debt Logic */}
-                                            {selectedInvoice.customer.balance && selectedInvoice.customer.balance > 0 && (
-                                                <div className="bg-green-50 p-4 rounded-xl border border-green-200 space-y-2">
-                                                    <div className="flex items-center gap-2 text-green-700 font-bold">
-                                                        <DollarSign size={16} />
-                                                        <span className="text-sm">Saldo Disponível: R$ {selectedInvoice.customer.balance.toFixed(2)}</span>
-                                                    </div>
-                                                    <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
-                                                        <input type="checkbox" name="useBalance" className="accent-green-600 w-4 h-4" />
-                                                        <span className="text-xs text-green-800 font-medium">
-                                                            Abater do valor a pagar (Usar Saldo)
-                                                        </span>
-                                                    </label>
-                                                </div>
-                                            )}
-
-                                            {selectedInvoice.customer.balance && selectedInvoice.customer.balance < 0 && (
-                                                <div className="bg-red-50 p-4 rounded-xl border border-red-200 space-y-2">
-                                                    <div className="flex items-center gap-2 text-red-700 font-bold">
-                                                        <AlertCircle size={16} />
-                                                        <span className="text-sm">Débito Anterior: R$ {Math.abs(selectedInvoice.customer.balance).toFixed(2)}</span>
-                                                    </div>
-                                                    <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
-                                                        <input
-                                                            type="checkbox"
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    const debit = Math.abs(selectedInvoice.customer.balance || 0);
-                                                                    const needed = remaining + debit;
-                                                                    setPaymentAmount(needed.toFixed(2));
-                                                                } else {
-                                                                    setPaymentAmount(''); // Reset or keep existing logic
-                                                                }
-                                                            }}
-                                                            className="accent-red-600 w-4 h-4"
-                                                        />
-                                                        <span className="text-xs text-red-800 font-medium">
-                                                            Incluir débito no pagamento total
-                                                        </span>
-                                                    </label>
-                                                </div>
-                                            )}
-
-                                            {paymentAmount && remaining - parseFloat(paymentAmount) > 0 && (
-                                                <div className="bg-yellow-50 p-3 rounded-xl border border-yellow-200">
-                                                    <p className="text-xs text-yellow-700 font-bold mb-2">
-                                                        Restante: R$ {(remaining - parseFloat(paymentAmount)).toFixed(2)}
-                                                    </p>
-                                                    <label className="flex items-start gap-2 cursor-pointer">
-                                                        <input type="checkbox" name="settle" className="mt-1 text-primary focus:ring-primary rounded" />
-                                                        <span className="text-[10px] text-yellow-800 leading-tight">
-                                                            Encerrar fatura assim mesmo (Gerar <strong>Débito</strong> no cadastro do cliente).
-                                                        </span>
-                                                    </label>
-                                                </div>
-                                            )}
-
-                                            <button
-                                                type="submit"
-                                                className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${parseFloat(paymentAmount) < 0 ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-primary hover:bg-primary-dark text-white'}`}
-                                                disabled={selectedInvoice.status === 'PAGO' || selectedInvoice.status === 'ENCERRADO'}
-                                            >
-                                                <DollarSign size={18} />
-                                                {parseFloat(paymentAmount) < 0 ? 'Confirmar Ajuste/Estorno' : 'Confirmar Recebimento'}
-                                            </button>
-                                        </form>
-                                    </div>
-
-                                    <div className="bg-gray-50 rounded-2xl p-6">
-                                        <h3 className="font-bold text-secondary mb-2 text-sm">Resumo da Gestão</h3>
-                                        <ul className="space-y-2 text-sm text-gray-500">
-                                            <li className="flex justify-between"><span>Total:</span> <span className="font-medium text-secondary">R$ {selectedInvoice.amount.toFixed(2)}</span></li>
-                                            <li className="flex justify-between"><span>Pago:</span> <span className="font-medium text-green-600">R$ {totalReceivedModal.toFixed(2)}</span></li>
-                                            <li className="flex justify-between pt-2 border-t border-gray-200"><span>Diferença:</span> <span className={`font-bold ${remaining > 0 ? 'text-red-500' : 'text-gray-400'}`}>R$ {remaining.toFixed(2)}</span></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
+                {selectedInvoiceId && (
+                    <InvoiceDetailsModal
+                        invoiceId={selectedInvoiceId}
+                        onClose={() => setSelectedInvoiceId(null)}
+                        onUpdate={fetchInvoices}
+                    />
                 )}
             </AnimatePresence>
-
-            <PaymentReceiptModal
-                isOpen={showReceipt}
-                onClose={() => setShowReceipt(false)}
-                payment={selectedPayment}
-                customerName={selectedInvoice?.customer.name || ''}
-            />
         </main>
     );
 }

@@ -98,7 +98,7 @@ export default function FeedPage() {
 
     return (
         <>
-            <main className="w-full p-0 md:p-10 pb-32 overflow-x-hidden">
+            <main className="w-full p-0 md:p-10 pb-32 overflow-x-hidden overflow-y-auto custom-scrollbar flex-1">
                 <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8">
 
                     {/* Main Feed Area (8 columns) */}

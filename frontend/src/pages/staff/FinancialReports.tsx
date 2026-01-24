@@ -8,17 +8,19 @@ import {
     Calendar as CalendarIcon,
     CheckCircle,
     Clock,
-    XCircle
+    XCircle,
+    X
 } from 'lucide-react';
 import api from '../../services/api';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import ResponsiveTable, { Column } from '../../components/system/ResponsiveTable';
 import { Container, Stack } from '../../components/layout/LayoutHelpers';
 import Badge from '../../components/ui/Badge';
-import { IconButton } from '../../components/ui/IconButton';
-import Card from '../../components/ui/Card';
+import OrderDetailsModal from '../../components/staff/OrderDetailsModal';
+import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
+import QuoteEditor from './QuoteEditor';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -48,12 +50,14 @@ interface Invoice {
     status: string;
     dueDate: string;
     createdAt: string;
+    customerId: string;
     customer: {
+        id: string;
         name: string;
     };
-    appointment?: {
-        services: { name: string }[];
-    };
+    appointment?: any;
+    quotes?: { id: string }[];
+    isPOS?: boolean;
 }
 
 export default function FinancialReports() {
@@ -61,13 +65,13 @@ export default function FinancialReports() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
-    const [columnFilters, setColumnFilters] = useState({
-        id: '',
-        customer: '',
-        date: '',
-        amount: '',
-        status: ''
-    });
+    const [source, setSource] = useState('all');
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
+
+    // Selection States
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+    const [selectedAppointmentData, setSelectedAppointmentData] = useState<any>(null);
 
     const fetchReports = async () => {
         setIsLoading(true);
@@ -75,6 +79,7 @@ export default function FinancialReports() {
             const query = new URLSearchParams();
             if (dateRange.start) query.append('start', dateRange.start);
             if (dateRange.end) query.append('end', dateRange.end);
+            if (source !== 'all') query.append('source', source);
 
             const response = await api.get(`/management/reports?${query.toString()}`);
             setInvoices(response.data);
@@ -87,20 +92,31 @@ export default function FinancialReports() {
 
     useEffect(() => {
         fetchReports();
-    }, []);
+    }, [dateRange.start, dateRange.end, source]);
 
     const filteredInvoices = Array.isArray(invoices) ? invoices.filter(inv => {
         const matchesGlobal = inv.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             inv.id.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesId = !columnFilters.id || inv.id.toLowerCase().includes(columnFilters.id.toLowerCase());
-        const matchesCustomer = !columnFilters.customer || inv.customer.name.toLowerCase().includes(columnFilters.customer.toLowerCase());
-        const matchesDate = !columnFilters.date || new Date(inv.createdAt).toLocaleDateString('pt-BR').includes(columnFilters.date);
-        const matchesAmount = !columnFilters.amount || inv.amount.toString().includes(columnFilters.amount);
-        const matchesStatus = !columnFilters.status || inv.status.toLowerCase().includes(columnFilters.status.toLowerCase());
-
-        return matchesGlobal && matchesId && matchesCustomer && matchesDate && matchesAmount && matchesStatus;
+        return matchesGlobal;
     }) : [];
+
+    const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+        if (!sortConfig) return 0;
+        const { key, direction } = sortConfig;
+
+        let valA: any = (a as any)[key];
+        let valB: any = (b as any)[key];
+
+        if (key === 'customer') {
+            valA = a.customer.name;
+            valB = b.customer.name;
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
 
     const currentTotal = filteredInvoices.reduce((acc, curr) => acc + curr.amount, 0);
 
@@ -108,11 +124,26 @@ export default function FinancialReports() {
         .filter(inv => inv.status === 'PAGO')
         .reduce((acc, curr) => acc + curr.amount, 0);
 
+    const handleOpenDetails = (inv: Invoice) => {
+        if (inv.isPOS) {
+            setSelectedOrderId(inv.id);
+        } else if (inv.appointment) {
+            setSelectedAppointmentData(inv.appointment);
+        } else if (inv.quotes && inv.quotes.length > 0) {
+            setSelectedQuoteId(inv.quotes[0].id);
+        }
+    };
+
     const columns: Column<Invoice>[] = [
         {
-            header: 'Fatura',
+            header: 'Fatura/Venda',
             key: 'id',
-            render: (inv) => <span className="font-bold text-gray-400 text-xs">#{inv.id.slice(0, 8)}</span>
+            render: (inv) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-gray-400 text-xs">#{inv.id.slice(0, 8)}</span>
+                    {inv.isPOS && <span className="text-[8px] font-black text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-full w-fit mt-1">PDV</span>}
+                </div>
+            )
         },
         {
             header: 'Cliente',
@@ -121,7 +152,7 @@ export default function FinancialReports() {
                 <div className="flex flex-col">
                     <span className="font-black text-secondary text-sm">{inv.customer.name}</span>
                     <span className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[200px]">
-                        {inv.appointment?.services.map(s => s.name).join(', ') || 'Sem serviços vinculados'}
+                        {inv.appointment?.services?.map((s: any) => s.name).join(', ') || 'Sem serviços vinculados'}
                     </span>
                 </div>
             )
@@ -129,11 +160,13 @@ export default function FinancialReports() {
         {
             header: 'Data',
             key: 'createdAt',
+            sortable: true,
             render: (inv) => <span className="text-xs font-bold text-gray-500">{new Date(inv.createdAt).toLocaleDateString('pt-BR')}</span>
         },
         {
             header: 'Valor',
             key: 'amount',
+            sortable: true,
             render: (inv) => <span className="text-sm font-black text-secondary">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         },
         {
@@ -153,13 +186,25 @@ export default function FinancialReports() {
             header: '',
             key: 'actions',
             className: 'text-right',
-            render: () => (
-                <button className="text-gray-300 hover:text-primary transition-colors">
+            render: (inv) => (
+                <button
+                    className="text-gray-300 hover:text-primary transition-colors"
+                    onClick={() => handleOpenDetails(inv)}
+                >
                     <ChevronRight size={20} />
                 </button>
             )
         }
     ];
+
+    const handleSort = (key: string) => {
+        setSortConfig(current => {
+            if (current?.key === key) {
+                return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+            }
+            return { key, direction: 'asc' };
+        });
+    };
 
     return (
         <Container>
@@ -175,6 +220,16 @@ export default function FinancialReports() {
 
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+                                <select
+                                    className="text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer uppercase tracking-widest text-[#5E4C4C]/60"
+                                    value={source}
+                                    onChange={(e) => setSource(e.target.value)}
+                                >
+                                    <option value="all">TODAS AÇÕES</option>
+                                    <option value="invoice">FATURAS</option>
+                                    <option value="pos">PDV (PEDIDOS)</option>
+                                </select>
+                                <span className="text-gray-300">|</span>
                                 <div className="flex items-center gap-2">
                                     <CalendarIcon size={16} className="text-gray-400" />
                                     <input
@@ -254,10 +309,13 @@ export default function FinancialReports() {
                     <div className="p-8">
                         <ResponsiveTable
                             columns={columns}
-                            data={filteredInvoices}
+                            data={sortedInvoices}
                             isLoading={isLoading}
                             keyExtractor={(inv) => inv.id}
                             emptyMessage="Nenhuma transação encontrada no filtro."
+                            sortConfig={sortConfig}
+                            onSort={handleSort}
+                            onRowClick={handleOpenDetails}
                         />
                     </div>
 
@@ -269,6 +327,62 @@ export default function FinancialReports() {
                     )}
                 </div>
             </Stack>
+
+            {/* Modal Components */}
+            <AnimatePresence>
+                {/* 1. POS Order Details */}
+                {selectedOrderId && (
+                    <OrderDetailsModal
+                        isOpen={!!selectedOrderId}
+                        onClose={() => setSelectedOrderId(null)}
+                        orderId={selectedOrderId}
+                        onActionCompleted={fetchReports}
+                    />
+                )}
+
+                {/* 2. Appointment Details */}
+                {selectedAppointmentData && (
+                    <AppointmentDetailsModal
+                        isOpen={!!selectedAppointmentData}
+                        onClose={() => setSelectedAppointmentData(null)}
+                        appointment={selectedAppointmentData}
+                        onSuccess={fetchReports}
+                        onModify={() => { }}
+                        onCopy={() => { }}
+                    />
+                )}
+
+                {/* 3. Quote Editor (Modal Mode) */}
+                {selectedQuoteId && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                            onClick={() => setSelectedQuoteId(null)}
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-[40px] w-full max-w-5xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl border border-gray-100 dark:border-gray-700 p-8"
+                        >
+                            <button
+                                onClick={() => setSelectedQuoteId(null)}
+                                className="absolute top-8 right-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all text-gray-400 z-[110]"
+                            >
+                                <X size={24} />
+                            </button>
+                            <QuoteEditor
+                                quoteId={selectedQuoteId}
+                                onClose={() => setSelectedQuoteId(null)}
+                                onUpdate={fetchReports}
+                            />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </Container>
     );
 }

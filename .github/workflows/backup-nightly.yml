@@ -1,0 +1,36 @@
+name: Nightly Database Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Every night at 3 AM UTC
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prisma Generate
+        run: npm run postinstall
+
+      - name: Run Backup
+        run: npm run backup:db
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backend/backups/
+          retention-days: 7

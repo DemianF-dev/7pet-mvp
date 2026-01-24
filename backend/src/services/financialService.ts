@@ -9,7 +9,7 @@ interface CreateTransactionParams {
     type: 'DEBIT' | 'CREDIT';
     amount: number;
     description: string;
-    category?: 'QUOTE' | 'PAYMENT' | 'ADJUSTMENT' | 'DISCOUNT' | 'PENALTY';
+    category?: 'QUOTE' | 'PAYMENT' | 'ADJUSTMENT' | 'DISCOUNT' | 'PENALTY' | 'PDV';
     relatedQuoteId?: string;
     relatedInvoiceId?: string;
     createdBy: string;
@@ -19,11 +19,12 @@ interface CreateTransactionParams {
 /**
  * Create a financial transaction and update customer balance
  */
-export const createTransaction = async (params: CreateTransactionParams) => {
+export const createTransaction = async (params: CreateTransactionParams, tx?: any) => {
     const { customerId, type, amount, createdBy, ...rest } = params;
+    const client = tx || prisma;
 
     // Create transaction
-    const transaction = await prisma.financialTransaction.create({
+    const transaction = await client.financialTransaction.create({
         data: {
             customerId,
             type,
@@ -40,7 +41,7 @@ export const createTransaction = async (params: CreateTransactionParams) => {
 
     // Update customer balance
     const balanceChange = type === 'DEBIT' ? amount : -amount;
-    await prisma.customer.update({
+    await client.customer.update({
         where: { id: customerId },
         data: {
             balance: {
@@ -50,9 +51,9 @@ export const createTransaction = async (params: CreateTransactionParams) => {
     });
 
     // Auto-create alert if balance crosses thresholds
-    const updatedCustomer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const updatedCustomer = await client.customer.findUnique({ where: { id: customerId } });
     if (updatedCustomer) {
-        await createAutoAlert(customerId, updatedCustomer.balance, createdBy);
+        await createAutoAlert(customerId, updatedCustomer.balance, createdBy, tx);
     }
 
     return transaction;
@@ -115,9 +116,10 @@ export const getTransactionHistory = async (
 /**
  * Auto-create alerts based on balance thresholds
  */
-export const createAutoAlert = async (customerId: string, balance: number, createdBy: string) => {
+export const createAutoAlert = async (customerId: string, balance: number, createdBy: string, tx?: any) => {
+    const client = tx || prisma;
     // Check if similar alert already exists
-    const existingAlerts = await prisma.customerAlert.findMany({
+    const existingAlerts = await client.customerAlert.findMany({
         where: {
             customerId,
             isActive: true,
@@ -127,7 +129,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
 
     // If balance is critical (< -1000)
     if (balance < -1000 && !existingAlerts.some(a => a.type === 'CRITICAL')) {
-        await prisma.customerAlert.create({
+        await client.customerAlert.create({
             data: {
                 id: crypto.randomUUID(),
                 customerId,
@@ -140,7 +142,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
     }
     // If balance is warning level (< -500)
     else if (balance < -500 && !existingAlerts.some(a => a.type === 'WARNING')) {
-        await prisma.customerAlert.create({
+        await client.customerAlert.create({
             data: {
                 id: crypto.randomUUID(),
                 customerId,
@@ -153,7 +155,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
     }
     // Resolve alerts if balance improved
     else if (balance >= -500) {
-        await prisma.customerAlert.updateMany({
+        await client.customerAlert.updateMany({
             where: {
                 customerId,
                 isActive: true,

@@ -8,7 +8,7 @@ export default function DesktopShell() {
     return (
         <div className="floating-layout-wrapper">
             <StaffSidebar />
-            <main className="floating-main-content custom-scrollbar">
+            <main className="floating-main-content flex-1 min-w-0">
                 <Outlet />
             </main>
         </div>

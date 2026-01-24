@@ -25,6 +25,8 @@ interface LegCalculation {
     distanceKm: number;
     durationMin: number;
     price: number;
+    originAddress?: string;
+    destinationAddress?: string;
 }
 
 interface DetailedTransportResult {
@@ -66,7 +68,7 @@ export const mapsService = {
         const storeAddress = process.env.STORE_ADDRESS || "Av. Hildebrando de Lima, 525, Osasco - SP";
 
         // Limpeza agressiva da chave (remove aspas e espaços que podem vir do Vercel)
-        const apiKey = (process.env.GOOGLE_MAPS_SERVER_KEY || '')
+        const apiKey = (process.env.GOOGLE_MAPS_SERVER_KEY || process.env.GOOGLE_MAPS_API_KEY || '')
             .replace(/['"]/g, '')
             .trim();
 
@@ -178,7 +180,7 @@ export const mapsService = {
             }
 
             const originKm = (originElement.distance?.value || 0) / 1000;
-            const originMin = Math.ceil((originElement.duration?.value || 0) / 60);
+            const originMin = Math.round((originElement.duration?.value || 0) / 60);
 
             // 2. Calculate OD for Destination (if different)
             let destKm = originKm;
@@ -243,7 +245,7 @@ export const mapsService = {
                 }
 
                 destKm = (destElement.distance?.value || 0) / 1000;
-                destMin = Math.ceil((destElement.duration?.value || 0) / 60);
+                destMin = Math.round((destElement.duration?.value || 0) / 60);
                 destDistanceText = destElement.distance?.text || '';
                 destDurationText = destElement.duration?.text || '';
             }
@@ -266,7 +268,9 @@ export const mapsService = {
                     duration: originElement.duration.text,
                     distanceKm: originKm,
                     durationMin: originMin + handlingTimeLargada,
-                    price: leg1Price
+                    price: leg1Price,
+                    originAddress: storeAddress,
+                    destinationAddress: originAddress
                 };
                 total += leg1Price;
                 totalKm += originKm;
@@ -279,7 +283,9 @@ export const mapsService = {
                     duration: originElement.duration.text,
                     distanceKm: originKm,
                     durationMin: originMin + handlingTimeLeva,
-                    price: leg2Price
+                    price: leg2Price,
+                    originAddress: originAddress,
+                    destinationAddress: storeAddress
                 };
                 total += leg2Price;
                 totalKm += originKm;
@@ -294,7 +300,9 @@ export const mapsService = {
                     duration: destDurationText,
                     distanceKm: destKm,
                     durationMin: destMin + handlingTimeTraz,
-                    price: leg3Price
+                    price: leg3Price,
+                    originAddress: storeAddress,
+                    destinationAddress: destAddr
                 };
                 total += leg3Price;
                 totalKm += destKm;
@@ -307,7 +315,9 @@ export const mapsService = {
                     duration: destDurationText,
                     distanceKm: destKm,
                     durationMin: destMin + handlingTimeRetorno,
-                    price: leg4Price
+                    price: leg4Price,
+                    originAddress: destAddr,
+                    destinationAddress: storeAddress
                 };
                 total += leg4Price;
                 totalKm += destKm;

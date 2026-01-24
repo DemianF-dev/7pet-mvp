@@ -143,7 +143,7 @@ export default function ManagementDashboard() {
     const barData = kpis?.services?.slice(0, 5) || [];
 
     return (
-        <main className="p-[var(--space-6)] md:p-[var(--space-10)] max-w-7xl mx-auto w-full pb-28 md:pb-10">
+        <main className="p-[var(--space-6)] md:p-[var(--space-10)] max-w-7xl mx-auto w-full pb-28 md:pb-10 overflow-y-auto custom-scrollbar flex-1">
             <header className="mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">

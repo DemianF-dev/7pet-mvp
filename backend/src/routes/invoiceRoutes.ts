@@ -43,7 +43,7 @@ router.get('/', async (req: Request, res: Response) => {
 const staffOnly = authorize(['OPERACIONAL', 'GESTAO', 'ADMIN']);
 
 router.post('/', staffOnly, async (req, res) => {
-    const { customerId, amount, dueDate, quoteIds, appointmentId } = req.body;
+    const { customerId, amount, dueDate, quoteIds, appointmentId, notes, billingPeriod } = req.body;
     const invoice = await prisma.invoice.create({
         data: {
             id: randomUUID(),
@@ -51,6 +51,8 @@ router.post('/', staffOnly, async (req, res) => {
             amount,
             updatedAt: new Date(),
             dueDate: new Date(dueDate),
+            notes,
+            billingPeriod,
             quotes: quoteIds ? {
                 connect: quoteIds.map((id: string) => ({ id }))
             } : undefined,
@@ -483,6 +485,25 @@ async function processPayment(invoiceId: string, data: any, user: any) {
         }
     }
 }
+
+router.patch('/:id', staffOnly, async (req: Request, res: Response) => {
+    const { notes, billingPeriod, dueDate, amount } = req.body;
+    try {
+        const updated = await prisma.invoice.update({
+            where: { id: req.params.id },
+            data: {
+                notes,
+                billingPeriod,
+                dueDate: dueDate ? new Date(dueDate) : undefined,
+                amount: amount !== undefined ? Number(amount) : undefined,
+                updatedAt: new Date()
+            }
+        });
+        res.json(updated);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Erro ao atualizar fatura', details: error.message });
+    }
+});
 
 router.patch('/:id/status', staffOnly, async (req: Request, res: Response) => {
     const { status } = req.body;

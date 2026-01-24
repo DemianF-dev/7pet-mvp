@@ -136,17 +136,69 @@ exports.Prisma.AppointmentScalarFieldEnum = {
   category: 'category',
   seqId: 'seqId',
   performerId: 'performerId',
-  pickupProviderId: 'pickupProviderId',
-  dropoffProviderId: 'dropoffProviderId',
   quoteId: 'quoteId',
   logisticsStatus: 'logisticsStatus',
   logisticsLastRemindedAt: 'logisticsLastRemindedAt',
-  recurringPackageId: 'recurringPackageId'
+  recurringPackageId: 'recurringPackageId',
+  dropoffProviderId: 'dropoffProviderId',
+  pickupProviderId: 'pickupProviderId',
+  posOrderId: 'posOrderId'
 };
 
 exports.Prisma.RelationLoadStrategy = {
   query: 'query',
   join: 'join'
+};
+
+exports.Prisma.RecurrenceContractScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  type: 'type',
+  status: 'status',
+  title: 'title',
+  frequency: 'frequency',
+  billingDay: 'billingDay',
+  defaultDiscountPercent: 'defaultDiscountPercent',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PackageInvoiceScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  contractId: 'contractId',
+  type: 'type',
+  periodYear: 'periodYear',
+  periodMonth: 'periodMonth',
+  status: 'status',
+  dueDate: 'dueDate',
+  subtotal: 'subtotal',
+  discountTotal: 'discountTotal',
+  total: 'total',
+  notes: 'notes',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PackageInvoiceLineScalarFieldEnum = {
+  id: 'id',
+  invoiceId: 'invoiceId',
+  sourceType: 'sourceType',
+  sourceId: 'sourceId',
+  description: 'description',
+  qty: 'qty',
+  unitPrice: 'unitPrice',
+  total: 'total'
+};
+
+exports.Prisma.AppointmentInvoiceLinkScalarFieldEnum = {
+  id: 'id',
+  appointmentId: 'appointmentId',
+  invoiceId: 'invoiceId',
+  linkedAt: 'linkedAt',
+  linkedBy: 'linkedBy'
 };
 
 exports.Prisma.AppreciationScalarFieldEnum = {
@@ -383,6 +435,8 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   amount: 'amount',
   status: 'status',
   dueDate: 'dueDate',
+  notes: 'notes',
+  billingPeriod: 'billingPeriod',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -585,7 +639,8 @@ exports.Prisma.ProductScalarFieldEnum = {
   category: 'category',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  deletedAt: 'deletedAt',
+  sku: 'sku'
 };
 
 exports.Prisma.PushSubscriptionScalarFieldEnum = {
@@ -634,16 +689,16 @@ exports.Prisma.QuoteScalarFieldEnum = {
   cardFeePercent: 'cardFeePercent',
   taxPercent: 'taxPercent',
   recurringPackageId: 'recurringPackageId',
-  transportPlan: 'transportPlan',
-  transportMode: 'transportMode',
-  transportStopAddress: 'transportStopAddress',
   transportDiscountPercent: 'transportDiscountPercent',
-  transportTotalBefore: 'transportTotalBefore',
-  transportTotalAfter: 'transportTotalAfter',
-  transportLevaTotalBefore: 'transportLevaTotalBefore',
   transportLevaTotalAfter: 'transportLevaTotalAfter',
-  transportTrazTotalBefore: 'transportTrazTotalBefore',
-  transportTrazTotalAfter: 'transportTrazTotalAfter'
+  transportLevaTotalBefore: 'transportLevaTotalBefore',
+  transportMode: 'transportMode',
+  transportPlan: 'transportPlan',
+  transportStopAddress: 'transportStopAddress',
+  transportTotalAfter: 'transportTotalAfter',
+  transportTotalBefore: 'transportTotalBefore',
+  transportTrazTotalAfter: 'transportTrazTotalAfter',
+  transportTrazTotalBefore: 'transportTrazTotalBefore'
 };
 
 exports.Prisma.QuoteItemScalarFieldEnum = {
@@ -807,8 +862,8 @@ exports.Prisma.TransportDetailsScalarFieldEnum = {
   confirmedTime: 'confirmedTime',
   status: 'status',
   type: 'type',
-  startedAt: 'startedAt',
-  completedAt: 'completedAt'
+  completedAt: 'completedAt',
+  startedAt: 'startedAt'
 };
 
 exports.Prisma.TransportLegExecutionScalarFieldEnum = {
@@ -847,6 +902,7 @@ exports.Prisma.RouteCacheScalarFieldEnum = {
   stopAddress: 'stopAddress',
   distanceKm: 'distanceKm',
   durationMin: 'durationMin',
+  handlingTime: 'handlingTime',
   cachedAt: 'cachedAt',
   expiresAt: 'expiresAt'
 };
@@ -868,8 +924,8 @@ exports.Prisma.TransportSettingsScalarFieldEnum = {
   handlingTimeRetorno: 'handlingTimeRetorno',
   kmRate: 'kmRate',
   minRate: 'minRate',
-  taxPercent: 'taxPercent',
-  providerSharePercent: 'providerSharePercent'
+  providerSharePercent: 'providerSharePercent',
+  taxPercent: 'taxPercent'
 };
 
 exports.Prisma.UserScalarFieldEnum = {
@@ -917,6 +973,89 @@ exports.Prisma.UserNotificationPreferenceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CashSessionScalarFieldEnum = {
+  id: 'id',
+  openedAt: 'openedAt',
+  closedAt: 'closedAt',
+  status: 'status',
+  openingBalance: 'openingBalance',
+  closingBalance: 'closingBalance',
+  expectedClosingBalance: 'expectedClosingBalance',
+  notes: 'notes',
+  openedById: 'openedById',
+  closedById: 'closedById'
+};
+
+exports.Prisma.OrderScalarFieldEnum = {
+  id: 'id',
+  seqId: 'seqId',
+  customerId: 'customerId',
+  cashSessionId: 'cashSessionId',
+  status: 'status',
+  totalAmount: 'totalAmount',
+  discountAmount: 'discountAmount',
+  finalAmount: 'finalAmount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  returnReason: 'returnReason'
+};
+
+exports.Prisma.OrderItemScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  productId: 'productId',
+  serviceId: 'serviceId',
+  description: 'description',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  discount: 'discount',
+  totalPrice: 'totalPrice'
+};
+
+exports.Prisma.OrderPaymentScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  method: 'method',
+  amount: 'amount',
+  paidAt: 'paidAt',
+  installments: 'installments',
+  notes: 'notes'
+};
+
+exports.Prisma.InventoryMovementScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  type: 'type',
+  quantity: 'quantity',
+  reason: 'reason',
+  orderId: 'orderId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.FiscalDocumentScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  type: 'type',
+  status: 'status',
+  docKey: 'docKey',
+  xmlBody: 'xmlBody',
+  pdfUrl: 'pdfUrl',
+  errorDetails: 'errorDetails',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServicePriceConfigScalarFieldEnum = {
+  id: 'id',
+  service: 'service',
+  basePrice: 'basePrice',
+  category: 'category',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -960,6 +1099,37 @@ exports.AppointmentCategory = exports.$Enums.AppointmentCategory = {
   LOGISTICA: 'LOGISTICA'
 };
 
+exports.RecurrenceType = exports.$Enums.RecurrenceType = {
+  SPA: 'SPA',
+  TRANSPORTE: 'TRANSPORTE'
+};
+
+exports.ContractStatus = exports.$Enums.ContractStatus = {
+  ATIVO: 'ATIVO',
+  PAUSADO: 'PAUSADO',
+  CANCELADO: 'CANCELADO'
+};
+
+exports.PackageFrequency = exports.$Enums.PackageFrequency = {
+  SEMANAL: 'SEMANAL',
+  QUINZENAL: 'QUINZENAL',
+  MENSAL: 'MENSAL'
+};
+
+exports.PackageInvoiceStatus = exports.$Enums.PackageInvoiceStatus = {
+  RASCUNHO: 'RASCUNHO',
+  EMITIDA: 'EMITIDA',
+  PAGA: 'PAGA',
+  PARCIAL: 'PARCIAL',
+  CANCELADA: 'CANCELADA',
+  VENCIDA: 'VENCIDA'
+};
+
+exports.InvoiceSourceType = exports.$Enums.InvoiceSourceType = {
+  AGENDAMENTO: 'AGENDAMENTO',
+  AJUSTE_MANUAL: 'AJUSTE_MANUAL'
+};
+
 exports.AuditSource = exports.$Enums.AuditSource = {
   WEB: 'WEB',
   MOBILE: 'MOBILE',
@@ -979,7 +1149,8 @@ exports.AuditTargetType = exports.$Enums.AuditTargetType = {
   CONFIG: 'CONFIG',
   OTHER: 'OTHER',
   SERVICE: 'SERVICE',
-  PRODUCT: 'PRODUCT'
+  PRODUCT: 'PRODUCT',
+  ORDER: 'ORDER'
 };
 
 exports.AuditAction = exports.$Enums.AuditAction = {
@@ -1006,7 +1177,6 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   APPOINTMENT_CANCELLED: 'APPOINTMENT_CANCELLED',
   APPOINTMENT_NO_SHOW: 'APPOINTMENT_NO_SHOW',
   APPOINTMENT_STATUS_CHANGED: 'APPOINTMENT_STATUS_CHANGED',
-  APPOINTMENT_UPDATED: 'APPOINTMENT_UPDATED',
   USER_CREATED: 'USER_CREATED',
   USER_UPDATED: 'USER_UPDATED',
   USER_DELETED_SOFT: 'USER_DELETED_SOFT',
@@ -1020,7 +1190,10 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   SERVICE_DELETED: 'SERVICE_DELETED',
   PRODUCT_CREATED: 'PRODUCT_CREATED',
   PRODUCT_UPDATED: 'PRODUCT_UPDATED',
-  PRODUCT_DELETED: 'PRODUCT_DELETED'
+  PRODUCT_DELETED: 'PRODUCT_DELETED',
+  APPOINTMENT_UPDATED: 'APPOINTMENT_UPDATED',
+  ORDER_CANCELLED: 'ORDER_CANCELLED',
+  ORDER_RETURNED: 'ORDER_RETURNED'
 };
 
 exports.AuditSeverity = exports.$Enums.AuditSeverity = {
@@ -1087,12 +1260,6 @@ exports.TransportType = exports.$Enums.TransportType = {
   ROUND_TRIP: 'ROUND_TRIP'
 };
 
-exports.PackageFrequency = exports.$Enums.PackageFrequency = {
-  SEMANAL: 'SEMANAL',
-  QUINZENAL: 'QUINZENAL',
-  MENSAL: 'MENSAL'
-};
-
 exports.PackageStatus = exports.$Enums.PackageStatus = {
   ATIVO: 'ATIVO',
   PAUSADO: 'PAUSADO',
@@ -1105,8 +1272,58 @@ exports.BillingType = exports.$Enums.BillingType = {
   BIMESTRAL: 'BIMESTRAL'
 };
 
+exports.CashSessionStatus = exports.$Enums.CashSessionStatus = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED'
+};
+
+exports.OrderStatus = exports.$Enums.OrderStatus = {
+  OPEN: 'OPEN',
+  PAID: 'PAID',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.OrderPaymentMethod = exports.$Enums.OrderPaymentMethod = {
+  CASH: 'CASH',
+  PIX: 'PIX',
+  CREDIT_CARD: 'CREDIT_CARD',
+  DEBIT_CARD: 'DEBIT_CARD',
+  ACCOUNT_CREDIT: 'ACCOUNT_CREDIT',
+  PIX_CPF: 'PIX_CPF',
+  PIX_EMAIL: 'PIX_EMAIL',
+  CREDIT_CARD_INSTALLMENT: 'CREDIT_CARD_INSTALLMENT',
+  DEFERRED: 'DEFERRED',
+  FUTURE: 'FUTURE',
+  OTHER: 'OTHER'
+};
+
+exports.InventoryMovementType = exports.$Enums.InventoryMovementType = {
+  IN: 'IN',
+  OUT: 'OUT',
+  ADJUSTMENT: 'ADJUSTMENT',
+  SALE: 'SALE',
+  RETURN: 'RETURN'
+};
+
+exports.FiscalDocumentStatus = exports.$Enums.FiscalDocumentStatus = {
+  PENDING: 'PENDING',
+  ISSUED: 'ISSUED',
+  CANCELLED: 'CANCELLED',
+  ERROR: 'ERROR'
+};
+
+exports.ServiceConfigCategory = exports.$Enums.ServiceConfigCategory = {
+  KNOT_REMOVAL: 'KNOT_REMOVAL',
+  MEDICATED_BATH: 'MEDICATED_BATH',
+  GENERAL_SERVICE: 'GENERAL_SERVICE'
+};
+
 exports.Prisma.ModelName = {
   Appointment: 'Appointment',
+  RecurrenceContract: 'RecurrenceContract',
+  PackageInvoice: 'PackageInvoice',
+  PackageInvoiceLine: 'PackageInvoiceLine',
+  AppointmentInvoiceLink: 'AppointmentInvoiceLink',
   Appreciation: 'Appreciation',
   AttendanceRecord: 'AttendanceRecord',
   AuditEvent: 'AuditEvent',
@@ -1154,7 +1371,14 @@ exports.Prisma.ModelName = {
   RouteCache: 'RouteCache',
   TransportSettings: 'TransportSettings',
   User: 'User',
-  UserNotificationPreference: 'UserNotificationPreference'
+  UserNotificationPreference: 'UserNotificationPreference',
+  CashSession: 'CashSession',
+  Order: 'Order',
+  OrderItem: 'OrderItem',
+  OrderPayment: 'OrderPayment',
+  InventoryMovement: 'InventoryMovement',
+  FiscalDocument: 'FiscalDocument',
+  ServicePriceConfig: 'ServicePriceConfig'
 };
 
 /**
