@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1540",
+  "version": "BETA20260125-1605",
   "stage": "BETA",
-  "timestamp": "2026-01-25T15:40:11.000Z",
-  "commit": "40f87e7",
-  "buildNumber": 104,
-  "releaseNotes": "Auto-generated from commit: fix: implement try-catch for prisma init and add legacy binaries"
+  "timestamp": "2026-01-25T16:05:52.000Z",
+  "commit": "db41b30",
+  "buildNumber": 105,
+  "releaseNotes": "Auto-generated from commit: Force deploy: Bump backend version to 0.1.2-rc1"
 }
