@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1402",
+  "version": "BETA20260125-1415",
   "stage": "BETA",
-  "timestamp": "2026-01-25T14:02:52.000Z",
-  "commit": "b57f100",
-  "buildNumber": 98,
-  "releaseNotes": "Auto-generated from commit: fix: exhaustive CORS and monorepo routing for Vercel"
+  "timestamp": "2026-01-25T14:15:59.000Z",
+  "commit": "b59a075",
+  "buildNumber": 99,
+  "releaseNotes": "Auto-generated from commit: fix: attempt to fix 500 error by simplifying and syncing monorepo deps"
 }
