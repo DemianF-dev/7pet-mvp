@@ -5,10 +5,10 @@
     "main": "src/index.ts",
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-        "build": "echo 'Build step skipped - Vercel uses source files directly'",
+        "build": "tsc",
         "start": "node dist/index.js",
         "seed": "ts-node prisma/seed.ts",
-        "vercel-build": "prisma generate && echo 'Skipping TypeScript compilation - Vercel will use source files directly'",
+        "vercel-build": "prisma generate && tsc",
         "postinstall": "prisma generate",
         "test": "jest",
         "test:watch": "jest --watch",

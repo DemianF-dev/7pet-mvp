@@ -23,7 +23,8 @@
             ]
         }
     ],
-    "buildCommand": "npm run build:frontend",
+    "buildCommand": "npm run build:frontend && npm run build:backend",
+    "installCommand": "npm install",
     "outputDirectory": "frontend/dist",
     "functions": {
         "api/index.ts": {
