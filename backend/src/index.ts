@@ -244,7 +244,11 @@ app.get('/', (req, res) => {
     res.send('🚀 7Pet API está Ativa!');
 });
 
-import versionInfo from '../../VERSION.json';
+// Hardcoded version for stability during transition
+const versionInfo = {
+    version: "BETA-20260125-MONO",
+    timestamp: new Date().toISOString()
+};
 
 app.get('/health', (req, res) => {
     res.json({
