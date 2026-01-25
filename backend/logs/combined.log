@@ -1556,3 +1556,4 @@
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/chat/conversations","originalUrl":"/chat/conversations"},"service":"7pet-backend","timestamp":"2026-01-25T16:19:30.404Z"}
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/staff/widgets","originalUrl":"/staff/widgets"},"service":"7pet-backend","timestamp":"2026-01-25T16:20:07.467Z"}
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/feed","originalUrl":"/feed"},"service":"7pet-backend","timestamp":"2026-01-25T16:20:07.482Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/notifications","originalUrl":"/notifications"},"service":"7pet-backend","timestamp":"2026-01-25T16:22:13.134Z"}
