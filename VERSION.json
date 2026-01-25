@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1444",
+  "version": "BETA20260125-1505",
   "stage": "BETA",
-  "timestamp": "2026-01-25T14:44:08.000Z",
-  "commit": "c61ab13",
-  "buildNumber": 101,
-  "releaseNotes": "Auto-generated from commit: fix: sync backend/vercel.json with root config to fix CORS"
+  "timestamp": "2026-01-25T15:05:32.000Z",
+  "commit": "f85a9d1",
+  "buildNumber": 102,
+  "releaseNotes": "Auto-generated from commit: fix: standardize prisma client path and binaries for vercel"
 }
