@@ -111,7 +111,10 @@ export default function StaffSidebar() {
             }
         }
         if (perms !== null) return perms.includes(module);
-        const roleDefaults = DEFAULT_PERMISSIONS_BY_ROLE[user.role || 'CLIENTE'] || [];
+        
+        // Check both role and division for permissions
+        const userKey = user.division || user.role || 'CLIENTE';
+        const roleDefaults = DEFAULT_PERMISSIONS_BY_ROLE[userKey] || [];
         return roleDefaults.includes(module);
     };
 

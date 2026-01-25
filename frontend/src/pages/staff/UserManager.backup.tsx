@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Shield,
@@ -69,6 +69,7 @@ interface UserData {
     pauseMenuEnabled?: boolean;
     allowedGames?: any;
     isOnline?: boolean;
+    lastSeenAt?: string;
 }
 
 
@@ -695,34 +696,36 @@ export default function UserManager() {
         });
     };
 
-    const allFilteredUsers = users
-        .filter(u => {
-            const matchesSearch = u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.document?.includes(searchTerm) ||
-                u.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const allFilteredUsers = useMemo(() => {
+        return users
+            .filter(u => {
+                const matchesSearch = u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    u.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    u.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    u.document?.includes(searchTerm) ||
+                    u.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-            const matchesDivision = filterDivision === 'ALL' || u.division === filterDivision;
+                const matchesDivision = filterDivision === 'ALL' || u.division === filterDivision;
 
-            return matchesSearch && matchesDivision;
-        })
-        .sort((a, b) => {
-            let comparison = 0;
-            if (sortBy === 'name') {
-                const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.name || '';
-                const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim() || b.name || '';
-                comparison = nameA.localeCompare(nameB);
-            } else if (sortBy === 'date') {
-                comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            } else if (sortBy === 'id') {
-                const idA = a.staffId || a.seqId || 0;
-                const idB = b.staffId || b.seqId || 0;
-                comparison = idA - idB;
-            }
-            return sortOrder === 'desc' ? -comparison : comparison;
-        });
+                return matchesSearch && matchesDivision;
+            })
+            .sort((a, b) => {
+                let comparison = 0;
+                if (sortBy === 'name') {
+                    const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.name || '';
+                    const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim() || b.name || '';
+                    comparison = nameA.localeCompare(nameB);
+                } else if (sortBy === 'date') {
+                    comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                } else if (sortBy === 'id') {
+                    const idA = a.staffId || a.seqId || 0;
+                    const idB = b.staffId || b.seqId || 0;
+                    comparison = idA - idB;
+                }
+                return sortOrder === 'desc' ? -comparison : comparison;
+            });
+    }, [users, searchTerm, filterDivision, sortBy, sortOrder]);
 
     // Pagination logic
     const totalPages = Math.ceil(allFilteredUsers.length / itemsPerPage);
@@ -765,7 +768,7 @@ export default function UserManager() {
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className={`w-2 h-2 rounded-full ${u.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-gray-300'}`}></div>
                             <span className={`text-[10px] font-black uppercase tracking-tight ${u.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
-                                {u.isOnline ? 'Online agora' : 'Offline'}
+                                {u.isOnline ? 'Online agora' : (u.lastSeenAt ? `Último acesso em ${new Date(u.lastSeenAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
                             </span>
                         </div>
                     </div>

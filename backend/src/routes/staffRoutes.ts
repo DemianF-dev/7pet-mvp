@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middlewares/authMiddleware';
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'COMERCIAL', 'SPA']));
+router.use(authorize(['OPERACIONAL', 'GESTAO', 'ADMIN', 'COMERCIAL', 'SPA', 'LOGISTICA']));
 
 router.get('/metrics', staffController.getDashboardMetrics);
 router.get('/widgets', staffController.getFeedWidgets);

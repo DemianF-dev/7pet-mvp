@@ -330,7 +330,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                                     <Button
                                         className="flex-1 h-14 rounded-2xl font-bold bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20"
                                         onClick={handleCancel}
-                                        isLoading={isActionLoading}
+                                        loading={isActionLoading}
                                     >
                                         Confirmar
                                     </Button>

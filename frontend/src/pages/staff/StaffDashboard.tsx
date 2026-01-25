@@ -85,7 +85,7 @@ const formatCurrency = (value: number) => {
 };
 
 export default function StaffDashboard() {
-    const { user } = useAuthStore();
+    const user = useAuthStore(s => s.user);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 

@@ -159,7 +159,7 @@ export const update = async (req: any, res: Response) => {
             code: error.code,
             meta: error.meta
         });
-        res.status(400).json({ 
+        res.status(400).json({
             error: error.message,
             details: process.env.NODE_ENV === 'development' ? {
                 code: error.code,
@@ -321,3 +321,52 @@ export const duplicate = async (req: any, res: Response) => {
     }
 };
 
+
+// -------------------------------------------------------------------------
+// Agenda & Calendar Controllers
+// -------------------------------------------------------------------------
+
+export const getWeek = async (req: any, res: Response) => {
+    try {
+        const { startDate, endDate, module } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: 'startDate and endDate are required' });
+        }
+
+        const data = await appointmentService.getWeek(startDate as string, endDate as string, { module: module as string });
+        res.json(data);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const getConflicts = async (req: any, res: Response) => {
+    try {
+        const { startDate, endDate, excludeId } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: 'startDate and endDate are required' });
+        }
+
+        const data = await appointmentService.getConflicts(startDate as string, endDate as string, { excludeId: excludeId as string });
+        res.json(data);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const search = async (req: any, res: Response) => {
+    try {
+        const { query } = req.query;
+
+        if (!query) {
+            return res.status(400).json({ error: 'query is required' });
+        }
+
+        const data = await appointmentService.search({ query: query as string });
+        res.json(data);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};

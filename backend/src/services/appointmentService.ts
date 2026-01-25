@@ -77,7 +77,7 @@ export const create = async (data: {
         });
 
         if (existingAppointment) {
-logInfo('Appointment conflict found for non-staff', { startAt: data.startAt, category: data.category });
+            logInfo('Appointment conflict found for non-staff', { startAt: data.startAt, category: data.category });
             throw new Error('⚠️ Este horário já possui um agendamento nesta categoria. Por favor, escolha outro horário.');
         }
     } else {
@@ -199,10 +199,10 @@ export const get = async (id: string) => {
             performer: true,
             pickupProvider: true,
             dropoffProvider: true,
-invoice: {
+            invoice: {
                 include: { paymentRecords: true, financialTransactions: true, customer: true }
             },
-quote: {
+            quote: {
                 include: {
                     invoice: {
                         include: { paymentRecords: true, financialTransactions: true, customer: true }
@@ -216,7 +216,7 @@ quote: {
 
 export const update = async (id: string, data: any, userId?: string) => {
     const previous = await get(id);
-    
+
     logInfo('Appointment update data', {
         id,
         performerId: data.performerId,
@@ -353,7 +353,7 @@ export const updateStatus = async (id: string, status: AppointmentStatus, userId
                     }
                 }
             }
-} catch (hrError) {
+        } catch (hrError) {
             logError('AppointmentService error recording HR production', hrError, { appointmentId: id });
         }
     }
@@ -661,3 +661,109 @@ export const duplicate = async (id: string, performedBy: string) => {
     return duplicated;
 };
 
+
+// -------------------------------------------------------------------------
+// Agenda & Calendar Methods
+// -------------------------------------------------------------------------
+
+export const getWeek = async (startDate: string, endDate: string, options?: { module?: string }) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Ensure 00:00:00 to 23:59:59
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    const appointments = await (prisma.appointment as any).findMany({
+        relationLoadStrategy: 'join',
+        where: {
+            startAt: {
+                gte: start,
+                lte: end
+            },
+            deletedAt: null,
+            ...(options?.module && options.module !== 'ALL' ? {
+                category: options.module === 'LOG' ? 'LOGISTICA' : 'SPA'
+            } : {})
+        },
+        include: {
+            pet: true,
+            services: true,
+            performer: true,
+            transportDetails: true,
+            customer: true
+        },
+        orderBy: { startAt: 'asc' }
+    });
+
+    // Group by day
+    const days = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+        const dateStr = current.toISOString().split('T')[0];
+        const dayAppointments = appointments.filter((appt: any) =>
+            appt.startAt.toISOString().split('T')[0] === dateStr
+        );
+
+        days.push({
+            date: dateStr,
+            appointments: dayAppointments,
+            availableSlots: [9, 10, 11, 13, 14, 15, 16], // Mock slots for now
+            conflicts: []
+        });
+
+        current.setDate(current.getDate() + 1);
+    }
+
+    return {
+        days,
+        summary: {
+            totalAppointments: appointments.length,
+            totalRevenue: appointments.reduce((acc: number, curr: any) => {
+                const servicesTotal = curr.services?.reduce((sAcc: number, s: any) => sAcc + Number(s.basePrice || 0), 0) || 0;
+                return acc + servicesTotal;
+            }, 0),
+            totalSlots: days.length * 7
+        }
+    };
+};
+
+export const getConflicts = async (startDate: string, endDate: string, options?: { excludeId?: string }) => {
+    // For now, return empty conflicts behavior until business logic is strictly defined
+    // This blocks the UI from crashing
+    return {
+        conflicts: [],
+        hasConflicts: false
+    };
+};
+
+export const search = async (options: { query: string }) => {
+    const { query } = options;
+    if (!query || query.length < 2) return { appointments: [], total: 0 };
+
+    const appointments = await (prisma.appointment as any).findMany({
+        relationLoadStrategy: 'join',
+        where: {
+            deletedAt: null,
+            OR: [
+                { customer: { name: { contains: query, mode: 'insensitive' } } },
+                { pet: { name: { contains: query, mode: 'insensitive' } } }
+                // { id: { equals: query } } // UUID search might crash if query strictly not UUID
+            ]
+        },
+        include: {
+            pet: true,
+            services: true,
+            customer: true,
+            performer: true
+        },
+        take: 20,
+        orderBy: { startAt: 'desc' }
+    });
+
+    return {
+        appointments,
+        total: appointments.length
+    };
+};

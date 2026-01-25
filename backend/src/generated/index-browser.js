@@ -435,11 +435,11 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   amount: 'amount',
   status: 'status',
   dueDate: 'dueDate',
-  notes: 'notes',
-  billingPeriod: 'billingPeriod',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  deletedAt: 'deletedAt'
+  deletedAt: 'deletedAt',
+  billingPeriod: 'billingPeriod',
+  notes: 'notes'
 };
 
 exports.Prisma.MessageScalarFieldEnum = {
@@ -902,9 +902,9 @@ exports.Prisma.RouteCacheScalarFieldEnum = {
   stopAddress: 'stopAddress',
   distanceKm: 'distanceKm',
   durationMin: 'durationMin',
-  handlingTime: 'handlingTime',
   cachedAt: 'cachedAt',
-  expiresAt: 'expiresAt'
+  expiresAt: 'expiresAt',
+  handlingTime: 'handlingTime'
 };
 
 exports.Prisma.TransportSettingsScalarFieldEnum = {
@@ -960,7 +960,8 @@ exports.Prisma.UserScalarFieldEnum = {
   active: 'active',
   isSupportAgent: 'isSupportAgent',
   allowedGames: 'allowedGames',
-  pauseMenuEnabled: 'pauseMenuEnabled'
+  pauseMenuEnabled: 'pauseMenuEnabled',
+  lastSeenAt: 'lastSeenAt'
 };
 
 exports.Prisma.UserNotificationPreferenceScalarFieldEnum = {

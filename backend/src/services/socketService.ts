@@ -19,7 +19,7 @@ class SocketService {
         Logger.info(`👤 User ${userId} linked to socket ${socket.id}. sessions: ${this.userSockets.get(userId)?.size}`);
     }
 
-    private unlinkUser(userId: string | undefined, socketId: string) {
+    private async unlinkUser(userId: string | undefined, socketId: string) {
         if (!userId) return;
         const userSessions = this.userSockets.get(userId);
         if (userSessions) {
@@ -27,6 +27,18 @@ class SocketService {
             if (userSessions.size === 0) {
                 this.userSockets.delete(userId);
                 this.io?.emit('user_status', { userId, status: 'offline' });
+
+                // Update Last Seen in DB
+                try {
+                    // Lazy import to avoid circular dependencies if any, though top-level is fine usually
+                    const prisma = require('../lib/prisma').default;
+                    await prisma.user.update({
+                        where: { id: userId },
+                        data: { lastSeenAt: new Date() }
+                    });
+                } catch (e) {
+                    Logger.error(`Failed to update lastSeenAt for user ${userId}:`, e);
+                }
             }
         }
     }

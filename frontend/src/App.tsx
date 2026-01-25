@@ -44,7 +44,7 @@ const ServiceManager = lazy(() => import('./pages/staff/ServiceManager'));
 const BillingManager = lazy(() => import('./pages/staff/BillingManager'));
 const ManagementDashboard = lazy(() => import('./pages/staff/ManagementDashboard'));
 const FinancialReports = lazy(() => import('./pages/staff/FinancialReports'));
-const UserManager = lazy(() => import('./pages/staff/UserManager'));
+const UserManager = lazy(() => import('./pages/staff/users/index'));
 const StaffNotificationList = lazy(() => import('./pages/staff/StaffNotificationList'));
 const StaffProfile = lazy(() => import('./pages/staff/StaffProfile'));
 const ProductManager = lazy(() => import('./pages/staff/ProductManager'));
@@ -89,6 +89,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ServicesProvider } from './context/ServicesContext';
 import toast, { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './context/ThemeContext';
+import { ModalEventProvider } from './components/ModalEventProvider';
 
 // Helper component to wrap lazy pages with Suspense
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
@@ -156,6 +157,7 @@ function App() {
             <NetworkStatus />
             <SocketStatusPill />
             <PWAInstallPrompt />
+            <ModalEventProvider />
 
             <ServicesProvider>
                 <NotificationProvider>
@@ -189,7 +191,7 @@ function App() {
 
                             {/* Colaborador Routes */}
                             <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
-                            <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL']} redirectTo="/staff/login" />}>
+                            <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA']} redirectTo="/staff/login" />}>
                                 <Route element={<AppShell />}>
                                     <Route path="/staff/dashboard" element={<StaffDashboard />} />
                                     <Route path="/staff/pos" element={<LazyPage><POS /></LazyPage>} />

@@ -1,490 +1,339 @@
-
-import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-    Clock,
-    CheckSquare,
-    Square,
+    Calendar as CalendarIcon,
+    ChevronRight,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import MobileCalendarCompactView from '../../components/staff/calendar/MobileCalendarCompactView';
 import WebAgendaLayout from '../../components/staff/calendar/WebAgendaLayout';
-import { useAgendaViewModel } from '../../features/agenda/viewmodels/useAgendaViewModel';
+import { useAgendaDay, useAgendaWeek, useAgendaDashboard, AgendaFilters } from '../../query/hooks/useAgenda';
+import { useAuthStore } from '../../store/authStore';
+import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { useRegisterMobileAction } from '../../hooks/useMobileActions';
-import AgendaDebugPanel from '../../features/agenda/dev/AgendaDebugPanel';
+import { useModalStore } from '../../store/modalStore';
 
 const statusColumns = [
     { key: 'PENDENTE', label: 'Solicitados', color: 'bg-orange-500' },
     { key: 'CONFIRMADO', label: 'Confirmados', color: 'bg-green-500' },
-    { key: 'EM_ATENDIMENTO', label: 'Em Rota/Serviço', color: 'bg-purple-600' },
-    { key: 'FINALIZADO', label: 'Concluídos', color: 'bg-teal-500' }
+    { key: 'EM_ANDAMENTO', label: 'Em Atendimento', color: 'bg-purple-600' },
+    { key: 'FINALIZADO', label: 'Finalizado', color: 'bg-teal-500' },
+    { key: 'CANCELADO', label: 'Cancelado', color: 'bg-gray-500' },
 ];
 
 export default function AgendaLOG() {
-    const location = useLocation();
-    const { state, actions } = useAgendaViewModel({ domain: 'LOG' });
-
-    // Register mobile FAB action
-    useRegisterMobileAction('new_appointment', () => actions.openCreateModal());
-
+    const { user } = useAuthStore();
+    const { isMobile } = useDeviceInfo();
     const {
-        appointments: filteredAppointments,
-        isLoading,
-        view,
-        selectedDate,
-        selectedDayDate,
-        searchTerm,
-        tab,
-        performers,
-        selectedPerformerId,
-        selectedIds,
-        isBulkMode,
-        isFormOpen,
-        isDetailsOpen,
-        selectedAppointment,
-        isCopying,
-        preFillData
-    } = state;
+        appointmentModalOpen,
+        detailsModalOpen,
+        appointmentData,
+        appointmentId,
+        preFill,
+        isCopy,
+        openAppointmentModal,
+        closeAppointmentModal,
+        closeDetailsModal,
+        openDetailsModal
+    } = useModalStore();
 
-    useEffect(() => {
-        if (location.state?.prefill) {
-            actions.openCreateModal(location.state.prefill);
-            window.history.replaceState({}, document.title);
-        }
-    }, [location, actions]);
+    // State
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [view, setView] = useState<'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT'>('WEEK');
+    const [filters, setFilters] = useState<AgendaFilters>({
+        module: 'LOG',
+        performerId: user?.division === 'MASTER' ? 'ALL' : user?.id,
+    });
 
-    // Helpers strictly for rendering
-    const isSameDay = (date1: Date, date2: Date) => {
-        return date1.getDate() === date2.getDate() &&
-            date1.getMonth() === date2.getMonth() &&
-            date1.getFullYear() === date2.getFullYear();
-    };
-
-    const getColumnItems = (status: string) => filteredAppointments.filter(a => a.status === status);
-
-    const getWeekDays = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(d.setDate(diff));
-        return Array.from({ length: 6 }, (_, i) => {
-            const dayOfweek = new Date(monday);
-            dayOfweek.setDate(monday.getDate() + i);
-            return dayOfweek;
-        });
-    };
-
-    const renderKanbanView = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
-            {statusColumns.map((col) => (
-                <div key={col.key} className="flex flex-col h-full min-h-0">
-                    <div className="flex items-center justify-between mb-3 px-3 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full ${col.color} shadow-lg shadow-current/20`}></div>
-                            <h3 className="font-black text-secondary dark:text-gray-300 uppercase tracking-[0.2em] text-[11px]">{col.label}</h3>
-                        </div>
-                        <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
-                            {getColumnItems(col.key).length}
-                        </span>
-                    </div>
-                    <div className="flex-1 bg-gray-50/50 dark:bg-gray-800/20 rounded-[40px] p-5 overflow-y-auto space-y-4 custom-scrollbar border border-dashed border-gray-200 dark:border-gray-700">
-                        {getColumnItems(col.key).map((appt) => {
-                            const isSelected = selectedIds.includes(appt.id);
-                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                            const isRecurring = appt.customer?.type === 'RECORRENTE';
-
-                            return (
-                                <div
-                                    key={appt.id}
-                                    onClick={() => actions.openDetailsModal(appt)}
-                                    className={`p-5 rounded-[28px] shadow-sm border-2 group hover:shadow-2xl hover:border-orange-500/30 transition-all cursor-pointer relative overflow-hidden border-l-[10px] ${isSelected ? 'ring-4 ring-orange-500/20 bg-white dark:bg-gray-700 border-orange-500/50 shadow-orange-500/10' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}
-                                    style={!isSelected && appt.performer?.color ? {
-                                        borderLeftColor: appt.performer.color,
-                                        backgroundColor: `${appt.performer.color}08`
-                                    } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="bg-white dark:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black text-secondary dark:text-gray-300 border border-gray-100 dark:border-gray-600 shadow-sm">
-                                            <Clock size={12} className="text-orange-500" />
-                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                        {(isBulkMode || isSelected) && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
-                                                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
-                                            >
-                                                <CheckSquare size={16} strokeWidth={3} />
-                                            </button>
-                                        )}
-                                    </div>
-                                    <h4 className="font-black text-secondary dark:text-white text-base group-hover:text-orange-500 transition-colors truncate uppercase drop-shadow-sm leading-tight flex items-center gap-2">
-                                        <div
-                                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                                            style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
-                                        ></div>
-                                        <span className="truncate">
-                                            {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                            {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
-                                        </span>
-                                    </h4>
-                                    <p className="text-[11px] opacity-70 font-bold truncate mt-1 text-gray-500 dark:text-gray-400">{appt.customer.name}</p>
-                                    <p className="text-[9px] font-black text-orange-600 dark:text-orange-400 mt-2 bg-orange-50 dark:bg-orange-500/10 p-1.5 rounded-lg border border-orange-100 dark:border-orange-500/20 truncate">
-                                        {appt.transport?.origin} → {appt.transport?.destination}
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            ))}
-        </div>
+    // React Query hooks
+    const agendaDayQuery = useAgendaDay(
+        selectedDate.toISOString().split('T')[0],
+        filters,
+        { enabled: true }
     );
 
-    const renderDayView = () => {
-        const dayAppts = filteredAppointments
-            .filter(a => isSameDay(new Date(a.startAt), selectedDate))
-            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    // Mobile: Use compact view with React Query
+    const agendaDayQueryMobile = useAgendaDay(
+        selectedDate.toISOString().split('T')[0],
+        filters,
+        { enabled: true }
+    );
 
-        return (
-            <div className="space-y-4">
-                {dayAppts.length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-[32px] p-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 shadow-inner">
-                        <Clock className="mx-auto text-gray-300 dark:text-gray-600 mb-4" size={48} />
-                        <p className="text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest text-sm">Nenhum item de logística para este dia.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-4">
-                        {dayAppts.map(appt => {
-                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                            const isRecurring = appt.customer?.type === 'RECORRENTE';
-                            const isSelected = selectedIds.includes(appt.id);
+    // Desktop: Use week view with better performance
+    const weekStart = useMemo(() => {
+        const start = new Date(selectedDate);
+        start.setDate(start.getDate() - start.getDay());
+        return start.toISOString().split('T')[0];
+    }, [selectedDate]);
 
-                            return (
-                                <motion.div
-                                    key={appt.id}
-                                    onClick={() => actions.openDetailsModal(appt)}
-                                    className={`group p-6 rounded-[32px] shadow-sm border-2 border-gray-100 dark:border-gray-700 flex items-center gap-6 hover:shadow-2xl hover:border-orange-500/20 transition-all cursor-pointer relative overflow-hidden border-l-[12px] ${isSelected ? 'ring-4 ring-orange-500/30 bg-orange-500/10 border-orange-500/40' : 'bg-white dark:bg-gray-800'}`}
-                                    style={!isSelected && appt.performer?.color ? {
-                                        borderLeftColor: appt.performer.color,
-                                        backgroundColor: `${appt.performer.color}08`
-                                    } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                >
-                                    {(isBulkMode || isSelected) && (
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
-                                            className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-md border-2 ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-700 text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
-                                        >
-                                            {isSelected ? <CheckSquare size={24} strokeWidth={3} /> : <Square size={24} strokeWidth={3} />}
-                                        </button>
-                                    )}
+    const weekEnd = useMemo(() => {
+        const end = new Date(selectedDate);
+        end.setDate(end.getDate() + (6 - end.getDay()));
+        return end.toISOString().split('T')[0];
+    }, [selectedDate]);
 
-                                    <div className="w-28 shrink-0">
-                                        <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 underline decoration-orange-500/30 decoration-2 underline-offset-4 uppercase tracking-[0.2em] mb-2">Horário</p>
-                                        <p className="text-3xl font-black text-secondary dark:text-white tabular-nums drop-shadow-sm leading-none">
-                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
+    const agendaWeekQuery = useAgendaWeek(
+        weekStart,
+        weekEnd,
+        'LOG',
+        { enabled: !isMobile }
+    );
 
-                                    <div className="flex-1">
-                                        <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 uppercase tracking-[0.2em] mb-2">Pet & Tutor(a)</p>
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex items-center gap-2 bg-white dark:bg-gray-700/50 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 group-hover:border-orange-500/30 transition-colors">
-                                                <div
-                                                    className="w-3 h-3 rounded-full shadow-sm shrink-0"
-                                                    style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
-                                                ></div>
-                                                <span className="text-2xl font-black text-secondary dark:text-white uppercase tracking-tighter">
-                                                    {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                                    {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
-                                                </span>
-                                            </div>
-                                            <div className="h-6 w-px bg-gray-100 dark:bg-gray-700"></div>
-                                            <span className="font-black text-gray-500 dark:text-gray-300 text-lg group-hover:text-secondary dark:group-hover:text-white transition-colors">{appt.customer.name}</span>
-                                        </div>
-                                        <div className="mt-2 text-[10px] font-black text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-3 py-1 rounded-lg border border-orange-100 dark:border-orange-500/20 inline-block">
-                                            {appt.transport?.origin} → {appt.transport?.destination}
-                                        </div>
-                                    </div>
+    // Dashboard hook for metrics
+    const dashboardQuery = useAgendaDashboard(
+        selectedDate.toISOString().split('T')[0],
+        { start: weekStart, end: weekEnd },
+        filters
+    );
 
-                                    <div className="hidden lg:block w-64">
-                                        <p className="text-[10px] font-black text-secondary/40 dark:text-gray-400 uppercase tracking-[0.2em] mb-2">Atividades</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {appt.services?.map(s => (
-                                                <span key={s.id} className="text-[10px] font-black bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl text-secondary dark:text-white shadow-sm group-hover:bg-orange-500 group-hover:text-white group-hover:border-orange-500 transition-all">
-                                                    {s.name}
-                                                </span>
-                                            )) || (appt.service && (
-                                                <span className="text-[10px] font-black bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl text-secondary dark:text-white shadow-sm group-hover:bg-orange-500 group-hover:text-white group-hover:border-orange-500 transition-all">
-                                                    {appt.service.name}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
+    // Determine which query to use based on device
+    const dayQuery = isMobile ? agendaDayQueryMobile : agendaDayQuery;
+    const weekQuery = agendaWeekQuery;
 
-                                    <div className="ml-auto text-right">
-                                        <span className={`px-6 py-3 rounded-2xl text-[12px] font-black border-2 shadow-lg uppercase tracking-widest ${appt.status === 'PENDENTE' ? 'bg-orange-500 text-white border-orange-600 shadow-orange-500/20' :
-                                            appt.status === 'CONFIRMADO' ? 'bg-blue-600 text-white border-blue-700 shadow-blue-500/20' :
-                                                appt.status === 'EM_ATENDIMENTO' ? 'bg-orange-700 text-white border-orange-800 shadow-orange-700/20' :
-                                                    'bg-green-600 text-white border-green-700 shadow-green-500/20'
-                                            }`}>
-                                            {appt.status}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-        );
-    };
+    // Combine data from both queries
+    const dayData = dayQuery.data || { appointments: [], summary: {} };
+    const weekData: any = weekQuery.data || { days: [], summary: {} };
+    const dashboardData = dashboardQuery || { day: { summary: {} } };
 
-    const renderWeekView = () => {
-        const weekDays = getWeekDays(selectedDate);
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-                {weekDays.map(day => {
-                    const dayAppts = filteredAppointments
-                        .filter(a => isSameDay(new Date(a.startAt), day))
-                        .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    // Define centralized loading state
+    const isLoading = isMobile ? dayQuery.isLoading : (weekQuery.isLoading || dashboardQuery.isLoading);
 
-                    return (
-                        <div key={day.toISOString()} className="flex flex-col gap-4">
-                            <div className={`p-4 rounded-[24px] text-center border-2 transition-all shadow-sm ${isSameDay(day, new Date()) ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20 scale-105' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-secondary dark:text-white'}`}>
-                                <p className={`text-[10px] font-black uppercase tracking-widest ${isSameDay(day, new Date()) ? 'text-white/80' : 'text-gray-400'}`}>
-                                    {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
-                                </p>
-                                <p className="text-2xl font-black">{day.getDate()}</p>
-                            </div>
+    // Calculate combined metrics
+    const summary = useMemo(() => {
+        const daySummary = dayData?.summary || {};
+        const weekSummary = weekData?.summary || {};
+        const dashboardSummary = dashboardQuery.day?.summary || {};
 
-                            <div className="flex-1 space-y-3">
-                                {dayAppts.length === 0 ? (
-                                    <div className="p-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-[24px]">
-                                        <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">Vazio</p>
-                                    </div>
-                                ) : (
-                                    dayAppts.map(appt => {
-                                        const isSelected = selectedIds.includes(appt.id);
-                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                                        const isRecurring = appt.customer?.type === 'RECORRENTE';
+        return {
+            total: (daySummary.total || 0) + (weekSummary.totalAppointments || 0) + (dashboardSummary.total || 0),
+            byStatus: {
+                PENDENTE: (daySummary.byStatus?.PENDENTE || 0),
+                CONFIRMADO: (daySummary.byStatus?.CONFIRMADO || 0),
+                EM_ANDAMENTO: (daySummary.byStatus?.EM_ANDAMENTO || 0),
+                FINALIZADO: (daySummary.byStatus?.FINALIZADO || 0),
+                CANCELADO: (daySummary.byStatus?.CANCELADO || 0),
+            },
+        };
+    }, [dayData, weekData, dashboardQuery]);
 
-                                        return (
-                                            <div
-                                                key={appt.id}
-                                                onClick={() => actions.openDetailsModal(appt)}
-                                                className={`p-4 rounded-[24px] border-2 shadow-sm hover:shadow-xl hover:border-orange-500/20 transition-all cursor-pointer group relative overflow-hidden border-l-[8px] ${isSelected ? 'ring-4 ring-orange-500/20 bg-orange-500/5 border-orange-500/50' : 'bg-white dark:bg-gray-800 border-gray-50 dark:border-gray-700'}`}
-                                                style={!isSelected && appt.performer?.color ? {
-                                                    borderLeftColor: appt.performer.color,
-                                                    backgroundColor: `${appt.performer.color}08`
-                                                } : isCat ? { borderLeftColor: '#F472B6' } : { borderLeftColor: '#60A5FA' }}
-                                            >
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border shadow-sm ${appt.status === 'PENDENTE' ? 'bg-orange-500 text-white' :
-                                                        appt.status === 'CONFIRMADO' ? 'bg-blue-600 text-white' :
-                                                            appt.status === 'EM_ATENDIMENTO' ? 'bg-orange-700 text-white' :
-                                                                'bg-green-600 text-white'
-                                                        }`}>
-                                                        {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                    {(isBulkMode || isSelected) && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); actions.toggleSelect(appt.id); }}
-                                                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-gray-700 border shadow-md ${isSelected ? 'bg-orange-500 text-white border-orange-500' : 'text-gray-300 dark:text-gray-500 border-gray-100 dark:border-gray-600'}`}
-                                                        >
-                                                            <CheckSquare size={16} strokeWidth={3} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm font-black uppercase truncate drop-shadow-sm leading-tight flex items-center gap-2 text-secondary dark:text-white">
-                                                    <div
-                                                        className="w-2 h-2 rounded-full shrink-0"
-                                                        style={{ backgroundColor: appt.performer?.color || (isCat ? '#F472B6' : '#60A5FA') }}
-                                                    ></div>
-                                                    <span className="truncate">
-                                                        {appt.transport?.type === 'LEVA' ? 'LEVA: ' : appt.transport?.type === 'TRAZ' ? 'TRAZ: ' : ''}
-                                                        {isRecurring ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
-                                                    </span>
-                                                </p>
-                                                <p className="text-[10px] opacity-70 font-bold truncate text-gray-500 dark:text-gray-400">{appt.customer.name}</p>
-                                                <p className="text-[9px] font-black text-orange-600 dark:text-orange-400 mt-1 truncate">{appt.transport?.origin.split(',')[0]} → {appt.transport?.destination.split(',')[0]}</p>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
+    // Utility functions
+    const navigateToDay = useCallback((date: Date) => {
+        setSelectedDate(date);
+    }, []);
 
-    if (view === 'COMPACT') {
-        return (
-            <>
-                <MobileCalendarCompactView
-                    appointments={filteredAppointments}
-                    isLoading={isLoading}
-                    selectedDayDate={selectedDayDate}
-                    onSelectDay={actions.setSelectedDayDate}
-                    onAppointmentClick={actions.openDetailsModal}
-                    onCreateNew={() => actions.openCreateModal()}
-                    performers={performers}
-                    selectedPerformerId={selectedPerformerId}
-                    onPerformerChange={actions.setSelectedPerformerId}
-                    tab={tab}
-                    onTabChange={actions.setTab}
-                    isBulkMode={isBulkMode}
-                    onBulkModeToggle={() => actions.setIsBulkMode(!isBulkMode)}
-                    selectedIds={selectedIds}
-                    onBulkDelete={actions.bulkDelete}
-                    onBulkRestore={actions.bulkRestore}
-                />
-                <AgendaDebugPanel module="LOG" vm={{ ...state, filteredCount: filteredAppointments.length }} />
-                <AnimatePresence>
-                    {isFormOpen && (
-                        <AppointmentFormModal
-                            isOpen={isFormOpen}
-                            onClose={actions.closeModals}
-                            onSuccess={actions.refresh}
-                            appointment={selectedAppointment as any}
-                            isCopy={isCopying}
-                            preFill={preFillData}
-                        />
-                    )}
-                </AnimatePresence>
-                <AnimatePresence>
-                    {isDetailsOpen && (
-                        <AppointmentDetailsModal
-                            isOpen={isDetailsOpen}
-                            onClose={actions.closeModals}
-                            onSuccess={actions.refresh}
-                            appointment={selectedAppointment as any}
-                            onModify={actions.openEditModal}
-                            onCopy={actions.openCopyModal}
-                        />
-                    )}
-                </AnimatePresence>
-            </>
-        );
-    }
+    const updateFilters = useCallback((newFilters: Partial<AgendaFilters>) => {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+    }, []);
+
+    // Navigation handlers
+    const handlePrevWeek = useCallback(() => {
+        const prev = new Date(selectedDate);
+        prev.setDate(prev.getDate() - 7);
+        setSelectedDate(prev);
+    }, [selectedDate]);
+
+    const handleNextWeek = useCallback(() => {
+        const next = new Date(selectedDate);
+        next.setDate(next.getDate() + 7);
+        setSelectedDate(next);
+    }, [selectedDate]);
+
+    const handleToday = useCallback(() => {
+        const today = new Date();
+        setSelectedDate(today);
+    }, []);
+
+    // Optimized refresh for mobile
+    const handleRefresh = useCallback(() => {
+        if (isMobile) {
+            dayQuery.refetch();
+        } else {
+            weekQuery.refetch();
+            dashboardQuery.refetch();
+        }
+    }, [isMobile, selectedDate, weekStart, weekEnd, filters]);
+
+    // Register mobile FAB
+    useRegisterMobileAction('new_appointment', () => {
+        openAppointmentModal({
+            startAt: selectedDate.toISOString(),
+            category: 'LOG',
+        });
+    });
 
     return (
-        <>
-            <WebAgendaLayout
-                appointments={filteredAppointments}
-                selectedDate={selectedDate}
-                onSelectedDateChange={actions.setSelectedDate}
-                searchTerm={searchTerm}
-                onSearchChange={actions.setSearchTerm}
-                performers={performers}
-                selectedPerformerId={selectedPerformerId}
-                onPerformerChange={actions.setSelectedPerformerId}
-                view={view}
-                onViewChange={actions.setView}
-                onCreateNew={() => actions.openCreateModal()}
-                tab={tab}
-                onTabChange={actions.setTab}
-                isLoading={isLoading}
-                onRefresh={actions.refresh}
-                onAppointmentClick={actions.openDetailsModal}
-                breadcrumb="7Pet > Agenda LOGÍSTICA"
-            >
-                {view === 'KANBAN' && renderKanbanView()}
-                {view === 'DAY' && renderDayView()}
-                {view === 'WEEK' && renderWeekView()}
-            </WebAgendaLayout>
-
-            <AgendaDebugPanel module="LOG" vm={{ ...state, filteredCount: filteredAppointments.length }} />
-
-            {/* Bulk Actions Bar */}
-            <AnimatePresence>
-                {(selectedIds.length > 0 || isBulkMode) && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary dark:bg-gray-900 text-white px-6 py-4 md:px-8 md:py-5 rounded-[32px] md:rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-10 w-[min(calc(100%-2rem),800px)]"
-                    >
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={actions.selectAll}
-                                className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
-                            >
-                                {selectedIds.length === filteredAppointments.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
-                            </button>
-                            <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                <span className="bg-orange-500 px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-orange-500/20">{selectedIds.length}</span>
-                                itens prontos
-                            </p>
-                        </div>
-                        <div className="h-10 w-px bg-white/10 ml-auto"></div>
-                        <div className="flex items-center gap-6">
-                            <button
-                                onClick={() => actions.setIsBulkMode(false)}
-                                className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
-                            >
-                                Cancelar
-                            </button>
-                            {tab === 'trash' ? (
-                                <>
-                                    <button
-                                        onClick={actions.bulkRestore}
-                                        disabled={selectedIds.length === 0}
-                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                    >
-                                        Restaurar
-                                    </button>
-                                    <button
-                                        onClick={actions.bulkDelete}
-                                        disabled={selectedIds.length === 0}
-                                        className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
-                                    >
-                                        Excluir Permanente
-                                    </button>
-                                </>
-                            ) : (
+        <div className="flex flex-col h-screen bg-gray-50">
+            {isMobile ? (
+                // Mobile Layout (Keep existing implementation for stability)
+                <>
+                    <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+                        <div className="flex items-center justify-between gap-4">
+                            <h1 className="text-2xl font-bold text-gray-900">Agenda LOG</h1>
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="h-6 w-6 text-primary" />
+                                <p className="text-sm text-gray-600">Logística</p>
+                            </div>
+                            <div className="flex items-center gap-4">
                                 <button
-                                    onClick={actions.bulkDelete}
-                                    disabled={selectedIds.length === 0}
-                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                    onClick={handlePrevWeek}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="Semana anterior"
                                 >
-                                    Mover para Lixeira
+                                    <ChevronRight className="h-4 w-4 rotate-180" />
                                 </button>
-                            )}
+                                <button
+                                    onClick={handleToday}
+                                    className="p-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/600 transition-colors"
+                                >
+                                    Hoje
+                                </button>
+                                <button
+                                    onClick={handleNextWeek}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="Próxima semana"
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
-            {/* Modals */}
-            <AnimatePresence>
-                {isFormOpen && (
-                    <AppointmentFormModal
-                        isOpen={isFormOpen}
-                        onClose={actions.closeModals}
-                        onSuccess={actions.refresh}
-                        appointment={selectedAppointment as any}
-                        isCopy={isCopying}
-                        preFill={preFillData}
-                    />
-                )}
-            </AnimatePresence>
+                        <div className="flex items-center gap-4 mt-4">
+                            {statusColumns.map((status) => (
+                                <button
+                                    key={status.key}
+                                    onClick={() => updateFilters({ status: status.key })}
+                                    className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${filters.status === status.key
+                                        ? `${status.color} text-white`
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                >
+                                    {status.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-            <AnimatePresence>
-                {isDetailsOpen && (
-                    <AppointmentDetailsModal
-                        isOpen={isDetailsOpen}
-                        onClose={actions.closeModals}
-                        onSuccess={actions.refresh}
-                        appointment={selectedAppointment as any}
-                        onModify={actions.openEditModal}
-                        onCopy={actions.openCopyModal}
+                    <div className="flex-1 overflow-hidden">
+                        <MobileCalendarCompactView
+                            appointments={(dayData as any).appointments || []}
+                            isLoading={dayQuery.isLoading}
+                            selectedDayDate={selectedDate}
+                            onSelectDay={navigateToDay}
+                            onAppointmentClick={(apt) => {
+                                openDetailsModal(apt.id);
+                            }}
+                            onCreateNew={() => {
+                                openAppointmentModal({
+                                    startAt: selectedDate.toISOString(),
+                                    category: 'LOG',
+                                });
+                            }}
+                            performers={[]}
+                            selectedPerformerId={filters.performerId}
+                            onPerformerChange={(id) => updateFilters({ performerId: id })}
+                            tab="active"
+                            onTabChange={() => { }}
+                            onBulkModeToggle={() => { }}
+                            selectedIds={[]}
+                            onBulkDelete={() => { }}
+                            onBulkRestore={() => { }}
+                        />
+                    </div>
+                </>
+            ) : (
+                // Desktop Layout (Standardized)
+                <div className="flex flex-col h-full overflow-hidden">
+                    <WebAgendaLayout
+                        appointments={weekData?.days ? weekData.days.flatMap((d: any) => d.appointments || []) : (dayData as any).appointments || []}
+                        weekData={weekData}
+                        selectedDate={selectedDate}
+                        onSelectedDateChange={navigateToDay}
+                        searchTerm={filters.search || ''}
+                        onSearchChange={(term) => updateFilters({ search: term })}
+                        performers={[]}
+                        selectedPerformerId={filters.performerId || 'ALL'}
+                        onPerformerChange={(id) => updateFilters({ performerId: id })}
+                        view={isMobile ? 'COMPACT' : view}
+                        onViewChange={setView}
+                        onCreateNew={() => {
+                            window.dispatchEvent(new CustomEvent('openAppointmentModal', {
+                                detail: {
+                                    startAt: selectedDate.toISOString(),
+                                    category: 'LOG',
+                                }
+                            }));
+                        }}
+                        tab="active"
+                        onTabChange={() => { }}
+                        isLoading={isLoading}
+                        onRefresh={handleRefresh}
+                        onAppointmentClick={(apt) => {
+                            window.dispatchEvent(new CustomEvent('openAppointmentModal', {
+                                detail: { id: apt.id }
+                            }));
+                        }}
+                        breadcrumb="7Pet > Agenda Logística"
                     />
-                )}
+
+                    {/* Status Bar for LOG */}
+                    <div className="bg-white border-t border-gray-200 px-4 py-2 shrink-0 z-50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                {statusColumns.map((status) => (
+                                    <button
+                                        key={status.key}
+                                        onClick={() => updateFilters({ status: status.key })}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filters.status === status.key
+                                            ? `${status.color} text-white`
+                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                    >
+                                        {status.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                                {/* Additional Metrics for LOG */}
+                                <div className="flex gap-4 text-xs font-medium text-gray-600 border-r pr-4 border-gray-200">
+                                    <span className="text-orange-600">Pend: {summary.byStatus?.PENDENTE || 0}</span>
+                                    <span className="text-purple-600">And: {summary.byStatus?.EM_ANDAMENTO || 0}</span>
+                                    <span className="text-teal-600">Fim: {summary.byStatus?.FINALIZADO || 0}</span>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <span>{summary.total} agendamentos</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <AnimatePresence>
+                <AppointmentFormModal
+                    isOpen={appointmentModalOpen}
+                    appointment={appointmentData}
+                    isCopy={isCopy}
+                    preFill={preFill}
+                    onClose={closeAppointmentModal}
+                    onSuccess={() => {
+                        handleRefresh();
+                        closeAppointmentModal();
+                    }}
+                />
+                <AppointmentDetailsModal
+                    isOpen={detailsModalOpen}
+                    appointment={{ id: appointmentId }}
+                    onClose={closeDetailsModal}
+                    onSuccess={() => {
+                        handleRefresh();
+                        closeDetailsModal();
+                    }}
+                    onModify={(apt) => openAppointmentModal({ appointment: apt })}
+                    onCopy={(apt) => openAppointmentModal({ appointment: apt, isCopy: true })}
+                />
             </AnimatePresence>
-        </>
+        </div>
     );
 }

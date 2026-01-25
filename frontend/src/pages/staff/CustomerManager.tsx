@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import {
     Search,
     Plus,
@@ -22,37 +22,15 @@ import {
 import { useServices } from '../../context/ServicesContext';
 import { useRegisterMobileAction } from '../../hooks/useMobileActions';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
-import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import toast from 'react-hot-toast';
-import { Button, Input, Card, Badge, IconButton, EmptyState, GlassSurface } from '../../components/ui';
+import { Button, Input, Card, Badge, IconButton, EmptyState } from '../../components/ui';
 import QueryState from '../../components/system/QueryState';
 import VirtualList from '../../components/system/VirtualList';
 import { Container } from '../../components/layout/LayoutHelpers';
+import { useCustomersList } from '../../query/hooks/useCustomers';
+import { queryKeys } from '../../query/keys';
 
-interface Customer {
-    id: string;
-    name: string;
-    phone: string;
-    email?: string;
-    address?: string;
-    type: 'AVULSO' | 'RECORRENTE';
-    legacyBitrixId?: string;
-    internalNotes?: string;
-    recurrenceDiscount?: number;
-    user: {
-        seqId: number;
-        staffId?: number;
-        email: string;
-        staff?: { name: string };
-    };
-    _count: {
-        appointments: number;
-        quotes: number;
-        pets: number;
-    };
-    pets?: Array<{ name: string }>;
-}
 
 type TabType = 'active' | 'trash';
 
@@ -72,17 +50,21 @@ export default function CustomerManager() {
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [tab, setTab] = useState<TabType>('active');
 
-    const { data: customers = [], isLoading, isFetching } = useQuery({
-        queryKey: ['customers', tab],
-        queryFn: () => tab === 'trash' ? customersService.listTrash() : customersService.list(),
-        staleTime: 5 * 60 * 1000,
-    });
+// Use the new React Query hook for customer lists
+    const { data: customersData, isLoading, isFetching } = useCustomersList(
+        tab,
+        {}, // No filters for now
+        { enabled: true }
+    );
+    
+    // Extract customers array from the transformed data
+    const customers = customersData?.customers || [];
 
-    // Explicitly define Customer type for the mutation callback
+// Explicitly define Customer type for the mutation callback
     const bulkDeleteMutation = useMutation({
         mutationFn: (ids: string[]) => customersService.bulkDelete(ids),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.customers.list(tab) });
             setSelectedIds([]);
             setIsBulkMode(false);
             toast.success('Clientes movidos para a lixeira');
@@ -92,7 +74,7 @@ export default function CustomerManager() {
     const permanentDeleteMutation = useMutation({
         mutationFn: (id: string) => customersService.deletePermanent(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.customers.list(tab) });
             toast.success('Cliente excluído permanentemente');
         }
     });
@@ -100,7 +82,7 @@ export default function CustomerManager() {
     const bulkRestoreMutation = useMutation({
         mutationFn: (ids: string[]) => customersService.bulkRestore(ids),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.customers.list(tab) });
             setSelectedIds([]);
             setIsBulkMode(false);
             toast.success('Clientes restaurados com sucesso');
@@ -140,11 +122,12 @@ export default function CustomerManager() {
         bulkRestoreMutation.mutate(selectedIds);
     };
 
-    const filteredCustomers = (customers || []).filter(c =>
+const filteredCustomers = (customers || []).filter(c =>
         c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone?.includes(searchTerm) ||
-        c.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.legacyBitrixId?.toLowerCase().includes(searchTerm.toLowerCase())
+        c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        // Add fallback for legacyBitrixId if available
+        (c as any).legacyBitrixId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -343,13 +326,13 @@ export default function CustomerManager() {
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-black text-secondary uppercase tracking-tighter text-lg">{customer.name}</span>
-                                                    <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest">
-                                                        CL-{String((customer.user.staffId ?? customer.user.seqId) || 1000).padStart(4, '0')}
+<span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                        CL-{String(((customer as any).user?.staffId ?? (customer as any).user?.seqId) || 1000).padStart(4, '0')}
                                                     </span>
                                                 </div>
-                                                {customer.pets && customer.pets.length > 0 && (
+{(customer as any).pets && (customer as any).pets.length > 0 && (
                                                     <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
-                                                        {customer._count.pets} Pet{customer._count.pets > 1 ? 's' : ''}
+                                                        {(customer as any).pets.length} Pet{(customer as any).pets.length > 1 ? 's' : ''}
                                                     </span>
                                                 )}
                                             </div>
@@ -360,8 +343,8 @@ export default function CustomerManager() {
                                                     <Phone size={14} />
                                                     <span className="font-bold">{customer.phone || '-'}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                    <span className="font-medium">{customer.user.email || '-'}</span>
+<div className="flex items-center gap-2 text-xs text-gray-400">
+                                                    <span className="font-medium">{(customer as any).user?.email || '-'}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -375,9 +358,9 @@ export default function CustomerManager() {
                                                         </span>
                                                     ) : 'AVULSO'}
                                                 </span>
-                                                {customer.recurrenceDiscount && customer.recurrenceDiscount > 0 && (
+{(customer as any).recurrenceDiscount && (customer as any).recurrenceDiscount > 0 && (
                                                     <span className="text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                                                        {customer.recurrenceDiscount}% OFF
+                                                        {(customer as any).recurrenceDiscount}% OFF
                                                     </span>
                                                 )}
                                             </div>
@@ -385,12 +368,12 @@ export default function CustomerManager() {
                                         <td className="px-8 py-6 text-center">
                                             <div className="flex flex-col gap-1 items-center">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-xs font-bold text-gray-500">
+<span className="text-xs font-bold text-gray-500">
                                                         <Calendar size={12} className="inline mr-1" />
-                                                        {customer._count.appointments}
+                                                        {(customer as any)._count?.appointments || 0}
                                                     </span>
                                                     <span className="text-xs font-bold text-gray-500">
-                                                        {customer._count.quotes} orç.
+                                                        {(customer as any)._count?.quotes || 0} orç.
                                                     </span>
                                                 </div>
                                             </div>
@@ -429,8 +412,8 @@ export default function CustomerManager() {
                                             </div>
                                             <div>
                                                 <h3 className="font-[var(--font-weight-black)] text-[var(--color-text-primary)] text-base tracking-tight leading-tight group-hover:text-[var(--color-accent-primary)] transition-colors">{customer.name}</h3>
-                                                <p className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest mt-0.5">
-                                                    CL-{String((customer.user.staffId ?? customer.user.seqId) || 1000).padStart(4, '0')}
+<p className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest mt-0.5">
+                                                     CL-{String(((customer as any).user?.staffId ?? (customer as any).user?.seqId) || 1000).padStart(4, '0')}
                                                 </p>
                                             </div>
                                         </div>
@@ -461,10 +444,10 @@ export default function CustomerManager() {
                                                 <span>{customer.phone}</span>
                                             </div>
                                         )}
-                                        {customer.address && (
+{(customer as any).address && (
                                             <div className="flex items-start gap-2.5 text-[var(--font-size-xs)] text-[var(--color-text-tertiary)] font-[var(--font-weight-medium)]">
                                                 <MapPin size={14} className="text-[var(--color-text-tertiary)] opacity-60 mt-0.5 shrink-0" />
-                                                <span className="line-clamp-1">{customer.address}</span>
+                                                <span className="line-clamp-1">{(customer as any).address}</span>
                                             </div>
                                         )}
                                     </div>
@@ -474,12 +457,12 @@ export default function CustomerManager() {
                                             {customer.type === 'RECORRENTE' ? 'VIP' : 'AVULSO'}
                                         </Badge>
                                         <div className="flex items-center gap-4">
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[var(--font-size-xs)] font-[var(--font-weight-bold)] text-[var(--color-text-primary)]">{customer._count.appointments}</span>
+<div className="flex flex-col items-end">
+                                                <span className="text-[var(--font-size-xs)] font-[var(--font-weight-bold)] text-[var(--color-text-primary)]">{(customer as any)._count?.appointments || 0}</span>
                                                 <span className="text-[9px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-tighter">AGENTES</span>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className="text-[var(--font-size-xs)] font-[var(--font-weight-bold)] text-[var(--color-text-primary)]">{customer._count.pets}</span>
+                                                <span className="text-[var(--font-size-xs)] font-[var(--font-weight-bold)] text-[var(--color-text-primary)]">{(customer as any)._count?.pets || 0}</span>
                                                 <span className="text-[9px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-tighter">PETS</span>
                                             </div>
                                         </div>
@@ -564,9 +547,9 @@ export default function CustomerManager() {
                         isOpen={!!selectedCustomerId}
                         onClose={() => setSelectedCustomerId(null)}
                         customerId={selectedCustomerId}
-                        onUpdate={() => {
+onUpdate={() => {
                             setSelectedCustomerId(null);
-                            queryClient.invalidateQueries({ queryKey: ['customers'] });
+                            queryClient.invalidateQueries({ queryKey: queryKeys.customers.list(tab) });
                         }}
                     />
                 )}

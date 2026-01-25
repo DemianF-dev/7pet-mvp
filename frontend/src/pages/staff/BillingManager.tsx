@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import VirtualList from '../../components/system/VirtualList';
 import {
     Search,
-    CheckCircle,
     FileText,
     DollarSign,
     MoreVertical,
@@ -10,15 +10,13 @@ import {
     Filter,
     RefreshCw,
     ArrowUpDown,
-    AlertCircle,
-    Copy,
     Trash2
 } from 'lucide-react';
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
-import PaymentReceiptModal from '../../components/PaymentReceiptModal';
+
 import InvoiceDetailsModal from '../../components/staff/InvoiceDetailsModal';
 
 interface Invoice {
@@ -143,7 +141,7 @@ export default function BillingManager() {
         try {
             await api.delete(`/invoices/${invoiceId}`);
             await fetchInvoices();
-            setSelectedInvoice(null);
+            setSelectedInvoiceId(null);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Erro ao excluir fatura');
         }
@@ -191,29 +189,33 @@ export default function BillingManager() {
         }));
     };
 
-    const filteredInvoices = Array.isArray(invoices) ? invoices.filter(i => {
-        const matchesSearch = i.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            i.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredInvoices = useMemo(() => {
+        if (!Array.isArray(invoices)) return [];
+        
+        return invoices.filter(i => {
+            const matchesSearch = i.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                i.id.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesStatus = statusFilter === 'ALL' || i.status === statusFilter;
+            const matchesStatus = statusFilter === 'ALL' || i.status === statusFilter;
 
-        const invoiceDate = i.dueDate.substring(0, 7); // YYYY-MM
-        const matchesDate = !monthFilter || invoiceDate === monthFilter;
+            const invoiceDate = i.dueDate.substring(0, 7); // YYYY-MM
+            const matchesDate = !monthFilter || invoiceDate === monthFilter;
 
-        return matchesSearch && matchesStatus && matchesDate;
-    }).sort((a, b) => {
-        const aValue = sortConfig.key === 'amount' ? a.amount :
-            sortConfig.key === 'paid' ? (Array.isArray(a.paymentRecords) ? a.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0) :
-                sortConfig.key === 'dueDate' ? new Date(a.dueDate).getTime() :
-                    0;
+            return matchesSearch && matchesStatus && matchesDate;
+        }).sort((a, b) => {
+            const aValue = sortConfig.key === 'amount' ? a.amount :
+                sortConfig.key === 'paid' ? (Array.isArray(a.paymentRecords) ? a.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0) :
+                    sortConfig.key === 'dueDate' ? new Date(a.dueDate).getTime() :
+                        0;
 
-        const bValue = sortConfig.key === 'amount' ? b.amount :
-            sortConfig.key === 'paid' ? (Array.isArray(b.paymentRecords) ? b.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0) :
-                sortConfig.key === 'dueDate' ? new Date(b.dueDate).getTime() :
-                    0;
+            const bValue = sortConfig.key === 'amount' ? b.amount :
+                sortConfig.key === 'paid' ? (Array.isArray(b.paymentRecords) ? b.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0) :
+                    sortConfig.key === 'dueDate' ? new Date(b.dueDate).getTime() :
+                        0;
 
-        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-    }) : [];
+            return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        });
+    }, [invoices, searchTerm, statusFilter, monthFilter, sortConfig]);
 
     const totalAmount = filteredInvoices.reduce((acc, i) => acc + i.amount, 0);
     const totalReceived = filteredInvoices.reduce((acc, i) => acc + (Array.isArray(i.paymentRecords) ? i.paymentRecords.reduce((pAcc, p) => pAcc + p.amount, 0) : 0), 0);
@@ -231,6 +233,92 @@ export default function BillingManager() {
             case 'FATURAR': return 'bg-orange-100 text-orange-700 font-black ring-1 ring-orange-200';
             default: return 'bg-gray-100 text-gray-700';
         }
+    };
+
+    // Component for virtualized invoice row
+    const InvoiceRow = ({ invoice }: { invoice: Invoice }) => {
+        const paid = Array.isArray(invoice.paymentRecords) ? invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
+        const isSelected = selectedIds.includes(invoice.id);
+        
+        return (
+            <div
+                className={`hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 ${isSelected ? 'bg-primary/[0.02]' : ''}`}
+                onClick={() => setSelectedInvoiceId(invoice.id)}
+            >
+                <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center">
+                    {/* Checkbox */}
+                    <div className="col-span-1" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => toggleSelect(e as any, invoice.id)}
+                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                    </div>
+                    
+                    {/* Customer / Quote Info */}
+                    <div className="col-span-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                <FileText size={20} />
+                            </div>
+                            <div>
+                                <p className="font-black text-secondary uppercase text-[13px]">{invoice.customer.name}</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-[10px] font-bold text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
+                                    {invoice.quote?.seqId && (
+                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                            OR-{String(invoice.quote.seqId).padStart(4, '0')}
+                                        </span>
+                                    )}
+                                    {invoice.appointment?.seqId && (
+                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                            AG-{String(invoice.appointment.seqId).padStart(4, '0')}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Due Date */}
+                    <div className="col-span-2">
+                        <p className={`text-xs font-bold ${new Date(invoice.dueDate) < new Date() && invoice.status !== 'PAGO' ? 'text-red-500' : 'text-gray-500'}`}>
+                            {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
+                        </p>
+                    </div>
+                    
+                    {/* Amount */}
+                    <div className="col-span-2 font-black text-secondary">
+                        R$ {invoice.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                    
+                    {/* Paid */}
+                    <div className="col-span-2 font-bold text-green-600">
+                        R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                    
+                    {/* Status */}
+                    <div className="col-span-2">
+                        <div className="flex items-center justify-between">
+                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${getStatusColor(invoice.status)}`}>
+                                {invoice.status === 'PAGO' ? 'RECEBIDO' : invoice.status === 'VENCIDO' ? 'ATRASADO' : invoice.status}
+                            </span>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedInvoiceId(invoice.id);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Ver Detalhes"
+                            >
+                                <MoreVertical size={16} className="text-gray-400" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
 
@@ -345,134 +433,73 @@ export default function BillingManager() {
                     )}
                 </AnimatePresence>
 
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                        <tr>
-                            <th className="px-6 py-4 w-12">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedIds.length === filteredInvoices.length && filteredInvoices.length > 0}
-                                    onChange={handleSelectAll}
-                                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                            </th>
-                            <th className="px-6 py-4">Cliente / Orçamento</th>
-                            <th
-                                className="px-6 py-4 cursor-pointer hover:text-primary transition-colors select-none"
-                                onClick={() => handleSort('dueDate')}
-                            >
-                                <div className="flex items-center gap-1 text-gray-400">Vencimento <ArrowUpDown size={14} /></div>
-                            </th>
-                            <th
-                                className="px-6 py-4 cursor-pointer hover:text-primary transition-colors select-none"
-                                onClick={() => handleSort('amount')}
-                            >
-                                <div className="flex items-center gap-1 text-gray-400">Valor Total <ArrowUpDown size={14} /></div>
-                            </th>
-                            <th
-                                className="px-6 py-4 cursor-pointer hover:text-primary transition-colors select-none"
-                                onClick={() => handleSort('paid')}
-                            >
-                                <div className="flex items-center gap-1 text-gray-400">Recebido <ArrowUpDown size={14} /></div>
-                            </th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {isLoading ? (
-                            <tr>
-                                <td colSpan={7} className="px-6 py-20 text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                                </td>
-                            </tr>
-                        ) : filteredInvoices.map(invoice => {
-                            const paid = Array.isArray(invoice.paymentRecords) ? invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
-                            const isSelected = selectedIds.includes(invoice.id);
-                            return (
-                                <tr
-                                    key={invoice.id}
-                                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-primary/[0.02]' : ''}`}
-                                    onClick={() => setSelectedInvoiceId(invoice.id)}
-                                >
-                                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={(e) => toggleSelect(e as any, invoice.id)}
-                                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                                        />
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                                <FileText size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="font-black text-secondary uppercase text-[13px]">{invoice.customer.name}</p>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-[10px] font-bold text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
-                                                    {invoice.quote?.seqId && (
-                                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
-                                                            OR-{String(invoice.quote.seqId).padStart(4, '0')}
-                                                        </span>
-                                                    )}
-                                                    {invoice.appointment?.seqId && (
-                                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
-                                                            AG-{String(invoice.appointment.seqId).padStart(4, '0')}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className={`text-xs font-bold ${new Date(invoice.dueDate) < new Date() && invoice.status !== 'PAGO' ? 'text-red-500' : 'text-gray-500'}`}>
-                                            {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
-                                        </p>
-                                    </td>
-                                    <td className="px-6 py-4 font-black text-secondary">
-                                        R$ {invoice.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-green-600">
-                                        R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${getStatusColor(invoice.status)}`}>
-                                            {invoice.status === 'PAGO' ? 'RECEBIDO' : invoice.status === 'VENCIDO' ? 'ATRASADO' : invoice.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedInvoiceId(invoice.id);
-                                                }}
-                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                                title="Ver Detalhes"
-                                            >
-                                                <MoreVertical size={16} className="text-gray-400" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )
-                        })}
-                    </tbody>
-                    <tfoot className="bg-gray-50 border-t border-gray-100">
-                        <tr>
-                            <td colSpan={3} className="px-6 py-6 text-right font-black text-gray-400 uppercase text-[10px] tracking-widest">Totais na Tela:</td>
-                            <td className="px-6 py-6 font-black text-secondary text-base">
-                                R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </td>
-                            <td className="px-6 py-6 font-black text-green-600 text-base">
-                                R$ {totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </td>
-                            <td colSpan={2}></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                {/* Header with controls */}
+                <div className="bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                    <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center border-b border-gray-100">
+                        {/* Checkbox */}
+                        <div className="col-span-1">
+                            <input
+                                type="checkbox"
+                                checked={selectedIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                                onChange={handleSelectAll}
+                                className="rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                        </div>
+                        
+                        {/* Headers */}
+                        <div className="col-span-4">Cliente / Orçamento</div>
+                        <div 
+                            className="col-span-2 cursor-pointer hover:text-primary transition-colors select-none"
+                            onClick={() => handleSort('dueDate')}
+                        >
+                            <div className="flex items-center gap-1">Vencimento <ArrowUpDown size={14} /></div>
+                        </div>
+                        <div 
+                            className="col-span-2 cursor-pointer hover:text-primary transition-colors select-none"
+                            onClick={() => handleSort('amount')}
+                        >
+                            <div className="flex items-center gap-1">Valor Total <ArrowUpDown size={14} /></div>
+                        </div>
+                        <div 
+                            className="col-span-2 cursor-pointer hover:text-primary transition-colors select-none"
+                            onClick={() => handleSort('paid')}
+                        >
+                            <div className="flex items-center gap-1">Recebido <ArrowUpDown size={14} /></div>
+                        </div>
+                        <div className="col-span-2">Status / Ações</div>
+                    </div>
+                </div>
+
+                {/* Virtualized List */}
+                <div className="relative">
+                    {isLoading ? (
+                        <div className="px-6 py-20 text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                        </div>
+                    ) : (
+                        <VirtualList
+                            items={filteredInvoices}
+                            estimateSize={100}
+                            renderItem={(invoice) => <InvoiceRow invoice={invoice} />}
+                        />
+                    )}
+                </div>
+
+                {/* Footer with totals */}
+                <div className="bg-gray-50 border-t border-gray-100">
+                    <div className="grid grid-cols-12 gap-4 px-6 py-6 items-center">
+                        <div className="col-span-6 text-right font-black text-gray-400 uppercase text-[10px] tracking-widest">
+                            Totais na Tela:
+                        </div>
+                        <div className="col-span-2 font-black text-secondary text-base">
+                            R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="col-span-2 font-black text-green-600 text-base">
+                            R$ {totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="col-span-2"></div>
+                    </div>
+                </div>
             </div>
 
             {/* Detail Modal */}

@@ -57,6 +57,10 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<string, string[]> = {
         'agenda-spa', 'chat', 'feed', 'support', 'notifications',
         'profile', 'my-hr', 'settings'
     ],
+    'LOGISTICA': [
+        'dashboard', 'agenda-log', 'transport', 'kanban', 'chat', 'feed',
+        'support', 'notifications', 'profile', 'my-hr', 'settings', 'pos'
+    ],
     'CLIENTE': [
         'client-dashboard', 'client-pets', 'client-chat', 'client-schedule',
         'client-appointments', 'client-quote-request', 'client-quotes', 'client-payments',

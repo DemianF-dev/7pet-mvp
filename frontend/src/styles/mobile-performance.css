@@ -1,0 +1,295 @@
+/* =========================================
+   MOBILE PERFORMANCE CSS OPTIMIZATIONS
+   Adaptive quality based on device capabilities
+   ========================================= */
+
+/* Performance Mode Classes */
+.quality-low .glass-surface {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.quality-balanced .glass-surface {
+  backdrop-filter: blur(8px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(150%) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+.quality-low .glass-elevated {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+.quality-balanced .glass-elevated {
+  backdrop-filter: blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Heavy shadow reduction */
+.quality-low .shadow-2xl,
+.quality-low .shadow-xl {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.quality-balanced .shadow-2xl,
+.quality-balanced .shadow-xl {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.quality-low .shadow-lg {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Filter optimizations */
+.quality-low [class*="backdrop-filter"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.quality-balanced [class*="backdrop-filter"] {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Disable animations in low quality */
+.quality-low * {
+  animation-duration: 0.1s !important;
+  transition-duration: 0.1s !important;
+}
+
+.quality-balanced * {
+  animation-duration: 0.2s !important;
+  transition-duration: 0.2s !important;
+}
+
+.quality-low .animate-pulse,
+.quality-low .animate-bounce,
+.quality-low .animate-spin {
+  animation: none !important;
+}
+
+.quality-balanced .animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.quality-low .motion-safe {
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+/* Blur effects reduction */
+.quality-low .blur-sm,
+.quality-low .blur-md,
+.quality-low .blur-lg,
+.quality-low .blur-xl,
+.quality-low .blur-2xl,
+.quality-low .blur-3xl {
+  filter: none !important;
+}
+
+.quality-balanced .blur-xl,
+.quality-balanced .blur-2xl,
+.quality-balanced .blur-3xl {
+  filter: blur(8px) !important;
+}
+
+/* Gradient simplification */
+.quality-low [class*="bg-gradient"] {
+  background-image: none !important;
+  background-color: var(--color-bg-surface) !important;
+}
+
+.quality-balanced [class*="bg-gradient"] {
+  background-size: 200% 200% !important;
+}
+
+/* Performance optimizations for large lists */
+.quality-low .virtual-list-item {
+  contain: layout style paint !important;
+  will-change: transform !important;
+}
+
+.quality-balanced .virtual-list-item {
+  contain: layout style !important;
+}
+
+/* Reduce visual complexity on mobile */
+@media (max-width: 768px) {
+  .quality-low .glass-surface,
+  .quality-balanced .glass-surface {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  .quality-low [class*="shadow"],
+  .quality-balanced [class*="shadow"] {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+/* High contrast for low quality mode */
+.quality-low {
+  --color-border: rgba(0, 0, 0, 0.15) !important;
+  --color-bg-surface: rgba(255, 255, 255, 0.98) !important;
+  --color-bg-secondary: rgba(248, 248, 248, 0.98) !important;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .quality-low *,
+  .quality-balanced * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Battery optimization */
+.quality-low .battery-heavy {
+  display: none !important;
+}
+
+.quality-balanced .battery-heavy {
+  opacity: 0.8 !important;
+}
+
+/* Network-aware loading */
+.quality-low .network-heavy {
+  display: none !important;
+}
+
+.quality-balanced .network-heavy {
+  opacity: 0.7 !important;
+}
+
+/* Touch optimization */
+.quality-low [class*="hover"] {
+  transition: none !important;
+}
+
+.quality-balanced [class*="hover"] {
+  transition: transform 0.15s ease !important;
+}
+
+/* CPU-intensive effects */
+.quality-low .cpu-heavy {
+  display: none !important;
+}
+
+.quality-balanced .cpu-heavy {
+  transform: scale(0.95) !important;
+  opacity: 0.8 !important;
+}
+
+/* Memory optimization */
+.quality-low .memory-heavy {
+  display: none !important;
+}
+
+.quality-balanced .memory-heavy {
+  opacity: 0.7 !important;
+}
+
+/* GPU acceleration hints */
+.quality-low .gpu-accelerated {
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+.quality-balanced .gpu-accelerated {
+  transform: translateZ(0) !important;
+  will-change: transform, opacity !important;
+}
+
+/* Component-specific optimizations */
+
+/* Dashboard cards */
+.quality-low .dashboard-card {
+  backdrop-filter: none !important;
+  background: white !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.quality-balanced .dashboard-card {
+  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Lists and tables */
+.quality-low table,
+.quality-low .table {
+  box-shadow: none !important;
+  background: white !important;
+}
+
+.quality-balanced table,
+.quality-balanced .table {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Modals */
+.quality-low .modal,
+.quality-low [class*="modal"],
+.quality-low [role="dialog"] {
+  backdrop-filter: none !important;
+  background: white !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.quality-balanced .modal,
+.quality-balanced [class*="modal"],
+.quality-balanced [role="dialog"] {
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Navigation */
+.quality-low .nav-item {
+  transition: none !important;
+}
+
+.quality-balanced .nav-item {
+  transition: all 0.15s ease !important;
+}
+
+/* Performance indicators */
+.quality-low .perf-indicator {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+.quality-balanced .perf-indicator {
+  background: #f59e0b !important;
+  color: white !important;
+}
+
+.quality-high .perf-indicator {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+/* Responsive performance scaling */
+@media (max-width: 480px) {
+  .quality-high .glass-surface {
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+  
+  .quality-high .shadow-2xl,
+  .quality-high .shadow-xl {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .quality-low [class*="animate"],
+  .quality-balanced [class*="animate"] {
+    animation-duration: 0.1s !important;
+  }
+}

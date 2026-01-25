@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Search, PlusCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import type { User } from '../../types/user';
+import type { User } from '../../types';
 
 import ConversationList from '../../components/chat/ConversationList';
 import ChatWindow from '../../components/chat/ChatWindow';

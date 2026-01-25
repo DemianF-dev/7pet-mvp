@@ -11,9 +11,9 @@ try {
     validateEnvironment();
 } catch (error) {
     logger.error('Startup Warning: Environment validation failed!');
-    if (process.env.NODE_ENV === 'production') {
-        process.exit(1); // 🚫 Stop in production if critical envs are missing
-    }
+    // We do NOT exit here anymore so that the API can still start
+    // and return proper JSON errors with CORS headers instead of crashing hard.
+    console.error('Environment validation failed - check logs');
 }
 
 import express from 'express';

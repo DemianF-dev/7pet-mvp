@@ -50,7 +50,7 @@ const routeImportMap: Record<RouteKey, () => Promise<any>> = {
     'billing': () => import('../pages/staff/BillingManager'),
     'management': () => import('../pages/staff/ManagementDashboard'),
     'reports': () => import('../pages/staff/FinancialReports'),
-    'users': () => import('../pages/staff/UserManager'),
+    'users': () => import('../pages/staff/users'),
     'transport': () => import('../pages/staff/TransportManager'),
     'kanban': () => import('../pages/staff/ServiceKanban'),
     'chat': () => import('../pages/staff/ChatPage'),

@@ -31,7 +31,6 @@ model Appointment {
   dropoffProviderId       String?
   pickupProviderId        String?
   posOrderId              String?                 @unique
-  appointmentInvoiceLink  AppointmentInvoiceLink?
   customer                Customer                @relation(fields: [customerId], references: [id])
   dropoffProvider         User?                   @relation("Appointment_dropoffProvider", fields: [dropoffProviderId], references: [id])
   performer               User?                   @relation(fields: [performerId], references: [id])
@@ -40,6 +39,7 @@ model Appointment {
   posOrder                Order?                  @relation(fields: [posOrderId], references: [id])
   quote                   Quote?                  @relation(fields: [quoteId], references: [id])
   recurringPackage        RecurringPackage?       @relation(fields: [recurringPackageId], references: [id])
+  appointmentInvoiceLink  AppointmentInvoiceLink?
   debitCreditNotes        DebitCreditNote[]
   invoice                 Invoice?
   serviceExecutions       ServiceExecution[]
@@ -71,8 +71,8 @@ model RecurrenceContract {
   notes                  String?
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
-  customer               Customer         @relation(fields: [customerId], references: [id])
   invoices               PackageInvoice[]
+  customer               Customer         @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([status])
@@ -94,10 +94,10 @@ model PackageInvoice {
   createdBy     String?
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
-  customer      Customer                 @relation(fields: [customerId], references: [id])
-  contract      RecurrenceContract?      @relation(fields: [contractId], references: [id])
-  lines         PackageInvoiceLine[]
   links         AppointmentInvoiceLink[]
+  contract      RecurrenceContract?      @relation(fields: [contractId], references: [id])
+  customer      Customer                 @relation(fields: [customerId], references: [id])
+  lines         PackageInvoiceLine[]
 
   @@index([customerId, periodYear, periodMonth])
   @@index([status])
@@ -320,11 +320,11 @@ model Customer {
   financialTransactions     FinancialTransaction[]
   invoices                  Invoice[]
   posOrders                 Order[]
+  packageInvoices           PackageInvoice[]
   pets                      Pet[]
   quotes                    Quote[]
-  recurringPackages         RecurringPackage[]
   recurrenceContracts       RecurrenceContract[]
-  packageInvoices           PackageInvoice[]
+  recurringPackages         RecurringPackage[]
 
   @@index([deletedAt])
   @@index([legacyBitrixId])
@@ -449,11 +449,11 @@ model Invoice {
   amount                Float
   status                InvoiceStatus          @default(PENDENTE)
   dueDate               DateTime
-  notes                 String?
-  billingPeriod         String? // e.g., 'INICIO_PACOTE', 'FIM_PACOTE'
   createdAt             DateTime               @default(now())
   updatedAt             DateTime
   deletedAt             DateTime?
+  billingPeriod         String?
+  notes                 String?
   financialTransactions FinancialTransaction[]
   appointment           Appointment?           @relation(fields: [appointmentId], references: [id])
   customer              Customer               @relation(fields: [customerId], references: [id])
@@ -1083,9 +1083,9 @@ model RouteCache {
   stopAddress        String?
   distanceKm         Float
   durationMin        Int
-  handlingTime       Float?   @default(0)
   cachedAt           DateTime @default(now())
   expiresAt          DateTime
+  handlingTime       Float?   @default(0)
 
   @@index([routeKey])
 }
@@ -1144,6 +1144,7 @@ model User {
   isSupportAgent          Boolean                      @default(false)
   allowedGames            Json?                        @default("[]")
   pauseMenuEnabled        Boolean                      @default(false)
+  lastSeenAt              DateTime?
   dropoffAppointments     Appointment[]                @relation("Appointment_dropoffProvider")
   appointments            Appointment[]
   pickupAppointments      Appointment[]                @relation("Appointment_pickupProvider")
@@ -1293,6 +1294,19 @@ model FiscalDocument {
   @@index([status])
 }
 
+model ServicePriceConfig {
+  id          String                @id @default(uuid())
+  service     String                @unique
+  basePrice   Float
+  category    ServiceConfigCategory @default(GENERAL_SERVICE)
+  description String?
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([category, isActive])
+}
+
 enum AppointmentCategory {
   SPA
   LOGISTICA
@@ -1421,19 +1435,6 @@ enum PackageStatus {
   PAUSADO
   CANCELADO
   ENCERRADO
-}
-
-model ServicePriceConfig {
-  id          String                @id @default(uuid())
-  service     String                @unique
-  basePrice   Float
-  category    ServiceConfigCategory @default(GENERAL_SERVICE)
-  description String?
-  isActive    Boolean               @default(true)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-
-  @@index([category, isActive])
 }
 
 enum ServiceConfigCategory {

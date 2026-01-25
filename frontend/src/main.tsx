@@ -1,15 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { QueryClient } from '@tanstack/react-query'
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { queryClient } from './lib/queryClient'
-import { GoogleOAuthProvider } from '@react-oauth/google'
-import ErrorBoundary from './components/ErrorBoundary'
-import { initChunkRecovery } from './utils/chunkRecovery'
-import { installGlobalErrorHandlers } from './utils/globalErrorHandlers'
-import App from './App.tsx'
+import { QueryClientProvider } from '@tanstack/react-query'
+
 // Theme System - Base tokens + all themes
 import './styles/tokens.base.css'
 import './styles/apple-tokens.css'  // Apple HIG tokens
@@ -25,15 +19,19 @@ import './styles/design-system-base.css'   // Design system reusable classes
 import './styles/sidebar-collapsible.css'   // Collapsible sidebar support
 import './styles/sidebar.glass.css'
 import './styles/mobile-fixes.css'          // Mobile-specific fixes (iOS/Android)
+import './styles/mobile-performance.css'   // Mobile performance optimizations
 import './index.css'
-import './index.css'
+
+import { initChunkRecovery } from './utils/chunkRecovery';
+import { installGlobalErrorHandlers } from './utils/globalErrorHandlers';
+import { initializePerformance } from './store/uiPerfStore';
+import ErrorBoundary from './components/ErrorBoundary';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import App from './App';
+
 // import { SocketProvider } from './context/SocketContext' // Removed in favor of SocketManager singleton
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
-const persister = createSyncStoragePersister({
-    storage: window.localStorage,
-})
 
 // 🛡️ Initialize chunk error recovery system BEFORE rendering
 initChunkRecovery();
@@ -41,18 +39,18 @@ initChunkRecovery();
 // 🛡️ Install global error handlers
 installGlobalErrorHandlers();
 
+// 🚀 Initialize performance monitoring
+initializePerformance().catch(console.error);
+
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <ErrorBoundary>
             <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                <PersistQueryClientProvider
-                    client={queryClient}
-                    persistOptions={{ persister }}
-                >
+                <QueryClientProvider client={queryClient}>
                     <BrowserRouter>
                         <App />
                     </BrowserRouter>
-                </PersistQueryClientProvider>
+                </QueryClientProvider>
             </GoogleOAuthProvider>
         </ErrorBoundary>
     </StrictMode>,

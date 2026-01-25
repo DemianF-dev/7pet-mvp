@@ -2,6 +2,7 @@
 import React from 'react';
 import WebAgendaToolbar from './WebAgendaToolbar';
 import WebMonthGrid from './WebMonthGrid';
+import WebWeekGrid from './WebWeekGrid';
 import { Container } from '../../layout/LayoutHelpers';
 
 interface Appointment {
@@ -14,11 +15,12 @@ interface Appointment {
     service?: { name: string };
     performer?: { color?: string };
     quote?: { appointments?: { category: string }[] };
-    [key: string]: any;
+    [key: string]: any; // fallback
 }
 
 interface WebAgendaLayoutProps {
     appointments: Appointment[];
+    weekData?: any; // Added to support week view
     selectedDate: Date;
     onSelectedDateChange: (date: Date) => void;
     searchTerm: string;
@@ -27,7 +29,7 @@ interface WebAgendaLayoutProps {
     selectedPerformerId: string;
     onPerformerChange: (id: string) => void;
     view: 'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT';
-    onViewChange: (view: any) => void; // Using any to avoid strict type conflicts with parent
+    onViewChange: (view: any) => void;
     onCreateNew: () => void;
     tab: 'active' | 'trash';
     onTabChange: (tab: 'active' | 'trash') => void;
@@ -35,11 +37,12 @@ interface WebAgendaLayoutProps {
     onRefresh: () => void;
     onAppointmentClick: (appt: Appointment) => void;
     breadcrumb?: string;
-    children?: React.ReactNode; // For other views if needed
+    children?: React.ReactNode;
 }
 
 export default function WebAgendaLayout({
     appointments,
+    weekData,
     selectedDate,
     onSelectedDateChange,
     searchTerm,
@@ -81,7 +84,7 @@ export default function WebAgendaLayout({
     };
 
     return (
-        <div className="flex flex-col h-screen max-h-screen bg-white dark:bg-gray-950 overflow-hidden">
+        <div className="flex flex-col h-full bg-white dark:bg-gray-950 overflow-hidden">
             <WebAgendaToolbar
                 selectedDate={selectedDate}
                 onNextDate={handleNextDate}
@@ -119,6 +122,17 @@ export default function WebAgendaLayout({
                         }}
                         onAppointmentClick={onAppointmentClick}
                     />
+                ) : view === 'WEEK' ? (
+                    <Container fluid className="py-6 h-full">
+                        <WebWeekGrid
+                            days={weekData?.days || []}
+                            onAppointmentClick={onAppointmentClick}
+                            onDateClick={(date) => {
+                                onSelectedDateChange(date);
+                                onViewChange('DAY');
+                            }}
+                        />
+                    </Container>
                 ) : (
                     <Container fluid className="py-6 h-full">
                         {children}

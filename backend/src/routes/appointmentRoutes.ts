@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import * as appointmentController from '../controllers/appointmentController';
-import { authenticate } from '../middlewares/authMiddleware';
+import { authenticate, authorize } from '../middlewares/authMiddleware';
 
 const router = Router();
 
+// Anyone with basic staff access can view appointments
 router.use(authenticate);
 
 // Specific paths first
@@ -13,6 +14,11 @@ router.post('/', appointmentController.create);
 router.post('/bulk-delete', appointmentController.bulkDelete);
 router.post('/bulk-restore', appointmentController.bulkRestore);
 router.post('/bulk-permanent', appointmentController.bulkPermanentRemove);
+
+// New Agenda Routes
+router.get('/week', appointmentController.getWeek);
+router.get('/conflicts', appointmentController.getConflicts);
+router.get('/search', appointmentController.search);
 
 
 // ID paths

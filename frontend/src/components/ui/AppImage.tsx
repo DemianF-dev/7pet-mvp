@@ -100,7 +100,7 @@ export default function AppImage({
                 alt={alt}
                 loading={priority ? 'eager' : 'lazy'}
                 decoding="async"
-                fetchpriority={priority ? 'high' : 'low'}
+                fetchPriority={priority ? 'high' : 'low'}
                 onLoad={handleLoad}
                 onError={handleError}
                 style={imageStyle}

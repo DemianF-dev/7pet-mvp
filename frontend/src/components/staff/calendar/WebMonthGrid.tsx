@@ -66,7 +66,7 @@ export default function WebMonthGrid({
     };
 
     return (
-        <div className="bg-white dark:bg-gray-900 rounded-none shadow-sm flex flex-col h-full overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-none shadow-sm flex flex-col min-h-full">
             {/* Week Headers */}
             <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                 {weekHeaders.map((day, i) => (

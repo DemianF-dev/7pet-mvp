@@ -15,9 +15,17 @@ const ProtectedRoute = ({ allowedRoles, redirectTo = '/login' }: ProtectedRouteP
     }
 
     const userRole = (user.role || '').toUpperCase().trim();
+    const userDivision = (user.division || '').toUpperCase().trim();
+    
     if (allowedRoles && !allowedRoles.includes(userRole)) {
         // Redirect to their respective dashboard if they try to access a route they don't have permission for
         const homePath = userRole === 'CLIENTE' ? '/client/dashboard' : '/staff/dashboard';
+        return <Navigate to={homePath} replace />;
+    }
+
+    // Additional check for division-specific routes (like LOGISTICA)
+    if (allowedRoles && !allowedRoles.includes(userRole) && !allowedRoles.includes(userDivision)) {
+        const homePath = userDivision === 'CLIENTE' ? '/client/dashboard' : '/staff/dashboard';
         return <Navigate to={homePath} replace />;
     }
 

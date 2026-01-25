@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check, User } from 'lucide-react';
 import api from '../services/api';
+import VirtualList from './system/VirtualList';
 
 interface Customer {
     id: string;
@@ -28,6 +29,31 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     const [loading, setLoading] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+
+    // Customer item component for virtual list
+    const CustomerItem = ({ customer }: { customer: Customer }) => (
+        <div
+            onClick={() => {
+                onSelect(customer.id);
+                setSelectedCustomer(customer);
+                setIsOpen(false);
+                setSearchTerm("");
+            }}
+            className={`px-4 py-3 hover:bg-primary/5 cursor-pointer flex items-center justify-between group transition-colors border-b border-gray-100 ${value === customer.id ? 'bg-primary/5' : ''}`}
+        >
+            <div className="flex flex-col">
+                <span className={`text-sm font-bold ${value === customer.id ? 'text-primary' : 'text-secondary'}`}>
+                    {customer.name}
+                </span>
+                {(customer.phone || customer.email) && (
+                    <span className="text-[10px] text-gray-400 truncate max-w-[200px]">
+                        {customer.phone || customer.email}
+                    </span>
+                )}
+            </div>
+            {value === customer.id && <Check size={16} className="text-primary" />}
+        </div>
+    );
 
     // Initial fetch of selected customer if value provided
     useEffect(() => {
@@ -122,33 +148,14 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
                                 Buscando...
                             </div>
                         ) : customers.length > 0 ? (
-                            customers.map(c => (
-                                <div
-                                    key={c.id}
-                                    onClick={() => {
-                                        onSelect(c.id);
-                                        setSelectedCustomer(c);
-                                        setIsOpen(false);
-                                        setSearchTerm("");
-                                    }}
-                                    className={`px-4 py-3 hover:bg-primary/5 cursor-pointer flex items-center justify-between group transition-colors ${value === c.id ? 'bg-primary/5' : ''}`}
-                                >
-                                    <div className="flex flex-col">
-                                        <span className={`text-sm font-bold ${value === c.id ? 'text-primary' : 'text-secondary'}`}>
-                                            {c.name}
-                                        </span>
-                                        {(c.phone || c.email) && (
-                                            <span className="text-[10px] text-gray-400 truncate max-w-[200px]">
-                                                {c.phone || c.email}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {value === c.id && <Check size={16} className="text-primary" />}
-                                </div>
-                            ))
+                            <VirtualList
+                                items={customers}
+                                estimateSize={56}
+                                renderItem={(customer) => <CustomerItem customer={customer} />}
+                            />
                         ) : (
                             <div className="px-4 py-8 text-center text-gray-400 text-sm">
-                                Nenhum cliente encontrado
+                                {searchTerm ? "Nenhum cliente encontrado" : "Nenhum cliente disponível"}
                             </div>
                         )}
                     </div>
