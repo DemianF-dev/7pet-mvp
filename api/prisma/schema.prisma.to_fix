@@ -1,0 +1,1201 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Appointment {
+  id                      String                  @id
+  customerId              String
+  petId                   String
+  startAt                 DateTime
+  status                  AppointmentStatus       @default(PENDENTE)
+  cancellationReason      String?
+  noShowReason            String?
+  deletedAt               DateTime?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime
+  notified24h             Boolean                 @default(false)
+  notified1h              Boolean                 @default(false)
+  category                AppointmentCategory     @default(SPA)
+  seqId                   Int                     @unique @default(autoincrement())
+  performerId             String?
+  quoteId                 String?
+  logisticsStatus         String?
+  logisticsLastRemindedAt DateTime?               @db.Timestamp(6)
+  recurringPackageId      String?
+  customer                Customer                @relation(fields: [customerId], references: [id])
+  performer               User?                   @relation(fields: [performerId], references: [id])
+  pet                     Pet                     @relation(fields: [petId], references: [id])
+  quote                   Quote?                  @relation(fields: [quoteId], references: [id])
+  recurringPackage        RecurringPackage?       @relation(fields: [recurringPackageId], references: [id])
+  debitCreditNotes        DebitCreditNote[]
+  invoice                 Invoice?
+  serviceExecutions       ServiceExecution[]
+  statusHistory           StatusHistory[]
+  transportDetails        TransportDetails?
+  transportLegExecutions  TransportLegExecution[]
+  services                Service[]               @relation("AppointmentToService")
+
+  @@index([category, deletedAt, startAt])
+  @@index([category])
+  @@index([customerId])
+  @@index([deletedAt])
+  @@index([performerId])
+  @@index([startAt])
+  @@index([status])
+  @@index([customerId], map: "idx_appointment_customerid")
+}
+
+model Appreciation {
+  id         String   @id
+  badgeType  String
+  senderId   String
+  receiverId String
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  receiver   User     @relation("Appreciation_receiverIdToUser", fields: [receiverId], references: [id])
+  sender     User     @relation("Appreciation_senderIdToUser", fields: [senderId], references: [id])
+
+  @@index([receiverId])
+  @@index([senderId])
+}
+
+model AttendanceRecord {
+  id           String       @id @default(uuid())
+  staffId      String
+  date         DateTime     @db.Date
+  checkInAt    DateTime?
+  checkOutAt   DateTime?
+  status       String       @default("incomplete")
+  notes        String?
+  createdById  String
+  updatedById  String?
+  updateReason String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  staff        StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([date])
+  @@index([staffId])
+  @@index([status])
+}
+
+model AuditEvent {
+  id                String          @id
+  createdAt         DateTime        @default(now())
+  actorUserId       String?
+  actorNameSnapshot String?
+  actorRoleSnapshot String?
+  source            AuditSource     @default(API)
+  ip                String?
+  userAgent         String?
+  requestId         String?
+  targetType        AuditTargetType
+  targetId          String?
+  clientId          String?
+  appointmentId     String?
+  quoteId           String?
+  petId             String?
+  action            AuditAction
+  severity          AuditSeverity   @default(INFO)
+  summary           String
+  meta              Json?
+  before            Json?
+  after             Json?
+  diff              Json?
+  revertible        Boolean         @default(false)
+  revertStrategy    String?
+  revertedAt        DateTime?
+  revertedByUserId  String?
+  revertReason      String?
+  revertOfEventId   String?
+  revertOfEvent     AuditEvent?     @relation("AuditEventToAuditEvent", fields: [revertOfEventId], references: [id])
+  revertedEvents    AuditEvent[]    @relation("AuditEventToAuditEvent")
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([requestId, createdAt(sort: Desc)])
+  @@index([severity, createdAt(sort: Desc)])
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  entityType   String
+  entityId     String
+  action       String
+  performedBy  String
+  previousData Json?
+  newData      Json?
+  createdAt    DateTime @default(now())
+  reason       String?
+
+  @@index([entityType, entityId])
+}
+
+model Authenticator {
+  id                   String  @id @default(uuid())
+  credentialID         String  @unique
+  credentialPublicKey  Bytes
+  counter              BigInt
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  userId               String
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BugReport {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  description String
+  imageUrl    String?
+  status      String    @default("SOLICITADO")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  resolvedAt  DateTime?
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId], map: "idx_bugreport_userid")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  author    User      @relation(fields: [authorId], references: [id])
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@index([postId])
+}
+
+model Conversation {
+  id            String        @id @default(uuid())
+  type          String        @default("DIRECT")
+  name          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastMessageAt DateTime?
+  messages      Message[]
+  participants  Participant[]
+}
+
+model Customer {
+  id                        String                 @id @default(uuid())
+  userId                    String                 @unique
+  name                      String
+  phone                     String?
+  address                   String?
+  noShowCount               Int                    @default(0)
+  isBlocked                 Boolean                @default(false)
+  requiresPrepayment        Boolean                @default(false)
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  type                      String                 @default("AVULSO")
+  recurringFrequency        String?
+  discountPercentage        Float                  @default(0.0)
+  internalNotes             String?
+  balance                   Float                  @default(0.0)
+  secondaryGuardianAddress  String?
+  secondaryGuardianEmail    String?
+  secondaryGuardianName     String?
+  secondaryGuardianPhone    String?
+  additionalGuardians       Json?                  @default("[]")
+  communicationOther        Json?
+  communicationPrefs        Json?                  @default("[]")
+  discoverySource           String?
+  recurrenceDiscount        Float?
+  recurrenceFrequency       String?
+  deletedAt                 DateTime?
+  canRequestQuotes          Boolean                @default(true)
+  riskLevel                 String?                @default("Nivel 1")
+  billingOther              String?
+  billingPreference         String?
+  cpf                       String?
+  discoverySourceDetail     String?
+  isActive                  Boolean                @default(true)
+  legacyBitrixId            String?                @unique
+  legacyCreatedAt           DateTime?
+  legacySource              String?
+  negotiationDiscount       Float?
+  paymentMethod             String?
+  secondaryGuardianBirthday DateTime?
+  appointments              Appointment[]
+  user                      User                   @relation(fields: [userId], references: [id])
+  alerts                    CustomerAlert[]
+  debitCreditNotes          DebitCreditNote[]
+  financialTransactions     FinancialTransaction[]
+  invoices                  Invoice[]
+  pets                      Pet[]
+  quotes                    Quote[]
+  recurringPackages         RecurringPackage[]
+
+  @@index([deletedAt])
+  @@index([legacyBitrixId])
+  @@index([name])
+  @@index([type])
+  @@index([userId])
+  @@index([userId], map: "idx_customer_userid")
+}
+
+model CustomerAlert {
+  id         String    @id
+  customerId String
+  type       String
+  title      String
+  message    String
+  isActive   Boolean   @default(true)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdBy  String
+  createdAt  DateTime  @default(now())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([isActive])
+  @@index([type])
+}
+
+model DebitCreditNote {
+  id               String            @id @default(dbgenerated("(gen_random_uuid())::text"))
+  customerId       String
+  appointmentId    String?
+  packageId        String?
+  type             DebitCreditType
+  amount           Float
+  description      String
+  status           DebitCreditStatus @default(PENDENTE)
+  billingAction    BillingAction
+  createdAt        DateTime          @default(now())
+  notes            String?
+  appointment      Appointment?      @relation(fields: [appointmentId], references: [id])
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  recurringPackage RecurringPackage? @relation(fields: [packageId], references: [id])
+
+  @@index([appointmentId])
+  @@index([customerId])
+  @@index([packageId])
+  @@index([status])
+}
+
+model FinancialTransaction {
+  id               String   @id
+  customerId       String
+  type             String
+  amount           Float
+  description      String
+  category         String?
+  relatedQuoteId   String?
+  relatedInvoiceId String?
+  createdBy        String
+  createdAt        DateTime @default(now())
+  notes            String?
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoice          Invoice? @relation(fields: [relatedInvoiceId], references: [id])
+  quote            Quote?   @relation(fields: [relatedQuoteId], references: [id])
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([type])
+}
+
+model Goal {
+  id              String           @id
+  title           String
+  description     String?
+  targetValue     Float
+  currentValue    Float            @default(0)
+  initialValue    Float            @default(0)
+  unit            String?          @default("unid")
+  startDate       DateTime
+  endDate         DateTime
+  status          String           @default("ACTIVE")
+  category        String?          @default("GERAL")
+  department      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now())
+  createdBy       String
+  goalAssignments GoalAssignment[]
+
+  @@index([department])
+  @@index([status])
+}
+
+model GoalAssignment {
+  id      String       @id
+  goalId  String
+  staffId String
+  goal    Goal         @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  staff   StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, staffId])
+}
+
+model HrAuditLog {
+  id          String   @id
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  metaJson    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model Invoice {
+  id                    String                 @id
+  customerId            String
+  appointmentId         String?                @unique
+  amount                Float
+  status                InvoiceStatus          @default(PENDENTE)
+  dueDate               DateTime
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime
+  deletedAt             DateTime?
+  financialTransactions FinancialTransaction[]
+  appointment           Appointment?           @relation(fields: [appointmentId], references: [id])
+  customer              Customer               @relation(fields: [customerId], references: [id])
+  paymentRecords        PaymentRecord[]
+  quotes                Quote[]
+
+  @@index([deletedAt])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model Message {
+  id             String       @id
+  content        String?
+  senderId       String
+  conversationId String
+  createdAt      DateTime     @default(now())
+  readBy         Json?        @default("[]")
+  fileUrl        String?
+  fileType       String?
+  fileName       String?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model Metric {
+  id        String   @id
+  type      String
+  data      Json
+  timestamp DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([type, timestamp])
+}
+
+model Notification {
+  id         String    @id
+  userId     String
+  title      String
+  message    String
+  type       String
+  read       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  metadata   Json?
+  priority   String?   @default("LOW")
+  relatedId  String?
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+}
+
+model NotificationExecution {
+  id                      String                @id
+  scheduledNotificationId String
+  executedAt              DateTime              @default(now())
+  recipientCount          Int
+  successCount            Int
+  failureCount            Int
+  metadata                Json?
+  scheduledNotification   ScheduledNotification @relation(fields: [scheduledNotificationId], references: [id], onDelete: Cascade)
+
+  @@index([executedAt])
+  @@index([scheduledNotificationId, executedAt])
+}
+
+model NotificationSettings {
+  id               String   @id @default(uuid())
+  notificationType String   @unique
+  enabled          Boolean  @default(true)
+  frequency        String   @default("IMMEDIATE")
+  allowedRoles     Json?    @default("[]")
+  minInterval      Int      @default(0)
+  updatedAt        DateTime @updatedAt
+  updatedBy        String?
+
+  @@index([notificationType])
+}
+
+model PackageItem {
+  id               String           @id @default(dbgenerated("(gen_random_uuid())::text"))
+  packageId        String
+  serviceId        String?
+  description      String
+  unitPrice        Float
+  quantity         Int              @default(1)
+  discount         Float            @default(0)
+  finalPrice       Float
+  RecurringPackage RecurringPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  Service          Service?         @relation(fields: [serviceId], references: [id])
+
+  @@index([packageId])
+  @@index([serviceId])
+}
+
+model Participant {
+  id             String       @id
+  userId         String
+  conversationId String
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, conversationId])
+  @@index([conversationId])
+  @@index([userId])
+}
+
+model PayAdjustment {
+  id          String       @id @default(uuid())
+  payPeriodId String
+  staffId     String
+  type        String
+  amount      Float
+  direction   String
+  reason      String
+  createdById String
+  createdAt   DateTime     @default(now())
+  payPeriod   PayPeriod    @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([payPeriodId])
+  @@index([staffId])
+}
+
+model PayPeriod {
+  id          String          @id @default(uuid())
+  startDate   DateTime        @db.Date
+  endDate     DateTime        @db.Date
+  type        String
+  status      String          @default("draft")
+  createdById String
+  closedById  String?
+  closedAt    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  adjustments PayAdjustment[]
+  statements  PayStatement[]
+
+  @@index([startDate, endDate])
+  @@index([status])
+}
+
+model PayStatement {
+  id               String       @id @default(uuid())
+  payPeriodId      String
+  staffId          String
+  baseTotal        Float        @default(0)
+  adjustmentsTotal Float        @default(0)
+  totalDue         Float        @default(0)
+  detailsJson      Json?
+  generatedAt      DateTime     @default(now())
+  payPeriod        PayPeriod    @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
+  staff            StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([payPeriodId, staffId])
+  @@index([payPeriodId])
+  @@index([staffId])
+}
+
+model PaymentRecord {
+  id        String   @id
+  invoiceId String
+  amount    Float
+  paidAt    DateTime @default(now())
+  method    String?
+  createdAt DateTime @default(now())
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([invoiceId], map: "idx_payment_invoiceid")
+}
+
+model Pet {
+  id                      String             @id @default(uuid())
+  customerId              String
+  name                    String
+  species                 String
+  breed                   String?
+  weight                  Float?
+  observations            String?
+  preferences             String?
+  coatType                String?
+  usesPerfume             Boolean            @default(false)
+  usesOrnaments           Boolean            @default(false)
+  marketingConsent        Boolean            @default(false)
+  temperament             String?
+  firstTime               Boolean            @default(false)
+  age                     String?
+  healthIssues            String?
+  allergies               String?
+  hasKnots                Boolean            @default(false)
+  hasMattedFur            Boolean            @default(false)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  usedToGrooming          Boolean            @default(true)
+  groomingAdapter         String?
+  groomingHeight          String?
+  groomingMachine         String?
+  groomingNotes           String?
+  groomingScissors        String?
+  allowsTreats            Boolean            @default(true)
+  authorityCommand        String?
+  birthDate               DateTime?
+  favoriteToy             String?
+  feedingType             String?
+  habits                  String?
+  handlingPreference      String?
+  hasOwnTrousseau         Boolean            @default(false)
+  hasSpecialNeeds         Boolean            @default(false)
+  isCastrated             Boolean?
+  knowsHotelOrDaycare     Boolean?
+  medicationAllergies     String?
+  medicationDetails       String?
+  nightHabits             String?
+  parasiteControlUpToDate Boolean?
+  photoUrl                String?
+  relationshipOrigin      String?
+  sex                     String?
+  size                    String?
+  socialWithAnimals       Boolean?
+  socialWithHumans        Boolean?
+  specialNeedsDescription String?
+  takesMedication         Boolean            @default(false)
+  timeWithPet             String?
+  usedToBeingAway         Boolean?
+  vaccinesUpToDate        Boolean?
+  walkingFrequency        String?
+  appointments            Appointment[]
+  customer                Customer           @relation(fields: [customerId], references: [id])
+  quotes                  Quote[]
+  recurringPackages       RecurringPackage[]
+
+  @@index([customerId])
+  @@index([customerId], map: "idx_pet_customerid")
+}
+
+model Post {
+  id          String     @id @default(uuid())
+  content     String
+  authorId    String
+  attachments Json?      @default("[]")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  comments    Comment[]
+  author      User       @relation(fields: [authorId], references: [id])
+  reactions   Reaction[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  seqId       Int         @unique @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  stock       Int         @default(0)
+  category    String?     @default("Geral")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+  quoteItems  QuoteItem[]
+
+  @@index([deletedAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Quote {
+  id                     String                 @id @default(uuid())
+  customerId             String
+  petId                  String?
+  status                 QuoteStatus            @default(SOLICITADO)
+  totalAmount            Float                  @default(0)
+  desiredAt              DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  deletedAt              DateTime?
+  transportDestination   String?                @default("7Pet")
+  transportOrigin        String?
+  transportPeriod        TransportPeriod?
+  type                   QuoteType              @default(SPA)
+  hairLength             String?
+  hasKnots               Boolean                @default(false)
+  hasParasites           Boolean                @default(false)
+  knotRegions            String?
+  petQuantity            Int                    @default(1)
+  transportReturnAddress String?
+  seqId                  Int                    @unique @default(autoincrement())
+  scheduledAt            DateTime?
+  transportAt            DateTime?
+  invoiceId              String?
+  parasiteComments       String?
+  parasiteTypes          String?
+  wantsMedicatedBath     Boolean                @default(false)
+  transportType          TransportType?
+  transportLevaAt        DateTime?
+  transportTrazAt        DateTime?
+  notes                  String?
+  isRecurring            Boolean                @default(false)
+  frequency              PackageFrequency?
+  packageDiscount        Float?
+  cardFeePercent         Float?
+  taxPercent             Float?
+  recurringPackageId     String?
+  appointments           Appointment[]
+  financialTransactions  FinancialTransaction[]
+  customer               Customer               @relation(fields: [customerId], references: [id])
+  invoice                Invoice?               @relation(fields: [invoiceId], references: [id])
+  pet                    Pet?                   @relation(fields: [petId], references: [id])
+  recurringPackage       RecurringPackage?      @relation(fields: [recurringPackageId], references: [id])
+  items                  QuoteItem[]
+  statusHistory          StatusHistory[]
+
+  @@index([customerId])
+  @@index([deletedAt])
+  @@index([isRecurring])
+  @@index([status])
+  @@index([customerId], map: "idx_quote_customerid")
+}
+
+model QuoteItem {
+  id          String   @id
+  quoteId     String
+  description String
+  quantity    Int      @default(1)
+  price       Float    @default(0)
+  serviceId   String?
+  performerId String?
+  discount    Float    @default(0)
+  productId   String?
+  performer   User?    @relation(fields: [performerId], references: [id])
+  product     Product? @relation(fields: [productId], references: [id])
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  service     Service? @relation(fields: [serviceId], references: [id])
+
+  @@index([quoteId])
+  @@index([serviceId])
+  @@index([productId])
+  @@index([quoteId], map: "idx_quoteitem_quoteid")
+}
+
+model Reaction {
+  id        String   @id
+  type      String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, postId])
+}
+
+model RecurringPackage {
+  id                String            @id @default(dbgenerated("(gen_random_uuid())::text"))
+  customerId        String
+  petId             String
+  frequency         PackageFrequency
+  discountPercent   Float             @default(0)
+  transportDiscount Float             @default(20)
+  monthlyTotal      Float             @default(0)
+  status            PackageStatus     @default(ATIVO)
+  startDate         DateTime
+  endDate           DateTime?
+  billingType       BillingType       @default(MENSAL)
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @default(now())
+  appointments      Appointment[]
+  debitCreditNotes  DebitCreditNote[]
+  items             PackageItem[]
+  quotes            Quote[]
+  customer          Customer          @relation(fields: [customerId], references: [id])
+  pet               Pet               @relation(fields: [petId], references: [id])
+
+  @@index([customerId])
+  @@index([petId])
+  @@index([status])
+}
+
+model RolePermission {
+  role        String   @id
+  permissions String
+  updatedAt   DateTime
+  label       String?
+}
+
+model ScheduledNotification {
+  id                     String                  @id
+  name                   String
+  description            String?
+  scheduleType           String
+  cronExpression         String?
+  intervalMinutes        Int?
+  scheduledAt            DateTime?
+  timezone               String                  @default("America/Sao_Paulo")
+  targetType             String
+  targetRoles            Json?                   @default("[]")
+  targetUserIds          Json?                   @default("[]")
+  title                  String
+  body                   String
+  notificationType       String                  @default("INFO")
+  conditions             Json?
+  enabled                Boolean                 @default(true)
+  priority               Int                     @default(0)
+  lastExecutedAt         DateTime?
+  nextExecutionAt        DateTime?
+  executionCount         Int                     @default(0)
+  failureCount           Int                     @default(0)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime
+  createdBy              String?
+  notificationExecutions NotificationExecution[]
+
+  @@index([createdAt])
+  @@index([enabled, nextExecutionAt])
+  @@index([scheduleType])
+}
+
+model Service {
+  id               String             @id @default(uuid())
+  name             String
+  description      String?
+  basePrice        Float
+  duration         Int
+  category         String?
+  species          String             @default("Canino")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  maxWeight        Float?
+  minWeight        Float?
+  sizeLabel        String?
+  responsibleId    String?
+  seqId            Int                @unique @default(autoincrement())
+  deletedAt        DateTime?
+  subcategory      String?
+  type             String?
+  coatType         String?
+  unit             String?            @default("por pet")
+  notes            String?
+  bathCategory     String?
+  groomingType     String?
+  PackageItem      PackageItem[]
+  QuoteItem        QuoteItem[]
+  responsible      User?              @relation(fields: [responsibleId], references: [id])
+  ServiceExecution ServiceExecution[]
+  Appointment      Appointment[]      @relation("AppointmentToService")
+
+  @@index([deletedAt])
+  @@index([responsibleId])
+}
+
+model ServiceExecution {
+  id            String       @id @default(uuid())
+  appointmentId String
+  staffId       String
+  serviceId     String?
+  executedAt    DateTime     @default(now())
+  notes         String?
+  createdAt     DateTime     @default(now())
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service       Service?     @relation(fields: [serviceId], references: [id])
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([executedAt])
+  @@index([staffId])
+}
+
+model StaffProfile {
+  id                       String                  @id @default(uuid())
+  userId                   String                  @unique
+  department               String
+  payModel                 String
+  dailyRate                Float?
+  perLegRate               Float?
+  payPeriodPreference      String                  @default("monthly")
+  isActive                 Boolean                 @default(true)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  mealVoucher              Float?                  @default(0)
+  otherBenefits            Float?                  @default(0)
+  transportVoucher         Float?                  @default(0)
+  bankAccount              String?
+  bankAgency               String?
+  bankName                 String?
+  companyName              String?
+  documentNumber           String?
+  documentType             String?
+  employmentType           String?                 @default("PF")
+  notes                    String?
+  pixKey                   String?
+  address                  String?
+  birthday                 DateTime?
+  cnhCategory              String?
+  cnhEar                   Boolean                 @default(false)
+  cnhExpiry                DateTime?
+  cnhNumber                String?
+  emergencyContactName     String?
+  emergencyContactPhone    String?
+  emergencyContactRelation String?
+  hiringDate               DateTime?
+  attendanceRecords        AttendanceRecord[]
+  goalAssignments          GoalAssignment[]
+  payAdjustments           PayAdjustment[]
+  payStatements            PayStatement[]
+  serviceExecutions        ServiceExecution[]
+  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transportLegExecutions   TransportLegExecution[]
+
+  @@index([department])
+  @@index([isActive])
+}
+
+model StatusHistory {
+  id            String       @id
+  appointmentId String?
+  quoteId       String?
+  oldStatus     String
+  newStatus     String
+  changedBy     String
+  reason        String?
+  createdAt     DateTime     @default(now())
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  quote         Quote?       @relation(fields: [quoteId], references: [id])
+
+  @@index([appointmentId])
+  @@index([quoteId])
+}
+
+model TransportDetails {
+  id              String          @id
+  appointmentId   String          @unique
+  origin          String
+  destination     String
+  requestedPeriod TransportPeriod
+  confirmedTime   DateTime?
+  status          String          @default("SOLICITADO")
+  type            String?
+  appointment     Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+}
+
+model TransportLegExecution {
+  id            String       @id @default(uuid())
+  appointmentId String
+  staffId       String
+  legType       String
+  completedAt   DateTime     @default(now())
+  legValue      Float?
+  notes         String?
+  createdAt     DateTime     @default(now())
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, staffId, legType])
+  @@index([appointmentId])
+  @@index([completedAt])
+  @@index([staffId])
+}
+
+model TransportSettings {
+  id                  String   @id @default(uuid())
+  handlingTimeLeva    Int      @default(0)
+  handlingTimeTraz    Int      @default(0)
+  updatedAt           DateTime @updatedAt
+  kmPriceLargada      Float    @default(2.0)
+  kmPriceLeva         Float    @default(2.0)
+  kmPriceTraz         Float    @default(2.0)
+  kmPriceRetorno      Float    @default(2.0)
+  minPriceLargada     Float    @default(1.5)
+  minPriceLeva        Float    @default(1.5)
+  minPriceTraz        Float    @default(1.5)
+  minPriceRetorno     Float    @default(1.5)
+  handlingTimeLargada Int      @default(0)
+  handlingTimeRetorno Int      @default(0)
+}
+
+model User {
+  id                      String                       @id @default(uuid())
+  email                   String                       @unique
+  passwordHash            String?
+  googleId                String?                      @unique
+  name                    String?
+  phone                   String?
+  document                String?
+  address                 String?
+  birthday                DateTime?
+  admissionDate           DateTime?
+  notes                   String?
+  permissions             String?
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  deletedAt               DateTime?
+  extraAddresses          Json?                        @default("[]")
+  extraEmails             Json?                        @default("[]")
+  extraPhones             Json?                        @default("[]")
+  firstName               String?
+  lastName                String?
+  seqId                   Int                          @unique @default(autoincrement())
+  staffId                 Int?                         @unique
+  showTutorial            Boolean                      @default(true)
+  color                   String?                      @default("#3B82F6")
+  role                    String?
+  plainPassword           String?
+  division                String                       @default("CLIENTE")
+  isEligible              Boolean                      @default(false)
+  active                  Boolean                      @default(true)
+  isSupportAgent          Boolean                      @default(false)
+  allowedGames            Json?                        @default("[]")
+  pauseMenuEnabled        Boolean                      @default(false)
+  appointments            Appointment[]
+  receivedAppreciations   Appreciation[]               @relation("Appreciation_receiverIdToUser")
+  sentAppreciations       Appreciation[]               @relation("Appreciation_senderIdToUser")
+  authenticators          Authenticator[]
+  bugReports              BugReport[]
+  comments                Comment[]
+  customer                Customer?
+  messages                Message[]
+  notifications           Notification[]
+  participants            Participant[]
+  posts                   Post[]
+  pushSubscriptions       PushSubscription[]
+  quoteItems              QuoteItem[]
+  reactions               Reaction[]
+  assignedServices        Service[]
+  staffProfile            StaffProfile?
+  notificationPreferences UserNotificationPreference[]
+
+  @@index([division])
+  @@index([email])
+  @@index([firstName])
+  @@index([lastName])
+  @@index([role], map: "idx_user_role_rls")
+}
+
+model UserNotificationPreference {
+  id               String   @id
+  userId           String
+  notificationType String
+  enabled          Boolean  @default(true)
+  channels         Json?    @default("[\"IN_APP\", \"PUSH\"]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationType])
+  @@index([notificationType])
+  @@index([userId])
+}
+
+enum AppointmentCategory {
+  SPA
+  LOGISTICA
+}
+
+enum AppointmentStatus {
+  PENDENTE
+  CONFIRMADO
+  EM_ATENDIMENTO
+  FINALIZADO
+  CANCELADO
+  NO_SHOW
+}
+
+enum AuditAction {
+  AUTH_LOGIN_SUCCESS
+  AUTH_LOGIN_FAILED
+  AUTH_LOGOUT
+  CLIENT_CREATED
+  CLIENT_UPDATED
+  CLIENT_BLOCKED_AUTO
+  CLIENT_UNBLOCKED
+  PET_CREATED
+  PET_UPDATED
+  PET_DELETED_SOFT
+  QUOTE_REQUESTED
+  QUOTE_CREATED
+  QUOTE_UPDATED
+  QUOTE_STATUS_CHANGED
+  QUOTE_SENT
+  QUOTE_RECALCULATED
+  QUOTE_APPROVED
+  QUOTE_REJECTED
+  APPOINTMENT_CREATED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_NO_SHOW
+  APPOINTMENT_STATUS_CHANGED
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED_SOFT
+  PERMISSION_CHANGED
+  BULK_DELETE
+  BULK_UPDATE
+  CONFIG_CHANGED
+  EVENT_REVERTED
+  SERVICE_CREATED
+  SERVICE_UPDATED
+  SERVICE_DELETED
+  PRODUCT_CREATED
+  PRODUCT_UPDATED
+  PRODUCT_DELETED
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AuditSource {
+  WEB
+  MOBILE
+  API
+  SYSTEM
+}
+
+enum AuditTargetType {
+  CLIENT
+  PET
+  QUOTE
+  APPOINTMENT
+  PAYMENT
+  USER
+  PERMISSION
+  BULK_ACTION
+  CONFIG
+  OTHER
+  SERVICE
+  PRODUCT
+}
+
+enum BillingAction {
+  COBRAR_AGORA
+  PROXIMO_FATURAMENTO
+}
+
+enum BillingType {
+  MENSAL
+  BIMESTRAL
+}
+
+enum DebitCreditStatus {
+  PENDENTE
+  QUITADO
+  ABATIDO
+}
+
+enum DebitCreditType {
+  DEBITO
+  CREDITO
+}
+
+enum InvoiceStatus {
+  PENDENTE
+  PAGO
+  VENCIDO
+  MONITORAR
+  NEGOCIADO
+  ENCERRADO
+  FATURAR
+}
+
+enum PackageFrequency {
+  SEMANAL
+  QUINZENAL
+  MENSAL
+}
+
+enum PackageStatus {
+  ATIVO
+  PAUSADO
+  CANCELADO
+  ENCERRADO
+}
+
+enum QuoteStatus {
+  SOLICITADO
+  EM_PRODUCAO
+  CALCULADO
+  ENVIADO
+  APROVADO
+  REJEITADO
+  AGENDAR
+  ENCERRADO
+  AGENDADO
+  FATURAR
+  RASCUNHO
+}
+
+enum QuoteType {
+  SPA
+  TRANSPORTE
+  SPA_TRANSPORTE
+}
+
+enum TransportPeriod {
+  MANHA
+  TARDE
+  NOITE
+}
+
+enum TransportType {
+  PICK_UP
+  DROP_OFF
+  ROUND_TRIP
+}

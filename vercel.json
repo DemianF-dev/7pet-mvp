@@ -27,7 +27,7 @@
     "installCommand": "npm install",
     "outputDirectory": "frontend/dist",
     "functions": {
-        "api/index.ts": {
+        "api/**/*.ts": {
             "maxDuration": 20
         }
     },
