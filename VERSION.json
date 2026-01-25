@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1505",
+  "version": "BETA20260125-1527",
   "stage": "BETA",
-  "timestamp": "2026-01-25T15:05:32.000Z",
-  "commit": "f85a9d1",
-  "buildNumber": 102,
-  "releaseNotes": "Auto-generated from commit: fix: standardize prisma client path and binaries for vercel"
+  "timestamp": "2026-01-25T15:27:37.000Z",
+  "commit": "71f954f",
+  "buildNumber": 103,
+  "releaseNotes": "Auto-generated from commit: fix: sync package-lock and build scripts to clear native deps"
 }
