@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-0024",
+  "version": "BETA20260125-1322",
   "stage": "BETA",
-  "timestamp": "2026-01-25T00:24:40.000Z",
-  "commit": "faca411",
-  "buildNumber": 96,
-  "releaseNotes": "Auto-generated from commit: chore: ensure all backend dependencies are in root for Vercel deployment"
+  "timestamp": "2026-01-25T13:22:35.000Z",
+  "commit": "5187906",
+  "buildNumber": 97,
+  "releaseNotes": "Auto-generated from commit: fix: resolve CORS and production connection issues"
 }
