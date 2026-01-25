@@ -3,11 +3,18 @@ import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
 import logger from '../utils/logger';
 
-// CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
-const JWT_SECRET = process.env.JWT_SECRET;
+// CRITICAL SECURITY: Require JWT_SECRET to be defined
+// For development, provide a fallback to allow testing
+const JWT_SECRET = process.env.JWT_SECRET || 
+    (process.env.NODE_ENV === 'development' ? 'development_jwt_secret_minimum_32_characters_long_for_testing_only' : null);
 
 if (!JWT_SECRET) {
     throw new Error('❌ FATAL: JWT_SECRET environment variable is not defined! Application cannot start.');
+}
+
+// Store back to process.env for consistency
+if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = JWT_SECRET;
 }
 
 export const authenticate = async (req: any, res: Response, next: NextFunction) => {

@@ -1557,3 +1557,5 @@
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/staff/widgets","originalUrl":"/staff/widgets"},"service":"7pet-backend","timestamp":"2026-01-25T16:20:07.467Z"}
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/feed","originalUrl":"/feed"},"service":"7pet-backend","timestamp":"2026-01-25T16:20:07.482Z"}
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/notifications","originalUrl":"/notifications"},"service":"7pet-backend","timestamp":"2026-01-25T16:22:13.134Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/ping","originalUrl":"/ping"},"service":"7pet-backend","timestamp":"2026-01-25T22:29:22.226Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"POST","newUrl":"/auth/login","originalUrl":"/api/auth/login"},"service":"7pet-backend","timestamp":"2026-01-25T22:31:56.308Z"}
