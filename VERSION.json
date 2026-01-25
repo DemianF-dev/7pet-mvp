@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1605",
+  "version": "BETA20260125-1645",
   "stage": "BETA",
-  "timestamp": "2026-01-25T16:05:52.000Z",
-  "commit": "db41b30",
-  "buildNumber": 105,
-  "releaseNotes": "Auto-generated from commit: Force deploy: Bump backend version to 0.1.2-rc1"
+  "timestamp": "2026-01-25T16:45:12.000Z",
+  "commit": "2781443",
+  "buildNumber": 106,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
