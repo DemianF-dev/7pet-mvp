@@ -22,7 +22,7 @@ const getApiUrl = (): string => {
     }
 
     logger.debug('Using API URL', { url: apiUrl });
-    return apiUrl;
+    return apiUrl ? apiUrl.replace(/\/$/, "") : apiUrl;
 };
 
 const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

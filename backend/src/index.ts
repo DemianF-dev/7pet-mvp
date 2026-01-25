@@ -82,9 +82,10 @@ app.set('trust proxy', 1);
 // 🌐 CORS configuration - MUST be the first middleware
 const allowedOrigins = [
     'https://my7.pet',
-    'https://www.my7.pet', // Production Frontend
+    'https://www.my7.pet',
     'https://7pet-mvp.vercel.app',
     'https://7pet-backend.vercel.app',
+    'https://7pet-app.vercel.app', // Added common Vercel default
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
@@ -124,7 +125,19 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable pre-flight across-the-board
+
+// 🛡️ Pre-flight CORS for all routes (Manual fallback for Vercel/proxies)
+app.options('*', (req, res) => {
+    const origin = req.headers.origin;
+    if (origin && (allowedOrigins.includes(origin) || (isDev && localIpRegex.test(origin)))) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, sentry-trace, baggage');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        return res.sendStatus(200);
+    }
+    res.sendStatus(204);
+});
 
 
 app.use(helmet({

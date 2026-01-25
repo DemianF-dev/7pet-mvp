@@ -1548,3 +1548,11 @@
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/staff/widgets","originalUrl":"/staff/widgets"},"service":"7pet-backend","timestamp":"2026-01-25T03:12:55.626Z"}
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/chat/conversations","originalUrl":"/chat/conversations"},"service":"7pet-backend","timestamp":"2026-01-25T03:13:59.007Z"}
 {"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/chat/users","originalUrl":"/chat/users"},"service":"7pet-backend","timestamp":"2026-01-25T03:14:06.867Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/notifications","originalUrl":"/notifications"},"service":"7pet-backend","timestamp":"2026-01-25T16:15:30.901Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"POST","newUrl":"/auth/login","originalUrl":"/auth/login"},"service":"7pet-backend","timestamp":"2026-01-25T16:19:22.868Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/staff/metrics","originalUrl":"/staff/metrics"},"service":"7pet-backend","timestamp":"2026-01-25T16:19:25.150Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/goals","originalUrl":"/goals"},"service":"7pet-backend","timestamp":"2026-01-25T16:19:25.173Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/staff/widgets","originalUrl":"/staff/widgets"},"service":"7pet-backend","timestamp":"2026-01-25T16:19:25.691Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/chat/conversations","originalUrl":"/chat/conversations"},"service":"7pet-backend","timestamp":"2026-01-25T16:19:30.404Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/staff/widgets","originalUrl":"/staff/widgets"},"service":"7pet-backend","timestamp":"2026-01-25T16:20:07.467Z"}
+{"level":"info","message":"HTTP request","meta":{"method":"GET","newUrl":"/feed","originalUrl":"/feed"},"service":"7pet-backend","timestamp":"2026-01-25T16:20:07.482Z"}
