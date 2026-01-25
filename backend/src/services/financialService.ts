@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma';
+import { randomUUID } from 'crypto';
 
 /**
  * Financial Service - Manages customer financial transactions and balance
@@ -123,15 +124,15 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
         where: {
             customerId,
             isActive: true,
-            type: { in: ['WARNING', 'CRITICAL'] }
+            type: { in: ['WARNING', 'CRITICAL'] as any }
         }
     });
 
     // If balance is critical (< -1000)
-    if (balance < -1000 && !existingAlerts.some(a => a.type === 'CRITICAL')) {
+    if (balance < -1000 && !existingAlerts.some((a: any) => a.type === 'CRITICAL')) {
         await client.customerAlert.create({
             data: {
-                id: crypto.randomUUID(),
+                id: randomUUID(),
                 customerId,
                 type: 'CRITICAL',
                 title: '🔴 Débito Crítico',
@@ -141,10 +142,10 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
         });
     }
     // If balance is warning level (< -500)
-    else if (balance < -500 && !existingAlerts.some(a => a.type === 'WARNING')) {
+    else if (balance < -500 && !existingAlerts.some((a: any) => a.type === 'WARNING')) {
         await client.customerAlert.create({
             data: {
-                id: crypto.randomUUID(),
+                id: randomUUID(),
                 customerId,
                 type: 'WARNING',
                 title: '⚠️ Débito Elevado',
@@ -159,7 +160,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
             where: {
                 customerId,
                 isActive: true,
-                type: { in: ['WARNING', 'CRITICAL'] }
+                type: { in: ['WARNING', 'CRITICAL'] as any }
             },
             data: {
                 isActive: false,

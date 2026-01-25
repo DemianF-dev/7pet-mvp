@@ -332,7 +332,7 @@ export const searchUsers = async (req: Request, res: Response) => {
         });
 
         Logger.info(`✅ Search returned ${users.length} users`);
-        
+
         // Debug: Log dos primeiros usuários encontrados
         if (users.length > 0) {
             Logger.info(`🐛 DEBUG: Primeiros usuários: ${JSON.stringify(users.slice(0, 3), null, 2)}`);
@@ -348,7 +348,7 @@ export const searchUsers = async (req: Request, res: Response) => {
         });
     } catch (error) {
         Logger.error('❌ Error searching users for chat', error);
-        res.status(500).json({ error: 'Failed to search users', debug: error.message });
+        res.status(500).json({ error: 'Failed to search users', debug: (error as any).message });
     }
 };
 

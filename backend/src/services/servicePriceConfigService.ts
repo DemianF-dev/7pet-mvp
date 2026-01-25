@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated';
+import { PrismaClient, ServicePriceConfig } from '../generated';
 import prisma from '../lib/prisma';
 
 /**
@@ -34,8 +34,8 @@ export class ServicePriceConfigService {
      * Atualiza configuração de preço
      */
     static async updateServicePrice(
-        serviceName: string, 
-        basePrice: number, 
+        serviceName: string,
+        basePrice: number,
         description?: string
     ): Promise<ServicePriceConfig> {
         return await prisma.servicePriceConfig.upsert({
@@ -79,14 +79,14 @@ export class ServicePriceConfigService {
      */
     static async initializeDefaultConfigs(): Promise<void> {
         const existingCount = await prisma.servicePriceConfig.count();
-        
+
         if (existingCount > 0) {
             console.log('[ServicePriceConfig] Configurations already exist, skipping initialization');
             return;
         }
 
         console.log('[ServicePriceConfig] Initializing default configurations...');
-        
+
         // Preços de desembolo padrão
         const knotPrices = [
             { service: 'orelhas', basePrice: 7.50, description: 'Desembolo - Orelhas' },

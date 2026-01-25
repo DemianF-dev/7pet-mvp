@@ -287,16 +287,16 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: quote.transportLevaAt || quote.transportAt || quote.desiredAt || new Date(),
-                        status: 'CONFIRMADO',
-                        category: 'LOGISTICA',
+                        status: 'CONFIRMADO' as any,
+                        category: 'LOGISTICA' as any,
                         quote: { connect: { id } },
-                        performerId: levaDriver || undefined,
+                        performer: levaDriver ? { connect: { id: levaDriver } } : undefined,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
                                 origin: quote.transportOrigin || 'Endereço do Cliente',
                                 destination: quote.transportDestination || '7Pet',
-                                requestedPeriod: quote.transportPeriod || 'MANHA',
+                                requestedPeriod: (quote.transportPeriod || 'MANHA') as any,
                                 type: 'LEVA'
                             }
                         },
@@ -315,16 +315,16 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: returnTime,
-                        status: 'CONFIRMADO',
-                        category: 'LOGISTICA',
+                        status: 'CONFIRMADO' as any,
+                        category: 'LOGISTICA' as any,
                         quote: { connect: { id } },
-                        performerId: trazDriver || undefined,
+                        performer: trazDriver ? { connect: { id: trazDriver } } : undefined,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
                                 origin: quote.transportDestination || '7Pet',
                                 destination: quote.transportReturnAddress || quote.transportOrigin || 'Endereço do Cliente',
-                                requestedPeriod: quote.transportPeriod || 'TARDE',
+                                requestedPeriod: (quote.transportPeriod || 'TARDE') as any,
                                 type: 'TRAZ'
                             }
                         },
@@ -344,16 +344,16 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: (legType === 'LEVA' ? (quote.transportLevaAt || quote.transportAt || quote.desiredAt) : (quote.transportTrazAt || quote.scheduledAt)) || new Date(),
-                        status: 'CONFIRMADO',
-                        category: 'LOGISTICA',
+                        status: 'CONFIRMADO' as any,
+                        category: 'LOGISTICA' as any,
                         quote: { connect: { id } },
-                        performerId: driver || undefined,
+                        performer: driver ? { connect: { id: driver } } : undefined,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
                                 origin: quote.transportOrigin || 'Endereço do Cliente',
                                 destination: quote.transportDestination || '7Pet',
-                                requestedPeriod: quote.transportPeriod || 'MANHA',
+                                requestedPeriod: (quote.transportPeriod || 'MANHA') as any,
                                 type: legType
                             }
                         },

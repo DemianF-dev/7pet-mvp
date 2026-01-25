@@ -1,6 +1,6 @@
 {
     "name": "7pet-backend",
-    "version": "0.1.2-rc1",
+    "version": "0.1.2-rc2",
     "description": "Backend for 7Pet MVP",
     "main": "src/index.ts",
     "scripts": {
