@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1645",
+  "version": "BETA20260125-1713",
   "stage": "BETA",
-  "timestamp": "2026-01-25T16:45:12.000Z",
-  "commit": "2781443",
-  "buildNumber": 106,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-25T17:13:55.000Z",
+  "commit": "a73d475",
+  "buildNumber": 107,
+  "releaseNotes": "Auto-generated from commit: Fix build errors in controllers & services to unblock Vercel deployment (v0.1.2-rc2)"
 }
