@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-0023",
+  "version": "BETA20260125-0024",
   "stage": "BETA",
-  "timestamp": "2026-01-25T00:23:29.000Z",
-  "commit": "8067775",
-  "buildNumber": 95,
-  "releaseNotes": "Auto-generated from commit: chore: update gitignore"
+  "timestamp": "2026-01-25T00:24:40.000Z",
+  "commit": "faca411",
+  "buildNumber": 96,
+  "releaseNotes": "Auto-generated from commit: chore: ensure all backend dependencies are in root for Vercel deployment"
 }
