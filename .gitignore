@@ -27,3 +27,16 @@ Thumbs.db
 *.db
 *.sqlite
 dev.db
+
+# Logs and Debug
+*.log
+*.txt
+*.ps1
+*.sh
+debug_output.txt
+backend_debug_session.log
+frontend/tsc_output.txt
+frontend/tsc_output_v2.txt
+
+# Vercel
+.vercel
