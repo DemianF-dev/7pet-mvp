@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1527",
+  "version": "BETA20260125-1540",
   "stage": "BETA",
-  "timestamp": "2026-01-25T15:27:37.000Z",
-  "commit": "71f954f",
-  "buildNumber": 103,
-  "releaseNotes": "Auto-generated from commit: fix: sync package-lock and build scripts to clear native deps"
+  "timestamp": "2026-01-25T15:40:11.000Z",
+  "commit": "40f87e7",
+  "buildNumber": 104,
+  "releaseNotes": "Auto-generated from commit: fix: implement try-catch for prisma init and add legacy binaries"
 }
