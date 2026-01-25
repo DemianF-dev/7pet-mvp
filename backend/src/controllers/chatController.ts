@@ -4,7 +4,7 @@ import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
 import { socketService } from '../services/socketService';
 import { railwaySocketClient } from '../services/railwaySocketClient';
-import { Prisma } from '../generated';
+import { Prisma } from '@prisma/client';
 
 export const getConversations = async (req: Request, res: Response) => {
     try {
@@ -574,3 +574,4 @@ export const transferConversation = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to transfer conversation' });
     }
 };
+

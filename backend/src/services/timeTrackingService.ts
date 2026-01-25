@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { Prisma } from '../generated';
+import { Prisma } from '@prisma/client';
 
 // ============================================
 // TIME TRACKING SERVICE
@@ -662,3 +662,4 @@ export default {
     processHourBankInPeriod,
     revertHourBankProcessing
 };
+

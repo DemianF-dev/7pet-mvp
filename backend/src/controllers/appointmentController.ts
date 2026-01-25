@@ -2,7 +2,7 @@ import { Response } from 'express';
 import * as appointmentService from '../services/appointmentService';
 import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
-import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '../generated';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 import Logger from '../lib/logger';
 import * as auditService from '../services/auditService';
 import { logError } from '../utils/secureLogger';
@@ -370,3 +370,4 @@ export const search = async (req: any, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+

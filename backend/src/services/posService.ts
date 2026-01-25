@@ -4,7 +4,7 @@ import {
     CashSessionStatus,
     OrderPaymentMethod,
     InventoryMovementType
-} from '../generated';
+} from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as financialService from './financialService';
 import { logInfo, logError } from '../utils/secureLogger';
@@ -463,3 +463,4 @@ export const getCheckoutDataFromAppointment = async (appointmentId: string) => {
         items
     };
 };
+

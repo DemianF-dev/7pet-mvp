@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 /**
  * Script to promote users to their proper roles and initialize notification settings

@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '../generated';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 import * as auditService from './auditService';
 import hrService from './hrService';
 import { randomUUID } from 'crypto';
@@ -767,3 +767,4 @@ export const search = async (options: { query: string }) => {
         total: appointments.length
     };
 };
+

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, QuoteStatus } from '../generated';
+import { PrismaClient, QuoteStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 import * as auditService from '../services/auditService';
 import { notificationService } from '../services/notificationService';
@@ -1437,3 +1437,4 @@ export const quoteController = {
         }
     }
 };
+

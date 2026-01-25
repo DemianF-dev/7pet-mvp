@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import contractService from '../services/recurrenceContractService';
 import invoiceService from '../services/packageInvoiceService';
 import logger from '../utils/logger';
-import { RecurrenceType, ContractStatus } from '../generated';
+import { RecurrenceType, ContractStatus } from '@prisma/client';
 
 /**
  * Controller for RECORRENTES (Recurring) Module
@@ -125,3 +125,4 @@ class RecurrenceController {
 }
 
 export default new RecurrenceController();
+

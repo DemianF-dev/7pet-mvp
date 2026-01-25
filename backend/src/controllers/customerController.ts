@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '../lib/prisma';
 import * as auditService from '../services/auditService';
 import * as customerService from '../services/customerService';
-import { Prisma } from '../generated';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { logInfo, logError } from '../utils/secureLogger';
 
@@ -932,4 +932,5 @@ export const customerController = {
         }
     }
 };
+
 

@@ -1,4 +1,4 @@
-import { PrismaClient, ServicePriceConfig } from '../generated';
+import { PrismaClient, ServicePriceConfig } from '@prisma/client';
 import prisma from '../lib/prisma';
 
 /**

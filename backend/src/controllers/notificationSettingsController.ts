@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import Logger from '../lib/logger';
-import { Prisma } from '../generated';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 /**
@@ -276,3 +276,4 @@ export const getAllUsersWithPreferences = async (req: Request, res: Response) =>
         res.status(500).json({ error: (error as Error).message || 'Erro ao buscar usuários' });
     }
 };
+

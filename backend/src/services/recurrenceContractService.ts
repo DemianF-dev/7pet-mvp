@@ -1,7 +1,7 @@
 import prisma from '../lib/prisma';
 import logger from '../utils/logger';
 import { createAuditLog } from '../utils/auditLogger';
-import { RecurrenceType, ContractStatus, PackageFrequency } from '../generated';
+import { RecurrenceType, ContractStatus, PackageFrequency } from '@prisma/client';
 
 export interface CreateContractInput {
     customerId: string;
@@ -112,3 +112,4 @@ export default {
     updateContract,
     updateContractStatus
 };
+

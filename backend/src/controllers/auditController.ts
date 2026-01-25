@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import * as auditService from '../services/auditService';
-import { AuditTargetType, AuditSeverity, Prisma } from '../generated';
+import { AuditTargetType, AuditSeverity, Prisma } from '@prisma/client';
 
 export const auditController = {
     /**
@@ -153,4 +153,5 @@ export const auditController = {
         return res.status(501).json({ error: 'Rollback legado não implementado. Use a reversão do AuditEvent.' });
     }
 };
+
 

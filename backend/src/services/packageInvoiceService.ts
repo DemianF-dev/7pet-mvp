@@ -1,7 +1,7 @@
 import prisma from '../lib/prisma';
 import logger from '../utils/logger';
 import { createAuditLog } from '../utils/auditLogger';
-import { RecurrenceType, PackageInvoiceStatus, InvoiceSourceType } from '../generated';
+import { RecurrenceType, PackageInvoiceStatus, InvoiceSourceType } from '@prisma/client';
 import { startOfMonth, endOfMonth, addMonths, getYear, getMonth } from 'date-fns';
 
 export interface CreateInvoiceInput {
@@ -253,3 +253,4 @@ export default {
     copyInvoiceToNextMonth,
     emitInvoice
 };
+
