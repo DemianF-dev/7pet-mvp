@@ -45,24 +45,14 @@ const CRITICAL_ENV_VARS: EnvValidationRule[] = [
  */
 export function validateEnvironment(): void {
     const errors: string[] = [];
-    const isDev = process.env.NODE_ENV === 'development';
 
     for (const rule of CRITICAL_ENV_VARS) {
         const value = process.env[rule.key];
 
-        // Verificar se é obrigatória (relaxado em desenvolvimento)
-        if (rule.required && !value && !isDev) {
+        // Verificar se é obrigatória
+        if (rule.required && !value) {
             errors.push(`❌ Missing required environment variable: ${rule.key}`);
             continue;
-        }
-
-        // Em desenvolvimento, fornecer defaults se não existir
-        if (isDev && !value) {
-            if (rule.key === 'JWT_SECRET') {
-                process.env.JWT_SECRET = 'development_jwt_secret_minimum_32_characters_long_for_testing_only';
-            } else if (rule.key === 'DATABASE_URL') {
-                process.env.DATABASE_URL = 'postgresql://postgres:test@localhost:5432/7pet_dev';
-            }
         }
 
         // Se não existe e não é obrigatória, pular
