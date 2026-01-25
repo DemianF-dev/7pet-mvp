@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1431",
+  "version": "BETA20260125-1444",
   "stage": "BETA",
-  "timestamp": "2026-01-25T14:31:44.000Z",
-  "commit": "8432fda",
-  "buildNumber": 100,
-  "releaseNotes": "Auto-generated from commit: fix: remove native bcrypt to fix vercel crash"
+  "timestamp": "2026-01-25T14:44:08.000Z",
+  "commit": "c61ab13",
+  "buildNumber": 101,
+  "releaseNotes": "Auto-generated from commit: fix: sync backend/vercel.json with root config to fix CORS"
 }
