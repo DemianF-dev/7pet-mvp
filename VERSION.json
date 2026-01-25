@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-1415",
+  "version": "BETA20260125-1431",
   "stage": "BETA",
-  "timestamp": "2026-01-25T14:15:59.000Z",
-  "commit": "b59a075",
-  "buildNumber": 99,
-  "releaseNotes": "Auto-generated from commit: fix: attempt to fix 500 error by simplifying and syncing monorepo deps"
+  "timestamp": "2026-01-25T14:31:44.000Z",
+  "commit": "8432fda",
+  "buildNumber": 100,
+  "releaseNotes": "Auto-generated from commit: fix: remove native bcrypt to fix vercel crash"
 }
