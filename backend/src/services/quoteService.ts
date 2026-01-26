@@ -261,7 +261,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         connect: quote.items.filter(i => i.serviceId).map(i => ({ id: i.serviceId! }))
                     },
                     updatedAt: new Date()
-                }
+                } as any
             });
             logger.info(`[QuoteService] SPA Appointment created: ${appt.id}`);
             appointments.push(appt);
@@ -301,7 +301,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                             }
                         },
                         updatedAt: new Date()
-                    }
+                    } as any
                 });
                 logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id} assigned to ${levaDriver || 'None'}`);
                 appointments.push(apptLeva);
@@ -329,7 +329,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                             }
                         },
                         updatedAt: new Date()
-                    }
+                    } as any
                 });
                 logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id} assigned to ${trazDriver || 'None'}`);
                 appointments.push(apptTraz);
@@ -358,7 +358,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                             }
                         },
                         updatedAt: new Date()
-                    }
+                    } as any
                 });
                 logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id} assigned to ${driver || 'None'}`);
                 appointments.push(appt);

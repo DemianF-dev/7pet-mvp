@@ -346,9 +346,9 @@ export const searchUsers = async (req: Request, res: Response) => {
                 currentUserId: currentUserId || null
             }
         });
-    } catch (error) {
+    } catch (error: unknown) {
         logError('❌ Error searching users for chat', error);
-        res.status(500).json({ error: 'Failed to search users', debug: (error as any).message });
+        res.status(500).json({ error: 'Failed to search users', debug: error instanceof Error ? error.message : String(error) });
     }
 };
 

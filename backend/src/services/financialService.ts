@@ -129,7 +129,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
     });
 
     // If balance is critical (< -1000)
-    if (balance < -1000 && !existingAlerts.some((a: any) => a.type === 'CRITICAL')) {
+    if (balance < -1000 && !existingAlerts.some((a: { type: string }) => a.type === 'CRITICAL')) {
         await client.customerAlert.create({
             data: {
                 id: randomUUID(),
@@ -142,7 +142,7 @@ export const createAutoAlert = async (customerId: string, balance: number, creat
         });
     }
     // If balance is warning level (< -500)
-    else if (balance < -500 && !existingAlerts.some((a: any) => a.type === 'WARNING')) {
+    else if (balance < -500 && !existingAlerts.some((a: { type: string }) => a.type === 'WARNING')) {
         await client.customerAlert.create({
             data: {
                 id: randomUUID(),

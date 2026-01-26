@@ -23,7 +23,7 @@ export class ServicePriceConfigService {
     /**
      * Obtém todas as configurações de preços
      */
-    static async getAllConfigs(): Promise<ServicePriceConfig[]> {
+    static async getAllConfigs(): Promise<any[]> {
         return await prisma.servicePriceConfig.findMany({
             where: { isActive: true },
             orderBy: { service: 'asc' }
@@ -37,7 +37,7 @@ export class ServicePriceConfigService {
         serviceName: string,
         basePrice: number,
         description?: string
-    ): Promise<ServicePriceConfig> {
+    ): Promise<any> {
         return await prisma.servicePriceConfig.upsert({
             where: { service: serviceName },
             update: {
