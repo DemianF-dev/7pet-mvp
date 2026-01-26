@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260126-0102",
+  "version": "BETA20260126-0110",
   "stage": "BETA",
-  "timestamp": "2026-01-26T01:02:16.000Z",
-  "commit": "bafcd4c",
-  "buildNumber": 117,
-  "releaseNotes": "Auto-generated from commit: chore: commit pending changes"
+  "timestamp": "2026-01-26T01:10:41.000Z",
+  "commit": "67bb3ce",
+  "buildNumber": 118,
+  "releaseNotes": "Auto-generated from commit: fix: remove aggressive routing rewrite to support frontend pages"
 }
