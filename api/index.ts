@@ -7,7 +7,8 @@ try {
     // Determine path based on environment
     console.log('[API] Importing backend app...');
     // We use require to catch import errors (like missing modules)
-    const backend = require('../backend/src/index');
+    // Import app directly to avoid side-effects (like app.listen)
+    const backend = require('../backend/src/app');
     app = backend.default || backend;
     console.log('[API] Backend app imported successfully.');
 } catch (error: any) {
