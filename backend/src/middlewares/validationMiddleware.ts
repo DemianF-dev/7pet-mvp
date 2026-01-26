@@ -21,7 +21,7 @@ export const validate = (schema: z.ZodSchema) => {
       }
       
       next();
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Dados inválidos',

@@ -47,7 +47,7 @@ class RailwaySocketClient {
             });
 
             logger.info(`📡 Railway Socket: Emitted ${event}`);
-        } catch (error) {
+        } catch (error: any) {
             logError(`❌ Railway Socket: Failed to emit ${event}`, error);
         }
     }
@@ -75,7 +75,7 @@ class RailwaySocketClient {
             });
 
             logger.info(`📡 Railway Socket: Emitted ${event} to room ${room}`);
-        } catch (error) {
+        } catch (error: any) {
             logError(`❌ Railway Socket: Failed to emit ${event} to room ${room}`, error);
         }
     }

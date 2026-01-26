@@ -29,7 +29,7 @@ async function main() {
             console.log('------------------------------------------------');
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
     } finally {
         await prisma.$disconnect();

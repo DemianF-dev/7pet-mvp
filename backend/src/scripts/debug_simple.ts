@@ -17,7 +17,7 @@ async function main() {
         });
         console.log('Sample User with Customer:', JSON.stringify(userWithCustomer, null, 2));
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error);
     } finally {
         await prisma.$disconnect();

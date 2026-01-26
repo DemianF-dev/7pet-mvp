@@ -15,7 +15,7 @@ async function main() {
         const customers = await prisma.customer.findFirst();
         console.log('Customers:', customers);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error executing raw query:', error);
     } finally {
         await prisma.$disconnect();

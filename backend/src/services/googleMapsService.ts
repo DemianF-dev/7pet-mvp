@@ -334,7 +334,7 @@ export const mapsService = {
                 settings
             };
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error calculating detailed transport:", error);
             throw error;
         }
@@ -362,7 +362,7 @@ export const mapsService = {
                     duration: detailed.breakdown.largada?.duration || '0 min'
                 }
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error calculating transport:", error);
             throw error;
         }

@@ -106,7 +106,7 @@ class MetricsService {
                     timestamp: new Date(data.timestamp || Date.now())
                 }
             });
-        } catch (error) {
+        } catch (error: any) {
             // Silently fail to not disrupt application
             console.error('Error persisting metric:', error);
         }
@@ -365,7 +365,7 @@ class MetricsService {
 
             console.log(`✅ Cleaned up ${result.count} old metrics`);
             return result.count;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error cleaning up metrics:', error);
             return 0;
         }
@@ -377,7 +377,7 @@ class MetricsService {
     async getPersistedMetricsCount(): Promise<number> {
         try {
             return await prisma.metric.count();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error counting metrics:', error);
             return 0;
         }

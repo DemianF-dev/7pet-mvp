@@ -15,7 +15,7 @@ export const getGlobalSettings = async (req: Request, res: Response) => {
         });
 
         res.json(settings);
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error fetching global settings:', error);
         res.status(500).json({ error: (error as Error).message || 'Erro ao buscar configurações' });
     }
@@ -48,7 +48,7 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
 
         logger.info(`[NotifController] Updated settings for ${type} by user ${userId}`);
         res.json(updated);
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error updating global settings:', error);
         res.status(500).json({ error: 'Erro ao atualizar configurações' });
     }
@@ -72,7 +72,7 @@ export const getUserPreferences = async (req: Request, res: Response) => {
             preferences,
             globalSettings
         });
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error fetching user preferences:', error);
         res.status(500).json({ error: 'Erro ao buscar preferências' });
     }
@@ -107,7 +107,7 @@ export const updateUserPreference = async (req: Request, res: Response) => {
 
         logger.info(`[NotifController] Updated preference for user ${userId}, type ${type}`);
         res.json(updated);
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error updating user preference:', error);
         res.status(500).json({ error: 'Erro ao atualizar preferência' });
     }
@@ -157,7 +157,7 @@ export const bulkUpdateUserPreferences = async (req: Request, res: Response) => 
             updated: results.length,
             results
         });
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error in bulk update:', error);
         res.status(500).json({ error: 'Erro ao atualizar preferências em massa' });
     }
@@ -211,7 +211,7 @@ export const getNotificationStats = async (req: Request, res: Response) => {
             totalActiveUsers: allUsers,
             totalDisabledPreferences: disabledPrefsCount
         });
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error getting stats:', error);
         res.status(500).json({ error: 'Erro ao buscar estatísticas' });
     }
@@ -271,7 +271,7 @@ export const getAllUsersWithPreferences = async (req: Request, res: Response) =>
             limit: limitNum,
             pages: Math.ceil(total / limitNum)
         });
-    } catch (error) {
+    } catch (error: any) {
         logError('[NotifController] Error fetching users with preferences:', error);
         res.status(500).json({ error: (error as Error).message || 'Erro ao buscar usuários' });
     }

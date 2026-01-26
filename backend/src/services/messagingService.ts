@@ -81,7 +81,7 @@ export const messagingService = {
                 type: type,
                 data: { generatedBy: 'messagingService' }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('[MessagingService] Erro ao disparar notificação unificada:', error);
             return null;
         }

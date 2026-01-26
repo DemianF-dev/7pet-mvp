@@ -10,7 +10,7 @@ async function main() {
         });
         console.log('--- Quotes DeletedAt Check ---');
         console.log(JSON.stringify(quotes, null, 2));
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
     } finally {
         await prisma.$disconnect();

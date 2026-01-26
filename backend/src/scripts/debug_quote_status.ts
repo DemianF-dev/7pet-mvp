@@ -15,7 +15,7 @@ async function main() {
         });
         console.log(JSON.stringify(result, null, 2));
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error executing raw query:', error);
     } finally {
         await prisma.$disconnect();

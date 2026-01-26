@@ -51,7 +51,7 @@ async function main() {
             console.log(text);
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error);
     } finally {
         await prisma.$disconnect();

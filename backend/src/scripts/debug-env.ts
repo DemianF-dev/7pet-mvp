@@ -7,7 +7,7 @@ console.log('--- DEBUGGING ENV ---');
 try {
     validateEnvironment();
     console.log('--- VALIDATION PASSED ---');
-} catch (error) {
+} catch (error: any) {
     console.error('--- VALIDATION FAILED ---');
     // Error detalis are already printed by validateEnvironment
 }

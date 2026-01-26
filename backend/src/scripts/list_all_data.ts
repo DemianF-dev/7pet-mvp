@@ -24,7 +24,7 @@ async function main() {
             console.log(`Customer: ${c.name} (Email: ${c.user.email}) | Quotes Count: ${c.quotes.length}`);
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
     } finally {
         await prisma.$disconnect();

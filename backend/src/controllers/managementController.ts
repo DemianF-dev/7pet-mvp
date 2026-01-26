@@ -269,7 +269,7 @@ export const getKPIs = async (req: Request, res: Response) => {
             pendingBalance: pendingInvoices._sum.amount || 0,
             topCustomers: topCustomersDetails
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching KPIs:', error);
         res.status(500).json({ error: (error as Error).message || 'Erro ao buscar métricas gerenciais.' });
     }
@@ -346,7 +346,7 @@ export const getReports = async (req: Request, res: Response) => {
         );
 
         res.json(combined);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching reports:', error);
         res.status(500).json({ error: 'Erro ao gerar relatório.' });
     }
@@ -402,7 +402,7 @@ export const listUsers = async (req: Request, res: Response) => {
         });
 
         res.json(sanitizedUsers);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error in listUsers:', error);
         res.status(500).json({ error: 'Erro ao listar usuários.', details: error instanceof Error ? error.message : String(error) });
     }
@@ -443,7 +443,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
 
         res.json(user);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Update role error:', error);
         res.status(500).json({ error: 'Erro ao atualizar cargo.' });
     }
@@ -472,7 +472,7 @@ export const getUser = async (req: Request, res: Response) => {
         }
 
         res.json(userJson);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao buscar usuário' });
     }
 };
@@ -544,7 +544,7 @@ export const createUser = async (req: Request, res: Response) => {
 
         res.status(201).json(user);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create user error:', error);
         res.status(500).json({ error: 'Erro ao criar usuário' });
     }
@@ -673,7 +673,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
         res.json(updatedUser);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Update user error:', error);
         console.error('Error details:', {
             message: error instanceof Error ? error.message : String(error),
@@ -720,7 +720,7 @@ export const deleteUser = async (req: Request, res: Response) => {
 
         res.json({ message: 'Usuário excluído com sucesso' });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Delete user error:', error);
         res.status(500).json({ error: 'Erro ao excluir usuário' });
     }
@@ -732,7 +732,7 @@ export const getRoleConfigs = async (req: Request, res: Response) => {
             orderBy: { role: 'asc' }
         });
         res.json(configs);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching role configs:', error);
         res.status(500).json({ error: 'Erro ao buscar configurações de cargo' });
     }
@@ -764,7 +764,7 @@ export const updateRoleConfig = async (req: Request, res: Response) => {
         });
 
         res.json(updated);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating role config:', error);
         res.status(500).json({ error: 'Erro ao atualizar configuração de cargo' });
     }
@@ -788,7 +788,7 @@ export const deleteRoleConfig = async (req: Request, res: Response) => {
         });
 
         res.json({ message: 'Cargo excluído com sucesso' });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error deleting role config:', error);
         res.status(500).json({ error: 'Erro ao excluir cargo' });
     }
@@ -811,7 +811,7 @@ export const restoreUser = async (req: Request, res: Response) => {
             data: { deletedAt: null, active: true }
         });
         res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
         console.error('Restore user error:', error);
         res.status(500).json({ error: 'Erro ao restaurar usuário' });
     }
@@ -870,7 +870,7 @@ export const permanentDeleteUser = async (req: Request, res: Response) => {
             email: userInfo.email
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Permanent delete user error:', error);
         res.status(500).json({ error: 'Erro ao excluir usuário permanentemente' });
     }

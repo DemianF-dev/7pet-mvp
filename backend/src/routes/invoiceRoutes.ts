@@ -525,7 +525,7 @@ router.patch('/:id/status', staffOnly, async (req: Request, res: Response) => {
         }
 
         res.json(updated);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Failed to update status' });
     }
 });
@@ -575,7 +575,7 @@ router.post('/sync', staffOnly, async (req: Request, res: Response) => {
         }
 
         res.json({ message: 'Sync completed', updatedCount });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Sync error:', error);
         res.status(500).json({ error: 'Failed to sync' });
     }
@@ -642,7 +642,7 @@ router.post('/batch', staffOnly, async (req: Request, res: Response) => {
         }
 
         res.json({ message: `${createdCount} faturas geradas com sucesso.`, createdCount });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Batch billing error:', error);
         res.status(500).json({ error: 'Erro ao gerar faturamento em lote' });
     }

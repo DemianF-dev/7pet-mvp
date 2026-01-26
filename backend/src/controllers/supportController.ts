@@ -45,7 +45,7 @@ export const createTicket = async (req: Request, res: Response) => {
         }
 
         res.status(201).json(ticket);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating ticket:', error);
         res.status(500).json({ error: 'Erro ao criar chamado.', details: error });
     }
@@ -69,7 +69,7 @@ export const listTickets = async (req: Request, res: Response) => {
         });
 
         res.json(tickets);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao listar chamados.' });
     }
 };
@@ -105,7 +105,7 @@ export const updateTicketStatus = async (req: Request, res: Response) => {
         }
 
         res.json(ticket);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao atualizar chamado.' });
     }
 };

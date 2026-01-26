@@ -23,7 +23,7 @@ async function main() {
         });
         console.log('Remaining invalid records:', check);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error executing raw query:', error);
     } finally {
         await prisma.$disconnect();

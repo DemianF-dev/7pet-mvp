@@ -130,7 +130,7 @@ async function promoteUsers() {
         });
 
         console.log('\n✅ Setup complete!');
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Error during setup:', error);
         throw error;
     } finally {

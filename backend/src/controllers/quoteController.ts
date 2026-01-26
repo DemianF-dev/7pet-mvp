@@ -264,7 +264,7 @@ export const quoteController = {
             }
 
             return res.status(201).json(quote);
-        } catch (error) {
+        } catch (error: any) {
             console.error('[QuoteCreate] ========== ERROR ==========');
             if (error instanceof z.ZodError) {
                 console.error('[QuoteCreate] Validation Error:', JSON.stringify(error.issues, null, 2));
@@ -347,7 +347,7 @@ export const quoteController = {
                     hasPrev: page > 1
                 }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao listar orçamentos:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -414,7 +414,7 @@ export const quoteController = {
             }
 
             return res.json(quote);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao buscar orçamento:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -534,7 +534,7 @@ export const quoteController = {
             }
 
             return res.json(updatedQuoteResult);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao atualizar status do orçamento:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -748,7 +748,7 @@ export const quoteController = {
             });
 
             return res.json(updated);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao atualizar orçamento:', error);
             if (error instanceof z.ZodError) {
                 console.error('Zod Validation Errors:', JSON.stringify(error.issues, null, 2));
@@ -794,7 +794,7 @@ export const quoteController = {
                     hasPrev: page > 1
                 }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao listar lixeira de orçamentos:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -840,7 +840,7 @@ export const quoteController = {
             });
 
             return res.status(201).json(duplicate);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao duplicar orçamento:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -865,7 +865,7 @@ export const quoteController = {
                 summary: 'Orçamento movido para a lixeira'
             });
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir orçamento:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -882,7 +882,7 @@ export const quoteController = {
                 data: { deletedAt: null }
             });
             return res.status(200).json({ message: 'Orçamento restaurado' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao restaurar orçamento:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -930,7 +930,7 @@ export const quoteController = {
             });
 
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir permanentemente:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -951,7 +951,7 @@ export const quoteController = {
             ]);
 
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir em massa:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -1405,7 +1405,7 @@ export const quoteController = {
             console.log('[TransportCalc] Success:', result.totals);
             return res.json(result);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('[TransportCalc] Error:', error);
 
             if (error instanceof z.ZodError) {

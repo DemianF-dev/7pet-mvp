@@ -17,7 +17,7 @@ if (vapidPublicKey && vapidPrivateKey) {
         webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
         pushEnabled = true;
         console.log('✅ Push Notifications VAPID configurado');
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Falha ao configurar VAPID:', error);
     }
 } else {
@@ -94,7 +94,7 @@ export const createNotification = async (userId: string, payload: {
         }
 
         return notification;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`❌ Erro criando notificação para ${userId}:`, error);
         return null;
     }
@@ -129,7 +129,7 @@ export const subscribe = async (req: Request, res: Response) => {
         });
 
         res.json({ message: 'Subscription salva com sucesso' });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Erro ao salvar subscription:', error);
         res.status(500).json({ error: 'Erro ao salvar subscription' });
     }
@@ -146,7 +146,7 @@ export const unsubscribe = async (req: Request, res: Response) => {
         });
 
         res.json({ message: 'Subscription removida' });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao remover subscription' });
     }
 };
@@ -167,7 +167,7 @@ export const listSubscriptions = async (req: Request, res: Response) => {
                 endpoint: '...' + s.endpoint.slice(-10)
             }))
         });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro listar subscriptions' });
     }
 };
@@ -183,7 +183,7 @@ export const sendTestNotification = async (req: Request, res: Response) => {
             icon: '/pwa-192x192.png'
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao enviar teste' });
     }
 };
@@ -208,7 +208,7 @@ export const list = async (req: Request, res: Response) => {
         }));
 
         res.json(parsed);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error listing notifications', error);
         res.status(500).json({ error: 'Internal error' });
     }
@@ -224,7 +224,7 @@ export const markAsRead = async (req: Request, res: Response) => {
             data: { read: true }
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Internal error' });
     }
 };
@@ -237,7 +237,7 @@ export const markAllRead = async (req: Request, res: Response) => {
             data: { read: true }
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Internal error' });
     }
 };

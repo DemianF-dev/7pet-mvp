@@ -57,7 +57,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         }
 
         res.status(201).json(service);
-    } catch (error) {
+    } catch (error: any) {
         next(error);
     }
 });
@@ -204,7 +204,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
         }
 
         res.json(service);
-    } catch (error) {
+    } catch (error: any) {
         next(error);
     }
 });
@@ -229,7 +229,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
         }
 
         res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao excluir serviço' });
     }
 });
@@ -253,7 +253,7 @@ router.post('/bulk-delete', async (req: Request, res: Response) => {
         }
 
         res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao excluir serviços em massa' });
     }
 });
@@ -263,7 +263,7 @@ router.get('/trash', async (req: Request, res: Response) => {
     try {
         const trash = await serviceService.listTrash();
         res.json(trash);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao listar lixeira' });
     }
 });
@@ -309,7 +309,7 @@ router.post('/bulk-restore', async (req: Request, res: Response) => {
         }
 
         res.status(200).json({ message: 'Serviços restaurados com sucesso' });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao restaurar serviços' });
     }
 });
@@ -332,7 +332,7 @@ router.patch('/:id/restore', async (req: Request, res: Response) => {
         }
 
         res.status(200).json({ message: 'Serviço restaurado com sucesso' });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao restaurar serviço' });
     }
 });

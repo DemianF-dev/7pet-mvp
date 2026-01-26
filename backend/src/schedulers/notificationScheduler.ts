@@ -23,7 +23,7 @@ export const runNotificationScheduler = () => {
     setInterval(async () => {
         try {
             await executeScheduledChecks();
-        } catch (error) {
+        } catch (error: any) {
             logError('[Scheduler] Error in notification scheduler:', error);
         }
     }, 60 * 1000);

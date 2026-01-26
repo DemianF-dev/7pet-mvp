@@ -77,7 +77,7 @@ class SocketService {
                 });
                 socket.data.userId = decoded.userId;
                 next();
-            } catch (err) {
+            } catch (err: any) {
                 logError('🔌 Socket blocked: Invalid token', err);
                 next(new Error('Authentication error: Invalid token'));
             }

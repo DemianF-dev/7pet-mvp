@@ -37,7 +37,7 @@ export const uploadFile = async (req: Request, res: Response) => {
             fileName: file.originalname,
             fileType: file.mimetype
         });
-    } catch (error) {
+    } catch (error: any) {
         logError('Error in uploadFile controller', error);
         res.status(500).json({ error: 'Erro ao fazer upload do arquivo' });
     }

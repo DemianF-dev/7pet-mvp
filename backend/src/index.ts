@@ -8,7 +8,7 @@ import logger, { logInfo, logWarn } from './utils/logger';
 
 try {
     validateEnvironment();
-} catch (error) {
+} catch (error: any) {
     logger.error('Startup Warning: Environment validation failed!');
     // We do NOT exit here anymore so that the API can still start
     // and return proper JSON errors with CORS headers instead of crashing hard.

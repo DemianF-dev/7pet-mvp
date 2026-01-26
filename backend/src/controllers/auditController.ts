@@ -35,7 +35,7 @@ export const auditController = {
                     limit: take
                 }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('[AuditController] Error fetching client audit:', error);
             return res.status(500).json({ error: 'Erro ao buscar histórico de auditoria do cliente' });
         }
@@ -100,7 +100,7 @@ export const auditController = {
                     limit: take
                 }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('[AuditController] Error fetching admin audit:', error);
             return res.status(500).json({ error: 'Erro ao buscar histórico global de auditoria' });
         }
@@ -140,7 +140,7 @@ export const auditController = {
                 orderBy: { createdAt: 'desc' }
             });
             return res.json(logs);
-        } catch (error) {
+        } catch (error: any) {
             return res.status(500).json({ error: 'Erro ao buscar logs' });
         }
     },

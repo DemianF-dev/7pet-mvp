@@ -73,7 +73,7 @@ export const notificationSettingsService = {
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             logger.error({ err: error }, '[NotifSettings] Error checking notification permission');
             return true; // Fail open - allow notification on error
         }
@@ -191,7 +191,7 @@ export const notificationSettingsService = {
             return users
                 .filter(u => !disabledUserIds.has(u.id))
                 .map(u => u.id);
-        } catch (error) {
+        } catch (error: any) {
             logger.error({ err: error }, '[NotifSettings] Error getting users for notification type');
             return [];
         }

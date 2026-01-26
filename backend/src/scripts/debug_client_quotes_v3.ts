@@ -79,7 +79,7 @@ async function main() {
 
         req.end();
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error);
     } finally {
         // await prisma.$disconnect(); // Keep open for async http callback? No, wait.

@@ -95,7 +95,7 @@ export const sendBulkNotification = async (req: Request, res: Response) => {
             recipientCount: targetIds.length
         });
 
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ err: error }, 'Erro ao enviar notificação em massa');
         res.status(500).json({ error: 'Erro interno ao processar envio em massa' });
     }
@@ -114,7 +114,7 @@ export const getAvailableRoles = async (req: Request, res: Response) => {
 
         const roleList = roles.map(r => r.role).filter(Boolean);
         res.json(roleList);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Erro ao buscar cargos' });
     }
 };

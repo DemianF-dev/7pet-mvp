@@ -22,7 +22,7 @@ export const getFeed = async (req: Request, res: Response) => {
             }
         });
         res.json(posts);
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ err: error }, 'Error fetching feed');
         res.status(500).json({ error: 'Failed to fetch feed' });
     }
@@ -49,7 +49,7 @@ export const createPost = async (req: Request, res: Response) => {
 
         socketService.emit('feed:new_post', post);
         res.status(201).json(post);
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ err: error }, 'Error creating post');
         res.status(500).json({ error: 'Failed to create post' });
     }
@@ -75,7 +75,7 @@ export const addComment = async (req: Request, res: Response) => {
 
         socketService.emit(`feed:post_updated`, { postId: id, type: 'comment', comment });
         res.status(201).json(comment);
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ err: error }, 'Error adding comment');
         res.status(500).json({ error: 'Failed to add comment' });
     }
@@ -123,7 +123,7 @@ export const toggleReaction = async (req: Request, res: Response) => {
         socketService.emit(`feed:post_reaction_updated`, { postId: id, userId: authorId });
 
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ err: error }, 'Error toggling reaction');
         res.status(500).json({ error: 'Failed to react' });
     }

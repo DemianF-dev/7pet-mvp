@@ -122,7 +122,7 @@ export const logEvent = async (context: AuditContext, options: LogEventOptions, 
                 revertOfEventId: options.revertOfEventId
             }
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('[AuditService] Failed to log event:', error);
         // We don't throw here to prevent breaking the main flow
         return null;

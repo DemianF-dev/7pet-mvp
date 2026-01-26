@@ -60,7 +60,7 @@ export const create = async (req: Request, res: Response) => {
         socketService.emit('feed:new_post', post);
 
         res.status(201).json(appreciation);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error creating appreciation', error);
         res.status(500).json({ error: 'Failed to create appreciation' });
     }
@@ -77,7 +77,7 @@ export const getByUser = async (req: Request, res: Response) => {
             orderBy: { createdAt: 'desc' }
         });
         res.json(appreciations);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error fetching appreciations', error);
         res.status(500).json({ error: 'Failed to fetch appreciations' });
     }

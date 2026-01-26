@@ -18,7 +18,7 @@ const createSafeClient = () => {
             adapter,
             log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("❌ CRITICAL: Failed to initialize Prisma Client", error);
 
         // Return a Dummy Proxy that doesn't crash app startup but fails on usage

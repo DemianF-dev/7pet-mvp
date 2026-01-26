@@ -36,7 +36,7 @@ export const createAuditLog = async (
                 reason: data.reason || `${data.action} realizado por usuário`,
             },
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Erro ao criar log de auditoria:', error);
         // Don't throw - logging failure shouldn't break the main operation
     }

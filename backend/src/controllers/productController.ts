@@ -23,7 +23,7 @@ export const productController = {
                 orderBy: { name: 'asc' }
             });
             res.json(products);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error listing products:', error);
             res.status(500).json({ error: 'Erro ao listar produtos' });
         }
@@ -100,7 +100,7 @@ export const productController = {
             }
 
             res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             res.status(500).json({ error: 'Erro ao excluir produto' });
         }
     },
@@ -123,7 +123,7 @@ export const productController = {
             }
 
             res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             res.status(500).json({ error: 'Erro ao excluir produtos em massa' });
         }
     },
@@ -132,7 +132,7 @@ export const productController = {
         try {
             const trash = await productService.listTrash();
             res.json(trash);
-        } catch (error) {
+        } catch (error: any) {
             res.status(500).json({ error: 'Erro ao listar lixeira' });
         }
     },
@@ -155,7 +155,7 @@ export const productController = {
             }
 
             res.status(200).json({ message: 'Produto restaurado com sucesso' });
-        } catch (error) {
+        } catch (error: any) {
             res.status(500).json({ error: 'Erro ao restaurar produto' });
         }
     },
@@ -178,7 +178,7 @@ export const productController = {
             }
 
             res.status(200).json({ message: 'Produtos restaurados com sucesso' });
-        } catch (error) {
+        } catch (error: any) {
             res.status(500).json({ error: 'Erro ao restaurar produtos' });
         }
     },

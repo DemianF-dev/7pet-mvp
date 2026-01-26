@@ -21,7 +21,7 @@ async function main() {
         });
         console.log(JSON.stringify(users, null, 2));
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error);
     } finally {
         await prisma.$disconnect();

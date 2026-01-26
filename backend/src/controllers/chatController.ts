@@ -50,7 +50,7 @@ export const getConversations = async (req: Request, res: Response) => {
         }));
 
         res.json(conversationsWithUnread);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error fetching conversations', error);
         res.status(500).json({ error: 'Failed to fetch conversations' });
     }
@@ -84,7 +84,7 @@ export const getConversation = async (req: Request, res: Response) => {
         }
 
         res.json(conversation);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error fetching conversation', error);
         res.status(500).json({ error: 'Failed to fetch conversation' });
     }
@@ -113,7 +113,7 @@ export const getMessages = async (req: Request, res: Response) => {
 
         logger.info(`✅ Found ${mappedMessages.length} messages`);
         res.json(mappedMessages);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error fetching messages', error);
         res.status(500).json({ error: 'Failed to fetch messages' });
     }
@@ -201,7 +201,7 @@ export const sendMessage = async (req: Request, res: Response) => {
         }
 
         res.status(201).json(mappedMessage);
-    } catch (error) {
+    } catch (error: any) {
         logError('❌ Error sending message:', error);
         res.status(500).json({
             error: 'Failed to send message',
@@ -255,7 +255,7 @@ export const createConversation = async (req: Request, res: Response) => {
         });
 
         res.status(201).json(mappedConversation);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error creating conversation', error);
         res.status(500).json({ error: 'Failed to start chat' });
     }
@@ -278,7 +278,7 @@ export const getSupportAgents = async (req: Request, res: Response) => {
             }
         });
         res.json(agents);
-    } catch (error) {
+    } catch (error: any) {
         logError('Error fetching support agents', error);
         res.status(500).json({ error: 'Failed to fetch agents' });
     }
@@ -346,7 +346,7 @@ export const searchUsers = async (req: Request, res: Response) => {
                 currentUserId: currentUserId || null
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logError('❌ Error searching users for chat', error);
         res.status(500).json({ error: 'Failed to search users', debug: error instanceof Error ? error.message : String(error) });
     }
@@ -406,13 +406,13 @@ export const sendAttention = async (req: Request, res: Response) => {
                     referenceId: id,
                     data: { url: `/staff/chat`, chatId: id, forceAlert: true }
                 });
-            } catch (err) {
+            } catch (err: any) {
                 logError('Error sending attention notification', err);
             }
         }
 
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         logError('Error sending attention', error);
         res.status(500).json({ error: 'Failed to send attention' });
     }
@@ -437,7 +437,7 @@ export const markAsRead = async (req: Request, res: Response) => {
         });
 
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         logError('Error marking conversation as read', error);
         res.status(500).json({ error: 'Failed to mark as read' });
     }
@@ -465,7 +465,7 @@ export const deleteConversation = async (req: Request, res: Response) => {
         });
 
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         logError('Error deleting conversation', error);
         res.status(500).json({ error: 'Failed to delete conversation' });
     }
@@ -517,7 +517,7 @@ export const addParticipant = async (req: Request, res: Response) => {
         railwaySocketClient.notifyUser(newUserId, 'chat:new_conversation', conversation);
 
         res.json({ success: true, conversation });
-    } catch (error) {
+    } catch (error: any) {
         logError('Error adding participant', error);
         res.status(500).json({ error: 'Failed to add participant' });
     }
@@ -569,7 +569,7 @@ export const transferConversation = async (req: Request, res: Response) => {
         });
 
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         logError('Error transferring conversation', error);
         res.status(500).json({ error: 'Failed to transfer conversation' });
     }

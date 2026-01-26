@@ -132,7 +132,7 @@ export const customerController = {
             }
 
             return res.json(customer);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao buscar perfil:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -192,7 +192,7 @@ export const customerController = {
                 success: true,
                 message: 'Solicitação registrada com sucesso! Nossa equipe entrará em contato em breve.'
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao processar solicitação de recorrência:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -407,7 +407,7 @@ export const customerController = {
 
             return res.status(201).json(result);
 
-        } catch (error) {
+        } catch (error: any) {
             if (error instanceof z.ZodError) {
                 return res.status(400).json({
                     error: 'Dados inválidos',
@@ -584,7 +584,7 @@ export const customerController = {
 
             console.log('Customer updated successfully:', updatedCustomer.id);
             return res.json(updatedCustomer);
-        } catch (error) {
+        } catch (error: any) {
             if (error instanceof z.ZodError) {
                 console.error('Zod validation error:', error.issues);
                 return res.status(400).json({ error: 'Dados inválidos', details: error.issues });
@@ -603,7 +603,7 @@ export const customerController = {
             const { id } = req.params;
             await customerService.remove(id);
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir cliente:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -614,7 +614,7 @@ export const customerController = {
             const { ids } = req.body;
             await customerService.bulkDelete(ids);
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir clientes em massa:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -624,7 +624,7 @@ export const customerController = {
         try {
             const trash = await customerService.listTrash();
             return res.json(trash);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao listar lixeira:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -635,7 +635,7 @@ export const customerController = {
             const { id } = req.params;
             await customerService.restore(id);
             return res.status(200).json({ message: 'Cliente restaurado com sucesso' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao restaurar cliente:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -646,7 +646,7 @@ export const customerController = {
             const { ids } = req.body;
             await customerService.bulkRestore(ids);
             return res.status(200).json({ message: 'Clientes restaurados com sucesso' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao restaurar clientes:', error);
             return res.status(500).json({ error: 'Erro interno do servidor' });
         }
@@ -699,7 +699,7 @@ export const customerController = {
             });
 
             return res.status(201).json(pet);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao adicionar pet:', error);
             return res.status(500).json({ error: 'Erro interno ao criar pet' });
         }
@@ -756,7 +756,7 @@ export const customerController = {
             });
 
             return res.json(pet);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao atualizar pet:', error);
             return res.status(500).json({ error: 'Erro interno ao atualizar pet' });
         }
@@ -771,7 +771,7 @@ export const customerController = {
             });
 
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir pet:', error);
             return res.status(500).json({ error: 'Erro interno ao excluir pet' });
         }
@@ -802,7 +802,7 @@ export const customerController = {
             });
 
             return res.status(201).json(transaction);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao criar transação:', error);
             return res.status(500).json({ error: 'Erro ao criar transação financeira' });
         }
@@ -822,7 +822,7 @@ export const customerController = {
             });
 
             return res.json(result);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao listar transações:', error);
             return res.status(500).json({ error: 'Erro ao listar transações' });
         }
@@ -836,7 +836,7 @@ export const customerController = {
             const newBalance = await financialService.syncBalance(id);
 
             return res.json({ balance: newBalance });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao sincronizar saldo:', error);
             return res.status(500).json({ error: 'Erro ao sincronizar saldo' });
         }
@@ -865,7 +865,7 @@ export const customerController = {
             });
 
             return res.status(201).json(alert);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao criar alerta:', error);
             return res.status(500).json({ error: 'Erro ao criar alerta' });
         }
@@ -890,7 +890,7 @@ export const customerController = {
             });
 
             return res.json(alerts);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao listar alertas:', error);
             return res.status(500).json({ error: 'Erro ao listar alertas' });
         }
@@ -911,7 +911,7 @@ export const customerController = {
             });
 
             return res.json(alert);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao resolver alerta:', error);
             return res.status(500).json({ error: 'Erro ao resolver alerta' });
         }
@@ -926,7 +926,7 @@ export const customerController = {
             });
 
             return res.status(204).send();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao excluir alerta:', error);
             return res.status(500).json({ error: 'Erro ao excluir alerta' });
         }

@@ -27,7 +27,7 @@ export const transportSettingsController = {
 
             console.log('[TransportSettings] Settings found:', settings);
             return res.json(settings);
-        } catch (error) {
+        } catch (error: any) {
             console.error('[TransportSettings] Error fetching settings:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -87,7 +87,7 @@ export const transportSettingsController = {
                 console.log('[TransportSettings] Successfully created:', created);
                 return res.json(created);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[TransportSettings] Error updating settings:', error);
             return res.status(500).json({ error: 'Internal server error', details: error });
         }

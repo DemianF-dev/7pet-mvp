@@ -242,7 +242,7 @@ export const notificationService = {
 
             await Promise.all(promises);
             logger.info(`✅ Alerta de novo orçamento enviado para ${staff.length} colaboradores`);
-        } catch (error) {
+        } catch (error: any) {
             logError('❌ Erro ao notificar staff sobre novo orçamento:', error);
         }
     }
@@ -267,7 +267,7 @@ export async function runScheduledNotifications() {
         if (countDaily > 0) {
             logger.info(`[Notif Scheduler] ✅ ${countDaily} operadores notificados (revisão diária)`);
         }
-    } catch (error) {
+    } catch (error: any) {
         logError('[Notif Scheduler] Error:', error);
     }
 }

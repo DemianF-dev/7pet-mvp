@@ -44,7 +44,7 @@ export function encryptField(text: string | null | undefined): string | null {
 
         // Formato: iv:authTag:encrypted
         return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error encrypting field:', error);
         throw new Error('Encryption failed');
     }
@@ -89,7 +89,7 @@ export function decryptField(encryptedText: string | null | undefined): string |
         decrypted += decipher.final('utf8');
 
         return decrypted;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error decrypting field:', error);
         // Em caso de erro, retornar null para evitar expor dados corrompidos
         return null;

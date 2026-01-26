@@ -58,7 +58,7 @@ export const authenticate = async (req: any, res: Response, next: NextFunction) 
         };
 
         next();
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ err: error }, 'Authentication failed: Token validation error');
         res.status(401).json({ error: 'Token inválido' });
     }

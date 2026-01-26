@@ -86,7 +86,7 @@ export async function debugChatUsers(req: any, res: any) {
             testQueryUsers: testQueryUsers.length,
             allUsersArray: emptyQueryUsers
         });
-    } catch (error) {
+    } catch (error: any) {
         logError('🐛 DEBUG: Erro na busca de usuários', error);
         res.status(500).json({
             debug: true,

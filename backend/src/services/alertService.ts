@@ -111,7 +111,7 @@ class AlertService {
                 subject: `🚨 [${alert.severity.toUpperCase()}] ${alert.title}`,
                 alert
             });
-        } catch (error) {
+        } catch (error: any) {
             logError('Failed to send email alert:', error);
         }
     }
@@ -158,7 +158,7 @@ class AlertService {
             }
 
             logger.info('📱 Slack alert sent successfully');
-        } catch (error) {
+        } catch (error: any) {
             logError('Failed to send Slack alert:', error);
         }
     }

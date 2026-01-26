@@ -191,7 +191,7 @@ export const staffController = {
                     month: revenueMonth._sum.amount || 0
                 }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching staff metrics:', error);
             // Return detailed error message if possible to help debugging from frontend
             return res.status(500).json({
@@ -227,7 +227,7 @@ export const staffController = {
                 }
             });
             return res.json(transports);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error listing transports:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -293,7 +293,7 @@ export const staffController = {
                 popularPosts
             });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching feed widgets:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
@@ -326,7 +326,7 @@ export const staffController = {
             });
 
             return res.json(transport);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating transport status:', error);
             return res.status(500).json({ error: (error as Error).message });
         }
@@ -349,7 +349,7 @@ export const staffController = {
             });
             if (!transport) return res.status(404).json({ error: 'Não encontrado' });
             return res.json(transport);
-        } catch (error) {
+        } catch (error: any) {
             return res.status(500).json({ error: 'Internal server error' });
         }
     }

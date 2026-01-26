@@ -15,7 +15,7 @@ router.get('/summary', authenticate, authorize(['ADMIN', 'GESTAO', 'MASTER']), (
     try {
         const summary = metricsService.getSummary();
         res.json(summary);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Failed to fetch metrics summary' });
     }
 });
@@ -30,7 +30,7 @@ router.get('/realtime', authenticate, authorize(['ADMIN', 'GESTAO', 'MASTER']), 
         const minutes = parseInt(req.query.minutes as string) || 5;
         const metrics = metricsService.getRealtimeMetrics(Math.min(minutes, 60)); // Max 60 minutes
         res.json(metrics);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Failed to fetch realtime metrics' });
     }
 });
@@ -65,7 +65,7 @@ router.get('/health', async (req, res) => {
         let dbMessage = 'Connected';
         try {
             await prisma.$queryRaw`SELECT 1`;
-        } catch (error) {
+        } catch (error: any) {
             dbStatus = 'fail';
             dbMessage = 'Connection failed';
         }
@@ -86,7 +86,7 @@ router.get('/health', async (req, res) => {
             timestamp: Date.now(),
             system: systemMetrics
         });
-    } catch (error) {
+    } catch (error: any) {
         res.status(503).json({
             status: 'unhealthy',
             error: 'Health check failed',
@@ -104,7 +104,7 @@ router.post('/reset', authenticate, authorize(['MASTER']), (req, res) => {
     try {
         metricsService.reset();
         res.json({ success: true, message: 'Metrics reset successfully' });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Failed to reset metrics' });
     }
 });
@@ -149,7 +149,7 @@ router.get('/database', authenticate, authorize(['ADMIN', 'GESTAO', 'MASTER']), 
             },
             timestamp: Date.now()
         });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ error: 'Failed to fetch database metrics' });
     }
 });

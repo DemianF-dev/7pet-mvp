@@ -56,7 +56,7 @@ async function checkUsers() {
             console.log('✅ Usuário de teste criado:', testUser);
         }
         
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Erro ao verificar usuários:', error);
     } finally {
         await prisma.$disconnect();
