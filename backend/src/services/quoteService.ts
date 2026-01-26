@@ -288,8 +288,8 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: quote.transportLevaAt || quote.transportAt || quote.desiredAt || new Date(),
-                        status: 'CONFIRMADO' as any,
-                        category: 'LOGISTICA' as any,
+                        status: 'CONFIRMADO',
+                        category: 'LOGISTICA',
                         quote: { connect: { id } },
                         performerId: levaDriver || null,
                         transportDetails: {
@@ -316,8 +316,8 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: returnTime,
-                        status: 'CONFIRMADO' as any,
-                        category: 'LOGISTICA' as any,
+                        status: 'CONFIRMADO',
+                        category: 'LOGISTICA',
                         quote: { connect: { id } },
                         performerId: trazDriver || null,
                         transportDetails: {
@@ -345,8 +345,8 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         customer: { connect: { id: quote.customerId } },
                         pet: { connect: { id: quote.petId! } },
                         startAt: (legType === 'LEVA' ? (quote.transportLevaAt || quote.transportAt || quote.desiredAt) : (quote.transportTrazAt || quote.scheduledAt)) || new Date(),
-                        status: 'CONFIRMADO' as any,
-                        category: 'LOGISTICA' as any,
+                        status: 'CONFIRMADO',
+                        category: 'LOGISTICA',
                         quote: { connect: { id } },
                         performerId: driver || null,
                         transportDetails: {
