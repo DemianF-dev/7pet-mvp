@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-2317",
+  "version": "BETA20260125-2327",
   "stage": "BETA",
-  "timestamp": "2026-01-25T23:17:13.000Z",
-  "commit": "a7bb07f",
-  "buildNumber": 114,
-  "releaseNotes": "Auto-generated from commit: fix: resolve remaining backend TypeScript errors for Vercel build"
+  "timestamp": "2026-01-25T23:27:59.000Z",
+  "commit": "8a94fc7",
+  "buildNumber": 115,
+  "releaseNotes": "Auto-generated from commit: fix: restore api routing in root vercel.json and ensure CORS stability"
 }
