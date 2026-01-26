@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ServicePriceConfig } from '@prisma/client';
 import prisma from '../lib/prisma';
 
 /**
@@ -23,7 +23,7 @@ export class ServicePriceConfigService {
     /**
      * Obtém todas as configurações de preços
      */
-    static async getAllConfigs(): Promise<any[]> {
+    static async getAllConfigs(): Promise<ServicePriceConfig[]> {
         return await prisma.servicePriceConfig.findMany({
             where: { isActive: true },
             orderBy: { service: 'asc' }
@@ -37,7 +37,7 @@ export class ServicePriceConfigService {
         serviceName: string,
         basePrice: number,
         description?: string
-    ): Promise<any> {
+    ): Promise<ServicePriceConfig> {
         return await prisma.servicePriceConfig.upsert({
             where: { service: serviceName },
             update: {

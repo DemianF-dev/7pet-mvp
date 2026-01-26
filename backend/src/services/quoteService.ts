@@ -5,6 +5,7 @@ import { createAuditLog } from '../utils/auditLogger';
 import logger, { logInfo, logError } from '../utils/logger';
 import { randomUUID } from 'crypto';
 
+
 /**
  * Verifica dependências de um orçamento (appointments e invoices)
  */
@@ -290,7 +291,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO' as any,
                         category: 'LOGISTICA' as any,
                         quote: { connect: { id } },
-                        performer: levaDriver ? { connect: { id: levaDriver } } : undefined,
+                        performerId: levaDriver || null,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
@@ -318,7 +319,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO' as any,
                         category: 'LOGISTICA' as any,
                         quote: { connect: { id } },
-                        performer: trazDriver ? { connect: { id: trazDriver } } : undefined,
+                        performerId: trazDriver || null,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
@@ -347,7 +348,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         status: 'CONFIRMADO' as any,
                         category: 'LOGISTICA' as any,
                         quote: { connect: { id } },
-                        performer: driver ? { connect: { id: driver } } : undefined,
+                        performerId: driver || null,
                         transportDetails: {
                             create: {
                                 id: randomUUID(),
