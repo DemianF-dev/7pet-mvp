@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-2011",
+  "version": "BETA20260125-2241",
   "stage": "BETA",
-  "timestamp": "2026-01-25T20:11:25.000Z",
-  "commit": "205e25f",
-  "buildNumber": 111,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-25T22:41:22.000Z",
+  "commit": "0ff6ba1",
+  "buildNumber": 112,
+  "releaseNotes": "Auto-generated from commit: refactor: unify logging system, resolve monorepo build errors and standardize agenda views"
 }
