@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError, logWarn } from '../utils/logger';
 
 class SocketService {
     private io: Server | null = null;
@@ -16,7 +16,7 @@ class SocketService {
         this.userSockets.get(userId)?.add(socket.id);
         socket.join(`user:${userId}`);
         socket.data.userId = userId;
-        Logger.info(`👤 User ${userId} linked to socket ${socket.id}. sessions: ${this.userSockets.get(userId)?.size}`);
+        logger.info(`👤 User ${userId} linked to socket ${socket.id}. sessions: ${this.userSockets.get(userId)?.size}`);
     }
 
     private async unlinkUser(userId: string | undefined, socketId: string) {
@@ -37,7 +37,7 @@ class SocketService {
                         data: { lastSeenAt: new Date() }
                     });
                 } catch (e) {
-                    Logger.error(`Failed to update lastSeenAt for user ${userId}:`, e);
+                    logError(`Failed to update lastSeenAt for user ${userId}:`, e);
                 }
             }
         }
@@ -67,7 +67,7 @@ class SocketService {
             const secret = process.env.JWT_SECRET;
 
             if (!token || !secret) {
-                Logger.warn('🔌 Socket blocked: Missing token or JWT_SECRET');
+                logWarn('🔌 Socket blocked: Missing token or JWT_SECRET');
                 return next(new Error('Authentication error: Missing token'));
             }
 
@@ -78,13 +78,13 @@ class SocketService {
                 socket.data.userId = decoded.userId;
                 next();
             } catch (err) {
-                Logger.error('🔌 Socket blocked: Invalid token');
+                logError('🔌 Socket blocked: Invalid token', err);
                 next(new Error('Authentication error: Invalid token'));
             }
         });
 
         this.io.on('connection', (socket: Socket) => {
-            Logger.info(`🔌 Socket connected: ${socket.id}`);
+            logger.info(`🔌 Socket connected: ${socket.id}`);
 
             // User ID is now securely stored in socket.data from the middleware
             const userId = socket.data.userId;
@@ -96,14 +96,14 @@ class SocketService {
             // Handle manual re-identification if needed (e.g. after temp token refresh)
             socket.on('identify', (data: { userId: string }) => {
                 if (data.userId && data.userId !== userId) {
-                    Logger.info(`👤 Socket ${socket.id} re-identifying as ${data.userId}`);
+                    logger.info(`👤 Socket ${socket.id} re-identifying as ${data.userId}`);
                     this.unlinkUser(userId, socket.id);
                     this.linkUser(data.userId, socket);
                 }
             });
 
             socket.on('disconnect', () => {
-                Logger.info(`🔌 Socket disconnected: ${socket.id}`);
+                logger.info(`🔌 Socket disconnected: ${socket.id}`);
                 const currentUserId = socket.data.userId;
                 if (currentUserId) {
                     this.unlinkUser(currentUserId, socket.id);
@@ -113,14 +113,14 @@ class SocketService {
             // Handle joining chat rooms
             socket.on('join_chat', (conversationId: string) => {
                 socket.join(`chat:${conversationId}`);
-                Logger.info(`Socket ${socket.id} joined chat:${conversationId}`);
+                logger.info(`Socket ${socket.id} joined chat:${conversationId}`);
             });
             socket.on('leave_chat', (conversationId: string) => {
                 socket.leave(`chat:${conversationId}`);
             });
         });
 
-        Logger.info('✅ SocketService initialized');
+        logger.info('✅ SocketService initialized');
     }
 
     getIO(): Server {
@@ -132,12 +132,12 @@ class SocketService {
 
     // Helpers
     notifyUser(userId: string, event: string, data: any) {
-        Logger.info(`🔔 Socket: Emitting ${event} to user:${userId}`);
+        logger.info(`🔔 Socket: Emitting ${event} to user:${userId}`);
         this.io?.to(`user:${userId}`).emit(event, data);
     }
 
     notifyChat(conversationId: string, event: string, data: any) {
-        Logger.info(`🔔 Socket: Emitting ${event} to chat:${conversationId}`);
+        logger.info(`🔔 Socket: Emitting ${event} to chat:${conversationId}`);
         this.io?.to(`chat:${conversationId}`).emit(event, data);
     }
 
@@ -146,7 +146,7 @@ class SocketService {
     }
 
     emit(event: string, data: any) {
-        Logger.info(`🔔 Socket: Broadcasting ${event} to all`);
+        logger.info(`🔔 Socket: Broadcasting ${event} to all`);
         this.io?.emit(event, data);
     }
 }

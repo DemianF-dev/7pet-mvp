@@ -1,21 +1,21 @@
 import { PrismaClient } from '@prisma/client';
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 
 /**
  * Endpoint de depuração para testar busca de usuários
  */
 export async function debugChatUsers(req: any, res: any) {
     try {
-        Logger.info('🐛 DEBUG: Iniciando busca de usuários para chat');
-        
+        logger.info('🐛 DEBUG: Iniciando busca de usuários para chat');
+
         // Contar usuários ativos no banco
         const totalUsers = await prisma.user.count({
             where: { active: true }
         });
-        
-        Logger.info(`🐛 DEBUG: Total usuários ativos: ${totalUsers}`);
-        
+
+        logger.info(`🐛 DEBUG: Total usuários ativos: ${totalUsers}`);
+
         // Buscar todos os usuários ativos (sem filtro)
         const allUsers = await prisma.user.findMany({
             where: { active: true },
@@ -30,9 +30,9 @@ export async function debugChatUsers(req: any, res: any) {
                 color: true
             }
         });
-        
-        Logger.info(`🐛 DEBUG: Amostra de usuários: ${JSON.stringify(allUsers, null, 2)}`);
-        
+
+        logger.info(`🐛 DEBUG: Amostra de usuários: ${JSON.stringify(allUsers, null, 2)}`);
+
         // Testar a query vazia (como o frontend faz)
         const emptyQueryUsers = await prisma.user.findMany({
             where: {
@@ -51,9 +51,9 @@ export async function debugChatUsers(req: any, res: any) {
                 color: true
             }
         });
-        
-        Logger.info(`🐛 DEBUG: Usuários com query vazia: ${emptyQueryUsers.length}`);
-        
+
+        logger.info(`🐛 DEBUG: Usuários com query vazia: ${emptyQueryUsers.length}`);
+
         // Testar query específica
         const testQueryUsers = await prisma.user.findMany({
             where: {
@@ -75,9 +75,9 @@ export async function debugChatUsers(req: any, res: any) {
                 color: true
             }
         });
-        
-        Logger.info(`🐛 DEBUG: Usuários com query "admin": ${testQueryUsers.length}`);
-        
+
+        logger.info(`🐛 DEBUG: Usuários com query "admin": ${testQueryUsers.length}`);
+
         res.json({
             debug: true,
             totalActiveUsers: totalUsers,
@@ -87,11 +87,11 @@ export async function debugChatUsers(req: any, res: any) {
             allUsersArray: emptyQueryUsers
         });
     } catch (error) {
-        Logger.error('🐛 DEBUG: Erro na busca de usuários', error);
-        res.status(500).json({ 
+        logError('🐛 DEBUG: Erro na busca de usuários', error);
+        res.status(500).json({
             debug: true,
             error: (error as Error).message,
-            stack: (error as Error).stack 
+            stack: (error as Error).stack
         });
     }
 }

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
 import Logger from '../lib/logger';
 import * as auditService from '../services/auditService';
-import { logError } from '../utils/secureLogger';
+import { logInfo, logError } from '../utils/logger';
 
 const appointmentSchema = z.object({
     petId: z.string().uuid(),

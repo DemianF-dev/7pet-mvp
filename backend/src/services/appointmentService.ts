@@ -3,7 +3,7 @@ import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma
 import * as auditService from './auditService';
 import hrService from './hrService';
 import { randomUUID } from 'crypto';
-import { logInfo, logError } from '../utils/secureLogger';
+import { logInfo, logError } from '../utils/logger';
 
 export const create = async (data: {
     customerId: string;

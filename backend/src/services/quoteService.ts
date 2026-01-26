@@ -2,7 +2,7 @@ import prisma from '../lib/prisma';
 import { QuoteDependencies, CascadeDeleteOptions } from '../types/QuoteDependencies';
 import { messagingService } from './messagingService';
 import { createAuditLog } from '../utils/auditLogger';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 import { randomUUID } from 'crypto';
 
 /**
@@ -202,7 +202,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
         throw new Error('Não é possível agendar: Nenhum pet foi vinculado a este orçamento.');
     }
 
-    Logger.info(`[QuoteService] Starting approveAndSchedule for Quote ${id}. Performer: ${performerId || 'None'}`);
+    logger.info(`[QuoteService] Starting approveAndSchedule for Quote ${id}. Performer: ${performerId || 'None'}`);
 
     const result = await prisma.$transaction(async (tx) => {
         // 1. Approve Quote
@@ -263,7 +263,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                     updatedAt: new Date()
                 }
             });
-            Logger.info(`[QuoteService] SPA Appointment created: ${appt.id}`);
+            logger.info(`[QuoteService] SPA Appointment created: ${appt.id}`);
             appointments.push(appt);
         }
 
@@ -303,7 +303,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         updatedAt: new Date()
                     }
                 });
-                Logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id} assigned to ${levaDriver || 'None'}`);
+                logger.info(`[QuoteService] Logistics "LEVA" Appointment created: ${apptLeva.id} assigned to ${levaDriver || 'None'}`);
                 appointments.push(apptLeva);
 
                 // Leg 2: TRAZ (Return)
@@ -331,7 +331,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         updatedAt: new Date()
                     }
                 });
-                Logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id} assigned to ${trazDriver || 'None'}`);
+                logger.info(`[QuoteService] Logistics "TRAZ" Appointment created: ${apptTraz.id} assigned to ${trazDriver || 'None'}`);
                 appointments.push(apptTraz);
             } else {
                 // One way (Single appointment)
@@ -360,7 +360,7 @@ export const approveAndSchedule = async (id: string, performerId?: string, authU
                         updatedAt: new Date()
                     }
                 });
-                Logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id} assigned to ${driver || 'None'}`);
+                logger.info(`[QuoteService] Single Logistics Appointment (${legType}) created: ${appt.id} assigned to ${driver || 'None'}`);
                 appointments.push(appt);
             }
         }

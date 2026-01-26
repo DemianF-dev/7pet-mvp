@@ -1,7 +1,7 @@
 
 import { Request, Response } from 'express';
 import * as posService from '../services/posService';
-import { logInfo, logError } from '../utils/secureLogger';
+import { logInfo, logError } from '../utils/logger';
 
 export const getActiveSession = async (req: Request, res: Response) => {
     try {

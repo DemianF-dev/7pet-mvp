@@ -7,7 +7,7 @@ import {
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as financialService from './financialService';
-import { logInfo, logError } from '../utils/secureLogger';
+import { logInfo, logError } from '../utils/logger';
 
 /**
  * CASH SESSION MANAGEMENT

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import * as authService from '../services/authService';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 import bcrypt from 'bcryptjs';
 
 const registerSchema = z.object({
@@ -50,10 +50,10 @@ export const register = async (req: Request, res: Response) => {
     try {
         const data = registerSchema.parse(req.body);
         const result = await authService.register(data);
-        Logger.info(`Usuário registrado com sucesso: ${result.user.email}`);
+        logger.info(`Usuário registrado com sucesso: ${result.user.email}`);
         res.status(201).json(result);
     } catch (error: any) {
-        Logger.error(`ERRO AO REGISTRAR USUÁRIO: ${error}`);
+        logError(`ERRO AO REGISTRAR USUÁRIO:`, error);
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Dados inválidos', details: error.issues });
         }

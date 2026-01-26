@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import Logger from '../lib/logger';
+import { logInfo, logError } from '../utils/logger';
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-    Logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+    logError(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, err);
 
     // 🛡️ Ensure CORS headers are present even on errors
     const origin = req.headers.origin;

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
 import { storageService } from '../services/storageService';
-import Logger from '../lib/logger';
+import { logInfo, logError } from '../utils/logger';
 import path from 'path';
 
 // Multer config: memory storage is better for direct upload to Supabase
@@ -38,7 +38,7 @@ export const uploadFile = async (req: Request, res: Response) => {
             fileType: file.mimetype
         });
     } catch (error) {
-        Logger.error('Error in uploadFile controller', error);
+        logError('Error in uploadFile controller', error);
         res.status(500).json({ error: 'Erro ao fazer upload do arquivo' });
     }
 };

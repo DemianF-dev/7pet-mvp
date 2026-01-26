@@ -3,7 +3,7 @@
  * Implementado seguindo auditoria de segurança (04/01/2026) - Fase 4
  */
 
-import Logger from '../lib/logger';
+import logger, { logInfo, logError, logWarn, logDebug } from '../utils/logger';
 
 export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
 
@@ -71,7 +71,7 @@ class AlertService {
         }
 
         // Log sempre
-        Logger.warn(`[ALERT ${alert.severity.toUpperCase()}] ${alert.title}`, {
+        logWarn(`[ALERT ${alert.severity.toUpperCase()}] ${alert.title}`, {
             message: alert.message,
             metadata: alert.metadata
         });
@@ -98,7 +98,7 @@ class AlertService {
     private async sendEmailAlert(alert: Alert): Promise<void> {
         // Verificar se email está configurado
         if (!process.env.ALERT_EMAIL || !process.env.ADMIN_EMAIL) {
-            Logger.debug('Email alerts not configured (ALERT_EMAIL or ADMIN_EMAIL missing)');
+            logDebug('Email alerts not configured (ALERT_EMAIL or ADMIN_EMAIL missing)');
             return;
         }
 
@@ -107,12 +107,12 @@ class AlertService {
             // const transporter = nodemailer.createTransporter({ ... });
             // await transporter.sendMail({ ... });
 
-            Logger.info(`📧 Email alert would be sent to ${process.env.ADMIN_EMAIL}`, {
+            logInfo(`📧 Email alert would be sent to ${process.env.ADMIN_EMAIL}`, {
                 subject: `🚨 [${alert.severity.toUpperCase()}] ${alert.title}`,
                 alert
             });
         } catch (error) {
-            Logger.error('Failed to send email alert:', error);
+            logError('Failed to send email alert:', error);
         }
     }
 
@@ -157,9 +157,9 @@ class AlertService {
                 throw new Error(`Slack API returned ${response.status}`);
             }
 
-            Logger.info('📱 Slack alert sent successfully');
+            logger.info('📱 Slack alert sent successfully');
         } catch (error) {
-            Logger.error('Failed to send Slack alert:', error);
+            logError('Failed to send Slack alert:', error);
         }
     }
 

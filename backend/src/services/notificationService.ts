@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 import { messagingService } from './messagingService';
 
 /**
@@ -80,7 +80,7 @@ export const notificationService = {
                 where: { id: appt.id },
                 data: { notified1h: true }
             });
-            Logger.info(`✅ Notificações enviadas para agendamento ${appt.id} (30min antes)`);
+            logger.info(`✅ Notificações enviadas para agendamento ${appt.id} (30min antes)`);
         }
 
         return appointments.length;
@@ -134,7 +134,7 @@ export const notificationService = {
             );
         }
 
-        Logger.info(`✅ Notificação diária enviada para ${operators.length} operadores`);
+        logger.info(`✅ Notificação diária enviada para ${operators.length} operadores`);
         return operators.length;
     },
 
@@ -157,7 +157,7 @@ export const notificationService = {
             'QUOTE_RESPONSE'
         );
 
-        Logger.info(`✅ Notificação de resposta enviada para orçamento ${quoteId}`);
+        logger.info(`✅ Notificação de resposta enviada para orçamento ${quoteId}`);
     },
 
     /**
@@ -184,7 +184,7 @@ export const notificationService = {
             `APPOINTMENT_${changeType}`
         );
 
-        Logger.info(`✅ Notificação de ${changeType} enviada para agendamento ${appointmentId}`);
+        logger.info(`✅ Notificação de ${changeType} enviada para agendamento ${appointmentId}`);
     },
 
     /**
@@ -199,7 +199,7 @@ export const notificationService = {
             'SUPPORT_RESPONSE'
         );
 
-        Logger.info(`✅ Notificação de suporte enviada para ticket ${ticketId}`);
+        logger.info(`✅ Notificação de suporte enviada para ticket ${ticketId}`);
     },
 
     /**
@@ -241,9 +241,9 @@ export const notificationService = {
             );
 
             await Promise.all(promises);
-            Logger.info(`✅ Alerta de novo orçamento enviado para ${staff.length} colaboradores`);
+            logger.info(`✅ Alerta de novo orçamento enviado para ${staff.length} colaboradores`);
         } catch (error) {
-            Logger.error('❌ Erro ao notificar staff sobre novo orçamento:', error);
+            logError('❌ Erro ao notificar staff sobre novo orçamento:', error);
         }
     }
 };
@@ -254,21 +254,21 @@ export const notificationService = {
  */
 export async function runScheduledNotifications() {
     try {
-        Logger.info('[Notif Scheduler] Running scheduled checks...');
+        logger.info('[Notif Scheduler] Running scheduled checks...');
 
         // Check 30min before appointments
         const count30min = await notificationService.notify30MinBefore();
         if (count30min > 0) {
-            Logger.info(`[Notif Scheduler] ✅ ${count30min} agendamentos notificados (30min)`);
+            logger.info(`[Notif Scheduler] ✅ ${count30min} agendamentos notificados (30min)`);
         }
 
         // Check daily review (only at 22:00)
         const countDaily = await notificationService.notifyDailyReview();
         if (countDaily > 0) {
-            Logger.info(`[Notif Scheduler] ✅ ${countDaily} operadores notificados (revisão diária)`);
+            logger.info(`[Notif Scheduler] ✅ ${countDaily} operadores notificados (revisão diária)`);
         }
     } catch (error) {
-        Logger.error('[Notif Scheduler] Error:', error);
+        logError('[Notif Scheduler] Error:', error);
     }
 }
 
@@ -278,13 +278,13 @@ export async function runScheduledNotifications() {
 export function startNotificationScheduler() {
     // Don't run in production (Vercel serverless)
     if (process.env.NODE_ENV === 'production') {
-        Logger.info('[Notif Scheduler] Disabled in production - using Vercel Cron');
+        logger.info('[Notif Scheduler] Disabled in production - using Vercel Cron');
         return;
     }
 
     // Run every minute in development
     setInterval(runScheduledNotifications, 60 * 1000);
-    Logger.info('[Notif Scheduler] Started (runs every 60s in dev)');
+    logger.info('[Notif Scheduler] Started (runs every 60s in dev)');
 
     // Run immediately on startup
     runScheduledNotifications();

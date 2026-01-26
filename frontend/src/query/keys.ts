@@ -29,7 +29,7 @@ export const queryKeys = {
     widgets: ['staff', 'widgets'] as const,
     notifications: ['staff', 'notifications'] as const,
     users: {
-      list: (tab?: string, filters?: Record<string, any>) => 
+      list: (tab?: string, filters?: Record<string, any>) =>
         ['staff', 'users', 'list', tab, filters] as const,
       detail: (id: string) => ['staff', 'users', 'detail', id] as const,
       search: (query: string) => ['staff', 'users', 'search', query] as const,
@@ -40,10 +40,10 @@ export const queryKeys = {
   // CUSTOMERS DOMAIN
   // ========================================
   customers: {
-    list: (tab?: string, filters?: Record<string, any>) => 
+    list: (tab?: string, filters?: Record<string, any>) =>
       ['customers', 'list', tab, filters] as const,
     detail: (id: string) => ['customers', 'detail', id] as const,
-    search: (query: string, limit?: number) => 
+    search: (query: string, limit?: number) =>
       ['customers', 'search', query, limit] as const,
     pets: (customerId: string) => ['customers', 'pets', customerId] as const,
     financial: (customerId: string) => ['customers', 'financial', customerId] as const,
@@ -53,16 +53,16 @@ export const queryKeys = {
   // AGENDA DOMAIN
   // ========================================
   agenda: {
-    day: (date: string, module?: string, filters?: Record<string, any>) => 
+    day: (date: string, module?: string, filters?: Record<string, any>) =>
       ['agenda', 'day', date, module, filters] as const,
-    week: (startDate: string, endDate: string, module?: string) => 
+    week: (startDate: string, endDate: string, module?: string) =>
       ['agenda', 'week', startDate, endDate, module] as const,
-    month: (month: string, module?: string) => 
+    month: (month: string, module?: string) =>
       ['agenda', 'month', month, module] as const,
     detail: (id: string) => ['agenda', 'detail', id] as const,
-    availableSlots: (date: string, serviceIds?: string[]) => 
+    availableSlots: (date: string, serviceIds?: string[]) =>
       ['agenda', 'slots', date, serviceIds] as const,
-    conflicts: (startDate: string, endDate: string) => 
+    conflicts: (startDate: string, endDate: string) =>
       ['agenda', 'conflicts', startDate, endDate] as const,
   },
 
@@ -70,7 +70,7 @@ export const queryKeys = {
   // QUOTES DOMAIN
   // ========================================
   quotes: {
-    list: (view?: 'active' | 'trash' | 'archived', filters?: Record<string, any>) => 
+    list: (view?: 'active' | 'trash' | 'archived', filters?: Record<string, any>) =>
       ['quotes', 'list', view, filters] as const,
     detail: (id: string) => ['quotes', 'detail', id] as const,
     search: (query: string) => ['quotes', 'search', query] as const,
@@ -91,14 +91,14 @@ export const queryKeys = {
   // SERVICES & PRODUCTS DOMAIN
   // ========================================
   services: {
-    list: (category?: string, activeOnly?: boolean) => 
+    list: (category?: string, activeOnly?: boolean) =>
       ['services', 'list', category, activeOnly] as const,
     detail: (id: string) => ['services', 'detail', id] as const,
     search: (query: string) => ['services', 'search', query] as const,
   },
 
   products: {
-    list: (category?: string, activeOnly?: boolean) => 
+    list: (category?: string, activeOnly?: boolean) =>
       ['products', 'list', category, activeOnly] as const,
     detail: (id: string) => ['products', 'detail', id] as const,
     search: (query: string) => ['products', 'search', query] as const,
@@ -109,10 +109,10 @@ export const queryKeys = {
   // PETS DOMAIN
   // ========================================
   pets: {
-    list: (customerId?: string, filters?: Record<string, any>) => 
+    list: (customerId?: string, filters?: Record<string, any>) =>
       ['pets', 'list', customerId, filters] as const,
     detail: (id: string) => ['pets', 'detail', id] as const,
-    search: (query: string, customerId?: string) => 
+    search: (query: string, customerId?: string) =>
       ['pets', 'search', query, customerId] as const,
     medical: (petId: string) => ['pets', 'medical', petId] as const,
     history: (petId: string) => ['pets', 'history', petId] as const,
@@ -123,7 +123,7 @@ export const queryKeys = {
   // ========================================
   chat: {
     conversations: () => ['chat', 'conversations'] as const,
-    messages: (conversationId: string, page?: number) => 
+    messages: (conversationId: string, page?: number) =>
       ['chat', 'messages', conversationId, page] as const,
     users: (search?: string) => ['chat', 'users', search] as const,
     unread: () => ['chat', 'unread'] as const,
@@ -135,10 +135,10 @@ export const queryKeys = {
   // ========================================
   transport: {
     calculate: (data: any) => ['transport', 'calculate', data] as const,
-    providers: (filters?: Record<string, any>) => 
+    providers: (filters?: Record<string, any>) =>
       ['transport', 'providers', filters] as const,
     history: (customerId?: string) => ['transport', 'history', customerId] as const,
-    routes: (origin: string, destination: string) => 
+    routes: (origin: string, destination: string) =>
       ['transport', 'routes', origin, destination] as const,
   },
 
@@ -149,11 +149,11 @@ export const queryKeys = {
     dashboard: () => ['client', 'dashboard'] as const,
     profile: () => ['client', 'profile'] as const,
     pets: () => ['client', 'pets'] as const,
-    appointments: (filters?: Record<string, any>) => 
+    appointments: (filters?: Record<string, any>) =>
       ['client', 'appointments', filters] as const,
-    quotes: (view?: 'active' | 'completed' | 'archived') => 
+    quotes: (view?: 'active' | 'completed' | 'archived') =>
       ['client', 'quotes', view] as const,
-    invoices: (view?: 'pending' | 'paid' | 'overdue') => 
+    invoices: (view?: 'pending' | 'paid' | 'overdue') =>
       ['client', 'invoices', view] as const,
   },
 
@@ -161,7 +161,7 @@ export const queryKeys = {
   // NOTIFICATIONS DOMAIN
   // ========================================
   notifications: {
-    list: (tab?: 'all' | 'unread' | 'important', filters?: Record<string, any>) => 
+    list: (tab?: 'all' | 'unread' | 'important', filters?: Record<string, any>) =>
       ['notifications', 'list', tab, filters] as const,
     count: () => ['notifications', 'count'] as const,
     settings: () => ['notifications', 'settings'] as const,
@@ -171,13 +171,13 @@ export const queryKeys = {
   // ANALYTICS & REPORTS
   // ========================================
   analytics: {
-    revenue: (period: string, filters?: Record<string, any>) => 
+    revenue: (period: string, filters?: Record<string, any>) =>
       ['analytics', 'revenue', period, filters] as const,
-    appointments: (period: string, filters?: Record<string, any>) => 
+    appointments: (period: string, filters?: Record<string, any>) =>
       ['analytics', 'appointments', period, filters] as const,
-    customers: (period: string, filters?: Record<string, any>) => 
+    customers: (period: string, filters?: Record<string, any>) =>
       ['analytics', 'customers', period, filters] as const,
-    services: (period: string, filters?: Record<string, any>) => 
+    services: (period: string, filters?: Record<string, any>) =>
       ['analytics', 'services', period, filters] as const,
   },
 
@@ -251,7 +251,7 @@ export const isDetailQuery = (queryKey: readonly string[]): boolean => {
  * Gera predicado para invalidação de queries de um domínio
  */
 export const createDomainPredicate = (domain: keyof typeof queryKeys) => {
-  const baseKey = queryKeys[domain][0] as string;
+  const baseKey = domain as string;
   return (query: { queryKey: readonly string[] }) => {
     return query.queryKey[0] === baseKey;
   };
@@ -261,7 +261,7 @@ export const createDomainPredicate = (domain: keyof typeof queryKeys) => {
  * Gera predicado para invalidação de queries de múltiplos domínios
  */
 export const createMultiDomainPredicate = (domains: (keyof typeof queryKeys)[]) => {
-  const baseKeys = domains.map(domain => queryKeys[domain][0] as string);
+  const baseKeys = domains.map(domain => domain as string);
   return (query: { queryKey: readonly string[] }) => {
     return baseKeys.includes(query.queryKey[0] as string);
   };
@@ -273,25 +273,25 @@ export const createMultiDomainPredicate = (domains: (keyof typeof queryKeys)[]) 
 export const STALE_TIME = {
   // Tempo real - 15s (agenda, chat)
   REAL_TIME: 15 * 1000,
-  
+
   // Listas - 1min mobile, 2min web
   LISTS: {
     MOBILE: 60 * 1000,
     WEB: 120 * 1000,
   },
-  
+
   // Detalhes - 25min (dados mudam pouco)
   DETAIL: 25 * 60 * 1000,
-  
+
   // Dashboards - 5min
   DASHBOARD: 5 * 60 * 1000,
-  
+
   // Buscas - 30s
   SEARCH: 30 * 1000,
-  
+
   // Análiticos - 10min
   ANALYTICS: 10 * 60 * 1000,
-  
+
   // Configurações - 30min
   SETTINGS: 30 * 60 * 1000,
 } as const;
@@ -304,24 +304,24 @@ export const getMobileStaleTime = (baseStaleTime: number): number => {
   const deviceMemory = (navigator as any).deviceMemory || 4;
   const isLowEnd = deviceMemory <= 4;
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
+
   if (isLowEnd || isMobile) {
     return Math.min(baseStaleTime, STALE_TIME.LISTS.MOBILE);
   }
-  
+
   return baseStaleTime;
 };
 
 /**
  * Verifica se uma query deve ser persistida (cache seguro)
  */
-export const shouldPersistQuery = (queryKey: readonly string[]): boolean => {
+export const shouldPersistQuery = (queryKey: readonly unknown[]): boolean => {
   const domain = queryKey[0] as string;
-  
+
   // Domínios seguros para persistência
   const safeDomains = [
     'customers',
-    'agenda', 
+    'agenda',
     'quotes',
     'services',
     'products',
@@ -330,7 +330,7 @@ export const shouldPersistQuery = (queryKey: readonly string[]): boolean => {
     'client',
     'notifications',
   ];
-  
+
   // Não persistir dados sensíveis
   const sensitiveDomains = [
     'auth',
@@ -339,6 +339,6 @@ export const shouldPersistQuery = (queryKey: readonly string[]): boolean => {
     'system',
     'invoices', // dados financeiros
   ];
-  
+
   return safeDomains.includes(domain) && !sensitiveDomains.includes(domain);
 };

@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
     Calendar as CalendarIcon,
     ChevronRight,
     RefreshCw,
+    Search,
 } from 'lucide-react';
+import { useAgendaDay, useAgendaWeek, useAgendaDashboard, AgendaFilters } from '../../query/hooks/useAgenda';
 import { AnimatePresence } from 'framer-motion';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
@@ -15,15 +17,8 @@ import { useModalStore } from '../../store/modalStore';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { useRegisterMobileAction } from '../../hooks/useMobileActions';
 import { queryClient } from '../../lib/queryClient';
-import { toast } from 'react-hot-toast';
 
-interface StatusColumn {
-    key: string;
-    label: string;
-    color: string;
-}
-
-const statusColumns: StatusColumn[] = [
+const statusColumns = [
     { key: 'PENDENTE', label: 'Solicitados', color: 'bg-orange-500' },
     { key: 'CONFIRMADO', label: 'Confirmados', color: 'bg-green-500' },
     { key: 'EM_ATENDIMENTO', label: 'Em Atendimento', color: 'bg-purple-600' },
@@ -41,6 +36,7 @@ export default function AgendaSPA() {
         preFill,
         isCopy,
         openAppointmentModal,
+        openDetailsModal,
         closeAppointmentModal,
         closeDetailsModal
     } = useModalStore();
@@ -62,7 +58,6 @@ export default function AgendaSPA() {
         { enabled: true }
     );
 
-    // Desktop: week view with React Query
     const weekStart = useMemo(() => {
         const start = new Date(selectedDate);
         start.setDate(start.getDate() - start.getDay());
@@ -82,57 +77,36 @@ export default function AgendaSPA() {
         { enabled: !isMobile }
     );
 
-    // Dashboard hook for performance metrics
     const dashboardQuery = useAgendaDashboard(
         selectedDate.toISOString().split('T')[0],
         { start: weekStart, end: weekEnd },
         filters
     );
 
-    // Determine loading states
     const isLoading = isMobile
         ? agendaDayQuery.isLoading
         : agendaWeekQuery.isLoading || dashboardQuery.isLoading;
 
-    // Mobile: Use day data; Desktop: Use week data
-    const data = isMobile ? agendaDayQuery.data || {} : {
-        appointments: agendaWeekQuery.data?.days?.flatMap((day: any) => day.appointments) || [],
-        summary: agendaWeekQuery.data?.summary || {
-            totalAppointments: 0,
-            totalRevenue: 0,
-            totalSlots: 0,
-        },
-        conflicts: [],
-        hasConflicts: false,
-    };
-
-
-
-    // Calculate combined metrics - Simplified for performance
     const summary = useMemo(() => {
         const dayData = agendaDayQuery.data || { summary: { total: 0, revenue: 0, byStatus: {} } };
         const weekData = agendaWeekQuery.data || { summary: { totalAppointments: 0, totalRevenue: 0 } };
 
-        // Use day data for mobile, week data for desktop
-        const sourceData = isMobile ? dayData : weekData;
-
         return {
             total: isMobile
-                ? (dayData.summary?.total || 0)
-                : (weekData.summary?.totalAppointments || 0),
-            byStatus: dayData.summary?.byStatus || {
+                ? ((dayData.summary as any)?.total || 0)
+                : ((weekData.summary as any)?.totalAppointments || 0),
+            byStatus: (dayData.summary as any)?.byStatus || {
                 PENDENTE: 0,
                 CONFIRMADO: 0,
                 EM_ATENDIMENTO: 0,
                 FINALIZADO: 0,
             },
             revenue: isMobile
-                ? (dayData.summary?.revenue || 0)
-                : (weekData.summary?.totalRevenue || 0),
+                ? ((dayData.summary as any)?.revenue || 0)
+                : ((weekData.summary as any)?.totalRevenue || 0),
         };
     }, [agendaDayQuery.data, agendaWeekQuery.data, isMobile]);
 
-    // Utility functions
     const navigateToDay = useCallback((date: Date) => {
         setSelectedDate(date);
     }, []);
@@ -149,70 +123,14 @@ export default function AgendaSPA() {
         setSelectedDate(next);
     }, [selectedDate]);
 
-    const updateFilters = useCallback((newFilters: Partial<AgendaFilters>) => {
-        setFilters(prev => ({ ...prev, ...newFilters }));
-    }, []);
-
-    // Optimized handlers for mobile performance
-    const handleFilterChange = useCallback((field: keyof AgendaFilters, value: any) => {
-        updateFilters({ [field]: value });
-    }, []);
-
-    // Calendar navigation handlers
-    const handlePrevWeek = useCallback(() => {
-        const prev = new Date(selectedDate);
-        prev.setDate(prev.getDate() - 7);
-        setSelectedDate(prev);
-    }, [selectedDate]);
-
-    const handleNextWeek = useCallback(() => {
-        const next = new Date(selectedDate);
-        next.setDate(next.getDate() + 7);
-        setSelectedDate(next);
-    }, [selectedDate]);
-
-    const handleToday = useCallback(() => {
-        const today = new Date();
-        setSelectedDate(today);
-    }, []);
-
     const goToToday = useCallback(() => {
-        navigateToDay(new Date());
+        setSelectedDate(new Date());
     }, []);
 
-    // Register mobile FAB
-    useRegisterMobileAction('new_appointment', () => {
-        // Open modal with pre-filled data using store
-        openAppointmentModal({
-            startAt: selectedDate.toISOString(),
-            category: 'SPA',
-        });
-    });
-
-    // Optimized bulk actions
-    const handleSelectAll = useCallback(() => {
-        if (!data.appointments?.length) return;
-
-        queryClient.setQueriesData(
-            queryKeys.agenda.day(selectedDate.toISOString().split('T')[0], filters.module, filters),
-            (prev) => {
-                if (!prev) return prev;
-                const allIds = data.appointments?.map((apt: any) => apt.id) || [];
-                return {
-                    ...prev,
-                    selectedIds: allIds,
-                };
-            }
-        );
-    }, [data.appointments, selectedDate, filters]);
-
-    // Export functionality
-    const handleExport = useCallback(() => {
-        // Implementation would go here
-        toast.success('Função de exportação em desenvolvimento');
+    const handleFilterChange = useCallback((key: keyof AgendaFilters, value: any) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
     }, []);
 
-    // Optimized refresh
     const handleRefresh = useCallback(() => {
         if (isMobile) {
             agendaDayQuery.refetch();
@@ -220,58 +138,64 @@ export default function AgendaSPA() {
             agendaWeekQuery.refetch();
             dashboardQuery.refetch();
         }
-    }, [isMobile, selectedDate, weekStart, weekEnd, filters]);
+    }, [isMobile]);
 
-    // Unified Render
+    const handleBulkSelectAll = useCallback(() => {
+        const allIds = (agendaDayQuery.data as any)?.appointments?.map((apt: any) => apt.id) || [];
+        queryClient.setQueryData(
+            queryKeys.agenda.day(selectedDate.toISOString().split('T')[0], filters.module, filters),
+            (prev: any) => {
+                if (!prev) return prev;
+                return { ...prev, selectedIds: allIds };
+            }
+        );
+    }, [agendaDayQuery.data, selectedDate, filters]);
+
+    useRegisterMobileAction('bulk_select_all', handleBulkSelectAll);
+
+    const handleNewAppointmentAction = useCallback(() => {
+        openAppointmentModal({
+            preFill: { startAt: selectedDate.toISOString(), category: 'SPA' }
+        });
+    }, [selectedDate, openAppointmentModal]);
+
+    useRegisterMobileAction('new_appointment', handleNewAppointmentAction);
+
     if (!isMobile) {
         return (
             <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
                 <WebAgendaLayout
-                    appointments={data.days?.flatMap((d: any) => d.appointments) || data.appointments || []}
+                    appointments={agendaWeekQuery.data?.days?.flatMap((d: any) => d.appointments) || agendaDayQuery.data?.appointments || []}
                     weekData={agendaWeekQuery.data}
                     selectedDate={selectedDate}
                     onSelectedDateChange={navigateToDay}
-                    searchTerm={filters.search || ''}
-                    onSearchChange={(term) => handleFilterChange('search', term)}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    view={view}
+                    onViewChange={setView}
                     performers={[]}
                     selectedPerformerId={filters.performerId || 'ALL'}
                     onPerformerChange={(id) => handleFilterChange('performerId', id)}
-                    onViewChange={setView}
                     onCreateNew={() => {
                         openAppointmentModal({
-                            startAt: selectedDate.toISOString(),
-                            category: 'SPA',
+                            preFill: { startAt: selectedDate.toISOString(), category: 'SPA' }
                         });
                     }}
                     tab={tab}
                     onTabChange={setTab}
                     isLoading={isLoading}
-                    onRefresh={() => {
-                        agendaWeekQuery.refetch();
-                        dashboardQuery.refetch();
-                    }}
+                    onRefresh={handleRefresh}
                     onAppointmentClick={(apt) => {
-                        openDetailsModal(apt.id);
+                        const allAppointments = [
+                            ...(agendaWeekQuery.data?.days?.flatMap((d: any) => d.appointments) || []),
+                            ...(agendaDayQuery.data?.appointments || [])
+                        ];
+                        const fullApt = allAppointments.find(a => a.id === apt.id) || apt;
+                        openDetailsModal(fullApt.id);
                     }}
                     breadcrumb="7Pet > Agenda SPA"
                 />
 
-                {/* Status Bar (Desktop) - Overlay or Bottom if needed. 
-                    WebAgendaLayout is usually full height. 
-                    If we want status bar, we should probably pass it as children or slot to WebAgendaLayout, 
-                    OR WebAgendaLayout should be h-[calc(100vh-40px)]
-                    
-                    For now, let's inject it as children of WebAgendaLayout if view is not MONTH/WEEK/DAY,
-                    BUT WebAgendaLayout manages the main grid area.
-                    
-                    Actually, WebAgendaLayout renders children in the "content" area if view is unknown.
-                    
-                    Better approach: WebAgendaLayout should perhaps accept a "footer" prop or we just put it below properly styled.
-                    However, WebAgendaLayout (Step 636) is h-screen.
-                    
-                    Let's render it here but we need to fix WebAgendaLayout height first (NEXT STEP).
-                    Assuming WebAgendaLayout will be h-full.
-                */}
                 <div className="bg-white border-t border-gray-200 px-4 py-2 shrink-0 z-50">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-6">
@@ -290,12 +214,6 @@ export default function AgendaSPA() {
                         </div>
 
                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                            {/* Module Selector integrated in footer since WebToolbar doesn't have it yet? 
-                                Or we should add it to WebToolbar. 
-                                For now, let's keep it here or User accepts it's less visible.
-                                Actually, user might need to switch modules.
-                                Let's add module selector here for now.
-                             */}
                             <select
                                 value={filters.module}
                                 onChange={(e) => handleFilterChange('module', e.target.value)}
@@ -324,18 +242,22 @@ export default function AgendaSPA() {
                         preFill={preFill}
                         onClose={closeAppointmentModal}
                         onSuccess={() => {
-                            agendaWeekQuery.refetch();
-                            dashboardQuery.refetch();
+                            handleRefresh();
                             closeAppointmentModal();
                         }}
                     />
                     <AppointmentDetailsModal
                         isOpen={detailsModalOpen}
-                        appointment={{ id: appointmentId }}
+                        appointment={(() => {
+                            const allAppointments = [
+                                ...(agendaWeekQuery.data?.days?.flatMap((d: any) => d.appointments) || []),
+                                ...(agendaDayQuery.data?.appointments || [])
+                            ];
+                            return allAppointments.find(a => a.id === appointmentId) || { id: appointmentId };
+                        })()}
                         onClose={closeDetailsModal}
                         onSuccess={() => {
-                            agendaWeekQuery.refetch();
-                            dashboardQuery.refetch();
+                            handleRefresh();
                             closeDetailsModal();
                         }}
                         onModify={(apt) => openAppointmentModal({ appointment: apt })}
@@ -346,35 +268,24 @@ export default function AgendaSPA() {
         );
     }
 
-    // MOBILE RENDER (Keep as is, just wrapped cleanly)
     return (
         <div className="flex flex-col h-screen bg-gray-50">
-            {/* Header */}
             <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <CalendarIcon className="h-6 w-6 text-primary" />
                         <p className="text-sm text-gray-600">SPA</p>
                         <button
-                            onClick={() => {
-                                if (isMobile) {
-                                    agendaDayQuery.refetch();
-                                } else {
-                                    agendaWeekQuery.refetch();
-                                    dashboardQuery.refetch();
-                                }
-                            }}
+                            onClick={handleRefresh}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Recarregar dados"
                         >
-                            <RefreshCw className="h-4 w-4 text-gray-600" />
+                            <RefreshCw className={`h-4 w-4 text-gray-600 ${isLoading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile Filters */}
-            <div className="flex flex-wrap items-center gap-2 mt-4">
+            <div className="p-4 flex items-center gap-2">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input
@@ -385,43 +296,29 @@ export default function AgendaSPA() {
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                 </div>
-                <button
-                    onClick={handleRefresh}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                    <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </button>
             </div>
 
-            {/* Main Content */}
             <div className="flex-1 overflow-hidden">
                 <MobileCalendarCompactView
-                    appointments={data.appointments || []}
+                    appointments={agendaDayQuery.data?.appointments || []}
                     isLoading={isLoading}
                     selectedDayDate={selectedDate}
                     onSelectDay={navigateToDay}
-                    onAppointmentClick={(apt) => {
-                        openDetailsModal(apt.id);
-                    }}
-                    onCreateNew={() => {
-                        openAppointmentModal({
-                            startAt: selectedDate.toISOString(),
-                            category: 'SPA',
-                        });
-                    }}
+                    onAppointmentClick={(apt) => openDetailsModal(apt.id)}
+                    onCreateNew={() => openAppointmentModal({ preFill: { startAt: selectedDate.toISOString(), category: 'SPA' } })}
                     onBulkModeToggle={() => { }}
+                    isBulkMode={false}
                     selectedIds={[]}
                     tab="active"
                     onTabChange={() => { }}
                     performers={[]}
-                    selectedPerformerId={filters.performerId}
+                    selectedPerformerId={filters.performerId || 'ALL'}
                     onPerformerChange={(id) => handleFilterChange('performerId', id)}
                     onBulkDelete={() => { }}
                     onBulkRestore={() => { }}
                 />
             </div>
 
-            {/* Mobile Navigation */}
             <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-200 flex justify-between items-center gap-4 z-40">
                 <button
                     onClick={goToToday}
@@ -453,16 +350,19 @@ export default function AgendaSPA() {
                     preFill={preFill}
                     onClose={closeAppointmentModal}
                     onSuccess={() => {
-                        agendaDayQuery.refetch();
+                        handleRefresh();
                         closeAppointmentModal();
                     }}
                 />
                 <AppointmentDetailsModal
                     isOpen={detailsModalOpen}
-                    appointment={{ id: appointmentId }}
+                    appointment={(() => {
+                        const allAppointments = agendaDayQuery.data?.appointments || [];
+                        return allAppointments.find(a => a.id === appointmentId) || { id: appointmentId };
+                    })()}
                     onClose={closeDetailsModal}
                     onSuccess={() => {
-                        agendaDayQuery.refetch();
+                        handleRefresh();
                         closeDetailsModal();
                     }}
                     onModify={(apt) => openAppointmentModal({ appointment: apt })}

@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import * as transportCalc from '../services/transportCalculationService';
 import * as transportUnified from '../services/transportCalculationUnifiedService';
-import { logInfo, logError, logWarn } from '../utils/secureLogger';
+import { logInfo, logError, logWarn } from '../utils/logger';
 import { ServicePriceConfigService } from '../services/servicePriceConfigService';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance

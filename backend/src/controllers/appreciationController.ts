@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import { logInfo, logError } from '../utils/logger';
 import { socketService } from '../services/socketService';
 
 export const create = async (req: Request, res: Response) => {
@@ -61,7 +61,7 @@ export const create = async (req: Request, res: Response) => {
 
         res.status(201).json(appreciation);
     } catch (error) {
-        Logger.error('Error creating appreciation', error);
+        logError('Error creating appreciation', error);
         res.status(500).json({ error: 'Failed to create appreciation' });
     }
 };
@@ -78,7 +78,7 @@ export const getByUser = async (req: Request, res: Response) => {
         });
         res.json(appreciations);
     } catch (error) {
-        Logger.error('Error fetching appreciations', error);
+        logError('Error fetching appreciations', error);
         res.status(500).json({ error: 'Failed to fetch appreciations' });
     }
 };

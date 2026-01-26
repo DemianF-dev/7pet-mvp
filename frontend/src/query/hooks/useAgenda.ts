@@ -20,6 +20,7 @@ export interface AgendaFilters {
   };
   transportType?: string;
   search?: string;
+  category?: string;
 }
 
 /**
@@ -32,7 +33,8 @@ export interface AgendaDayResponse {
     customer: {
       name: string;
       phone?: string;
-      email?: string;
+      user: { email: string };
+      type: string;
     };
     petId: string;
     pet: {
@@ -40,16 +42,17 @@ export interface AgendaDayResponse {
       species?: string;
       breed?: string;
     };
-    services: Array<{
+    services?: Array<{
       id: string;
       name: string;
       duration: number;
-      price: number;
+      basePrice?: number;
+      price?: number;
     }>;
     startAt: string;
     endAt: string;
     status: string;
-    category: 'SPA' | 'LOG' | 'SPA_TRANSPORTE';
+    category?: string;
     performer?: {
       id: string;
       name: string;
@@ -57,9 +60,9 @@ export interface AgendaDayResponse {
     };
     notes?: string;
     transport?: {
-      origin: string;
-      destination: string;
-      type: string;
+      origin?: string;
+      destination?: string;
+      type?: string;
     };
     conflicts?: Array<{
       type: string;
@@ -122,7 +125,7 @@ export function useAgendaDay(
 
   return useQuery({
     queryKey: queryKeys.agenda.day(date, filters.module, filters),
-    queryFn: () => appointmentsService.list({ category: filters.module }),
+    queryFn: () => appointmentsService.getDay(date, filters),
 
     // Stale time otimizado para mobile
     staleTime: isMobile
@@ -229,11 +232,8 @@ export function useAgendaSearch(
     debounceMs?: number;
   }
 ) {
-  const { getDebounceDelay } = useDeviceInfo();
-  const debounceDelay = options?.debounceMs || getDebounceDelay();
-
   return useQuery({
-    queryKey: queryKeys.agenda.day('search', { query }, { search: query }),
+    queryKey: queryKeys.agenda.day('search', 'ALL', { search: query }),
     queryFn: () => appointmentsService.search({ query }),
 
     // Search pode ter stale time curto
@@ -285,6 +285,6 @@ export function useAgendaDashboard(
 
     // Performance metrics
     hasData: !!(dayQuery.data?.appointments?.length === 0 && weekQuery.data?.days?.length === 0),
-    hasConflicts: dayQuery.data?.hasConflicts || weekQuery.data?.days?.some(day => day.conflicts?.length > 0),
+    hasConflicts: dayQuery.data?.hasConflicts || (weekQuery.data?.days || []).some((day: any) => day.conflicts?.length > 0),
   };
 }

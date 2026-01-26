@@ -14,7 +14,7 @@
 
 import { Request, Response } from 'express';
 import { executeScheduledChecks } from '../schedulers/notificationScheduler';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError, logWarn } from '../utils/logger';
 
 export async function cronNotifications(req: Request, res: Response) {
     // Verify Vercel Cron secret (security)
@@ -22,12 +22,12 @@ export async function cronNotifications(req: Request, res: Response) {
     const cronSecret = process.env.CRON_SECRET || 'dev-secret';
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-        Logger.warn('[Cron] Unauthorized cron job access attempt');
+        logWarn('[Cron] Unauthorized cron job access attempt');
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
-        Logger.info('[Cron] Starting scheduled notifications...');
+        logger.info('[Cron] Starting scheduled notifications...');
         await executeScheduledChecks();
 
         res.status(200).json({
@@ -36,7 +36,7 @@ export async function cronNotifications(req: Request, res: Response) {
             timestamp: new Date().toISOString()
         });
     } catch (error: any) {
-        Logger.error('[Cron] Error executing notifications:', error);
+        logError('[Cron] Error executing notifications:', error);
         res.status(500).json({
             error: 'Failed to execute notifications',
             message: error.message

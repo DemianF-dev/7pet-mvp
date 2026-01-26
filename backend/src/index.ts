@@ -4,8 +4,7 @@ dotenv.config();
 // 🔒 SECURITY: Validate critical environment variables at startup
 // Security: Removed sensitive environment variable logging
 import { validateEnvironment } from './utils/envValidation';
-import logger from './utils/logger';
-import { logInfo, logWarn } from './utils/secureLogger';
+import logger, { logInfo, logWarn } from './utils/logger';
 
 try {
     validateEnvironment();
@@ -65,7 +64,6 @@ import { metricsService } from './services/metricsService';
 import metricsRoutes from './routes/metricsRoutes';
 
 import prisma from './lib/prisma';
-import Logger from './lib/logger';
 
 const app = express();
 const httpServer = createServer(app);
@@ -300,8 +298,8 @@ app.use(errorHandler);
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces for mobile access
     httpServer.listen(Number(PORT), HOST, () => {
-        Logger.info(`🚀 Server running on ${HOST}:${PORT}`);
-        Logger.info(`📊 Monitoring dashboard: http://localhost:${PORT}/dashboard.html`);
+        logger.info(`🚀 Server running on ${HOST}:${PORT}`);
+        logger.info(`📊 Monitoring dashboard: http://localhost:${PORT}/dashboard.html`);
     });
 }
 

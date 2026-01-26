@@ -49,3 +49,69 @@ const logger = pino({
 });
 
 export default logger;
+
+// Manual sanitizer for metadata objects
+const sanitizeData = (data: any): any => {
+  if (!data || typeof data !== 'object') return data;
+
+  const sensitiveFields = [
+    'password', 'passwordHash', 'token', 'secret', 'key',
+    'authorization', 'cookie', 'session', 'jwt'
+  ];
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item));
+  }
+
+  const sanitized = { ...data };
+
+  Object.keys(sanitized).forEach(key => {
+    const lowerKey = key.toLowerCase();
+    if (sensitiveFields.some(field => lowerKey.includes(field))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof sanitized[key] === 'object') {
+      sanitized[key] = sanitizeData(sanitized[key]);
+    }
+  });
+
+  return sanitized;
+};
+
+// Convenience functions to match secureLogger API
+export const logError = (message: string, error: any, meta?: any) => {
+  logger.error({
+    err: error instanceof Error ? error : { message: String(error) },
+    ...sanitizeData(meta)
+  }, message);
+};
+
+export const logInfo = (message: string, meta?: any) => {
+  logger.info(sanitizeData(meta), message);
+};
+
+export const logWarn = (message: string, meta?: any) => {
+  logger.warn(sanitizeData(meta), message);
+};
+
+export const logDebug = (message: string, meta?: any) => {
+  logger.debug(sanitizeData(meta), message);
+};
+
+// Middleware for request logging
+export const requestLogger = (req: any, res: any, next: any) => {
+  const start = Date.now();
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logInfo('HTTP Request', {
+      method: req.method,
+      url: req.url,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip || req.connection.remoteAddress
+    });
+  });
+
+  next();
+};

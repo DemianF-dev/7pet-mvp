@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import packageService from '../services/packageService';
-import Logger from '../lib/logger';
+import { logInfo, logError } from '../utils/logger';
 
 /**
  * Package Controller - API endpoints for recurring packages
@@ -25,7 +25,7 @@ export const calculatePrice = async (req: Request, res: Response, next: NextFunc
         const calculation = await packageService.calculatePackagePrice(petId, frequency, items);
         res.json(calculation);
     } catch (error: any) {
-        Logger.error('[PackageController] calculatePrice error:', error);
+        logError('[PackageController] calculatePrice error:', error);
         next(error);
     }
 };
@@ -55,7 +55,7 @@ export const createPackage = async (req: Request, res: Response, next: NextFunct
 
         res.status(201).json(pkg);
     } catch (error: any) {
-        Logger.error('[PackageController] createPackage error:', error);
+        logError('[PackageController] createPackage error:', error);
         next(error);
     }
 };
@@ -75,7 +75,7 @@ export const getPackage = async (req: Request, res: Response, next: NextFunction
 
         res.json(pkg);
     } catch (error: any) {
-        Logger.error('[PackageController] getPackage error:', error);
+        logError('[PackageController] getPackage error:', error);
         next(error);
     }
 };
@@ -96,7 +96,7 @@ export const listByCustomer = async (req: Request, res: Response, next: NextFunc
 
         res.json(packages);
     } catch (error: any) {
-        Logger.error('[PackageController] listByCustomer error:', error);
+        logError('[PackageController] listByCustomer error:', error);
         next(error);
     }
 };
@@ -124,7 +124,7 @@ export const updateStatus = async (req: Request, res: Response, next: NextFuncti
 
         res.json(updated);
     } catch (error: any) {
-        Logger.error('[PackageController] updateStatus error:', error);
+        logError('[PackageController] updateStatus error:', error);
         next(error);
     }
 };
@@ -162,7 +162,7 @@ export const scheduleMonth = async (req: Request, res: Response, next: NextFunct
 
         res.status(201).json(result);
     } catch (error: any) {
-        Logger.error('[PackageController] scheduleMonth error:', error);
+        logError('[PackageController] scheduleMonth error:', error);
         next(error);
     }
 };
@@ -188,7 +188,7 @@ export const checkAvailability = async (req: Request, res: Response, next: NextF
             conflicts
         });
     } catch (error: any) {
-        Logger.error('[PackageController] checkAvailability error:', error);
+        logError('[PackageController] checkAvailability error:', error);
         next(error);
     }
 };
@@ -223,7 +223,7 @@ export const addServiceToAppointment = async (req: Request, res: Response, next:
 
         res.status(201).json(note);
     } catch (error: any) {
-        Logger.error('[PackageController] addServiceToAppointment error:', error);
+        logError('[PackageController] addServiceToAppointment error:', error);
         next(error);
     }
 };
@@ -238,7 +238,7 @@ export const getPendingNotes = async (req: Request, res: Response, next: NextFun
         const notes = await packageService.getPendingNotes(customerId);
         res.json(notes);
     } catch (error: any) {
-        Logger.error('[PackageController] getPendingNotes error:', error);
+        logError('[PackageController] getPendingNotes error:', error);
         next(error);
     }
 };
@@ -260,7 +260,7 @@ export const settleNote = async (req: Request, res: Response, next: NextFunction
         const updated = await packageService.settleNote(noteId, action, user?.id || 'SYSTEM');
         res.json(updated);
     } catch (error: any) {
-        Logger.error('[PackageController] settleNote error:', error);
+        logError('[PackageController] settleNote error:', error);
         next(error);
     }
 };
@@ -297,7 +297,7 @@ export const createRecurringQuote = async (req: Request, res: Response, next: Ne
 
         res.status(201).json(result);
     } catch (error: any) {
-        Logger.error('[PackageController] createRecurringQuote error:', error);
+        logError('[PackageController] createRecurringQuote error:', error);
         next(error);
     }
 };

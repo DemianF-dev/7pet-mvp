@@ -6,6 +6,7 @@ export type AgendaTabType = 'active' | 'trash';
 export interface AgendaItem {
     id: string;
     startAt: string;
+    endAt: string;
     status: string;
     customerId: string;
     customer: {
@@ -17,18 +18,18 @@ export interface AgendaItem {
     petId: string;
     pet: {
         name: string;
-        species: string;
-        breed: string
+        species?: string;
+        breed?: string
     };
     services?: {
         id: string;
         name: string;
-        basePrice: number;
+        basePrice?: number;
         duration: number
     }[];
     service?: {
         name: string;
-        basePrice: number;
+        basePrice?: number;
         duration: number
     }; // Legacy support
     transport?: {

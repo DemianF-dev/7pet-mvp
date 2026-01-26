@@ -5,7 +5,7 @@ import * as auditService from '../services/auditService';
 import * as customerService from '../services/customerService';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import { logInfo, logError } from '../utils/secureLogger';
+import { logInfo, logError } from '../utils/logger';
 
 const customerSchema = z.object({
     firstName: z.string().min(1, 'Primeiro nome é obrigatório').optional().nullable(),

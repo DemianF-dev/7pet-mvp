@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError, logWarn } from '../utils/logger';
 
 /**
  * Railway Socket.io Client
@@ -18,10 +18,10 @@ class RailwaySocketClient {
         this.enabled = !!this.serverUrl && !!this.secret;
 
         if (!this.enabled) {
-            Logger.warn('⚠️ Railway Socket: SOCKET_SERVER_URL or SOCKET_SERVER_SECRET not configured');
-            Logger.warn('⚠️ Real-time events will NOT work!');
+            logWarn('⚠️ Railway Socket: SOCKET_SERVER_URL or SOCKET_SERVER_SECRET not configured');
+            logWarn('⚠️ Real-time events will NOT work!');
         } else {
-            Logger.info(`✅ Railway Socket: Connected to ${this.serverUrl}`);
+            logger.info(`✅ Railway Socket: Connected to ${this.serverUrl}`);
         }
     }
 
@@ -30,7 +30,7 @@ class RailwaySocketClient {
      */
     async emit(event: string, data: any): Promise<void> {
         if (!this.enabled) {
-            Logger.warn(`Railway Socket disabled - would emit: ${event}`);
+            logWarn(`Railway Socket disabled - would emit: ${event}`);
             return;
         }
 
@@ -46,9 +46,9 @@ class RailwaySocketClient {
                 timeout: 5000
             });
 
-            Logger.info(`📡 Railway Socket: Emitted ${event}`);
+            logger.info(`📡 Railway Socket: Emitted ${event}`);
         } catch (error) {
-            Logger.error(`❌ Railway Socket: Failed to emit ${event}`, error);
+            logError(`❌ Railway Socket: Failed to emit ${event}`, error);
         }
     }
 
@@ -57,7 +57,7 @@ class RailwaySocketClient {
      */
     async emitToRoom(room: string, event: string, data: any): Promise<void> {
         if (!this.enabled) {
-            Logger.warn(`Railway Socket disabled - would emit to room ${room}: ${event}`);
+            logWarn(`Railway Socket disabled - would emit to room ${room}: ${event}`);
             return;
         }
 
@@ -74,9 +74,9 @@ class RailwaySocketClient {
                 timeout: 5000
             });
 
-            Logger.info(`📡 Railway Socket: Emitted ${event} to room ${room}`);
+            logger.info(`📡 Railway Socket: Emitted ${event} to room ${room}`);
         } catch (error) {
-            Logger.error(`❌ Railway Socket: Failed to emit ${event} to room ${room}`, error);
+            logError(`❌ Railway Socket: Failed to emit ${event} to room ${room}`, error);
         }
     }
 
@@ -100,7 +100,7 @@ class RailwaySocketClient {
      */
     isUserOnline(userId: string): boolean {
         // This requires a GET request to Railway, not implementing for now
-        Logger.warn(`Railway Socket: isUserOnline not implemented, returning false for ${userId}`);
+        logWarn(`Railway Socket: isUserOnline not implemented, returning false for ${userId}`);
         return false;
     }
 }

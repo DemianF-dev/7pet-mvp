@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma';
 import { messagingService } from '../services/messagingService';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 import { notificationService } from '../services/notificationService';
 
 // Tipos de notificação do sistema que controlam agendamentos e rotinas
@@ -15,7 +15,7 @@ export const runNotificationScheduler = () => {
     // Don't run scheduler in test or production (Vercel serverless)
     // On Vercel, this should be triggered by a Cron Job endpoint
     if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'production') {
-        Logger.info('[Scheduler] Background interval disabled for this environment (using Cron).');
+        logger.info('[Scheduler] Background interval disabled for this environment (using Cron).');
         return;
     }
 
@@ -24,17 +24,17 @@ export const runNotificationScheduler = () => {
         try {
             await executeScheduledChecks();
         } catch (error) {
-            Logger.error('[Scheduler] Error in notification scheduler:', error);
+            logError('[Scheduler] Error in notification scheduler:', error);
         }
     }, 60 * 1000);
-    Logger.info('[Scheduler] Started local interval (60s)');
+    logger.info('[Scheduler] Started local interval (60s)');
 };
 
 /**
  * Main function that runs every minute to check all scheduled tasks
  */
 export async function executeScheduledChecks() {
-    Logger.info('[Scheduler] Checking scheduled tasks...');
+    logger.info('[Scheduler] Checking scheduled tasks...');
 
     // 1. Carregar configurações globais
     const settings = await prisma.notificationSettings.findMany({
@@ -71,7 +71,7 @@ export async function executeScheduledChecks() {
         // Executa apenas se for exatamente a hora e minuto (com margem de 1 min)
         // Como roda a cada 60s, vai pegar.
         if (currentHour === targetHour && currentMinute === targetMinute) {
-            Logger.info(`[Scheduler] Executing Daily Review at ${targetTime}`);
+            logger.info(`[Scheduler] Executing Daily Review at ${targetTime}`);
             await notificationService.notifyDailyReview();
         }
     }
@@ -119,7 +119,7 @@ async function check24hReminders() {
             where: { id: appt.id },
             data: { notified24h: true } as any
         });
-        Logger.info(`[Scheduler] Sent 24h reminder for Appt ${appt.id}`);
+        logger.info(`[Scheduler] Sent 24h reminder for Appt ${appt.id}`);
     }
 }
 
@@ -152,7 +152,7 @@ async function check1hReminders() {
             where: { id: appt.id },
             data: { notified1h: true } as any
         });
-        Logger.info(`[Scheduler] Sent 1h reminder for Appt ${appt.id}`);
+        logger.info(`[Scheduler] Sent 1h reminder for Appt ${appt.id}`);
     }
 }
 
@@ -190,7 +190,7 @@ async function checkLogisticsStatusReminders() {
             where: { id: appt.id },
             data: { logisticsLastRemindedAt: now } as any
         });
-        Logger.info(`[Scheduler] Sent initial logistics reminder for Appt ${appt.id}`);
+        logger.info(`[Scheduler] Sent initial logistics reminder for Appt ${appt.id}`);
     }
 
     // 2. 30m follow-up for 'DELAYED' status
@@ -218,6 +218,6 @@ async function checkLogisticsStatusReminders() {
             where: { id: appt.id },
             data: { logisticsLastRemindedAt: now } as any
         });
-        Logger.info(`[Scheduler] Sent follow-up logistics reminder for Appt ${appt.id}`);
+        logger.info(`[Scheduler] Sent follow-up logistics reminder for Appt ${appt.id}`);
     }
 }

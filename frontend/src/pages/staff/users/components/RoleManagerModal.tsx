@@ -1,4 +1,3 @@
-
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Plus, Users, Check, Trash2 } from 'lucide-react';
 import { RolePermission, NewRoleData } from '../types';
@@ -28,7 +27,8 @@ export const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ isOpen, onCl
         setNewRoleData,
         handleSaveRoleConfig,
         handleCreateRole,
-        handleDeleteRole
+        handleDeleteRole,
+        togglePermission
     } = useRoles({ users, isMaster: true });
 
     if (!isOpen) return null;
@@ -108,10 +108,7 @@ export const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ isOpen, onCl
                                         return (
                                             <div
                                                 key={m.id}
-                                                onClick={() => {
-                                                    setEditingRolePerms((prev: any) => active ? prev.filter((p: string) => p !== m.id) : [...prev, m.id]);
-                                                    setHasRoleChanges(true);
-                                                }}
+                                                onClick={() => togglePermission(m.id)}
                                                 className={`p-5 rounded-3xl border-2 cursor-pointer transition-all flex items-center justify-between ${active ? 'bg-white border-primary shadow-xl shadow-primary/5' : 'bg-white/50 border-transparent opacity-60'}`}
                                             >
                                                 <span className={`text-xs font-black ${active ? 'text-secondary' : 'text-gray-400'}`}>{m.label}</span>

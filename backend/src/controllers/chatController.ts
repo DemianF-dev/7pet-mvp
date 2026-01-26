@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 import { socketService } from '../services/socketService';
 import { railwaySocketClient } from '../services/railwaySocketClient';
 import { Prisma } from '@prisma/client';
@@ -51,7 +51,7 @@ export const getConversations = async (req: Request, res: Response) => {
 
         res.json(conversationsWithUnread);
     } catch (error) {
-        Logger.error('Error fetching conversations', error);
+        logError('Error fetching conversations', error);
         res.status(500).json({ error: 'Failed to fetch conversations' });
     }
 };
@@ -85,7 +85,7 @@ export const getConversation = async (req: Request, res: Response) => {
 
         res.json(conversation);
     } catch (error) {
-        Logger.error('Error fetching conversation', error);
+        logError('Error fetching conversation', error);
         res.status(500).json({ error: 'Failed to fetch conversation' });
     }
 };
@@ -93,7 +93,7 @@ export const getConversation = async (req: Request, res: Response) => {
 export const getMessages = async (req: Request, res: Response) => {
     try {
         const { id } = req.params; // conversationId
-        Logger.info(`📂 Fetching messages for conversation: ${id}`);
+        logger.info(`📂 Fetching messages for conversation: ${id}`);
         const messages = await prisma.message.findMany({
             where: { conversationId: id },
             orderBy: { createdAt: 'asc' },
@@ -111,10 +111,10 @@ export const getMessages = async (req: Request, res: Response) => {
             };
         });
 
-        Logger.info(`✅ Found ${mappedMessages.length} messages`);
+        logger.info(`✅ Found ${mappedMessages.length} messages`);
         res.json(mappedMessages);
     } catch (error) {
-        Logger.error('Error fetching messages', error);
+        logError('Error fetching messages', error);
         res.status(500).json({ error: 'Failed to fetch messages' });
     }
 };
@@ -155,7 +155,7 @@ export const sendMessage = async (req: Request, res: Response) => {
         });
 
         // 1. Broadcast to chat room (for users with ChatWindow open)
-        Logger.info(`📨 Sending chat:new_message to chat room: chat:${id}`);
+        logger.info(`📨 Sending chat:new_message to chat room: chat:${id}`);
         railwaySocketClient.notifyChat(id, 'chat:new_message', mappedMessage);
 
         // 2. Fetch conversation participants
@@ -168,12 +168,12 @@ export const sendMessage = async (req: Request, res: Response) => {
             const otherParticipants = conversation.participants.filter(p => p.userId !== senderId);
             const senderName = mappedMessage.sender.name || 'Alguém';
 
-            Logger.info(`📨 Notifying ${otherParticipants.length} other participants`);
+            logger.info(`📨 Notifying ${otherParticipants.length} other participants`);
 
             // 3. Send chat:new_message to each participant's personal room 
             // (ensures delivery even if they're not in the chat room)
             for (const p of otherParticipants) {
-                Logger.info(`📨 Sending chat:new_message to user room: user:${p.userId}`);
+                logger.info(`📨 Sending chat:new_message to user room: user:${p.userId}`);
                 railwaySocketClient.notifyUser(p.userId, 'chat:new_message', mappedMessage);
             }
 
@@ -193,16 +193,16 @@ export const sendMessage = async (req: Request, res: Response) => {
                         icon: mappedMessage.sender.color || undefined,
                         data: { url: `/staff/chat`, chatId: id }
                     });
-                    Logger.info(`📨 Created notification for user: ${p.userId}`);
+                    logger.info(`📨 Created notification for user: ${p.userId}`);
                 } catch (notifError) {
-                    Logger.error('Failed to create notification for chat', notifError);
+                    logError('Failed to create notification for chat', notifError);
                 }
             }
         }
 
         res.status(201).json(mappedMessage);
     } catch (error) {
-        Logger.error('❌ Error sending message:', error);
+        logError('❌ Error sending message:', error);
         res.status(500).json({
             error: 'Failed to send message',
             details: error instanceof Error ? error.message : String(error)
@@ -256,7 +256,7 @@ export const createConversation = async (req: Request, res: Response) => {
 
         res.status(201).json(mappedConversation);
     } catch (error) {
-        Logger.error('Error creating conversation', error);
+        logError('Error creating conversation', error);
         res.status(500).json({ error: 'Failed to start chat' });
     }
 };
@@ -279,7 +279,7 @@ export const getSupportAgents = async (req: Request, res: Response) => {
         });
         res.json(agents);
     } catch (error) {
-        Logger.error('Error fetching support agents', error);
+        logError('Error fetching support agents', error);
         res.status(500).json({ error: 'Failed to fetch agents' });
     }
 };
@@ -290,13 +290,13 @@ export const searchUsers = async (req: Request, res: Response) => {
         // @ts-ignore
         const currentUserId = req.user?.id;
 
-        Logger.info(`🔍 Chat user search initiated by ${currentUserId}. Query: "${query || ''}"`);
+        logger.info(`🔍 Chat user search initiated by ${currentUserId}. Query: "${query || ''}"`);
 
         // Debug: Primeiro contar todos os usuários ativos
         const totalActiveUsers = await prisma.user.count({
             where: { active: true }
         });
-        Logger.info(`🐛 DEBUG: Total usuários ativos no banco: ${totalActiveUsers}`);
+        logger.info(`🐛 DEBUG: Total usuários ativos no banco: ${totalActiveUsers}`);
 
         // Se não há query, retorna todos os usuários ativos (exceto o atual)
         const whereClause: any = {
@@ -331,11 +331,11 @@ export const searchUsers = async (req: Request, res: Response) => {
             }
         });
 
-        Logger.info(`✅ Search returned ${users.length} users`);
+        logger.info(`✅ Search returned ${users.length} users`);
 
         // Debug: Log dos primeiros usuários encontrados
         if (users.length > 0) {
-            Logger.info(`🐛 DEBUG: Primeiros usuários: ${JSON.stringify(users.slice(0, 3), null, 2)}`);
+            logger.info(`🐛 DEBUG: Primeiros usuários: ${JSON.stringify(users.slice(0, 3), null, 2)}`);
         }
 
         res.json({
@@ -347,7 +347,7 @@ export const searchUsers = async (req: Request, res: Response) => {
             }
         });
     } catch (error) {
-        Logger.error('❌ Error searching users for chat', error);
+        logError('❌ Error searching users for chat', error);
         res.status(500).json({ error: 'Failed to search users', debug: (error as any).message });
     }
 };
@@ -407,13 +407,13 @@ export const sendAttention = async (req: Request, res: Response) => {
                     data: { url: `/staff/chat`, chatId: id, forceAlert: true }
                 });
             } catch (err) {
-                Logger.error('Error sending attention notification', err);
+                logError('Error sending attention notification', err);
             }
         }
 
         res.json({ success: true });
     } catch (error) {
-        Logger.error('Error sending attention', error);
+        logError('Error sending attention', error);
         res.status(500).json({ error: 'Failed to send attention' });
     }
 };
@@ -438,7 +438,7 @@ export const markAsRead = async (req: Request, res: Response) => {
 
         res.json({ success: true });
     } catch (error) {
-        Logger.error('Error marking conversation as read', error);
+        logError('Error marking conversation as read', error);
         res.status(500).json({ error: 'Failed to mark as read' });
     }
 };
@@ -466,7 +466,7 @@ export const deleteConversation = async (req: Request, res: Response) => {
 
         res.json({ success: true });
     } catch (error) {
-        Logger.error('Error deleting conversation', error);
+        logError('Error deleting conversation', error);
         res.status(500).json({ error: 'Failed to delete conversation' });
     }
 };
@@ -518,7 +518,7 @@ export const addParticipant = async (req: Request, res: Response) => {
 
         res.json({ success: true, conversation });
     } catch (error) {
-        Logger.error('Error adding participant', error);
+        logError('Error adding participant', error);
         res.status(500).json({ error: 'Failed to add participant' });
     }
 };
@@ -570,7 +570,7 @@ export const transferConversation = async (req: Request, res: Response) => {
 
         res.json({ success: true });
     } catch (error) {
-        Logger.error('Error transferring conversation', error);
+        logError('Error transferring conversation', error);
         res.status(500).json({ error: 'Failed to transfer conversation' });
     }
 };

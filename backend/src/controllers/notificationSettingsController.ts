@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
-import Logger from '../lib/logger';
+import logger, { logInfo, logError } from '../utils/logger';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
@@ -16,7 +16,7 @@ export const getGlobalSettings = async (req: Request, res: Response) => {
 
         res.json(settings);
     } catch (error) {
-        Logger.error('[NotifController] Error fetching global settings:', error);
+        logError('[NotifController] Error fetching global settings:', error);
         res.status(500).json({ error: (error as Error).message || 'Erro ao buscar configurações' });
     }
 };
@@ -46,10 +46,10 @@ export const updateGlobalSettings = async (req: Request, res: Response) => {
             }
         });
 
-        Logger.info(`[NotifController] Updated settings for ${type} by user ${userId}`);
+        logger.info(`[NotifController] Updated settings for ${type} by user ${userId}`);
         res.json(updated);
     } catch (error) {
-        Logger.error('[NotifController] Error updating global settings:', error);
+        logError('[NotifController] Error updating global settings:', error);
         res.status(500).json({ error: 'Erro ao atualizar configurações' });
     }
 };
@@ -73,7 +73,7 @@ export const getUserPreferences = async (req: Request, res: Response) => {
             globalSettings
         });
     } catch (error) {
-        Logger.error('[NotifController] Error fetching user preferences:', error);
+        logError('[NotifController] Error fetching user preferences:', error);
         res.status(500).json({ error: 'Erro ao buscar preferências' });
     }
 };
@@ -105,10 +105,10 @@ export const updateUserPreference = async (req: Request, res: Response) => {
             }
         });
 
-        Logger.info(`[NotifController] Updated preference for user ${userId}, type ${type}`);
+        logger.info(`[NotifController] Updated preference for user ${userId}, type ${type}`);
         res.json(updated);
     } catch (error) {
-        Logger.error('[NotifController] Error updating user preference:', error);
+        logError('[NotifController] Error updating user preference:', error);
         res.status(500).json({ error: 'Erro ao atualizar preferência' });
     }
 };
@@ -151,14 +151,14 @@ export const bulkUpdateUserPreferences = async (req: Request, res: Response) => 
             results.push(result);
         }
 
-        Logger.info(`[NotifController] Bulk updated ${results.length} preferences`);
+        logger.info(`[NotifController] Bulk updated ${results.length} preferences`);
         res.json({
             success: true,
             updated: results.length,
             results
         });
     } catch (error) {
-        Logger.error('[NotifController] Error in bulk update:', error);
+        logError('[NotifController] Error in bulk update:', error);
         res.status(500).json({ error: 'Erro ao atualizar preferências em massa' });
     }
 };
@@ -212,7 +212,7 @@ export const getNotificationStats = async (req: Request, res: Response) => {
             totalDisabledPreferences: disabledPrefsCount
         });
     } catch (error) {
-        Logger.error('[NotifController] Error getting stats:', error);
+        logError('[NotifController] Error getting stats:', error);
         res.status(500).json({ error: 'Erro ao buscar estatísticas' });
     }
 };
@@ -272,7 +272,7 @@ export const getAllUsersWithPreferences = async (req: Request, res: Response) =>
             pages: Math.ceil(total / limitNum)
         });
     } catch (error) {
-        Logger.error('[NotifController] Error fetching users with preferences:', error);
+        logError('[NotifController] Error fetching users with preferences:', error);
         res.status(500).json({ error: (error as Error).message || 'Erro ao buscar usuários' });
     }
 };
