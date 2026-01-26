@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260126-0153",
+  "version": "BETA20260126-0201",
   "stage": "BETA",
-  "timestamp": "2026-01-26T01:53:32.000Z",
-  "commit": "611877e",
-  "buildNumber": 121,
-  "releaseNotes": "Auto-generated from commit: chore: add debug wrapper to api/index.ts to diagnose startup crash"
+  "timestamp": "2026-01-26T02:01:25.000Z",
+  "commit": "c01d6ce",
+  "buildNumber": 122,
+  "releaseNotes": "Auto-generated from commit: refactor: isolate app logic to fix serverless crash"
 }
