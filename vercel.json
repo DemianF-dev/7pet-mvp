@@ -55,6 +55,10 @@
             "destination": "/api/index.ts"
         },
         {
+            "source": "/(auth|customers|pets|services|appointments|quotes|audit|dashboard|staff|management|invoices|goals|notifications|notification-settings|appreciations|products|support|maps|transport-settings|metrics|cron|feed|chat|hr|time-tracking|marketing|packages|recurrence|dev|pos)(/.*)?",
+            "destination": "/api/index.ts"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
