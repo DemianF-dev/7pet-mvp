@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-2241",
+  "version": "BETA20260125-2308",
   "stage": "BETA",
-  "timestamp": "2026-01-25T22:41:22.000Z",
-  "commit": "0ff6ba1",
-  "buildNumber": 112,
-  "releaseNotes": "Auto-generated from commit: refactor: unify logging system, resolve monorepo build errors and standardize agenda views"
+  "timestamp": "2026-01-25T23:08:49.000Z",
+  "commit": "bd62124",
+  "buildNumber": 113,
+  "releaseNotes": "Auto-generated from commit: fix: correct vercel deployment configuration and prisma generate path"
 }
