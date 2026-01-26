@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260125-2308",
+  "version": "BETA20260125-2317",
   "stage": "BETA",
-  "timestamp": "2026-01-25T23:08:49.000Z",
-  "commit": "bd62124",
-  "buildNumber": 113,
-  "releaseNotes": "Auto-generated from commit: fix: correct vercel deployment configuration and prisma generate path"
+  "timestamp": "2026-01-25T23:17:13.000Z",
+  "commit": "a7bb07f",
+  "buildNumber": 114,
+  "releaseNotes": "Auto-generated from commit: fix: resolve remaining backend TypeScript errors for Vercel build"
 }
