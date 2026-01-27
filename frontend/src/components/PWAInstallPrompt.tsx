@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, X, Smartphone, Share2, PlusSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isIOS, isStandalone } from '../utils/swStatus';
 import { useAuthStore } from '../store/authStore';
 
+// Type declaration for BeforeInstallPromptEvent
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 const PWAInstallPrompt: React.FC = () => {
-    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [showIOSInstructions, setShowIOSInstructions] = useState(false);
     const { user } = useAuthStore();
@@ -16,7 +22,7 @@ const PWAInstallPrompt: React.FC = () => {
 
         // Session/Visit counting logic
         const visitCount = parseInt(localStorage.getItem('pwa_visit_count') || '0');
-        const lastPromptDate = localStorage.getItem('pwa_last_prompt_date');
+        void localStorage.getItem('pwa_last_prompt_date'); // lastPromptDate - reserved for future
         const now = Date.now();
 
         // Simple visit counter

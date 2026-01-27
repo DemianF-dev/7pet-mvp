@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, Difficulty, GameOptions } from './types';
+import { GameState, Difficulty } from './types';
 import { initializeGame, countCrossings } from './game-logic';
 import GameBoard from './components/GameBoard';
 import toast from 'react-hot-toast';
@@ -24,7 +24,7 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
     hard: 'Difícil'
 };
 
-export default function DesenroscaGame({ onWin, reducedMotion }: DesenroscaGameProps) {
+export default function DesenroscaGame({ onWin }: DesenroscaGameProps) {
     const [gameState, setGameState] = useState<GameState>(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -42,7 +42,7 @@ export default function DesenroscaGame({ onWin, reducedMotion }: DesenroscaGameP
     });
 
     const timerRef = useRef<number | null>(null);
-    const [, forceUpdate] = useState(0);
+    void timerRef; // Timer used for future features
 
     // Save state
     useEffect(() => {

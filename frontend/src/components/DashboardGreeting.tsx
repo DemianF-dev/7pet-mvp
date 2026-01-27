@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 interface DashboardGreetingProps {
@@ -41,7 +41,8 @@ const INSPIRATIONAL_MESSAGES = [
     "O melhor ainda está por vir."
 ];
 
-export default function DashboardGreeting({ name, subtitle, isClient = false }: DashboardGreetingProps) {
+export default function DashboardGreeting({ name, subtitle, isClient: _isClient = false }: DashboardGreetingProps) {
+    void _isClient; // May be used for conditional rendering in future
     const message = useMemo(() => {
         const day = new Date().getDate();
         return INSPIRATIONAL_MESSAGES[(day - 1) % INSPIRATIONAL_MESSAGES.length];

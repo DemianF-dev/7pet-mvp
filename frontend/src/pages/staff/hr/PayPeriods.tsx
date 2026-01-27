@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, DollarSign, Calculator, Lock, Unlock, FileText, Plus, Check, X, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Calendar, Lock, Unlock, Plus, X, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import api from '../../../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -23,10 +23,10 @@ interface StaffProfile {
 
 export default function PayPeriods() {
     const [periods, setPeriods] = useState<PayPeriod[]>([]);
-    const [staffProfiles, setStaffProfiles] = useState<StaffProfile[]>([]);
+    const [, setStaffProfiles] = useState<StaffProfile[]>([]); // reserved for future staff selection
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedPeriod, setSelectedPeriod] = useState<PayPeriod | null>(null);
+    void useState<PayPeriod | null>(null); // selectedPeriod - reserved for future period details view
     const [generating, setGenerating] = useState(false);
     const [closing, setClosing] = useState(false);
 

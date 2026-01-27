@@ -1,12 +1,11 @@
-import React from 'react';
-import { getTileColor, TileColorVar } from '../theme/petmatchTokens';
+import { SVGProps, FC } from 'react';
 
-interface IconProps extends React.SVGProps<SVGSVGElement> {
+interface IconProps extends SVGProps<SVGSVGElement> {
     size?: number;
     color?: string;
 }
 
-const BaseIcon: React.FC<IconProps> = ({ size = 24, color = 'currentColor', style, ...props }) => (
+const BaseIcon: FC<IconProps> = ({ size = 24, color = 'currentColor', style, ...props }) => (
     <svg
         width={size}
         height={size}

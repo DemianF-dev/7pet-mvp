@@ -1,5 +1,4 @@
-import React from 'react';
-import { MessageSquare, User } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { Conversation } from '../../types/chat'; // We'll need to define this type or import it
 

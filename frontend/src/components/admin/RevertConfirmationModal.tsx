@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, RefreshCcw, ShieldAlert, History } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, RefreshCcw, ShieldAlert } from 'lucide-react';
 
 interface RevertConfirmationModalProps {
     isOpen: boolean;

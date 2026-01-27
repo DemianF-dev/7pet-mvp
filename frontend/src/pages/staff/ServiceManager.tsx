@@ -351,7 +351,7 @@ export default function ServiceManager() {
             category: service.category,
             type: service.type as any,
             bathCategory: service.bathCategory as any,
-            groomingType: service.groomingType,
+            groomingType: service.groomingType || '',
             species: service.species,
             sizeLabel: service.sizeLabel || 'Médio',
             coatType: service.coatType || 'Curto',

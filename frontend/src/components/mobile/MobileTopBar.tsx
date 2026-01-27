@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, MoreHorizontal, ArrowLeft } from 'lucide-react';
 import { safeBack } from '../../utils/safeBack';
-import { MOBILE_TABS } from '../../navigation/mobileNav';
 
 /**
  * Route configuration for mobile top bar titles and actions

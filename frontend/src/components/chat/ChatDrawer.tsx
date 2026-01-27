@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, Minimize2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';

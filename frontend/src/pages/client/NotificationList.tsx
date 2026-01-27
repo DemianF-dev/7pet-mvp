@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Bell, CheckCircle, Clock, Volume2, Settings } from 'lucide-react';
 
@@ -7,9 +6,8 @@ import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 
 export default function NotificationList() {
-    const { } = useAuthStore();
+    void useAuthStore(); // Store access reserved for future features
     const { notifications, markAsRead, markAllAsRead, requestPermission, permission, playSound } = useNotification();
-    const testAudioRef = useRef<HTMLAudioElement | null>(null);
 
     const testSound = () => {
         playSound();

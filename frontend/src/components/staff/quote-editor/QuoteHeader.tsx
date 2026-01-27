@@ -1,13 +1,12 @@
-import React from 'react';
 import {
-    ChevronLeft,
     User,
     History,
     CheckCircle2,
     Save,
     Send,
     Calendar,
-    RefreshCcw
+    RefreshCcw,
+    ChevronLeft
 } from 'lucide-react';
 import Breadcrumbs from '../Breadcrumbs';
 import BackButton from '../../BackButton';
@@ -15,7 +14,7 @@ import { getQuoteStatusColor } from '../../../utils/statusColors';
 
 interface QuoteHeaderProps {
     isModal: boolean;
-    quoteId: string;
+    quoteId?: string;
     seqId?: number;
     status: string;
     customerName: string;
@@ -36,7 +35,6 @@ interface QuoteHeaderProps {
 
 const QuoteHeader: React.FC<QuoteHeaderProps> = ({
     isModal,
-    quoteId,
     seqId,
     status,
     customerName,

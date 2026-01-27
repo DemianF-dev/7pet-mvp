@@ -46,7 +46,7 @@ export default function MarketingCenter() {
     const [targetType, setTargetType] = useState<TargetType>('ALL');
     const [targetRoles, setTargetRoles] = useState<string[]>([]);
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-    const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
+    const [priority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW'); // setPriority - reserved for priority selector
 
     // Search State
     const [userSearch, setUserSearch] = useState('');

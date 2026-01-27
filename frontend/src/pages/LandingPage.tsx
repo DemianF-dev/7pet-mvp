@@ -9,7 +9,7 @@ export default function LandingPage() {
     const navigate = useNavigate();
     const [showWASelector, setShowWASelector] = useState(false);
 
-    const handleWhatsAppRedirect = (type: 'personal' | 'business') => {
+    const handleWhatsAppRedirect = (_type: 'personal' | 'business') => {
         const phone = '5511983966451';
         const message = 'Olá! Gostaria de mais informações sobre os serviços da 7Pet.';
         const baseUrl = 'https://wa.me/';

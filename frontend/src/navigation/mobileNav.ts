@@ -2,7 +2,6 @@ import {
     Calendar,
     Users,
     FileText,
-    Bell,
     MoreHorizontal,
     Home,
     MessageSquare,
@@ -11,7 +10,6 @@ import {
     Truck,
     TrendingUp,
     Shield,
-    LogOut,
     UserCircle,
     Activity,
     Briefcase

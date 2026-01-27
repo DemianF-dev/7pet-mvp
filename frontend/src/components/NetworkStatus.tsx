@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NetworkStatus: React.FC = () => {
-    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [, setIsOnline] = useState(navigator.onLine);
     const [showBanner, setShowBanner] = useState(false);
     const [statusType, setStatusType] = useState<'offline' | 'restored' | 'reconnecting'>('offline');
     const [offlineTimer, setOfflineTimer] = useState<number | null>(null);

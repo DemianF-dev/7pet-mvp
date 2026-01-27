@@ -9,16 +9,12 @@ import {
     User,
     Trash2,
     Save,
-    MapPin,
-    Calendar,
     Plus,
     Trash,
     Filter,
     ArrowUpDown,
     Check,
     Briefcase,
-    Phone,
-    FileText,
     Users,
     RotateCcw,
     Unlock
@@ -1620,7 +1616,7 @@ export default function UserManager() {
                                         <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 font-bold text-gray-400">Cancelar</button>
                                         <button
                                             onClick={handleSaveUser}
-                                            disabled={selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster}
+                                            disabled={Boolean(selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster)}
                                             className="btn-primary px-8 py-3 flex items-center gap-2 disabled:opacity-50 disabled:grayscale cursor-pointer"
                                         >
                                             <Save size={18} /> Salvar

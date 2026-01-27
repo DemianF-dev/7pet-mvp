@@ -1,8 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, Plus, Users, Check, Trash2 } from 'lucide-react';
-import { RolePermission, NewRoleData } from '../types';
-import { PERMISSION_MODULES } from '../../../../constants/permissions';
+import { X, Lock, Plus, Check, Trash2, Users } from 'lucide-react';
 import { useRoles } from '../hooks/useRoles';
+import { PERMISSION_MODULES } from '../../../../constants/permissions';
 
 interface RoleManagerModalProps {
     isOpen: boolean;
@@ -21,7 +20,6 @@ export const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ isOpen, onCl
         newRoleData,
         setSelectedConfigRole,
         setEditingRoleLabel,
-        setEditingRolePerms,
         setHasRoleChanges,
         setIsAddingRole,
         setNewRoleData,

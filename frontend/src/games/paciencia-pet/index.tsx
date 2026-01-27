@@ -12,11 +12,8 @@ import { GameState } from './types';
 
 class PacienciaModule implements GameModule {
     private root: Root | null = null;
-    private container: HTMLElement | null = null;
-    private isPaused: boolean = false;
 
     mount(container: HTMLElement, options?: GameOptions): void {
-        this.container = container;
         this.root = createRoot(container);
 
         this.root.render(
@@ -25,18 +22,14 @@ class PacienciaModule implements GameModule {
                 reducedMotion={options?.reducedMotion}
             />
         );
-
-        this.isPaused = false;
     }
 
     pause(): void {
-        this.isPaused = true;
         // Game state is managed internally by PacienciaGame component
         // React will handle the pause state naturally
     }
 
     resume(): void {
-        this.isPaused = false;
         // Game will resume automatically when component re-renders
     }
 
@@ -45,7 +38,6 @@ class PacienciaModule implements GameModule {
             this.root.unmount();
             this.root = null;
         }
-        this.container = null;
     }
 
     getState(): GenericGameState {

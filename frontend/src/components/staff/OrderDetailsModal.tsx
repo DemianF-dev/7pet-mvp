@@ -1,20 +1,14 @@
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     X,
     Printer,
-    Calendar,
-    User,
     CreditCard,
     Package,
     Trash2,
     RefreshCcw,
     Download,
-    Share2,
     MessageCircle,
-    CheckCircle,
-    AlertTriangle,
-    Undo2
+    AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Badge from '../ui/Badge';

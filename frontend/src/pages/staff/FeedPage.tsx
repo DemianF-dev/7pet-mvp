@@ -369,7 +369,7 @@ function PostCard({ post }: { post: Post }) {
         }
     });
 
-    const hasLiked = post.reactions.some(r => r.authorId === user?.id);
+    void post.reactions.some(r => r.authorId === user?.id); // hasLiked - reserved for UI indicator
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-none md:rounded-xl shadow-sm border-b md:border border-gray-100 dark:border-gray-700 overflow-hidden group hover:shadow-md transition-shadow">

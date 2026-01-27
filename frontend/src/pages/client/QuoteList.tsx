@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { FileText, ArrowRight, CheckCircle2, XCircle, Eye } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../../services/api';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useQuotes, useUpdateQuoteStatus } from '../../hooks/useQuotes';
 import toast from 'react-hot-toast';

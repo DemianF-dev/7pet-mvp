@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { X, Check, Star } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { useMobileNav } from '../../hooks/useMobileNav';
 
 interface MobileNavSettingsProps {

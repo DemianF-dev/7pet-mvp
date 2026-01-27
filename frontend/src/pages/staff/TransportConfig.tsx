@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, AlertCircle, CheckCircle2, Calculator, DollarSign, Clock, Gauge } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle2, Calculator, Clock, Gauge } from 'lucide-react';
 import api from '../../services/api';
 
 import LoadingButton from '../../components/LoadingButton';

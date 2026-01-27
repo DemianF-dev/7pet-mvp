@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -6,14 +6,12 @@ import {
     Clock,
     User,
     FileText,
-    AlertCircle,
     RotateCcw,
     ChevronDown,
     ChevronUp,
     Shield,
     Calendar,
-    Scissors,
-    AlertTriangle
+    Scissors
 } from 'lucide-react';
 
 interface AuditEvent {

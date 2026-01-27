@@ -3,7 +3,6 @@ import {
     Target,
     Plus,
     Search,
-    TrendingUp,
     Trash2,
     Edit2,
     X,
@@ -11,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
-import { Card, Badge, IconButton, Button, Input, Select, GlassSurface } from '../../components/ui';
+import { Card, IconButton, Button, Input, Select } from '../../components/ui';
 import QueryState from '../../components/system/QueryState';
 import toast from 'react-hot-toast';
 import { GoalProgressCard } from '../../components/staff/GoalProgressCard';

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X, Check } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Check } from 'lucide-react';
 
 interface DangerousActionModalProps {
     isOpen: boolean;

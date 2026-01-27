@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
     TrendingUp, TrendingDown, Plus, DollarSign, Calendar, X, FileText,
-    ChevronRight, History, Zap, ShoppingCart, Info, Search, MoreVertical, CreditCard,
+    ChevronRight, History, Zap, ShoppingCart, Info, CreditCard,
     ArrowRightLeft, BadgeDollarSign, Receipt
 } from 'lucide-react';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 
 // Import Modals & Editors
 import OrderDetailsModal from './OrderDetailsModal';
@@ -33,7 +32,6 @@ interface CustomerFinancialSectionProps {
 type FinancialTab = 'SALDO' | 'FATURAS' | 'ORCAMENTOS' | 'CUPONS' | 'AGENDAMENTOS';
 
 export default function CustomerFinancialSection({ customerId }: CustomerFinancialSectionProps) {
-    const navigate = useNavigate();
     const [activeSubTab, setActiveSubTab] = useState<FinancialTab>('SALDO');
     const [balance, setBalance] = useState<number>(0);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -55,7 +53,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
     const [transType, setTransType] = useState<'DEBIT' | 'CREDIT'>('DEBIT');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
-    const [category, setCategory] = useState('ADJUSTMENT');
+    const [category] = useState('ADJUSTMENT');
     const [notes, setNotes] = useState('');
 
     useEffect(() => {

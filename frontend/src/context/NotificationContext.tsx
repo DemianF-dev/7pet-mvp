@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { socketManager } from '../services/socketManager';
 import { useSocketStore } from '../store/socketStore';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
-import { Bell, MessageCircle, FileText, AlertCircle } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
 interface Notification {
     id: string;
@@ -35,7 +35,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { status } = useSocketStore();
-    const isConnected = status === 'connected';
+    void status; // Used to track socket connection status
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [permission, setPermission] = useState<NotificationPermission>('default');
 

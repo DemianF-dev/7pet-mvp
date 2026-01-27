@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-    X, CreditCard, Calendar, DollarSign, CheckCircle,
-    AlertCircle, FileText, ChevronRight, Copy, Trash2,
-    Info, Clock, Save
+    X, CreditCard, Calendar, DollarSign,
+    FileText, Copy, Trash2,
+    Clock, Save
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import PaymentReceiptModal from '../PaymentReceiptModal';
@@ -46,7 +46,7 @@ export default function InvoiceDetailsModal({ invoiceId, onClose, onUpdate }: Pr
     const [isLoading, setIsLoading] = useState(true);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
-    const [paymentBank, setPaymentBank] = useState('');
+    const [paymentBank] = useState('');
     const [notes, setNotes] = useState('');
     const [billingPeriod, setBillingPeriod] = useState('');
     const [isSavingMetadata, setIsSavingMetadata] = useState(false);

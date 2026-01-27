@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, Save, Calendar, Clock, DollarSign, FileText } from 'lucide-react';
+import { ChevronLeft, Save, Calendar, DollarSign } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import CustomerAutocomplete from '../../components/CustomerAutocomplete';
@@ -37,7 +37,7 @@ export default function NewRecurrenceContract() {
 
         setLoading(true);
         try {
-            const response = await api.post('/recurrence/contracts', formData);
+            await api.post('/recurrence/contracts', formData);
             toast.success('Contrato criado com sucesso!');
             navigate('/staff/recurrence');
         } catch (error: any) {

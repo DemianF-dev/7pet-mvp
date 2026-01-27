@@ -2,11 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Send,
     CheckCircle2,
     AlertCircle,
     ChevronLeft,
-    Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,7 +17,6 @@ import RouteSkeleton from '../../components/system/RouteSkeleton';
 
 // Refactored Components
 import QuoteTypeSelection from '../../components/client/QuoteTypeSelection';
-import PetDateSelection from '../../components/client/PetDateSelection'; // Keep for compat if needed, but we'll use others
 import SPAServicesSection from '../../components/client/SPAServicesSection';
 import TransportSection from '../../components/client/TransportSection';
 import PetHairSelection from '../../components/client/PetHairSelection';
@@ -199,10 +196,10 @@ export default function QuoteRequest() {
     });
 
     // Intelligent Product Filtering based on Pet Profile
-    const availableProducts = products.filter(p => {
+    void products.filter(p => {
         if (!selectedPet) return true;
         // Simple intelligent matching: look for pet species or size in product name/description/category
-        const profileTags = [
+        void [
             selectedPet.species.toLowerCase(),
             petSize?.toLowerCase(),
             selectedPet.breed?.toLowerCase()

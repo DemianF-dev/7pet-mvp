@@ -5,7 +5,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { AppImage, Input, Button, Divider, IconButton, GlassSurface } from '../../components/ui';
+import { AppImage, Input, Button, Divider, GlassSurface } from '../../components/ui';
 
 
 export default function StaffLogin() {
@@ -14,7 +14,7 @@ export default function StaffLogin() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(true); // Default: 30 days
+    const [rememberMe] = useState(true); // Default: 30 days - setRememberMe reserved for toggle UI
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');

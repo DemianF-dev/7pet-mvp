@@ -85,7 +85,7 @@ export default function AgendaLOG() {
 
     const isLoading = isMobile ? agendaDayQuery.isLoading : (agendaWeekQuery.isLoading || dashboardQuery.isLoading);
 
-    const summary = useMemo(() => {
+    void useMemo(() => { // summary - reserved for future dashboard display
         const daySummary: any = dayData?.summary || {};
         return {
             total: daySummary.total || 0,

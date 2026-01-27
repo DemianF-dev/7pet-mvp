@@ -1,13 +1,22 @@
-import React from 'react';
 import { Truck, MapPin, Minus, Plus, RefreshCcw } from 'lucide-react';
-import LoadingButton from '../LoadingButton';
+
+interface TransportDetails {
+    origin: string;
+    destination: string;
+    returnAddress: string;
+    stopAddress?: string;
+    transportType: string;
+    period: string;
+    petQuantity: number;
+    isReturnSame: boolean;
+}
 
 interface TransportSectionProps {
-    transportDetails: any;
-    setTransportDetails: React.Dispatch<React.SetStateAction<any>>;
-    onCalculate: () => void;
-    isCalculating: boolean;
-    transportInfo: any;
+    transportDetails: TransportDetails;
+    setTransportDetails: React.Dispatch<React.SetStateAction<TransportDetails>>;
+    onCalculate?: () => void;
+    isCalculating?: boolean;
+    transportInfo?: { distanceKm?: number; durationMin?: number; price?: number; distanceText?: string; durationText?: string; distanceValue?: number; durationValue?: number; estimatedPrice?: number } | null;
     quoteType: string | null;
     shopAddress: string;
 }
@@ -15,12 +24,10 @@ interface TransportSectionProps {
 const TransportSection = ({
     transportDetails,
     setTransportDetails,
-    onCalculate,
-    isCalculating,
-    transportInfo,
     quoteType,
     shopAddress
 }: TransportSectionProps) => {
+    void shopAddress; // Silence unused warning - may be used for default destination
     return (
         <div className="mb-12 animate-in fade-in duration-500">
             <h2 className="text-xl font-black text-secondary mb-8 flex items-center gap-3">

@@ -1,10 +1,9 @@
-import React from 'react';
 import { Search, Plus, MoreHorizontal, Truck, Sparkles } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface CalendarCompactHeaderProps {
     currentDate: Date;
-    selectedDate: Date;
+    selectedDate?: Date;
     onPrevMonth: () => void;
     onNextMonth: () => void;
     onToday: () => void;
@@ -13,7 +12,6 @@ interface CalendarCompactHeaderProps {
 
 export default function CalendarCompactHeader({
     currentDate,
-    selectedDate,
     onPrevMonth,
     onNextMonth,
     onToday,

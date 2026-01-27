@@ -249,7 +249,7 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
 
                                         try {
                                             const amount = useQuote ? localAppointment.quote.totalAmount : totalPrice;
-                                            const res = await api.post('/invoices', {
+                                            await api.post('/invoices', {
                                                 customerId: localAppointment.customer.id,
                                                 amount: amount,
                                                 dueDate: new Date().toISOString(),

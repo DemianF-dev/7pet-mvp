@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, Fingerprint, Eye, EyeOff, ShieldCheck, ChevronLeft, Heart } from 'lucide-react';
+import { Mail, Lock, LogIn, Fingerprint, Eye, EyeOff, ChevronLeft, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { AppImage, Input, Button, Divider, IconButton, GlassSurface } from '../../components/ui';
+import { AppImage, Input, Button, Divider, GlassSurface } from '../../components/ui';
 
 
 export default function ClientLogin() {
@@ -14,7 +14,7 @@ export default function ClientLogin() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(true); // Default: 30 days
+    const [rememberMe] = useState(true); // Default: 30 days
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');

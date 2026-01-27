@@ -399,7 +399,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
                 const suit = (['hearts', 'diamonds', 'clubs', 'spades'] as Suit[])[pileIndex];
                 const foundation = prev.foundations[suit];
 
-                if (canMoveToFoundation(cardToMove, foundation)) {
+                if (canMoveToFoundation(cardToMove, foundation) && selected.source) {
                     handleMoveToFoundation(cardToMove, selected.source, selected.pileIndex, selected.cardIndex);
                     return { ...prev, selected: null }; // Selected state is cleared by handleMoveToFoundation
                 } else {
@@ -412,7 +412,7 @@ export default function PacienciaGame({ onWin }: PacienciaGameProps) {
             if (source === 'tableau' && pileIndex !== undefined) {
                 const targetTableau = prev.tableau[pileIndex];
 
-                if (canMoveToTableau(cardToMove, targetTableau)) {
+                if (canMoveToTableau(cardToMove, targetTableau) && selected.source) {
                     handleMoveToTableau(cardsToMove, pileIndex, selected.source, selected.pileIndex, selected.cardIndex);
                     return { ...prev, selected: null }; // Selected state is cleared by handleMoveToTableau
                 } else {

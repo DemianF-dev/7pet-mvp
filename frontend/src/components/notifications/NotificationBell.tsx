@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import { Bell } from 'lucide-react';
 

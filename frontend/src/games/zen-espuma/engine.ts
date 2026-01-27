@@ -13,10 +13,8 @@
 import { GameOptions } from '../../types/game.types';
 
 // Types
-interface Point {
-    x: number;
-    y: number;
-}
+// Point interface reserved for future use
+type _Point = { x: number; y: number }; void (0 as unknown as _Point);
 
 interface Particle {
     x: number;
@@ -79,10 +77,6 @@ export class ZenEspumaEngine {
 
     // Options
     private options: GameOptions;
-    private themeColors = {
-        primary: '255, 255, 255',
-        secondary: '200, 230, 255'
-    };
 
     constructor(canvas: HTMLCanvasElement, options: GameOptions) {
         this.canvas = canvas;
@@ -112,10 +106,10 @@ export class ZenEspumaEngine {
     }
 
     private updateThemeColors() {
-        const style = getComputedStyle(document.body);
+        void getComputedStyle(document.body); // style - reserved for future theming
         // Extract RGB values from CSS variables if they exist, else fallback
-        // We assume --color-accent-primary might be in hex or rgb. 
-        // For simplicity in this lightweight engine, we'll keep white bubbles 
+        // We assume --color-accent-primary might be in hex or rgb.
+        // For simplicity in this lightweight engine, we'll keep white bubbles
         // that pick up background color via transparency, but we can tint them.
 
         // Let's stick to white/transparent aesthetics for "Soap" feel which works on any bg.

@@ -11,7 +11,6 @@ import {
     Activity,
     RefreshCw,
     Clock,
-    Calendar,
     CheckCircle2,
     Bell
 } from 'lucide-react';
@@ -32,11 +31,10 @@ import {
 } from 'recharts';
 import api from '../../services/api';
 import BackButton from '../../components/BackButton';
-import Skeleton from '../../components/Skeleton';
 import { NotificationControlPanel } from '../../components/admin/NotificationControlPanel';
 import { UserNotificationMatrix } from '../../components/admin/UserNotificationMatrix';
 import { useAuthStore } from '../../store/authStore';
-import { Card, Badge, IconButton, Button, GlassSurface } from '../../components/ui';
+import { Card, Badge, IconButton, Button } from '../../components/ui';
 import QueryState from '../../components/system/QueryState';
 
 // Use CSS variable-based colors from design system
@@ -312,7 +310,7 @@ export default function ManagementDashboard() {
                                             paddingAngle={5}
                                             dataKey="value"
                                         >
-                                            {pieData.map((entry, index) => (
+                                            {pieData.map((_, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -509,7 +507,8 @@ function KPICard({ title, value, growth, icon, isCurrency, isPercent, theme = 'p
     );
 }
 
-function AlertItem({ label, count, urgent }: { label: string, count: number, urgent: boolean }) {
+// Reserved for future alert notifications
+void function _AlertItem({ label, count, urgent }: { label: string, count: number, urgent: boolean }) {
     return (
         <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${urgent ? 'bg-[var(--color-error-alpha)] border-[var(--color-error-alpha)]' : 'bg-[var(--color-fill-secondary)] border-[var(--color-border)]'}`}>
             <span className={`text-[11px] font-[var(--font-weight-black)] uppercase tracking-wider ${urgent ? 'text-[var(--color-error)]' : 'text-[var(--color-text-tertiary)]'}`}>{label}</span>
@@ -518,4 +517,4 @@ function AlertItem({ label, count, urgent }: { label: string, count: number, urg
             </Badge>
         </div>
     );
-}
+};

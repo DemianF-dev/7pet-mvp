@@ -2,13 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { socketManager } from '../../services/socketManager';
 import api from '../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon, Image as ImageIcon, File as FileIcon, Loader2, X } from 'lucide-react';
+import { ChevronDown, Send, Paperclip, Smile, MoreVertical, Phone, AlertCircle, PlusCircle, Search, User as UserIcon, File as FileIcon, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 import { Message, Conversation } from '../../types/chat';
 import AppImage from '../ui/AppImage';
-import QueryState from '../system/QueryState';
-import RouteSkeleton from '../system/RouteSkeleton';
 
 
 interface ChatWindowProps {
@@ -332,14 +330,6 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                             }
                         };
 
-                        // Format time
-                        const formatTime = (date: Date) => {
-                            return date.toLocaleTimeString('pt-BR', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                        };
-
                         return (
                             <React.Fragment key={m.id}>
                                 {showDaySeparator && (
@@ -359,7 +349,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                                                 <div className="mb-3">
                                                     {m.fileType?.startsWith('image/') ? (
                                                         <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-black/5 hover:border-black/10 transition-all">
-                                                            <AppImage src={m.fileUrl} alt={m.fileName} className="max-w-full h-auto max-h-80 object-cover" />
+                                                            <AppImage src={m.fileUrl} alt={m.fileName || 'Image'} className="max-w-full h-auto max-h-80 object-cover" />
                                                         </a>
                                                     ) : (
                                                         <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isMe ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}>

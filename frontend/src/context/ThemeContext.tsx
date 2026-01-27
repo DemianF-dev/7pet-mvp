@@ -48,8 +48,6 @@ export function ThemeProvider({
         // Clean up legacy classes if strictly needed, though dataset overrides mostly
         root.classList.remove('light', 'dark');
 
-        let resolvedTheme = theme;
-
         if (theme === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 

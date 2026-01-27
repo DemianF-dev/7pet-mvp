@@ -3,20 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     User, Mail, Phone, MapPin, Save, Calendar,
     Trash2, Plus, X, MessageSquare,
-    Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield, DollarSign, FileText
+    Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield, DollarSign, FileText,
+    Star, Heart, Zap, Trophy, History
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
-import BackButton from '../../components/BackButton';
-import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
 import CustomerFinancialSection from '../../components/staff/CustomerFinancialSection';
 import CustomerAlertsSection from '../../components/staff/CustomerAlertsSection';
 import ClientAuditTimeline from '../../components/client/ClientAuditTimeline';
-import { Award, Star, Heart, Zap, Trophy, History } from 'lucide-react';
 import QueryState from '../../components/system/QueryState';
 import RouteSkeleton from '../../components/system/RouteSkeleton';
-import AppImage from '../../components/ui/AppImage';
 
 
 interface Appreciation {
@@ -390,7 +387,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     setSaving(false);
                     return;
                 }
-                const response = await api.post('/customers', payload);
+                await api.post('/customers', payload);
                 toast.success('Cliente criado com sucesso!');
                 if (isModal && onClose) {
                     onClose();
@@ -553,13 +550,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
             )}
 
             {/* CUSTOMER ALERTS - Show active alerts banner */}
-            {id !== 'new' && <CustomerAlertsSection customerId={id} />}
+            {id && id !== 'new' && <CustomerAlertsSection customerId={id} />}
 
             {/* NAVIGATION TABS - Move to prominent location */}
             <div className="flex items-center gap-1 mb-8 bg-white p-2 rounded-[32px] border border-gray-100 shadow-sm w-fit overflow-x-auto no-scrollbar mx-auto lg:mx-0">
-                {['PERFIL', id !== 'new' && 'PETS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'ATIVIDADES', id !== 'new' && 'AUDITORIA']
-                    .filter(Boolean)
-                    .map((tab: string) => (
+                {(['PERFIL', id !== 'new' && 'PETS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'ATIVIDADES', id !== 'new' && 'AUDITORIA']
+                    .filter((t): t is string => Boolean(t)))
+                    .map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -1296,7 +1293,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     {activeTab === 'FINANCEIRO' && id !== 'new' && (
                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                             {/* FINANCIAL SECTION */}
-                            <CustomerFinancialSection customerId={id} />
+                            <CustomerFinancialSection customerId={id!} />
                         </div>
                     )}
 
@@ -1462,7 +1459,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                 <History size={16} /> Trilhas de Auditoria (Logs)
                             </h3>
-                            <ClientAuditTimeline clientId={id} />
+                            <ClientAuditTimeline clientId={id!} />
                         </div>
                     )}
                 </div>

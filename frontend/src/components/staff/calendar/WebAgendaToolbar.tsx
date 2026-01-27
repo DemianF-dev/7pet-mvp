@@ -1,5 +1,3 @@
-
-import React from 'react';
 import {
     ChevronLeft,
     ChevronRight,
@@ -10,8 +8,7 @@ import {
     Calendar as CalendarIcon,
     RefreshCcw,
     Users,
-    Trash2,
-    Filter
+    Trash2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 

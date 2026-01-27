@@ -5,7 +5,6 @@ import {
     Users,
     MessageSquare,
     Gamepad2,
-    Layout,
     FileText,
     Truck,
     Menu,

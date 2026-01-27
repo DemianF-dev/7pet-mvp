@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, PlayCircle, StopCircle, Timer } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '../store/authStore';
 
 interface AttendanceRecord {
     id: string;
@@ -28,7 +27,6 @@ interface HourBank {
 }
 
 const TimeClockWidget: React.FC = () => {
-    const user = useAuthStore((state) => state.user);
     const [staffId, setStaffId] = useState<string | null>(null);
     const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord | null>(null);
     const [hourBank, setHourBank] = useState<HourBank | null>(null);

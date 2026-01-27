@@ -1,7 +1,6 @@
 import { Board, Tile, TileType, Position } from './types';
 import { TILE_TYPES, BOARD_SIZE } from './levels';
 import { getRandomItem } from './rng';
-import { findMatchesInBoard } from './match';
 
 let uniqueIdCounter = 0;
 const generateId = (type: string) => `${type}_${Date.now()}_${uniqueIdCounter++}`;

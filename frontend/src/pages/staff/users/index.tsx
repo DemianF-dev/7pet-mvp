@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { Shield, Lock, Plus, Trash, Check, RotateCcw } from 'lucide-react';
@@ -74,8 +74,7 @@ export default function UserManager() {
         restoreUser,
         bulkDelete,
         bulkRestore,
-        bulkStatusChange,
-        loading: mutationLoading
+        bulkStatusChange
     } = useUserMutations({
         onUserSaved: () => fetchUsers(),
         onUserDeleted: () => fetchUsers(),
@@ -85,25 +84,10 @@ export default function UserManager() {
     // Role management
     const {
         rolePermissions,
-        selectedConfigRole,
-        editingRoleLabel,
-        editingRolePerms,
-        hasRoleChanges,
-        isAddingRole,
-        newRoleData,
-        setSelectedConfigRole,
-        setEditingRoleLabel,
-        setEditingRolePerms,
-        setHasRoleChanges,
-        setIsAddingRole,
-        setNewRoleData,
         fetchRoleConfigs,
-        handleSaveRoleConfig,
-        handleCreateRole,
-        handleDeleteRole,
         togglePermission,
         handleRoleChange
-    } = useRoles({ users });
+    } = useRoles({ users, isMaster });
 
     // Local state for modals and selection
     const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -115,8 +99,8 @@ export default function UserManager() {
     const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
     const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
 
-    // Form data state
-    const [formData, setFormData] = useState<UserFormData>({
+    // Form data state - formData is managed by UserFormModal internally
+    const [, setFormData] = useState<UserFormData>({
         firstName: '',
         lastName: '',
         name: '',
@@ -333,7 +317,6 @@ export default function UserManager() {
                         sortOrder={sortOrder}
                         itemsPerPage={itemsPerPage}
                         isLoading={isLoading}
-                        usersCount={users.length}
                         onSearchChange={setSearchTerm}
                         onFilterChange={setFilterDivision}
                         onSortByChange={setSortBy}
@@ -421,8 +404,8 @@ export default function UserManager() {
                         onTogglePassword={togglePasswordVisibility}
                         onViewCustomer={handleOpenCustomerDetail}
                         onEdit={handleOpenUser}
-                        onDelete={deleteUser}
-                        onRestore={restoreUser}
+                        onDelete={(user: UserData) => deleteUser(user, false)}
+                        onRestore={(user: UserData) => restoreUser(user)}
                         tab={tab}
                         selectedIds={selectedIds}
                         onToggleSelect={toggleSelect}
@@ -453,7 +436,7 @@ export default function UserManager() {
                                 Primeira
                             </button>
                             <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                 disabled={currentPage === 1}
                                 className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
@@ -489,7 +472,7 @@ export default function UserManager() {
                             </div>
 
                             <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                 disabled={currentPage === totalPages}
                                 className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
@@ -518,8 +501,8 @@ export default function UserManager() {
                     isMaster={isMaster}
                     currentUser={currentUser}
                     onSave={saveUser}
-                    onDelete={deleteUser}
-                    onRestore={restoreUser}
+                    onDelete={(user: UserData) => deleteUser(user, false)}
+                    onRestore={(user: UserData) => restoreUser(user)}
                     onRoleChange={handleRoleChange}
                     togglePermission={togglePermission}
                     onViewCustomer={handleOpenCustomerDetail}

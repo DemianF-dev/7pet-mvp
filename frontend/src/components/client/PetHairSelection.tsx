@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Dog, Cat, Star } from 'lucide-react';
 
@@ -29,8 +28,6 @@ const PetHairSelection: React.FC<PetHairSelectionProps> = ({
     onNext,
     quoteType
 }) => {
-    const selectedPet = pets.find(p => p.id === selectedPetId);
-
     return (
         <motion.div
             initial={{ opacity: 0, x: 20 }}

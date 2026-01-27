@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, MapPin, Navigation, Clock, CheckCircle2, Phone, User, RefreshCw, ChevronLeft, MessageSquare, ExternalLink, X } from 'lucide-react';
+import { Truck, MapPin, Navigation, Clock, CheckCircle2, Phone, User, RefreshCw, ChevronLeft, MessageSquare, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import api from '../../services/api';

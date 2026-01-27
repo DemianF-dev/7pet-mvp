@@ -1,5 +1,4 @@
-import React from 'react';
-import { Scissors, Trash2, Plus, Minus } from 'lucide-react';
+import { Scissors, Trash2, Plus } from 'lucide-react';
 import ServiceAutocomplete from '../ServiceAutocomplete';
 
 interface Service {
@@ -7,6 +6,16 @@ interface Service {
     name: string;
     basePrice: number;
     category?: string;
+}
+
+interface SpaDetails {
+    hasKnots: boolean;
+    knotRegions: string[];
+    hairLength: string;
+    hasParasites: boolean;
+    parasiteTypes: string;
+    parasiteComments: string;
+    wantsMedicatedBath: boolean;
 }
 
 interface SPAServicesSectionProps {
@@ -18,13 +27,13 @@ interface SPAServicesSectionProps {
     setSelectedBanhoId: (id: string) => void;
     selectedTosaId: string;
     setSelectedTosaId: (id: string) => void;
-    items: any[];
+    items: { serviceId: string; quantity: number; price?: number; description?: string }[];
     onAddItem: () => void;
     onRemoveItem: (index: number) => void;
-    onUpdateItem: (index: number, field: string, value: any) => void;
+    onUpdateItem?: (index: number, field: string, value: string | number) => void;
     onServiceSelect: (index: number, id: string) => void;
-    spaDetails: any;
-    setSpaDetails: React.Dispatch<React.SetStateAction<any>>;
+    spaDetails: SpaDetails;
+    setSpaDetails: React.Dispatch<React.SetStateAction<SpaDetails>>;
     toggleKnotRegion: (region: string) => void;
 }
 
@@ -53,7 +62,6 @@ const SPAServicesSection = ({
     items,
     onAddItem,
     onRemoveItem,
-    onUpdateItem,
     onServiceSelect,
     spaDetails,
     setSpaDetails,

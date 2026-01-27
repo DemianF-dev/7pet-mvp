@@ -183,7 +183,7 @@ export default function MyHR() {
     }).length;
 
     const isTransport = profile.department === 'transport';
-    const isAtendimento = profile.department === 'atendimento' || profile.department === 'spa' || profile.department === 'gestao' || profile.department === 'comercial';
+    void (profile.department === 'atendimento' || profile.department === 'spa' || profile.department === 'gestao' || profile.department === 'comercial'); // isAtendimento - reserved for conditional UI
 
     return (
         <main className="p-8">

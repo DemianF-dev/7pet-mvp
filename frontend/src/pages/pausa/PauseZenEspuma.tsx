@@ -1,5 +1,4 @@
-
-import { lazy, useState } from 'react';
+import { useState } from 'react';
 import GameHost from '../../components/games/GameHost';
 import BackButton from '../../components/BackButton';
 import '../../styles/design-system-base.css';

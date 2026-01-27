@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { GameModule, GameOptions } from '../../types/game.types';
 import ReactDOM from 'react-dom/client';
-import { generateBoard, areAdjacent, copyBoard, isValidPos } from './engine/board';
-import { Board, GameState, Position, Tile } from './engine/types';
+import { generateBoard, copyBoard } from './engine/board';
+import { Board, GameState, Position } from './engine/types';
 import { LEVEL_CONFIGS } from './engine/levels';
 import { resolveBoardState } from './engine/resolve';
-import { saveProgress, loadProgress, updateLevelProgress } from './storage/progress';
+import { loadProgress, updateLevelProgress } from './storage/progress';
 import PetMatchHUD from './ui/PetMatchHUD';
 import PetMatchGrid from './ui/PetMatchGrid';
 import GameCard from './ui/GameCard';
@@ -14,11 +14,11 @@ import { Toaster, toast } from 'react-hot-toast';
 import '../../styles/design-system-base.css'; // Ensure base styles
 
 // Main Game Component
-const PetMatchGame = ({ options, destroy }: { options?: GameOptions, destroy?: () => void }) => {
+const PetMatchGame = ({ options }: { options?: GameOptions }) => {
     // Determine initial level from progress if not specified? 
     // Usually game starts at storage level or select screen.
     // For V1, let's load progress and start at 'highestUnlocked' or 1.
-    const [progress, setProgress] = useState(loadProgress());
+    const [progress] = useState(loadProgress());
     const [currentLevelId, setCurrentLevelId] = useState<number>(progress.highestUnlockedLevel);
 
     // Game State
@@ -145,7 +145,7 @@ const PetMatchGame = ({ options, destroy }: { options?: GameOptions, destroy?: (
         } else {
             // INVALID MOVE - Revert
             // Swap back
-            const reverted = copyBoard(board); // board is still pre-swap in closure? No, state updated.
+            void copyBoard(board); // Used for future revert animation
             // Actually 'board' var is stale closure. We need to use 'nextBoard' inverted.
 
             // Revert data
@@ -221,13 +221,11 @@ const PetMatchGame = ({ options, destroy }: { options?: GameOptions, destroy?: (
 // Module Adapter
 class PetMatchModule implements GameModule {
     private root: ReactDOM.Root | null = null;
-    private options: GameOptions | null = null;
 
     mount(container: HTMLElement, options: GameOptions) {
         console.log('[PetMatch] Mounting game...', { container, options });
-        this.options = options;
         this.root = ReactDOM.createRoot(container);
-        this.root.render(<PetMatchGame options={options} destroy={() => this.destroy()} />);
+        this.root.render(<PetMatchGame options={options} />);
         console.log('[PetMatch] Game mounted successfully');
     }
 

@@ -1,14 +1,13 @@
-import React from 'react';
-import { RefreshCw, Truck, Clock, ChevronRight } from 'lucide-react';
-import { GlassSurface } from '../../ui';
+import { Clock, ChevronRight } from 'lucide-react';
+import { AgendaItem } from '../../../features/agenda/domain/types';
 
 interface AgendaItemCompactProps {
-    appointment: any;
-    onClick: (appt: any) => void;
+    appointment: AgendaItem;
+    onClick: (appt: AgendaItem) => void;
 }
 
 // Status bar colors matching the reference
-const getBarColor = (status: string, category?: string): string => {
+const getBarColor = (status: string): string => {
     // Yellow for recurring/rodizio
     // Orange/red shades for transport
     // Different colors per type
@@ -29,12 +28,12 @@ export default function AgendaItemCompact({ appointment, onClick }: AgendaItemCo
     const isAllDay = appointment.isAllDay || timeString === '00:00';
 
     // Determine bar color - use performer color if available
-    const barColor = appointment.performer?.color || getBarColor(appointment.status, appointment.category);
+    const barColor = appointment.performer?.color || getBarColor(appointment.status);
 
     // Icons based on content
     const isRecurring = appointment.customer?.type === 'RECORRENTE' || appointment.title?.includes('RODIZIO');
-    const isTransport = appointment.quote?.appointments?.some((a: any) => a.category === 'LOGISTICA');
-    const transportType = isTransport ? (appointment.title?.includes('Leva') ? 'R' : appointment.title?.includes('Traz') ? 'A' : 'LI') : null;
+    const isTransport = appointment.quote?.appointments?.some((a: { category: string }) => a.category === 'LOGISTICA');
+    void (isTransport ? (appointment.title?.includes('Leva') ? 'R' : appointment.title?.includes('Traz') ? 'A' : 'LI') : null); // transportType - reserved for future badge
 
     const petName = appointment.pet?.name || '';
     const customerName = appointment.customer?.name || '';

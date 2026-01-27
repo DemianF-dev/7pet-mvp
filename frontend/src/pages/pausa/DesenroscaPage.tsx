@@ -6,10 +6,6 @@
  * Includes navigation controls (back + sidebar toggle).
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Menu, X, Home } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
 import GameHost from '../../components/games/GameHost';
 
 import BackButton from '../../components/BackButton';
@@ -17,8 +13,6 @@ import { GameModule } from '../../types/game.types';
 import '../../styles/design-system-base.css';
 
 export default function DesenroscaPage() {
-    const navigate = useNavigate();
-    const [showNav, setShowNav] = useState(false);
 
     // Dynamic import function for the game module
     const loadDesenroscaGame = () =>

@@ -1,28 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Save,
-    Trash2,
-    Plus,
-    CheckCircle2,
-    Send,
     Calculator,
-    AlertCircle,
-    User,
-    Dog,
-    ChevronLeft,
-    History,
-    CalendarDays,
     Calendar,
-    X,
-    RefreshCcw,
-    FileText
+    X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import api from '../../services/api';
-import Breadcrumbs from '../../components/staff/Breadcrumbs';
-import BackButton from '../../components/BackButton';
 import toast from 'react-hot-toast';
 import AuditLogModal from '../../components/AuditLogModal';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
@@ -731,6 +716,14 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         return (
             <div className={`flex items-center justify-center ${isModal ? 'h-[400px]' : 'min-h-screen bg-gray-50 dark:bg-black'}`}>
                 <Calculator className="animate-spin text-primary" size={48} />
+            </div>
+        );
+    }
+
+    if (!quote) {
+        return (
+            <div className={`flex items-center justify-center ${isModal ? 'h-[400px]' : 'min-h-screen bg-gray-50 dark:bg-black'}`}>
+                <p className="text-gray-500">Orçamento não encontrado</p>
             </div>
         );
     }

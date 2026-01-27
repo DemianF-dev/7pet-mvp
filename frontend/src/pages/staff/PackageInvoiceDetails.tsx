@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ChevronLeft,
@@ -8,7 +8,6 @@ import {
     Copy,
     Printer,
     CheckCircle2,
-    AlertCircle,
     User,
     Package,
     ArrowRight,
@@ -18,7 +17,6 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { motion } from 'framer-motion';
 
 export default function PackageInvoiceDetails() {
     const { id } = useParams();

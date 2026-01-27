@@ -43,7 +43,7 @@ export function createSpecialFromMatch(match: MatchResult, board: Board): Tile |
 /**
  * Get positions affected by activating a special tile
  */
-export function getSpecialActivationPositions(tile: Tile, board: Board): Position[] {
+export function getSpecialActivationPositions(tile: Tile, _board: Board): Position[] {
     if (!tile.special) return [];
 
     const { x: col, y: row } = tile;

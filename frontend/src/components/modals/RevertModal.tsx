@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    X, AlertTriangle, RotateCcw,
-    CheckCircle2, Info, ArrowRight,
+    X, RotateCcw,
+    CheckCircle2, Info,
     ShieldAlert
 } from 'lucide-react';
 import api from '../../services/api';

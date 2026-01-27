@@ -13,7 +13,7 @@ interface ModalState {
   closeDetailsModal: () => void;
 }
 
-export const useModalStore = create<ModalState>((set, get) => ({
+export const useModalStore = create<ModalState>((set) => ({
   appointmentModalOpen: false,
   detailsModalOpen: false,
   appointmentData: null,

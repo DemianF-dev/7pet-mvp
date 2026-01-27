@@ -135,7 +135,7 @@ export default function BillingManager() {
         }
     };
 
-    const handleDelete = async (invoiceId: string) => {
+    const _handleDelete = async (invoiceId: string) => { void _handleDelete; // Reserved for future single-delete UI
         if (!window.confirm('ATENÇÃO: Deseja realmente excluir esta fatura/orçamento?\n\nNota: Só é possível excluir faturas sem pagamentos registrados.')) return;
 
         try {
@@ -147,7 +147,7 @@ export default function BillingManager() {
         }
     };
 
-    const handleDuplicate = async (invoiceId: string) => {
+    const _handleDuplicate = async (invoiceId: string) => { void _handleDuplicate; // Reserved for future duplicate UI
         if (!window.confirm('Deseja duplicar esta fatura/orçamento?\n\nA nova fatura terá vencimento em +30 dias.')) return;
 
         try {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
-import { X, Plus, Trash2, Search, Truck, MapPin, RefreshCcw, Scissors, Droplets, Bug, AlertTriangle, Calendar, Minus, CheckCircle, Info, Eye, Edit } from 'lucide-react';
+import { X, Plus, Trash2, Truck, MapPin, RefreshCcw, Scissors, Droplets, Bug, AlertTriangle, Calendar, Minus, CheckCircle, Info, Eye, Edit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ManualQuoteModalProps {
@@ -139,8 +139,8 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
             // Garantir que temos um número válido para evitar NaN
             const basePrice = Number(res.data?.estimatedPrice || res.data?.total) || 0;
-            const km = Number(res.data?.totalKm) || 0;
-            const min = Number(res.data?.totalMin) || 0;
+            void res.data?.totalKm; // km - available in breakdown
+            void res.data?.totalMin; // min - available in breakdown
 
             // Acréscimo por pet adicional: +20% por cada pet EXTRA (ex: 2 pets = +20%, 3 pets = +40%)
             const extraPets = Math.max(0, quote.petQuantity - 1);
@@ -733,8 +733,8 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
         return acc;
     }, 0) : 0;
 
-    // Subtotal de transporte para exibição
-    const currentTransportSubtotal = allItems.filter(item =>
+    // Subtotal de transporte para exibição (reserved for future display)
+    void allItems.filter(item =>
         item.description?.toLowerCase().includes('transporte') || item.description?.includes('🔄')
     ).reduce((acc, item) => acc + (item.price * item.quantity), 0);
 

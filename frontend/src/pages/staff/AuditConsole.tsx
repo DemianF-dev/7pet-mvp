@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
-    Search, Filter, Shield, AlertTriangle,
+    Search, Filter,
     RotateCcw, Eye, Download, ChevronLeft, ChevronRight,
-    User, Calendar, FileText, CheckCircle, XCircle
+    CheckCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import RevertModal from '../../components/modals/RevertModal';

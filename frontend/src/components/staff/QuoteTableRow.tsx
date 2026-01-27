@@ -54,7 +54,6 @@ interface QuoteTableRowProps {
 const QuoteTableRow = React.memo(({
     quote,
     view,
-    isBulkMode,
     isSelected,
     onToggleSelect,
     onViewCustomer,

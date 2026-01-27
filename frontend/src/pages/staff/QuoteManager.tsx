@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     useQuotes,
     useBulkDeleteQuotes,
@@ -10,8 +10,6 @@ import {
     useRestoreQuote,
     useReactivateQuote
 } from '../../hooks/useQuotes';
-import BackButton from '../../components/BackButton';
-import QuoteEditor from './QuoteEditor';
 import {
     X,
     Search,
@@ -28,10 +26,7 @@ import {
     DollarSign,
     Settings,
     Plus,
-    MoreHorizontal,
-    Trash,
-    LayoutGrid,
-    List
+    Trash
 } from 'lucide-react';
 import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
@@ -41,15 +36,13 @@ import api from '../../services/api';
 import { getQuoteStatusColor } from '../../utils/statusColors';
 import CascadeDeleteModal from '../../components/modals/CascadeDeleteModal';
 import toast from 'react-hot-toast';
-import QuoteTableRow from '../../components/staff/QuoteTableRow';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
-import Skeleton from '../../components/Skeleton';
 import ManualQuoteModal from '../../components/modals/ManualQuoteModal';
 import { useRegisterMobileAction } from '../../hooks/useMobileActions';
 import QueryState from '../../components/system/QueryState';
 import ResponsiveTable, { Column } from '../../components/system/ResponsiveTable';
 import { Container, Stack } from '../../components/layout/LayoutHelpers';
-import { Button, Input, Badge, IconButton, EmptyState, GlassSurface, Card } from '../../components/ui';
+import { Button, Input, Badge, IconButton, EmptyState, Card } from '../../components/ui';
 
 interface QuoteItem {
     id: string;
@@ -93,8 +86,8 @@ export default function QuoteManager() {
     const [view, setView] = useState<'active' | 'trash' | 'history'>('active');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isBulkMode, setIsBulkMode] = useState(false);
-    const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+    void useState(false); // isBulkMode, setIsBulkMode - reserved for bulk selection mode
+    const [, setSelectedQuoteId] = useState<string | null>(null); // selectedQuoteId - reserved for quick view
     const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [viewAppointmentData, setViewAppointmentData] = useState<any>(null);
@@ -122,7 +115,7 @@ export default function QuoteManager() {
     };
 
     // React Query Hooks
-    const { data: quotes = [], isLoading, isFetching } = useQuotes(view);
+    const { data: quotes = [], isLoading } = useQuotes(view);
     const bulkDeleteMutation = useBulkDeleteQuotes();
     const duplicateMutation = useDuplicateQuote();
     const deleteMutation = useDeleteQuote();
@@ -255,8 +248,8 @@ export default function QuoteManager() {
     };
 
     const quotesArray = Array.isArray(quotes) ? quotes : [];
-    const activeCount = quotesArray.filter(q => q && q.status !== 'ENCERRADO').length;
-    const historyCount = quotesArray.filter(q => q && q.status === 'ENCERRADO').length;
+    void quotesArray.filter(q => q && q.status !== 'ENCERRADO').length; // activeCount - reserved for tab badge
+    void quotesArray.filter(q => q && q.status === 'ENCERRADO').length; // historyCount - reserved for tab badge
     const filteredQuotes = quotesArray
         .filter(q => {
             if (!q || !q.customer) return false;

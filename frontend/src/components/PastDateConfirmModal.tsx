@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertTriangle, Calendar, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

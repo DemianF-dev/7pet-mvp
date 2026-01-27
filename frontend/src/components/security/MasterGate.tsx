@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, ShieldAlert, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Lock, Unlock, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useDevCockpitStore } from '../../store/devCockpitStore';
 import { toast } from 'react-hot-toast';
@@ -14,7 +14,6 @@ export const MasterGate: React.FC<MasterGateProps> = ({ children, fallback }) =>
     const { user } = useAuthStore();
     const cockpitStore = useDevCockpitStore();
     const [challengeText, setChallengeText] = useState('');
-    const [isVerifying, setIsVerifying] = useState(false);
 
     // Auto-check TTL on mount and periodically
     useEffect(() => {

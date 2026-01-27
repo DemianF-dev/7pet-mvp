@@ -1,4 +1,4 @@
-import { Board, Tile, ResolutionStep, ResolutionResult, MatchResult, Position } from './types';
+import { Board, Tile, ResolutionStep, ResolutionResult, Position } from './types';
 import { BOARD_SIZE, TILE_TYPES } from './levels';
 import { copyBoard, createTile } from './board';
 import { findEnhancedMatches } from './match';

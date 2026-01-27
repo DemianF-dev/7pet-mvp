@@ -4,7 +4,7 @@
  * Standard playing card aesthetic with premium pet touches.
  */
 
-import { Card as CardType, SUIT_SYMBOLS, SUIT_COLORS, Suit } from '../types';
+import { Card as CardType, SUIT_SYMBOLS, Suit } from '../types';
 import '../../../styles/design-system-base.css';
 
 // Pet emojis for each suit

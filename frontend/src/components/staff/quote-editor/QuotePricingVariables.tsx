@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     Calculator,
     Dog,
@@ -7,20 +6,47 @@ import {
     CalendarDays
 } from 'lucide-react';
 
+interface QuotePet {
+    name?: string;
+    coatType?: string;
+    weight?: number;
+    healthIssues?: string;
+    temperament?: string;
+    observations?: string;
+}
+
+interface CustomerPet {
+    id: string;
+    name: string;
+    breed?: string;
+    age?: string;
+    observations?: string;
+}
+
+interface Quote {
+    pet?: QuotePet;
+    type?: string;
+    hairLength?: string;
+    hasKnots?: boolean;
+    knotRegions?: string;
+    hasParasites?: boolean;
+    transportPeriod?: string;
+}
+
 interface QuotePricingVariablesProps {
-    quote: any;
+    quote: Quote;
     desiredAt: string;
     setDesiredAt: (val: string) => void;
     scheduledAt: string;
     setScheduledAt: (val: string) => void;
-    transportAt: string;
-    setTransportAt: (val: string) => void;
+    transportAt?: string;
+    setTransportAt?: (val: string) => void;
     transportLevaAt: string;
     setTransportLevaAt: (val: string) => void;
     transportTrazAt: string;
     setTransportTrazAt: (val: string) => void;
     petId: string | null;
-    customerPets: any[];
+    customerPets: CustomerPet[];
     onPetChange: (id: string) => void;
 }
 
@@ -30,8 +56,6 @@ const QuotePricingVariables: React.FC<QuotePricingVariablesProps> = ({
     setDesiredAt,
     scheduledAt,
     setScheduledAt,
-    transportAt,
-    setTransportAt,
     transportLevaAt,
     setTransportLevaAt,
     transportTrazAt,
@@ -84,7 +108,7 @@ const QuotePricingVariables: React.FC<QuotePricingVariablesProps> = ({
                     </div>
                     {(petId ? customerPets.find(p => p.id === petId)?.observations : quote.pet?.observations) && (
                         <p className="text-xs text-red-400 mt-2 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-100 dark:border-red-900">
-                            ⚠️ Obs: {petId ? customerPets.find(p => p.id === petId)?.observations : quote.pet.observations}
+                            ⚠️ Obs: {petId ? customerPets.find(p => p.id === petId)?.observations : quote.pet?.observations}
                         </p>
                     )}
                 </div>

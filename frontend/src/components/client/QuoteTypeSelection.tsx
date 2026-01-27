@@ -1,4 +1,3 @@
-import React from 'react';
 import { Scissors, Truck, Sparkles, ChevronRight } from 'lucide-react';
 
 type QuoteType = 'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE';

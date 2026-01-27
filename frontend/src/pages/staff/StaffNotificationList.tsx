@@ -1,7 +1,6 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { Bell, CheckCircle, Clock, Trash2, MessageSquare, Settings, Volume2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, CheckCircle, Clock, Settings, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import api from '../../services/api';

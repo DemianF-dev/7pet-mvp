@@ -3,7 +3,7 @@
  * Detects 3+, 4, 5, T-shapes, and L-shapes
  */
 
-import { Board, Position, MatchResult, MatchType, Tile } from './types';
+import { Board, Position, MatchResult } from './types';
 import { BOARD_SIZE } from './levels';
 
 /**

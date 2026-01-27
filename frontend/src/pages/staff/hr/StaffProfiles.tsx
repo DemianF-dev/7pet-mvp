@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Edit2, Check, X, DollarSign, Truck, Scissors, HeadphonesIcon, Settings2, FileText, Search, ArrowLeft, Filter, Shield, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Plus, Edit2, Check, X, Truck, Scissors, HeadphonesIcon, Settings2, FileText, Search, ArrowLeft, Shield, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../../services/api';
 import { toast } from 'react-hot-toast';
 

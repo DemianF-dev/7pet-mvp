@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, X, Users, Trash2, CheckSquare } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import CalendarCompactHeader from './CalendarCompactHeader';

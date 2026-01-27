@@ -53,4 +53,8 @@ export interface AgendaItem {
             transport?: { type: string }
         }[];
     };
+    // UI display properties
+    isAllDay?: boolean;
+    title?: string;
+    address?: string;
 }

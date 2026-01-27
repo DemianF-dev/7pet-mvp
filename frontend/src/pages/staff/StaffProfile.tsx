@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
     User, Mail, Lock, Phone, MapPin, Save,
     ShieldCheck, Calendar, FileText, ClipboardList,
-    Fingerprint, Smartphone, Check, Briefcase, Activity, Download
+    Fingerprint, Smartphone, Briefcase, Download
 } from 'lucide-react';
 import { DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../constants/divisions';
 import BackButton from '../../components/BackButton';

@@ -10,20 +10,16 @@ import {
     DollarSign,
     QrCode,
     Calendar,
-    Save,
     X,
     CheckCircle2,
     Lock,
     Unlock,
-    Receipt,
     Printer,
     Package,
-    ArrowRight,
     RefreshCcw,
     ChevronRight,
     Wallet,
     Barcode,
-    FileText,
     AlertTriangle
 } from 'lucide-react';
 import { useServices } from '../../context/ServicesContext';

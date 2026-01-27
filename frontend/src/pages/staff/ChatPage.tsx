@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Search, PlusCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import type { User } from '../../types';
 
 import ConversationList from '../../components/chat/ConversationList';
 import ChatWindow from '../../components/chat/ChatWindow';
@@ -28,7 +27,7 @@ export default function ChatPage() {
     });
 
     // Check for chatId in URL on mount
-    React.useEffect(() => {
+    useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const chatId = params.get('chatId');
         if (chatId) {
@@ -237,7 +236,7 @@ export default function ChatPage() {
                                         </div>
                                     )}
 
-                                    {searchResults.map(u => (
+                                    {searchResults.map((u: { id: string; name: string; email?: string; photo?: string; role?: string; division?: string }) => (
                                         <button
                                             key={u.id}
                                             onClick={() => createConversationMutation.mutate(u.id)}

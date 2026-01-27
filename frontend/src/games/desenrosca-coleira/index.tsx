@@ -17,10 +17,8 @@ interface GameModule {
 
 class DesenroscaModule implements GameModule {
     private root: Root | null = null;
-    private container: HTMLElement | null = null;
 
     mount(container: HTMLElement, options?: GameOptions): void {
-        this.container = container;
         this.root = createRoot(container);
 
         this.root.render(
@@ -52,7 +50,6 @@ class DesenroscaModule implements GameModule {
             this.root.unmount();
             this.root = null;
         }
-        this.container = null;
 
         // Clean up global state
         delete (window as any).__desenroscaGameState;

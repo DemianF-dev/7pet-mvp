@@ -62,7 +62,7 @@ function generateConnectedGraph(nodeCount: number, edgeCount: number): Edge[] {
         if (from === to) continue;
 
         const edgeId1 = `edge-${from}-${to}`;
-        const edgeId2 = `edge-${to}-${from}`;
+        void `edge-${to}-${from}`; // edgeId2 - reverse direction check
 
         const exists = edges.some(e =>
             (e.from === `node-${from}` && e.to === `node-${to}`) ||
@@ -108,7 +108,7 @@ function createCircularLayout(nodeCount: number): Node[] {
 /**
  * Scramble node positions to create crossings
  */
-function scramblePositions(nodes: Node[], edges: Edge[]): Node[] {
+function scramblePositions(nodes: Node[], _edges: Edge[]): Node[] {
     const scrambled = [...nodes];
     const scrambleCount = Math.floor(nodes.length * 0.6);
 

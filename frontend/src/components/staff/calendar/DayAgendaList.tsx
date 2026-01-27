@@ -1,23 +1,14 @@
 import AgendaItemCompact from './AgendaItemCompact';
 import VirtualList from '../../system/VirtualList';
 import QueryState from '../../system/QueryState';
-import { EmptyState, Button, AppImage } from '../../ui';
+import { EmptyState } from '../../ui';
 import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 
-interface Appointment {
-    id: string;
-    startAt: string;
-    status: string;
-    customer: { name: string; type?: string };
-    pet: { name: string; species?: string };
-    services?: { id: string; name: string }[];
-    service?: { name: string };
-    performer?: { color?: string };
-    quote?: {
-        appointments?: { category: string }[];
-    };
-    address?: string;
-}
+// Import the AgendaItem type for compatibility
+import { AgendaItem } from '../../../features/agenda/domain/types';
+
+// Use AgendaItem directly to ensure type compatibility
+type Appointment = AgendaItem;
 
 interface DayAgendaListProps {
     selectedDate: Date;

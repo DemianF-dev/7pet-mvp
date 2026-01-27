@@ -44,7 +44,6 @@ export default function QueryState({
     emptyState,
     isEmpty = false,
     children,
-    loadingMessage = 'Carregando...',
     errorTitle = 'Erro ao carregar dados',
     errorMessage,
     className = ''

@@ -1,8 +1,4 @@
 
-import React, { useState } from 'react';
-import { Clock, PawPrint } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
 interface Appointment {
     id: string;
     startAt: string;
@@ -78,7 +74,7 @@ export default function WebMonthGrid({
 
             {/* Grid */}
             <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-[800px]">
-                {days.map((day, colIdx) => {
+                {days.map((day) => {
                     const isCurrentMonth = day.getMonth() === month;
                     const isToday = isSameDay(day, today);
 
