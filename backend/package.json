@@ -9,7 +9,6 @@
         "start": "node dist/index.js",
         "seed": "ts-node prisma/seed.ts",
         "vercel-build": "rm -rf dist && prisma generate && tsc",
-        "postinstall": "prisma generate",
         "test": "jest",
         "test:watch": "jest --watch",
         "test:ci": "jest --runInBand --forceExit",
