@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260126-2116",
+  "version": "BETA20260126-2134",
   "stage": "BETA",
-  "timestamp": "2026-01-26T21:16:02.000Z",
-  "commit": "a6bb2de",
-  "buildNumber": 123,
-  "releaseNotes": "Auto-generated from commit: chore: add .clawdignore"
+  "timestamp": "2026-01-26T21:34:59.000Z",
+  "commit": "0142116",
+  "buildNumber": 124,
+  "releaseNotes": "Auto-generated from commit: fix: enable emit in backend tsconfig for Railway build"
 }
