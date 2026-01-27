@@ -9,7 +9,6 @@ import { useAuthStore } from './store/authStore';
 import api from './services/api';
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/ui/PageTransition';
-import PageLoader from './components/PageLoader';
 import { useServiceWorkerUpdate } from './hooks/useServiceWorkerUpdate';
 
 // ⚡ STATIC IMPORTS - Critical path pages that need to load immediately
@@ -59,7 +58,6 @@ const StaffProfileDetails = lazy(() => import('./pages/staff/hr/StaffProfileDeta
 const PayPeriods = lazy(() => import('./pages/staff/hr/PayPeriods'));
 const PayStatementDetail = lazy(() => import('./pages/staff/hr/PayStatementDetail'));
 const MobileMenuHub = lazy(() => import('./pages/staff/MobileMenuHub'));
-const MarketingCenter = lazy(() => import('./pages/staff/marketing/MarketingCenter'));
 const StrategyManager = lazy(() => import('./pages/staff/StrategyManager'));
 const AuditConsole = lazy(() => import('./pages/staff/AuditConsole'));
 const POS = lazy(() => import('./pages/staff/POS'));
@@ -103,7 +101,7 @@ function App() {
     const location = useLocation();
 
     const queryClient = useQueryClient();
-    const { user, updateUser } = useAuthStore();
+    const { updateUser } = useAuthStore();
 
     // 🔄 Socket.io Lifecycle (Singleton)
     useSocketLifecycle();

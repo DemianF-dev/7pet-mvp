@@ -10,6 +10,12 @@ dist-ssr/
 # Environment
 .env
 .env.*
+!.env.example
+!.env-test.example
+
+# Backups (may contain sensitive data)
+backend/backups/
+**/backups/
 
 # Prisma
 /prisma/migrations/
