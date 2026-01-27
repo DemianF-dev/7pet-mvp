@@ -29,11 +29,11 @@ const variantStyles: Record<InputVariant, string> = {
 
 const sizeStyles: Record<InputSize, { input: string; icon: number }> = {
     sm: {
-        input: 'px-3 py-1.5 text-[var(--font-size-footnote)] rounded-[var(--radius-md)] min-h-[32px]',
-        icon: 14,
+        input: 'px-3 py-2 text-[var(--font-size-footnote)] rounded-[var(--radius-md)] min-h-[var(--tap-target-min)]',
+        icon: 16,
     },
     md: {
-        input: 'px-4 py-2.5 text-[var(--font-size-body)] rounded-[var(--radius-lg)] min-h-[44px]',
+        input: 'px-4 py-2.5 text-[var(--font-size-body)] rounded-[var(--radius-lg)] min-h-[var(--tap-target-comfortable)]',
         icon: 18,
     },
     lg: {

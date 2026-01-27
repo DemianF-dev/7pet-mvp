@@ -130,11 +130,12 @@
     --transition-slow: var(--duration-slow) var(--ease-out-apple);
 
     /* =========================================
-       GLASSMORPHISM / LIQUID GLASS
+       GLASSMORPHISM / LIQUID GLASS (Premium)
        ========================================= */
-    --glass-blur: 20px;
-    --glass-blur-heavy: 40px;
-    --glass-saturate: 180%;
+    --glass-blur: 24px;
+    --glass-blur-heavy: 48px;
+    --glass-saturate: 200%;
+    --glass-brightness: 1.05;
 
     /* =========================================
        ACCESSIBILITY
@@ -155,5 +156,27 @@
         --transition-fast: 0ms;
         --transition-normal: 0ms;
         --transition-slow: 0ms;
+    }
+}
+
+/* =========================================
+   MOBILE TYPOGRAPHY ADJUSTMENTS
+   Increase minimum font sizes for legibility
+   ========================================= */
+@media (max-width: 768px) {
+    :root {
+        /* Bump up small text for mobile readability */
+        --font-size-caption2: 0.75rem;    /* 12px (was 11px) */
+        --font-size-caption1: 0.8125rem;  /* 13px (was 12px) */
+        --font-size-footnote: 0.875rem;   /* 14px (was 13px) */
+    }
+}
+
+/* Less aggressive landscape mode */
+@media (max-height: 480px) and (orientation: landscape) {
+    :root {
+        --font-size-caption2: 0.6875rem;  /* 11px */
+        --font-size-caption1: 0.75rem;    /* 12px */
+        --font-size-footnote: 0.8125rem;  /* 13px */
     }
 }

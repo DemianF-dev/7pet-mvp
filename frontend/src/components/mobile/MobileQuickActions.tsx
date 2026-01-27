@@ -36,7 +36,7 @@ export default function MobileQuickActions({ onAction }: MobileQuickActionsProps
                 exit={{ scale: 0, opacity: 0, y: 20 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => onAction?.(config.type)}
-                className="fixed right-6 bottom-[calc(90px+env(safe-area-inset-bottom,24px))] w-14 h-14 bg-[var(--color-accent-primary)] text-white rounded-full shadow-[0_8px_25px_rgba(var(--color-accent-primary-rgb),0.4)] flex items-center justify-center z-40 border-4 border-[var(--color-bg-surface)]"
+                className="fixed right-[var(--fab-right)] bottom-[var(--fab-bottom)] w-[var(--fab-size)] h-[var(--fab-size)] bg-[var(--color-accent-primary)] text-white rounded-full shadow-[0_8px_25px_rgba(var(--color-accent-primary-rgb),0.4)] flex items-center justify-center z-[var(--z-fab)] border-4 border-[var(--color-bg-surface)]"
                 aria-label={config.label}
             >
                 <config.icon size={28} strokeWidth={3} />

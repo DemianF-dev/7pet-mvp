@@ -116,7 +116,7 @@ export default function MobileCalendarCompactView({
                ======================================== */}
             <div
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-[var(--color-bg-secondary)]"
-                style={{ paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 20px))' }}
+                style={{ paddingBottom: 'var(--content-padding-bottom)' }}
             >
                 <Container fluid className="py-2">
                     <DayAgendaList
@@ -135,8 +135,8 @@ export default function MobileCalendarCompactView({
             {tab === 'active' && !isBulkMode && (
                 <button
                     onClick={onCreateNew}
-                    className="fixed right-5 z-[45] bg-[var(--color-accent-primary)] hover:brightness-110 text-white w-14 h-14 rounded-full shadow-[0_8px_25px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all active:scale-90"
-                    style={{ bottom: 'calc(88px + env(safe-area-inset-bottom, 16px))' }}
+                    className="fixed right-[var(--fab-right)] z-[var(--z-fab)] bg-[var(--color-accent-primary)] hover:brightness-110 text-white w-[var(--fab-size)] h-[var(--fab-size)] rounded-full shadow-[0_8px_25px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all active:scale-90"
+                    style={{ bottom: 'var(--fab-bottom)' }}
                     aria-label="Novo agendamento"
                 >
                     <Plus size={28} strokeWidth={2.5} />
@@ -153,7 +153,7 @@ export default function MobileCalendarCompactView({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[var(--z-sheet-backdrop)]"
                             onClick={() => setIsFilterOpen(false)}
                         />
 
@@ -162,8 +162,8 @@ export default function MobileCalendarCompactView({
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-elevated)] rounded-t-[32px] z-[60] max-h-[80vh] flex flex-col border-t border-[var(--color-border)]"
-                            style={{ paddingBottom: 'env(safe-area-inset-bottom, 24px)' }}
+                            className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-elevated)] rounded-t-[32px] z-[var(--z-sheet)] max-h-[80vh] flex flex-col border-t border-[var(--color-border)]"
+                            style={{ paddingBottom: 'var(--safe-area-bottom)' }}
                         >
                             <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
                                 <h3 className="text-lg font-black text-[var(--color-text-primary)] uppercase tracking-widest">
@@ -276,8 +276,8 @@ export default function MobileCalendarCompactView({
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}
-                        className="fixed bottom-[72px] left-0 right-0 bg-[var(--color-bg-elevated)] backdrop-blur-md border-t border-[var(--color-border)] p-4 z-[45] flex items-center justify-between"
-                        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 8px)' }}
+                        className="fixed bottom-[var(--nav-bottom-height)] left-0 right-0 bg-[var(--color-bg-elevated)] backdrop-blur-md border-t border-[var(--color-border)] p-4 z-[var(--z-bulk-actions)] flex items-center justify-between"
+                        style={{ paddingBottom: 'calc(var(--safe-area-bottom) + var(--space-2))' }}
                     >
                         <div className="flex items-center gap-3">
                             <span className="bg-[var(--color-accent-primary)] text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black">

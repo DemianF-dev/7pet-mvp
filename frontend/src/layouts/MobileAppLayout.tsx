@@ -44,8 +44,8 @@ export default function MobileAppLayout() {
                     className="flex-1 overflow-y-auto overscroll-contain relative"
                     style={{
                         // Add padding if bottom nav is visible
-                        paddingBottom: !hideNav ? 'calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 24px))' : 'env(safe-area-inset-bottom, 24px)',
-                        paddingTop: isFullScreen ? 'env(safe-area-inset-top, 0px)' : '0px'
+                        paddingBottom: !hideNav ? 'var(--content-padding-bottom)' : 'var(--safe-area-bottom)',
+                        paddingTop: isFullScreen ? 'var(--safe-area-top)' : '0px'
                     }}
                 >
                     <AnimatePresence mode="wait">

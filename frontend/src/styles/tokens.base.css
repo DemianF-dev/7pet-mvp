@@ -79,14 +79,17 @@
     /* 24px */
     --radius-full: 9999px;
 
-    /* Shadows (Premium Layered) */
-    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+    /* Shadows (Premium Layered - Apple-like) */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.2);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.04);
+    /* Premium floating element shadow (FAB, modals) */
+    --shadow-float: 0 8px 32px -4px rgb(0 0 0 / 0.12), 0 4px 8px -2px rgb(0 0 0 / 0.06);
+    --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.02);
 
     /* Glass Alphas */
     --glass-bg-opacity: 0.75;
@@ -148,6 +151,35 @@
     /* PWA Experience */
     --pwa-overscroll-color: var(--color-bg-primary, #FAFAFA);
     --pwa-status-bar-height: var(--safe-area-top);
+
+    /* =========================================
+     Z-INDEX HIERARCHY (Mobile Premium UX)
+     ========================================= */
+    --z-content: 10;
+    --z-sticky-header: 20;
+    --z-status-indicator: 25;
+    --z-fab: 30;
+    --z-bulk-actions: 35;
+    --z-bottom-nav: 40;
+    --z-sheet-backdrop: 50;
+    --z-sheet: 55;
+    --z-drawer-backdrop: 60;
+    --z-drawer: 65;
+    --z-modal-backdrop: 70;
+    --z-modal: 75;
+    --z-toast: 80;
+
+    /* =========================================
+     FAB & FLOATING ELEMENTS POSITIONING
+     ========================================= */
+    --fab-size: 56px;
+    --fab-bottom: calc(var(--nav-bottom-height) + var(--safe-area-bottom) + var(--space-4));
+    --fab-right: var(--space-5);
+
+    /* =========================================
+     CONTENT PADDING (Safe Areas)
+     ========================================= */
+    --content-padding-bottom: calc(var(--nav-bottom-height) + var(--safe-area-bottom));
 }
 
 /* Global PWA Refinements */

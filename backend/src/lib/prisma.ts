@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 // Helper to create client safely
 const createSafeClient = () => {
     try {
-        const connectionString = process.env.DATABASE_URL?.split('?')[0];
+        const connectionString = process.env.DATABASE_URL;
         const pool = new Pool({
             connectionString,
             ssl: {

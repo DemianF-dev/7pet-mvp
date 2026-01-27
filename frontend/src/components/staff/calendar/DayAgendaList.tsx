@@ -75,11 +75,11 @@ export default function DayAgendaList({
                 emptyState={<EmptyStateView />}
                 className="flex-1"
             >
-                <div className="w-full h-full pb-24">
+                <div className="w-full h-full pb-4">
                     <DateHeader />
                     <VirtualList
                         items={appointments}
-                        estimateSize={90}
+                        estimateSize={80}
                         renderItem={(appt) => (
                             <div className="border-b border-[var(--color-border)]/50">
                                 <AgendaItemCompact

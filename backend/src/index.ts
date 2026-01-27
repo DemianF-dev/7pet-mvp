@@ -51,6 +51,7 @@ import packageRoutes from './routes/packageRoutes';
 import devRoutes from './routes/devRoutes';
 import posRoutes from './routes/posRoutes';
 import recurrenceRoutes from './routes/recurrenceRoutes';
+import brainRoutes from './routes/brainRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -233,9 +234,11 @@ app.use('/marketing', marketingRoutes);
 app.use('/packages', packageRoutes);
 app.use('/recurrence', recurrenceRoutes);
 app.use('/dev', devRoutes); // MASTER-only developer tools
+app.use('/brain', brainRoutes);
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
-startNotificationScheduler();
+// TEMPORARILY DISABLED to prevent DB timeout errors
+// startNotificationScheduler();
 
 app.get('/', (req, res) => {
     logInfo('Health check triggered');

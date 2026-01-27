@@ -330,34 +330,39 @@ body {
    GLASSMORPHISM / LIQUID GLASS SURFACES
    ========================================= */
 
-/* Standard Glass Surface */
+/* Standard Glass Surface - Apple Premium */
 .glass-surface {
   background: var(--glass-bg, rgba(255, 255, 255, 0.72));
-  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
+  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 200%)) brightness(var(--glass-brightness, 1.05));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 200%)) brightness(var(--glass-brightness, 1.05));
   border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
   box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.08));
   border-radius: var(--radius-xl);
 }
 
-/* Elevated Glass (for modals, popovers) */
+/* Elevated Glass (for modals, popovers) - Apple Premium */
 .glass-elevated {
   background: var(--glass-bg-elevated, rgba(255, 255, 255, 0.85));
-  backdrop-filter: blur(var(--glass-blur-heavy, 40px)) saturate(var(--glass-saturate, 180%));
-  -webkit-backdrop-filter: blur(var(--glass-blur-heavy, 40px)) saturate(var(--glass-saturate, 180%));
+  backdrop-filter: blur(var(--glass-blur-heavy, 48px)) saturate(var(--glass-saturate, 200%)) brightness(var(--glass-brightness, 1.05));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy, 48px)) saturate(var(--glass-saturate, 200%)) brightness(var(--glass-brightness, 1.05));
   border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
   box-shadow: var(--shadow-xl);
   border-radius: var(--radius-2xl);
 }
 
-/* Glass Card (backwards compatible) */
+/* Glass Card (backwards compatible) - Apple Premium */
 .glass-card {
   background: var(--glass-bg, rgba(255, 255, 255, 0.72));
-  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturate, 180%));
+  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 200%)) brightness(var(--glass-brightness, 1.05));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturate, 200%)) brightness(var(--glass-brightness, 1.05));
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-card, var(--shadow-sm));
+  box-shadow: var(--shadow-card);
   border-radius: var(--radius-lg);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.glass-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 /* Subtle Surface (no blur, just transparency) */
@@ -366,6 +371,20 @@ body {
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   border-radius: var(--radius-lg);
+}
+
+/* Floating Surface (FAB, floating buttons) - Apple Premium */
+.surface-float {
+  box-shadow: var(--shadow-float);
+  transition: box-shadow var(--transition-normal), transform var(--transition-fast);
+}
+
+.surface-float:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+.surface-float:active {
+  transform: scale(var(--tap-feedback-scale));
 }
 
 /* =========================================
@@ -658,9 +677,15 @@ body {
   }
 }
 
-/* Button Spring Animation */
-button:active {
-  transform: scale(0.96);
+/* Button Spring Animation - Apple Premium */
+button:active:not(:disabled) {
+  transform: scale(var(--tap-feedback-scale, 0.97));
+  transition: transform var(--duration-instant, 100ms) var(--ease-out-apple, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Spring bounce-back on release */
+button:not(:active):not(:disabled) {
+  transition: transform var(--duration-fast, 150ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 
 /* Smooth Focus Rings */

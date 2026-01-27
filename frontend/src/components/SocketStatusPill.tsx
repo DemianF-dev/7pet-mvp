@@ -60,7 +60,7 @@ const SocketStatusPill: React.FC = () => {
     const isDisabled = disabledUntil && disabledUntil > Date.now();
 
     return (
-        <div className="fixed bottom-4 md:bottom-4 right-4 z-[999] md:z-[5]">
+        <div className="fixed bottom-4 md:bottom-4 right-4 z-[var(--z-status-indicator)] md:z-[5]">
             <AnimatePresence>
                 {!isExpanded ? (
                     <motion.button

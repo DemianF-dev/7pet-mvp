@@ -132,7 +132,7 @@ export default function MonthGridCompact({
                         return (
                             <div
                                 key={dayIdx}
-                                className="flex flex-col items-center justify-center h-[42px] cursor-pointer"
+                                className="flex flex-col items-center justify-center h-[var(--tap-target-min)] cursor-pointer"
                                 onClick={() => onSelectDay(day)}
                             >
                                 <div className="relative">

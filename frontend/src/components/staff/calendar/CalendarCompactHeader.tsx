@@ -57,23 +57,23 @@ export default function CalendarCompactHeader({
                 </div>
 
                 {/* Right: Icons */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                     <button
-                        className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90"
+                        className="w-[var(--tap-target-min)] h-[var(--tap-target-min)] flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90 rounded-full hover:bg-[var(--color-fill-secondary)]"
                         aria-label="Pesquisar"
                     >
                         <Search size={22} strokeWidth={2} />
                     </button>
                     <button
                         onClick={onToday}
-                        className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90"
+                        className="w-[var(--tap-target-min)] h-[var(--tap-target-min)] flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90 rounded-full hover:bg-[var(--color-fill-secondary)]"
                         aria-label="Hoje"
                     >
                         <Plus size={24} strokeWidth={2} />
                     </button>
                     <button
                         onClick={onFilterClick}
-                        className="w-10 h-10 flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90"
+                        className="w-[var(--tap-target-min)] h-[var(--tap-target-min)] flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors active:scale-90 rounded-full hover:bg-[var(--color-fill-secondary)]"
                         aria-label="Filtros"
                     >
                         <MoreHorizontal size={24} strokeWidth={2} />
@@ -87,11 +87,11 @@ export default function CalendarCompactHeader({
                     <span className="text-[var(--color-text-primary)] text-3xl font-black tracking-tight">{month}</span>
                     <span className="text-[var(--color-text-tertiary)] text-3xl font-light ml-2 opacity-50">{year}</span>
                 </div>
-                <div className="flex items-center gap-6">
-                    <button onClick={onPrevMonth} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 active:scale-90 transition-all">
+                <div className="flex items-center gap-2">
+                    <button onClick={onPrevMonth} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] w-[var(--tap-target-min)] h-[var(--tap-target-min)] flex items-center justify-center active:scale-90 transition-all rounded-full hover:bg-[var(--color-fill-secondary)]">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                     </button>
-                    <button onClick={onNextMonth} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 active:scale-90 transition-all">
+                    <button onClick={onNextMonth} className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] w-[var(--tap-target-min)] h-[var(--tap-target-min)] flex items-center justify-center active:scale-90 transition-all rounded-full hover:bg-[var(--color-fill-secondary)]">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                     </button>
                 </div>

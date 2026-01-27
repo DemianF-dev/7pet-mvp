@@ -35,7 +35,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[var(--z-drawer-backdrop)]"
                         onClick={onClose}
                     />
 
@@ -56,8 +56,8 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                         onDragEnd={(_, info) => {
                             if (info.offset.y > 100) onClose();
                         }}
-                        className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-surface)] rounded-t-[32px] z-[80] overflow-hidden flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.15)] border-t border-[var(--color-border-subtle)]"
-                        style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 24px))' }}
+                        className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-surface)] rounded-t-[32px] z-[var(--z-drawer)] overflow-hidden flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.15)] border-t border-[var(--color-border-subtle)]"
+                        style={{ paddingBottom: 'calc(var(--space-5) + var(--safe-area-bottom))' }}
                     >
                         {/* Handle bar */}
                         <div className="flex justify-center py-4">
