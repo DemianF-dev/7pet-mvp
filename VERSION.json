@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260126-2136",
+  "version": "BETA20260127-1935",
   "stage": "BETA",
-  "timestamp": "2026-01-26T21:36:53.000Z",
-  "commit": "3fc3dac",
-  "buildNumber": 125,
-  "releaseNotes": "Auto-generated from commit: chore: update project configuration and documentation"
+  "timestamp": "2026-01-27T19:35:53.000Z",
+  "commit": "0087480",
+  "buildNumber": 126,
+  "releaseNotes": "Auto-generated from commit: fix: resolve zod version conflict for railway build"
 }
