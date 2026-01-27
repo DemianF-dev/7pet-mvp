@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260126-0201",
+  "version": "BETA20260126-2116",
   "stage": "BETA",
-  "timestamp": "2026-01-26T02:01:25.000Z",
-  "commit": "c01d6ce",
-  "buildNumber": 122,
-  "releaseNotes": "Auto-generated from commit: refactor: isolate app logic to fix serverless crash"
+  "timestamp": "2026-01-26T21:16:02.000Z",
+  "commit": "a6bb2de",
+  "buildNumber": 123,
+  "releaseNotes": "Auto-generated from commit: chore: add .clawdignore"
 }
