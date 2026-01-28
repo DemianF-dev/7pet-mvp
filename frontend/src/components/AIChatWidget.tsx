@@ -12,9 +12,12 @@ export const AIChatWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Authorization Check
-    const allowed = ['ADMIN', 'MASTER', 'GERENCIA']; // Expanded slightly for managers
-    const userRole = user?.division || user?.role || '';
+    // Authorization Check: Must be logged in AND have one of these roles
+    const allowed = ['ADMIN', 'MASTER', 'GESTAO'];
+
+    if (!user) return null;
+
+    const userRole = (user.division || user.role || '').toUpperCase();
     const isAllowed = allowed.includes(userRole);
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({

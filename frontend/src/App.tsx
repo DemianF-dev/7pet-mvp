@@ -155,7 +155,8 @@ function App() {
             <FeedbackWidget />
             <NetworkStatus />
             <SocketStatusPill />
-            <AIChatWidget />
+            <SocketStatusPill />
+            {/* AIChatWidget moved inside AppShell to only show when authenticated as staff */}
             <PWAInstallPrompt />
             <ModalEventProvider />
 
@@ -193,8 +194,8 @@ function App() {
                             <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
                             <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA']} redirectTo="/staff/login" />}>
                                 <Route element={<AppShell />}>
-                                    <Route path="/staff/dashboard" element={<StaffDashboard />} />
-                                    <Route path="/staff/pos" element={<LazyPage><POS /></LazyPage>} />
+                                    <Route path="/staff/dashboard" element={<><StaffDashboard /><AIChatWidget /></>} />
+                                    <Route path="/staff/pos" element={<LazyPage><><POS /><AIChatWidget /></></LazyPage>} />
                                     <Route path="/staff/menu" element={<LazyPage><MobileMenuHub /></LazyPage>} />
                                     <Route path="/staff/kanban" element={<LazyPage><ServiceKanban /></LazyPage>} />
                                     <Route path="/staff/agenda-spa" element={<LazyPage><AgendaSPA /></LazyPage>} />

@@ -50,3 +50,11 @@
 - [x] Implement "Appreciations" (Badges) UI and assignment logic
 - [x] Build automated Notification & Social Post logic for badges
 - [x] Verification and testing of the new recognition flow
+
+# Phase 6: Production Deployment & Stabilization
+
+- [x] Fix `npm ci` failures on Railway (package-lock.json mismatch)
+- [x] Resolve cross-platform binary dependencies (@rollup/linux)
+- [x] Fix TypeScript build errors in `BrainController` (AI SDK version mismatch)
+- [/] Verify Production Deployment (Frontend & Backend)
+- [ ] Post-Deploy Smoke Test (Health, Login, AI Chat)
