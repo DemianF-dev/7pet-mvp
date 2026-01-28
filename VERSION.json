@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260127-2040",
+  "version": "BETA20260127-2134",
   "stage": "BETA",
-  "timestamp": "2026-01-27T20:40:42.000Z",
-  "commit": "e8a615f",
-  "buildNumber": 127,
-  "releaseNotes": "Auto-generated from commit: fix: add react-is dependency + minimal PWA config for successful build"
+  "timestamp": "2026-01-27T21:34:17.000Z",
+  "commit": "16a03cc",
+  "buildNumber": 128,
+  "releaseNotes": "Auto-generated from commit: chore: regenerate package-lock.json for Railway deployment"
 }
