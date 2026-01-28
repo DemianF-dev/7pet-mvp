@@ -56,5 +56,13 @@
 - [x] Fix `npm ci` failures on Railway (package-lock.json mismatch)
 - [x] Resolve cross-platform binary dependencies (@rollup/linux)
 - [x] Fix TypeScript build errors in `BrainController` (AI SDK version mismatch)
+
 - [/] Verify Production Deployment (Frontend & Backend)
+- [x] Investigate "Tenant or user not found" error on Production
+  - **Findings**: User `oidemianf@gmail.com` exists in DB (`MASTER`). Error likely from Cloudflare/Infrastructure on Railway.
+- [ ] **Action Required**: Switch Frontend to Local Backend to bypass infrastructure error.
+
+- [x] Investigate "Tenant or user not found" error on Production
+  - **Findings**: User `oidemianf@gmail.com` exists in DB (`MASTER`). Error is coming from Supabase/Railway infrastructure intercepting the `/auth` route.
+- [x] **Conflict Resolution**: Renamed `/auth` to `/system-auth` to avoid infrastructure interception.
 - [ ] Post-Deploy Smoke Test (Health, Login, AI Chat)

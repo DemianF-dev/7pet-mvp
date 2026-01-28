@@ -49,7 +49,7 @@ export default function ClientRegister() {
 
         try {
             console.log('[ClientRegister] Enviando dados:', { firstName, lastName, email, phone, role: 'CLIENTE' });
-            const response = await api.post('/auth/register', {
+            const response = await api.post('/system-auth/register', {
                 firstName,
                 lastName,
                 email,

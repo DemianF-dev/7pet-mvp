@@ -23,7 +23,7 @@ export default function ClientLogin() {
         onSuccess: async (tokenResponse) => {
             const loadingToast = toast.loading('Autenticando...');
             try {
-                const response = await api.post('/auth/google', { idToken: tokenResponse.access_token });
+                const response = await api.post('/system-auth/google', { idToken: tokenResponse.access_token });
                 const { user, token } = response.data;
                 setAuth(user, token);
                 toast.success(`Bem-vindo, ${user.name}!`, { id: loadingToast });
@@ -42,7 +42,7 @@ export default function ClientLogin() {
         setSuccessMsg('');
 
         try {
-            const response = await api.post('/auth/login', { email, password, rememberMe });
+            const response = await api.post('/system-auth/login', { email, password, rememberMe });
             const { user, token } = response.data;
 
             if (user.role !== 'CLIENTE') {
@@ -65,7 +65,7 @@ export default function ClientLogin() {
         }
         setIsLoading(true);
         try {
-            const response = await api.post('/auth/forgot-password', { email });
+            const response = await api.post('/system-auth/forgot-password', { email });
             setSuccessMsg(response.data.message);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao solicitar nova senha');

@@ -29,7 +29,7 @@ export default function StaffLogin() {
         onSuccess: async (tokenResponse) => {
             const loadingToast = toast.loading('Verificando credenciais...');
             try {
-                const response = await api.post('/auth/google', { idToken: tokenResponse.access_token });
+                const response = await api.post('/system-auth/google', { idToken: tokenResponse.access_token });
                 const { user, token } = response.data;
                 const userRole = (user.role || '').toUpperCase().trim();
                 const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL'];
@@ -55,7 +55,7 @@ export default function StaffLogin() {
         setSuccessMsg('');
 
         try {
-            const response = await api.post('/auth/login', { email, password, rememberMe });
+            const response = await api.post('/system-auth/login', { email, password, rememberMe });
             const { user, token } = response.data;
             const userRole = (user.role || '').toUpperCase().trim();
             const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL'];
@@ -81,7 +81,7 @@ export default function StaffLogin() {
         }
         setIsLoading(true);
         try {
-            const response = await api.post('/auth/forgot-password', { email });
+            const response = await api.post('/system-auth/forgot-password', { email });
             setSuccessMsg(response.data.message);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao solicitar nova senha');

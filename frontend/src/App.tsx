@@ -128,7 +128,7 @@ function App() {
         const handlePermissionsUpdate = async (data: any) => {
             if (import.meta.env.DEV) console.log('🔐 Permissões atualizadas via socket:', data);
             try {
-                const response = await api.get('/auth/me');
+                const response = await api.get('/system-auth/me');
                 if (response.data) {
                     updateUser(response.data);
                     toast.success('Suas permissões foram atualizadas.', { icon: '🔐' });

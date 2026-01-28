@@ -204,7 +204,7 @@ app.use(auditContextMiddleware);
 // NOTE: helmet(), compression(), and express.json() are already applied above (lines 69-70, 119)
 
 app.use('/pos', posRoutes); // Moved to top for priority
-app.use('/auth', authRoutes);
+app.use('/system-auth', authRoutes);
 app.use('/customers', customerRoutes);
 app.use('/quotes', quoteRoutes);
 app.use('/pets', petRoutes);
