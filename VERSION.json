@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260127-2134",
+  "version": "BETA20260127-2154",
   "stage": "BETA",
-  "timestamp": "2026-01-27T21:34:17.000Z",
-  "commit": "16a03cc",
-  "buildNumber": 128,
-  "releaseNotes": "Auto-generated from commit: chore: regenerate package-lock.json for Railway deployment"
+  "timestamp": "2026-01-27T21:54:25.000Z",
+  "commit": "fa86f2e",
+  "buildNumber": 129,
+  "releaseNotes": "Auto-generated from commit: chore: remove package-lock.json from git to force fresh install on CI (fixes binary incompatibility)"
 }
