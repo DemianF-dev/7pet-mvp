@@ -44,7 +44,7 @@ export default function ClientProfile() {
             setMessage({ type: 'success', text: 'Solicitação enviada! Nossa equipe entrará em contato em breve.' });
 
             // Refresh profile to show updated status
-            const response = await api.get('/auth/me');
+            const response = await api.get('/system-auth/me');
             if (response.data.customer) {
                 setCustomerData(response.data.customer);
             }
@@ -58,7 +58,7 @@ export default function ClientProfile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await api.get('/auth/me');
+                const response = await api.get('/system-auth/me');
                 const u = response.data;
                 setFirstName(u.firstName || '');
                 setLastName(u.lastName || '');
@@ -108,7 +108,7 @@ export default function ClientProfile() {
                 showTutorial
             };
 
-            const response = await api.patch('/auth/me', payload);
+            const response = await api.patch('/system-auth/me', payload);
 
             if (user && token) {
                 setAuth(response.data, token);
@@ -176,7 +176,7 @@ export default function ClientProfile() {
                                 else setTutorial(false);
 
                                 try {
-                                    await api.patch('/auth/me', { showTutorial: newValue });
+                                    await api.patch('/system-auth/me', { showTutorial: newValue });
                                 } catch (err) {
                                     console.error('Erro ao salvar preferência de tutorial:', err);
                                 }

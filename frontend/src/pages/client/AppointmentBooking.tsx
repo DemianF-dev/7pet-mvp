@@ -60,7 +60,7 @@ export default function AppointmentBooking() {
                 const [servicesRes, petsRes, meRes] = await Promise.all([
                     api.get('/services'),
                     api.get('/pets'),
-                    api.get('/auth/me')
+                    api.get('/system-auth/me')
                 ]);
                 setServices(servicesRes.data);
                 setPets(petsRes.data);

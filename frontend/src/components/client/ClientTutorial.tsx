@@ -165,7 +165,7 @@ export default function ClientTutorial() {
                 // Optimistic update
                 const updatedUser = { ...user, showTutorial: false };
                 updateUser(updatedUser);
-                await api.patch('/auth/me', { showTutorial: false });
+                await api.patch('/system-auth/me', { showTutorial: false });
             } catch (err) {
                 console.error('Erro ao desativar tutorial:', err);
             }

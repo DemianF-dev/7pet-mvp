@@ -70,7 +70,7 @@ const fetchPets = async (): Promise<Pet[]> => {
 };
 
 const fetchMe = async () => {
-    const response = await api.get('/auth/me');
+    const response = await api.get('/system-auth/me');
     return response.data;
 };
 
@@ -399,7 +399,7 @@ export default function QuoteRequest() {
             });
 
             // Proactively update user preference
-            await api.patch('/auth/me', { communicationPrefs });
+            await api.patch('/system-auth/me', { communicationPrefs });
 
             setSavedAsDraft(saveAsDraft);
             setSuccess(true);

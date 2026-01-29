@@ -68,7 +68,7 @@ const StaffProfile: React.FC = () => {
                 updatePayload.password = formData.password;
             }
 
-            const response = await api.patch('/auth/me', updatePayload);
+            const response = await api.patch('/system-auth/me', updatePayload);
             updateUser(response.data);
             toast.success('Perfil atualizado com sucesso!', {
                 icon: '✨'

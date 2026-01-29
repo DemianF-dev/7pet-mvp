@@ -3,7 +3,16 @@
     "allow": [
       "Bash(npm run test:*)",
       "Bash(npx tsc:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(tree:*)",
+      "Bash(xargs:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(git -C \"C:\\\\Users\\\\oidem\\\\antigravity\\\\scratch\\\\7pet-mvp\" log --oneline -5 --all -- \"**/vercel.json\")",
+      "Bash(git -C \"C:\\\\Users\\\\oidem\\\\antigravity\\\\scratch\\\\7pet-mvp\" show 2151db9 --stat)",
+      "Bash(git -C \"C:\\\\Users\\\\oidem\\\\antigravity\\\\scratch\\\\7pet-mvp\" diff 2151db9~1 2151db9 -- frontend/)",
+      "Bash(npm run build:frontend:*)",
+      "Bash(npm run build:backend:*)"
     ]
   }
 }
