@@ -11,8 +11,12 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
         res.header('Access-Control-Allow-Credentials', 'true');
     }
 
-    res.status(err.status || 500).json({
-        error: process.env.NODE_ENV === 'production' ? 'Erro interno no servidor' : err.message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    const statusCode = err.status || 500;
+
+    // DEBUG: Always return real error in prod for now
+    res.status(statusCode).json({
+        error: err.message,
+        stack: err.stack,
+        details: err.details || null
     });
 };
