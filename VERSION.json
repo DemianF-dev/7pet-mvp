@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0226",
+  "version": "BETA20260129-1958",
   "stage": "BETA",
-  "timestamp": "2026-01-29T02:26:44.000Z",
-  "commit": "dedd9ac",
-  "buildNumber": 142,
-  "releaseNotes": "Auto-generated from commit: debug: check jwt secret"
+  "timestamp": "2026-01-29T19:58:35.000Z",
+  "commit": "1002aff",
+  "buildNumber": 143,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
 }
