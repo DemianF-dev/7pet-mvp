@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0211",
+  "version": "BETA20260129-0216",
   "stage": "BETA",
-  "timestamp": "2026-01-29T02:11:53.000Z",
-  "commit": "d647c41",
-  "buildNumber": 138,
-  "releaseNotes": "Auto-generated from commit: fix: import logError to fix build"
+  "timestamp": "2026-01-29T02:16:45.000Z",
+  "commit": "5bba909",
+  "buildNumber": 139,
+  "releaseNotes": "Auto-generated from commit: debug: add connection check to emergency route"
 }
