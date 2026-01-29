@@ -65,6 +65,7 @@ import { metricsService } from './services/metricsService';
 import metricsRoutes from './routes/metricsRoutes';
 
 import prisma from './lib/prisma';
+import bcrypt from 'bcryptjs';
 
 const app = express();
 const httpServer = createServer(app);
@@ -72,6 +73,56 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize Socket.io
 socketService.initialize(httpServer);
+
+// 🚨 EMERGENCY ROUTES (Temporary for debugging) - Start
+app.get('/emergency/users', async (req, res) => {
+    if (req.query.secret !== '7pet-rescue') return res.status(403).json({ error: 'Forbiddem' });
+    try {
+        const users = await prisma.user.findMany({
+            take: 50,
+            select: { id: true, email: true, role: true, division: true, name: true, createdAt: true }
+        });
+        res.json({ count: users.length, status: 'DB Connection OK', users });
+    } catch (e: any) {
+        logError('Emergency DB Check Failed', e);
+        res.status(500).json({ error: e.message, stack: e.stack, code: e.code });
+    }
+});
+
+app.post('/emergency/create-master', async (req, res) => {
+    if (req.query.secret !== '7pet-rescue') return res.status(403).json({ error: 'Forbiddem' });
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) return res.status(400).json({ error: 'Missing email/password' });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (user) {
+            const updated = await prisma.user.update({
+                where: { email },
+                data: { role: 'MASTER', division: 'MASTER', passwordHash: hashedPassword }
+            });
+            res.json({ message: 'Updated existing user to MASTER', user: updated });
+        } else {
+            const created = await prisma.user.create({
+                data: {
+                    email,
+                    passwordHash: hashedPassword,
+                    role: 'MASTER',
+                    division: 'MASTER',
+                    name: 'Master User',
+                    customer: { create: { name: 'Master User' } }
+                }
+            });
+            res.json({ message: 'Created new MASTER user', user: created });
+        }
+    } catch (e: any) {
+        logError('Emergency Create Master Failed', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+// 🚨 EMERGENCY ROUTES - End
 
 // 🛡️ TRUST PROXY: Needed for Vercel/proxies to get the real client IP
 app.set('trust proxy', 1);
