@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260128-0103",
+  "version": "BETA20260128-2355",
   "stage": "BETA",
-  "timestamp": "2026-01-28T01:03:33.000Z",
-  "commit": "2151db9",
-  "buildNumber": 132,
-  "releaseNotes": "Auto-generated from commit: fix(auth): rename /auth to /system-auth to avoid infrastructure proxy conflicts"
+  "timestamp": "2026-01-28T23:55:15.000Z",
+  "commit": "bae2e19",
+  "buildNumber": 133,
+  "releaseNotes": "Auto-generated from commit: chore: up before prod deploy"
 }
