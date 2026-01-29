@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0207",
+  "version": "BETA20260129-0211",
   "stage": "BETA",
-  "timestamp": "2026-01-29T02:07:02.000Z",
-  "commit": "d90128d",
-  "buildNumber": 137,
-  "releaseNotes": "Auto-generated from commit: debug: add emergency user management routes"
+  "timestamp": "2026-01-29T02:11:53.000Z",
+  "commit": "d647c41",
+  "buildNumber": 138,
+  "releaseNotes": "Auto-generated from commit: fix: import logError to fix build"
 }
