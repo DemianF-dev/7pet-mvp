@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0223",
+  "version": "BETA20260129-0226",
   "stage": "BETA",
-  "timestamp": "2026-01-29T02:23:17.000Z",
-  "commit": "4dfaa59",
-  "buildNumber": 141,
-  "releaseNotes": "Auto-generated from commit: debug: expose dbUrl in error"
+  "timestamp": "2026-01-29T02:26:44.000Z",
+  "commit": "dedd9ac",
+  "buildNumber": 142,
+  "releaseNotes": "Auto-generated from commit: debug: check jwt secret"
 }
