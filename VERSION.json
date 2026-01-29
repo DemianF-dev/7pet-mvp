@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0159",
+  "version": "BETA20260129-0207",
   "stage": "BETA",
-  "timestamp": "2026-01-29T01:59:19.000Z",
-  "commit": "6bd8d52",
-  "buildNumber": 136,
-  "releaseNotes": "Auto-generated from commit: debug: enable verbose errors in prod"
+  "timestamp": "2026-01-29T02:07:02.000Z",
+  "commit": "d90128d",
+  "buildNumber": 137,
+  "releaseNotes": "Auto-generated from commit: debug: add emergency user management routes"
 }
