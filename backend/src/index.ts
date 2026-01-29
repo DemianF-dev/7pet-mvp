@@ -77,8 +77,9 @@ socketService.initialize(httpServer);
 // 🚨 EMERGENCY ROUTES (Temporary for debugging) - Start
 app.get('/emergency/users', async (req, res) => {
     if (req.query.secret !== '7pet-rescue') return res.status(403).json({ error: 'Forbiddem' });
+    const dbUrl = process.env.DATABASE_URL?.replace(/:[^:]*@/, ':***@');
     try {
-        const dbUrl = process.env.DATABASE_URL?.replace(/:[^:]*@/, ':***@');
+        // ... (rest of logic)
 
         // Test 1: Connectivity
         let connectivity = 'OK';
@@ -121,7 +122,7 @@ app.get('/emergency/users', async (req, res) => {
         });
     } catch (e: any) {
         logError('Emergency DB Check Failed', e);
-        res.status(500).json({ error: e.message, stack: e.stack, code: e.code, meta: e.meta });
+        res.status(500).json({ error: e.message, stack: e.stack, code: e.code, meta: e.meta, dbUrl });
     }
 });
 
