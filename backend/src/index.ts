@@ -117,6 +117,7 @@ app.get('/emergency/users', async (req, res) => {
             connectivity,
             rawUserCheck,
             dbUrl,
+            jwtSecretPresent: !!process.env.JWT_SECRET,
             users: prismaUsers,
             rawUsers
         });
