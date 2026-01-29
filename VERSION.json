@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0216",
+  "version": "BETA20260129-0220",
   "stage": "BETA",
-  "timestamp": "2026-01-29T02:16:45.000Z",
-  "commit": "5bba909",
-  "buildNumber": 139,
-  "releaseNotes": "Auto-generated from commit: debug: add connection check to emergency route"
+  "timestamp": "2026-01-29T02:20:30.000Z",
+  "commit": "06c8896",
+  "buildNumber": 140,
+  "releaseNotes": "Auto-generated from commit: debug: add raw query check"
 }
