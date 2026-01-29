@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0220",
+  "version": "BETA20260129-0223",
   "stage": "BETA",
-  "timestamp": "2026-01-29T02:20:30.000Z",
-  "commit": "06c8896",
-  "buildNumber": 140,
-  "releaseNotes": "Auto-generated from commit: debug: add raw query check"
+  "timestamp": "2026-01-29T02:23:17.000Z",
+  "commit": "4dfaa59",
+  "buildNumber": 141,
+  "releaseNotes": "Auto-generated from commit: debug: expose dbUrl in error"
 }
