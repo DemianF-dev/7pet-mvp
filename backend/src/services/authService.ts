@@ -301,10 +301,16 @@ export const login = async (email: string, password: string, rememberMe: boolean
         logger.debug({ userId: user.id }, 'Login attempt');
     }
 
-    if (!user || !user.passwordHash) throw new Error('Credenciais inválidas');
+    if (!user) {
+        throw new Error('Usuário não encontrado. Verifique se o e-mail está correto ou se a conta foi criada na produção.');
+    }
+
+    if (!user.passwordHash) {
+        throw new Error('Esta conta não possui uma senha configurada. Tente entrar com o Google.');
+    }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) throw new Error('Credenciais inválidas');
+    if (!isValid) throw new Error('Senha incorreta. Verifique suas credenciais.');
 
     // Check if client is blocked (only for CLIENTE role)
     if (user.role === 'CLIENTE' && user.customer?.isBlocked) {
