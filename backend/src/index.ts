@@ -78,14 +78,26 @@ socketService.initialize(httpServer);
 app.get('/emergency/users', async (req, res) => {
     if (req.query.secret !== '7pet-rescue') return res.status(403).json({ error: 'Forbiddem' });
     try {
+        const dbUrl = process.env.DATABASE_URL?.replace(/:[^:]*@/, ':***@');
+
+        // Test 1: Connectivity
+        let connectivity = 'OK';
+        try {
+            await prisma.$queryRaw`SELECT 1`;
+        } catch (e: any) {
+            connectivity = `FAILED: ${e.message}`;
+            throw new Error(`DB Connection Failed: ${e.message}`);
+        }
+
+        // Test 2: Table Access
         const users = await prisma.user.findMany({
             take: 50,
             select: { id: true, email: true, role: true, division: true, name: true, createdAt: true }
         });
-        res.json({ count: users.length, status: 'DB Connection OK', users });
+        res.json({ count: users.length, status: 'DB Connection OK', connectivity, dbUrl, users });
     } catch (e: any) {
         logError('Emergency DB Check Failed', e);
-        res.status(500).json({ error: e.message, stack: e.stack, code: e.code });
+        res.status(500).json({ error: e.message, stack: e.stack, code: e.code, meta: e.meta });
     }
 });
 
