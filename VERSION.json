@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-0106",
+  "version": "BETA20260129-0154",
   "stage": "BETA",
-  "timestamp": "2026-01-29T01:06:34.000Z",
-  "commit": "c36effd",
-  "buildNumber": 134,
-  "releaseNotes": "Auto-generated from commit: feat: descriptive login errors for prod debugging"
+  "timestamp": "2026-01-29T01:54:55.000Z",
+  "commit": "b46dfec",
+  "buildNumber": 135,
+  "releaseNotes": "Auto-generated from commit: chore: push final pending updates (schema, code cleanup, aichat routing)"
 }
