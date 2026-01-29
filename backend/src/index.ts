@@ -4,7 +4,7 @@ dotenv.config();
 // 🔒 SECURITY: Validate critical environment variables at startup
 // Security: Removed sensitive environment variable logging
 import { validateEnvironment } from './utils/envValidation';
-import logger, { logInfo, logWarn } from './utils/logger';
+import logger, { logInfo, logWarn, logError } from './utils/logger';
 
 try {
     validateEnvironment();
