@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-1435",
+  "version": "BETA20260130-1437",
   "stage": "BETA",
-  "timestamp": "2026-01-30T14:35:38.000Z",
-  "commit": "e303357",
-  "buildNumber": 155,
-  "releaseNotes": "Auto-generated from commit: fix: critical user division/role persistence bug\n\nPROBLEM:\n- User division and role were not persisting after save\n- Users would revert to CLIENTE division after page reload\n- Error message appeared: 'Email and password required for new users'\n\nROOT CAUSE:\nFrontend was unconditionally deleting customer object from payload,\nwhich could remove critical fields like division and role.\n\nSOLUTION:\n1. Frontend (useUserMutations.ts):\n   - Force include division and role in update payload\n   - Properly handle customer data (only include if exists)\n   - Added detailed logging for debugging\n\n2. Backend (managementController.ts):\n   - Added logging to track payload received\n   - Added logging before DB update\n   - Backend logic was already correct\n\nTESTING:\n- Edit user division from CLIENTE to MASTER\n- Save and reload page\n- Division should persist correctly\n- Check browser console for detailed logs"
+  "timestamp": "2026-01-30T14:37:16.000Z",
+  "commit": "03c3955",
+  "buildNumber": 156,
+  "releaseNotes": "Auto-generated from commit: fix: restore AI widget visibility and final user management update bug\n\n- Fixed UserManager.tsx to correctly pass selectedUser to onSave, resolving the 'Email/Password required' error when editing profiles.\n- Updated AIChatWidget.tsx to ensure master user (oidemianf@gmail.com) always has access, even if profile division is mismatched.\n- Added 'DIRETORIA' to allowed AI widget roles for better consistency.\n- This completes the 'redonda' (round/perfect) state of user management requested by the user."
 }
