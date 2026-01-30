@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-1958",
+  "version": "BETA20260129-2223",
   "stage": "BETA",
-  "timestamp": "2026-01-29T19:58:35.000Z",
-  "commit": "1002aff",
-  "buildNumber": 143,
-  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp"
+  "timestamp": "2026-01-29T22:23:30.000Z",
+  "commit": "d4d81e3",
+  "buildNumber": 144,
+  "releaseNotes": "Auto-generated from commit: fix: align deployments - vercel frontend only, railway backend, supabase connection hardening"
 }
