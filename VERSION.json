@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-2236",
+  "version": "BETA20260129-2252",
   "stage": "BETA",
-  "timestamp": "2026-01-29T22:36:12.000Z",
-  "commit": "1eacaa1",
-  "buildNumber": 145,
-  "releaseNotes": "Auto-generated from commit: fix: increase login rate limit to avoid 429 errors"
+  "timestamp": "2026-01-29T22:52:52.000Z",
+  "commit": "0020dcc",
+  "buildNumber": 146,
+  "releaseNotes": "Auto-generated from commit: fix: self-healing supabase connection string to resolve tenant not found error"
 }
