@@ -22,7 +22,7 @@ export const handleChat = async (req: Request, res: Response) => {
         res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx/Railway proxies
 
         const result = await streamText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-1.5-flash') as any,
             messages,
             system: `Você é o "Cérebro 7Pet", um assistente inteligente para administradores do sistema de Pet Shop.
             Você tem acesso a ferramentas para buscar dados do sistema.

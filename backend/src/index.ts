@@ -339,7 +339,7 @@ app.get('/', (req, res) => {
 
 // Hardcoded version for stability during transition
 const versionInfo = {
-    version: "BETA-20260125-MONO",
+    version: "BETA-20260130-GEMINI",
     timestamp: new Date().toISOString()
 };
 
