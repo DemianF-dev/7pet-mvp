@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-2252",
+  "version": "BETA20260129-2303",
   "stage": "BETA",
-  "timestamp": "2026-01-29T22:52:52.000Z",
-  "commit": "0020dcc",
-  "buildNumber": 146,
-  "releaseNotes": "Auto-generated from commit: fix: self-healing supabase connection string to resolve tenant not found error"
+  "timestamp": "2026-01-29T23:03:35.000Z",
+  "commit": "960a0dd",
+  "buildNumber": 147,
+  "releaseNotes": "Auto-generated from commit: fix: AI permissions and widget URL logic"
 }
