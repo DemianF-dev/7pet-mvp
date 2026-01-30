@@ -161,7 +161,7 @@ export default function SystemInfoModal({ isOpen, onClose }: SystemInfoModalProp
                     {/* Footer */}
                     <div className="bg-bg-elevated p-4 border-t border-border">
                         <p className="text-xs text-body-secondary text-center">
-                            © 2024-2026 7Pet. Todos os direitos reservados.
+                            © 2020-2026 7Pet. Todos os direitos reservados.
                         </p>
                     </div>
                 </motion.div>

@@ -339,9 +339,15 @@ app.get('/', (req, res) => {
 });
 
 // Hardcoded version for stability during transition
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+const hours = String(now.getHours()).padStart(2, '0');
+const minutes = String(now.getMinutes()).padStart(2, '0');
 const versionInfo = {
-    version: "BETA-20260130-GEMINI",
-    timestamp: new Date().toISOString()
+    version: `BETA-${year}${month}${day}.${hours}:${minutes}-GEMINI`,
+    timestamp: now.toISOString()
 };
 
 app.get('/health', (req, res) => {
