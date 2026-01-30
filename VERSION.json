@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-1023",
+  "version": "BETA20260130-1328",
   "stage": "BETA",
-  "timestamp": "2026-01-30T10:23:37.000Z",
-  "commit": "4076850",
-  "buildNumber": 152,
-  "releaseNotes": "Auto-generated from commit: fix: resolve TS build error and update version for Gemini deploy"
+  "timestamp": "2026-01-30T13:28:51.000Z",
+  "commit": "cd33ff6",
+  "buildNumber": 153,
+  "releaseNotes": "Auto-generated from commit: feat: add clickable system info modal with version and AI details"
 }
