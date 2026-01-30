@@ -7,11 +7,22 @@ const createSafeClient = () => {
     try {
         let connectionString = process.env.DATABASE_URL;
 
-        // Supabase Transaction Mode Fix: Ensure pgbouncer=true is present
-        if (connectionString && !connectionString.includes('pgbouncer=true') && !connectionString.includes('?')) {
-            connectionString += '?pgbouncer=true';
-        } else if (connectionString && !connectionString.includes('pgbouncer=true')) {
-            connectionString += '&pgbouncer=true';
+        // Supabase Connection String Repair (Self-Healing)
+        if (connectionString) {
+            // 1. Fix missing pgbouncer=true
+            if (!connectionString.includes('pgbouncer=true')) {
+                connectionString += connectionString.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true';
+            }
+
+            // 2. Fix missing project ref in username for Supabase Poolers
+            // Format: postgres://postgres.[ref]:[pass]@aws-0-[region].pooler.supabase.com...
+            const poolerRegex = /postgresql?:\/\/postgres:([^@]+)@([^:]+\.pooler\.supabase\.com)/;
+            const match = connectionString.match(poolerRegex);
+            if (match) {
+                const projectRef = 'zpcwgsjsktqjncnpgaon'; // Hardcoded fallback for THIS specific project
+                connectionString = connectionString.replace('postgres:', `postgres.${projectRef}:`);
+                console.log('🔧 Auto-repaired Supabase Pooler connection string: added project ref to username.');
+            }
         }
 
         const pool = new Pool({
