@@ -35,8 +35,13 @@ export const AIChatWidget = () => {
         return `${baseUrl}/brain/chat`;
     };
 
+    const { token } = useAuthStore();
+
     const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
         api: getBrainUrl(),
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
         onError: (err) => {
             console.error("AI Chat Error:", err);
         }
