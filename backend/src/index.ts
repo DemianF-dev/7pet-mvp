@@ -251,7 +251,21 @@ app.use(helmet({
     } : false, // Disable HSTS in development
     crossOriginEmbedderPolicy: false, // Required for Vite dev mode
 }));
-app.use(compression());
+// 1. Strip /api prefix if present (Must be FIRST to normalize paths)
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api')) {
+        req.url = req.url.replace('/api', '');
+    }
+    next();
+});
+
+app.use(compression({
+    filter: (req, res) => {
+        if (req.url.includes('/brain')) return false;
+        return compression.filter(req, res);
+    }
+}));
+
 app.use(generalLimiter); // 🛡️ General rate limiting enabled for security
 
 // 📊 MONITORING - Capture all requests (must be before other middlewares)
@@ -270,19 +284,7 @@ app.use(express.json({ limit: '10mb' }));
 // 📊 MONITORING Dashboard - Serve static files
 app.use(express.static('public'));
 
-// 1. Strip /api prefix if present (Must be FIRST to normalize paths for all other middlewares)
-app.use((req, res, next) => {
-    const originalUrl = req.url;
-    if (req.url.startsWith('/api')) {
-        req.url = req.url.replace('/api', '');
-    }
-    logInfo('HTTP request', {
-        method: req.method,
-        originalUrl,
-        newUrl: req.url
-    });
-    next();
-});
+// URL Normalization happened at the top
 
 // 2. Apply Audit Context (Must be after normalization and before routes)
 // Note: req.user is populated by authenticate middleware inside routes, 

@@ -7,11 +7,19 @@ import { z } from 'zod';
 export const handleChat = async (req: Request, res: Response) => {
     try {
         const { messages } = req.body;
+        console.log(`[Brain] Chat request received. Messages: ${messages?.length}`);
 
         // Ensure OpenAI Key exists
         if (!process.env.OPENAI_API_KEY) {
+            console.error('[Brain] OpenAI API Key missing');
             return res.status(500).json({ error: 'OpenAI API Key not configured on server' });
         }
+
+        // Set headers to disable buffering/caching for streaming
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx/Railway proxies
 
         const result = await streamText({
             model: openai('gpt-4o-mini') as any,
@@ -29,7 +37,7 @@ export const handleChat = async (req: Request, res: Response) => {
                         endDate: z.string().describe('Data final YYYY-MM-DD'),
                     }),
                     execute: async ({ startDate, endDate }) => {
-                        // Mock for POC - In next steps we connect to real service
+                        console.log(`[Brain] Tool getFinancialSummary used: ${startDate} to ${endDate}`);
                         return {
                             revenue: 15430.00,
                             expenses: 4320.50,
@@ -40,20 +48,21 @@ export const handleChat = async (req: Request, res: Response) => {
                     }
                 }
             },
-            maxSteps: 5
+            maxSteps: 5,
+            onFinish: ({ text }) => {
+                console.log('[Brain] Chat finished successfully');
+            }
         });
-
-        // Set headers for streaming
-        // Note: In Express/Node, pipeDataStreamToResponse handles headers mostly, but sometimes we need to be explicit if using compression
-        // .pipeDataStreamToResponse(res) is the standard way in AI SDK 3.1+
 
         result.pipeDataStreamToResponse(res);
 
-    } catch (error) {
-        console.error('Brain Error:', error);
-        // If headers already sent (streaming started), we can't send JSON error
+    } catch (error: any) {
+        console.error('[Brain] Error:', error);
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Falha no processamento da IA' });
+            res.status(500).json({
+                error: 'Falha no processamento da IA',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     }
 };
