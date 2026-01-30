@@ -43,6 +43,7 @@ import ConfirmModal from './ConfirmModal';
 import { useInMobileShell } from '../context/MobileShellContext';
 import { APP_VERSION } from '../constants/version';
 import { prefetchRoute } from '../utils/routePrefetch';
+import SystemInfoModal from './SystemInfoModal';
 
 
 const SidebarContext = createContext({ isCollapsed: false });
@@ -59,6 +60,7 @@ export default function StaffSidebar() {
     const { unreadCount } = useNotification();
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showSystemInfo, setShowSystemInfo] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem('staff-sidebar-collapsed');
         return saved === 'true';
@@ -111,7 +113,7 @@ export default function StaffSidebar() {
             }
         }
         if (perms !== null) return perms.includes(module);
-        
+
         // Check both role and division for permissions
         const userKey = user.division || user.role || 'CLIENTE';
         const roleDefaults = DEFAULT_PERMISSIONS_BY_ROLE[userKey] || [];
@@ -497,7 +499,9 @@ export default function StaffSidebar() {
                             </div>
                             <div className="text-right">
                                 <p
-                                    className="text-[9px] font-mono text-body-secondary/40 hover:text-accent transition-colors cursor-pointer"
+                                    onClick={() => setShowSystemInfo(true)}
+                                    className="text-[9px] font-mono text-body-secondary/40 hover:text-accent transition-colors cursor-pointer hover:underline"
+                                    title="Clique para ver informações do sistema"
                                 >
                                     v{APP_VERSION.split('-')[0]}
                                 </p>
@@ -561,6 +565,11 @@ export default function StaffSidebar() {
                 confirmText="Sair"
                 confirmColor="bg-red-500"
                 cancelText="Cancelar"
+            />
+
+            <SystemInfoModal
+                isOpen={showSystemInfo}
+                onClose={() => setShowSystemInfo(false)}
             />
         </>
     );
