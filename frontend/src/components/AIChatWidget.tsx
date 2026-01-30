@@ -12,13 +12,16 @@ export const AIChatWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Authorization Check: Must be logged in AND have one of these roles
-    const allowed = ['ADMIN', 'MASTER', 'GESTAO'];
+    // Authorization Check: Must be logged in AND have one of these roles OR be the dev email
+    const allowed = ['ADMIN', 'MASTER', 'GESTAO', 'DIRETORIA'];
 
     if (!user) return null;
 
-    const userRole = (user.division || user.role || '').toUpperCase();
-    const isAllowed = allowed.includes(userRole);
+    const userRole = (user.role || '').toUpperCase();
+    const userDivision = (user.division || '').toUpperCase();
+    const isDev = user.email === 'oidemianf@gmail.com';
+
+    const isAllowed = isDev || allowed.includes(userRole) || allowed.includes(userDivision);
 
     const getBrainUrl = () => {
         const envUrl = import.meta.env.VITE_API_URL;

@@ -500,7 +500,7 @@ export default function UserManager() {
                     rolePermissions={rolePermissions}
                     isMaster={isMaster}
                     currentUser={currentUser}
-                    onSave={saveUser}
+                    onSave={(data) => saveUser(data, selectedUser)}
                     onDelete={(user: UserData) => deleteUser(user, false)}
                     onRestore={(user: UserData) => restoreUser(user)}
                     onRoleChange={handleRoleChange}
