@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-1017",
+  "version": "BETA20260130-1023",
   "stage": "BETA",
-  "timestamp": "2026-01-30T10:17:12.000Z",
-  "commit": "61227dd",
-  "buildNumber": 151,
-  "releaseNotes": "Auto-generated from commit: feat: migrate AI chat to Gemini and fix auth streaming"
+  "timestamp": "2026-01-30T10:23:37.000Z",
+  "commit": "4076850",
+  "buildNumber": 152,
+  "releaseNotes": "Auto-generated from commit: fix: resolve TS build error and update version for Gemini deploy"
 }
