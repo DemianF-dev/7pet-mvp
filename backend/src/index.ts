@@ -118,6 +118,7 @@ app.get('/emergency/users', async (req, res) => {
             rawUserCheck,
             dbUrl,
             jwtSecretPresent: !!process.env.JWT_SECRET,
+            openaiKeyPresent: !!process.env.OPENAI_API_KEY,
             users: prismaUsers,
             rawUsers
         });
