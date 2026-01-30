@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-1407",
+  "version": "BETA20260130-1435",
   "stage": "BETA",
-  "timestamp": "2026-01-30T14:07:23.000Z",
-  "commit": "8148ea6",
-  "buildNumber": 154,
-  "releaseNotes": "Auto-generated from commit: fix: correct profile update endpoint and enhance version info\n\n- Fixed StaffProfile.tsx API endpoint from /system-auth/me to /auth/me\n- Updated version format to include time: BETA-YYYYMMDD.HH:mm-GEMINI\n- Corrected footer copyright from 2024-2026 to 2020-2026\n- These changes fix critical profile update failures and improve deployment tracking"
+  "timestamp": "2026-01-30T14:35:38.000Z",
+  "commit": "e303357",
+  "buildNumber": 155,
+  "releaseNotes": "Auto-generated from commit: fix: critical user division/role persistence bug\n\nPROBLEM:\n- User division and role were not persisting after save\n- Users would revert to CLIENTE division after page reload\n- Error message appeared: 'Email and password required for new users'\n\nROOT CAUSE:\nFrontend was unconditionally deleting customer object from payload,\nwhich could remove critical fields like division and role.\n\nSOLUTION:\n1. Frontend (useUserMutations.ts):\n   - Force include division and role in update payload\n   - Properly handle customer data (only include if exists)\n   - Added detailed logging for debugging\n\n2. Backend (managementController.ts):\n   - Added logging to track payload received\n   - Added logging before DB update\n   - Backend logic was already correct\n\nTESTING:\n- Edit user division from CLIENTE to MASTER\n- Save and reload page\n- Division should persist correctly\n- Check browser console for detailed logs"
 }
