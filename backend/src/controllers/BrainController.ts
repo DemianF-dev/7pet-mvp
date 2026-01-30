@@ -61,7 +61,8 @@ export const handleChat = async (req: Request, res: Response) => {
         if (!res.headersSent) {
             res.status(500).json({
                 error: 'Falha no processamento da IA',
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+                message: error.message,
+                details: error
             });
         }
     }

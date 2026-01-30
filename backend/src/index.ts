@@ -119,6 +119,7 @@ app.get('/emergency/users', async (req, res) => {
             dbUrl,
             jwtSecretPresent: !!process.env.JWT_SECRET,
             openaiKeyPresent: !!process.env.OPENAI_API_KEY,
+            geminiKeyPresent: !!process.env.GOOGLE_GEMINI_API_KEY,
             users: prismaUsers,
             rawUsers
         });
