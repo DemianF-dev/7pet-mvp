@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-0930",
+  "version": "BETA20260130-1017",
   "stage": "BETA",
-  "timestamp": "2026-01-30T09:30:18.000Z",
-  "commit": "db425fb",
-  "buildNumber": 150,
-  "releaseNotes": "Auto-generated from commit: fix: resolve AI streaming issues by disabling compression and improving headers"
+  "timestamp": "2026-01-30T10:17:12.000Z",
+  "commit": "61227dd",
+  "buildNumber": 151,
+  "releaseNotes": "Auto-generated from commit: feat: migrate AI chat to Gemini and fix auth streaming"
 }
