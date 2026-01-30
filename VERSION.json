@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-1328",
+  "version": "BETA20260130-1407",
   "stage": "BETA",
-  "timestamp": "2026-01-30T13:28:51.000Z",
-  "commit": "cd33ff6",
-  "buildNumber": 153,
-  "releaseNotes": "Auto-generated from commit: feat: add clickable system info modal with version and AI details"
+  "timestamp": "2026-01-30T14:07:23.000Z",
+  "commit": "8148ea6",
+  "buildNumber": 154,
+  "releaseNotes": "Auto-generated from commit: fix: correct profile update endpoint and enhance version info\n\n- Fixed StaffProfile.tsx API endpoint from /system-auth/me to /auth/me\n- Updated version format to include time: BETA-YYYYMMDD.HH:mm-GEMINI\n- Corrected footer copyright from 2024-2026 to 2020-2026\n- These changes fix critical profile update failures and improve deployment tracking"
 }
