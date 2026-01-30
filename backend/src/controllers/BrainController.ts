@@ -1,7 +1,7 @@
 
 import { Request, Response } from 'express';
 import { streamText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 
 export const handleChat = async (req: Request, res: Response) => {
@@ -9,10 +9,10 @@ export const handleChat = async (req: Request, res: Response) => {
         const { messages } = req.body;
         console.log(`[Brain] Chat request received. Messages: ${messages?.length}`);
 
-        // Ensure OpenAI Key exists
-        if (!process.env.OPENAI_API_KEY) {
-            console.error('[Brain] OpenAI API Key missing');
-            return res.status(500).json({ error: 'OpenAI API Key not configured on server' });
+        // Ensure Google API Key exists
+        if (!process.env.GOOGLE_GEMINI_API_KEY) {
+            console.error('[Brain] Google Gemini API Key missing');
+            return res.status(500).json({ error: 'Google Gemini API Key not configured on server' });
         }
 
         // Set headers to disable buffering/caching for streaming
@@ -22,7 +22,7 @@ export const handleChat = async (req: Request, res: Response) => {
         res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx/Railway proxies
 
         const result = await streamText({
-            model: openai('gpt-4o-mini') as any,
+            model: google('gemini-1.5-flash'),
             messages,
             system: `Você é o "Cérebro 7Pet", um assistente inteligente para administradores do sistema de Pet Shop.
             Você tem acesso a ferramentas para buscar dados do sistema.
