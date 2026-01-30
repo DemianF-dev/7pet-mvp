@@ -5,7 +5,15 @@ import { PrismaClient } from '@prisma/client';
 // Helper to create client safely
 const createSafeClient = () => {
     try {
-        const connectionString = process.env.DATABASE_URL;
+        let connectionString = process.env.DATABASE_URL;
+
+        // Supabase Transaction Mode Fix: Ensure pgbouncer=true is present
+        if (connectionString && !connectionString.includes('pgbouncer=true') && !connectionString.includes('?')) {
+            connectionString += '?pgbouncer=true';
+        } else if (connectionString && !connectionString.includes('pgbouncer=true')) {
+            connectionString += '&pgbouncer=true';
+        }
+
         const pool = new Pool({
             connectionString,
             ssl: {
