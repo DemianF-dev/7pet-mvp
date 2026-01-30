@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-2305",
+  "version": "BETA20260130-0918",
   "stage": "BETA",
-  "timestamp": "2026-01-29T23:05:50.000Z",
-  "commit": "fd0f209",
-  "buildNumber": 148,
-  "releaseNotes": "Auto-generated from commit: chore: add openai key check to emergency route"
+  "timestamp": "2026-01-30T09:18:47.000Z",
+  "commit": "e6e5fac",
+  "buildNumber": 149,
+  "releaseNotes": "Auto-generated from commit: fix: attach auth token to AI chat requests"
 }
