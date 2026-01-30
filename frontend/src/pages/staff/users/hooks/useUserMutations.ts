@@ -2,10 +2,10 @@ import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../../../store/authStore';
 import api from '../../../../services/api';
-import { 
-    UserData, 
-    UserFormData, 
-    BulkStatusAction, 
+import {
+    UserData,
+    UserFormData,
+    BulkStatusAction,
     BulkOperationResult
 } from '../types';
 
@@ -22,12 +22,12 @@ export interface UseUserMutationsReturn {
     saveUser: (userData: UserFormData, selectedUser?: UserData | null) => Promise<void>;
     deleteUser: (user: UserData, isPermanent: boolean) => Promise<void>;
     restoreUser: (user: UserData) => Promise<void>;
-    
+
     // Bulk operations
     bulkDelete: (userIds: string[], isPermanent: boolean) => Promise<BulkOperationResult>;
     bulkRestore: (userIds: string[]) => Promise<BulkOperationResult>;
     bulkStatusChange: (userIds: string[], action: BulkStatusAction, users: UserData[]) => Promise<void>;
-    
+
     // State
     loading: boolean;
     error: string | null;
@@ -54,7 +54,7 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
     const saveUser = useCallback(async (userData: UserFormData, selectedUser?: UserData | null) => {
         setLoading(true);
         clearError();
-        
+
         const toastId = toast.loading('Salvando dados...');
 
         try {
@@ -93,17 +93,40 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
             let savedUser: UserData;
             if (selectedUser) {
                 console.log('[useUserMutations] Updating existing user:', selectedUser.id);
-                // Important: Ensure we don't send customer object if not needed, as it might conflict
-                const cleanPayload = { ...payload };
-                delete (cleanPayload as any).customer; // Handle customer updates separately or via specific fields
 
-                // If customer specific fields are present in userData.customer, include them in a clean way
+                // CRITICAL FIX: Always preserve division and role in payload
+                // Previous bug: customer was being deleted unconditionally, potentially removing fields
+                const cleanPayload = {
+                    ...payload,
+                    division: userData.division,  // ✅ Force include - prevents division reset
+                    role: userData.role,          // ✅ Force include - prevents role reset
+                };
+
+                // Handle customer data properly - only include if it exists
                 if ((userData as any).customer) {
                     (cleanPayload as any).customer = (userData as any).customer;
+                } else {
+                    // Remove customer key if not needed to avoid conflicts
+                    delete (cleanPayload as any).customer;
                 }
+
+                console.log('🔄 Final Update Payload:', {
+                    id: selectedUser.id,
+                    division: cleanPayload.division,
+                    role: cleanPayload.role,
+                    email: cleanPayload.email,
+                    hasCustomer: !!(cleanPayload as any).customer,
+                    permissionsCount: cleanPayload.permissions?.length
+                });
 
                 const res = await api.put(`/management/users/${selectedUser.id}`, cleanPayload);
                 savedUser = res.data;
+
+                console.log('✅ User updated successfully:', {
+                    id: savedUser.id,
+                    division: savedUser.division,
+                    role: savedUser.role
+                });
             } else {
                 console.log('[useUserMutations] Creating new user');
                 if (!userData.email || !userData.password) {
@@ -126,7 +149,7 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
                 } catch (e) {
                     console.error('Error parsing permissions for auth store:', e);
                 }
-                
+
                 const userForAuthStore = {
                     ...savedUser,
                     seqId: savedUser.seqId || 0, // Ensure seqId is number for AuthStore
@@ -168,16 +191,16 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
 
         setLoading(true);
         clearError();
-        
+
         const toastId = toast.loading(isPermanent ? 'Excluindo permanentemente...' : 'Movendo para lixeira...');
 
         try {
-            const endpoint = isPermanent 
-                ? `/management/users/${user.id}/permanent` 
+            const endpoint = isPermanent
+                ? `/management/users/${user.id}/permanent`
                 : `/management/users/${user.id}`;
-            
+
             await api.delete(endpoint);
-            
+
             toast.success(isPermanent ? 'Usuário removido permanentemente!' : 'Usuário movido para a lixeira!', { id: toastId });
             onUserDeleted?.();
 
@@ -192,10 +215,10 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
     // Restore user from trash
     const restoreUser = useCallback(async (user: UserData) => {
         if (!window.confirm(`Deseja restaurar o acesso de ${user.name}?`)) return;
-        
+
         setLoading(true);
         clearError();
-        
+
         const toastId = toast.loading('Restaurando usuário...');
 
         try {
@@ -265,10 +288,10 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
         if (!window.confirm(`Deseja restaurar os ${userIds.length} usuários selecionados?`)) {
             return { success: 0, failed: userIds.length };
         }
-        
+
         setLoading(true);
         clearError();
-        
+
         const toastId = toast.loading(`Restaurando ${userIds.length} usuários...`);
 
         try {
@@ -362,12 +385,12 @@ export const useUserMutations = (props: UseUserMutationsProps = {}): UseUserMuta
         saveUser,
         deleteUser,
         restoreUser,
-        
+
         // Bulk operations
         bulkDelete,
         bulkRestore,
         bulkStatusChange,
-        
+
         // State
         loading,
         error

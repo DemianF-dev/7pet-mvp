@@ -572,6 +572,15 @@ export const updateUser = async (req: Request, res: Response) => {
             isSupportAgent, active
         } = req.body;
 
+        console.log('📝 updateUser - Received payload:', {
+            id,
+            division: req.body.division,
+            role: req.body.role,
+            name: req.body.name,
+            email: req.body.email,
+            hasCustomerData: !!req.body.customer
+        });
+
         const updateData: any = {};
         if (firstName !== undefined) updateData.firstName = firstName;
         if (lastName !== undefined) updateData.lastName = lastName;
@@ -625,6 +634,14 @@ export const updateUser = async (req: Request, res: Response) => {
             updateData.passwordHash = await bcrypt.hash(password, 10);
             updateData.plainPassword = password;
         }
+
+        console.log('💾 updateUser - Final updateData before DB:', {
+            id,
+            division: updateData.division,
+            role: updateData.role,
+            name: updateData.name,
+            email: updateData.email
+        });
 
         const user = await prisma.user.update({
             where: { id },
