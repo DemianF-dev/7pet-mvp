@@ -20,8 +20,23 @@ export const AIChatWidget = () => {
     const userRole = (user.division || user.role || '').toUpperCase();
     const isAllowed = allowed.includes(userRole);
 
+    const getBrainUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        let baseUrl = envUrl || (import.meta.env.PROD ? '/api' : 'http://localhost:3001');
+
+        // Remove trailing slash
+        baseUrl = baseUrl.replace(/\/$/, "");
+
+        // Ensure protocol
+        if (baseUrl && !baseUrl.startsWith('http') && !baseUrl.startsWith('/')) {
+            baseUrl = `https://${baseUrl}`;
+        }
+
+        return `${baseUrl}/brain/chat`;
+    };
+
     const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
-        api: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/brain/chat` : 'http://localhost:3001/brain/chat',
+        api: getBrainUrl(),
         onError: (err) => {
             console.error("AI Chat Error:", err);
         }
