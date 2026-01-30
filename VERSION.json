@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260129-2303",
+  "version": "BETA20260129-2305",
   "stage": "BETA",
-  "timestamp": "2026-01-29T23:03:35.000Z",
-  "commit": "960a0dd",
-  "buildNumber": 147,
-  "releaseNotes": "Auto-generated from commit: fix: AI permissions and widget URL logic"
+  "timestamp": "2026-01-29T23:05:50.000Z",
+  "commit": "fd0f209",
+  "buildNumber": 148,
+  "releaseNotes": "Auto-generated from commit: chore: add openai key check to emergency route"
 }
