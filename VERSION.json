@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260131-1657",
+  "version": "BETA20260131-1712",
   "stage": "BETA",
-  "timestamp": "2026-01-31T16:57:40.000Z",
-  "commit": "43c1878",
-  "buildNumber": 162,
-  "releaseNotes": "Auto-generated from commit: feat: implementing unified floating action dock and fixing layout spacing issues"
+  "timestamp": "2026-01-31T17:12:16.000Z",
+  "commit": "512b0a8",
+  "buildNumber": 163,
+  "releaseNotes": "Auto-generated from commit: fix: removing ghost spacing in dashboard layout by eliminating rounded sidebar and legacy css margins"
 }
