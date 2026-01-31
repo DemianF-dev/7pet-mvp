@@ -10,8 +10,16 @@ import { Conversation } from '../../types/chat';
 import QueryState from '../../components/system/QueryState';
 import AppImage from '../../components/ui/AppImage';
 
+import { MobileChat } from './chat/MobileChat';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export default function ChatPage() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileChat />;
+    }
+
     const { user } = useAuthStore();
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -48,21 +56,21 @@ export default function ChatPage() {
             const query = userSearchQuery.trim();
             const url = query ? `/chat/users?query=${encodeURIComponent(query)}` : '/chat/users';
             console.log(`[ChatPage] Buscando usuários. URL: ${url}, Query: "${query}"`);
-            
+
             const res = await api.get(url);
             console.log(`[ChatPage] Resposta da API:`, res.data);
-            
+
             // Se não houver query, tentar obter todos os usuários
             if (!query || query.trim() === '') {
                 console.log('[ChatPage] Query vazia, buscando todos os usuários...');
             }
-            
+
             // Debug: Verificar estrutura da resposta
             console.log('[ChatPage] Estrutura da resposta:', typeof res.data, Array.isArray(res.data));
-            
+
             // Tentar diferentes abordagens dependendo da estrutura
             let users = [];
-            
+
             if (Array.isArray(res.data)) {
                 // A resposta já é um array
                 users = res.data;
@@ -76,13 +84,13 @@ export default function ChatPage() {
                 console.error('[ChatPage] Estrutura de resposta inesperada:', res.data);
                 users = [];
             }
-            
+
             console.log(`[ChatPage] Usuários recebidos (bruto): ${users.length}`);
-            
+
             // Filter out current user
             const filteredUsers = users.filter((u: any) => u.id !== user?.id);
             console.log(`[ChatPage] Usuários após filtro (exceto ${user?.id}): ${filteredUsers.length}`);
-            
+
             return filteredUsers;
         },
         enabled: showNewChatModal

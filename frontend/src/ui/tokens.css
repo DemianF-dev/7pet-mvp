@@ -1,0 +1,66 @@
+:root {
+  /* 📱 Mobile Safe Areas (Notch support) */
+  --safe-top: env(safe-area-inset-top, 20px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --tabbar-height: 60px;
+  --header-height: 56px;
+
+  /* 🎨 Semantic Colors (Apple-like) */
+  --mobile-bg-base: #F2F2F7;
+  --mobile-bg-card: #FFFFFF;
+  --mobile-text-primary: #000000;
+  --mobile-text-secondary: #8E8E93;
+  --mobile-divider: rgba(60, 60, 67, 0.18);
+  
+  /* Brand */
+  --mobile-brand: #0A84FF;
+  --mobile-danger: #FF3B30;
+  --mobile-success: #34C759;
+  --mobile-warning: #FF9500;
+
+  /* Elevations */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-floating: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.dark {
+  --mobile-bg-base: #000000;
+  --mobile-bg-card: #1C1C1E;
+  --mobile-text-primary: #FFFFFF;
+  --mobile-text-secondary: #98989D;
+  --mobile-divider: rgba(84, 84, 88, 0.45);
+}
+
+/* Base Classes for Mobile */
+.mobile-safe-top {
+  padding-top: var(--safe-top);
+}
+
+.mobile-safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+
+.mobile-card {
+  background: var(--mobile-bg-card);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 12px;
+}
+
+.mobile-text-primary {
+  color: var(--mobile-text-primary);
+}
+
+.mobile-text-secondary {
+  color: var(--mobile-text-secondary);
+}
+
+/* Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

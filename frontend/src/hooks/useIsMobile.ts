@@ -1,26 +1,47 @@
 import { useState, useEffect } from 'react';
 
-/**
- * Hook to detect if the current viewport is mobile-sized.
- * Uses media query (max-width: 768px) for responsive detection.
- * SSR-safe with useState/useEffect pattern.
- */
-export function useIsMobile(): boolean {
-    const [isMobile, setIsMobile] = useState(false);
+// Default mobile breakpoint (md in Tailwind)
+const MOBILE_BREAKPOINT = 768;
+
+export function useIsMobile() {
+    const [isMobile, setIsMobile] = useState<boolean>(() => {
+        // SSR safe default
+        if (typeof window === 'undefined') return false;
+        return window.innerWidth < MOBILE_BREAKPOINT;
+    });
+
+    const [isStandalone, setIsStandalone] = useState<boolean>(false);
 
     useEffect(() => {
-        // Check initial value
-        const mq = window.matchMedia('(max-width: 768px)');
-        setIsMobile(mq.matches);
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+        };
 
-        // Listen for changes
-        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-        mq.addEventListener('change', handler);
+        const checkStandalone = () => {
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches
+                || (window.navigator as any).standalone // iOS Legacy
+                || document.referrer.includes('android-app://');
 
-        return () => mq.removeEventListener('change', handler);
+            setIsStandalone(!!isPWA);
+        };
+
+        checkMobile();
+        checkStandalone();
+
+        window.addEventListener('resize', checkMobile);
+        window.matchMedia('(display-mode: standalone)').addEventListener('change', checkStandalone);
+
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            window.matchMedia('(display-mode: standalone)').removeEventListener('change', checkStandalone);
+        };
     }, []);
 
-    return isMobile;
+    return {
+        isMobile,
+        isDesktop: !isMobile,
+        isStandalone
+    };
 }
 
 export default useIsMobile;

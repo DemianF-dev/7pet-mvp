@@ -84,7 +84,16 @@ const formatCurrency = (value: number) => {
     }).format(value);
 };
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileDashboard } from './dashboard/MobileDashboard';
+
 export default function StaffDashboard() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileDashboard />;
+    }
+
     const user = useAuthStore(s => s.user);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -94,6 +103,7 @@ export default function StaffDashboard() {
         queryFn: fetchMetrics,
         staleTime: 5 * 60 * 1000,
     });
+
 
     const { data: goals } = useQuery({
         queryKey: ['staff-goals'],
