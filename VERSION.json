@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260131-1459",
+  "version": "BETA20260131-1541",
   "stage": "BETA",
-  "timestamp": "2026-01-31T14:59:06.000Z",
-  "commit": "f76b79a",
-  "buildNumber": 159,
-  "releaseNotes": "Auto-generated from commit: feat(mobile): phase 0 - foundational mobile rebuild\n- Created useIsMobile hook for dual-layout logic\n- Defined design tokens in tokens.css and integrated into index.css\n- Implemented MobileShell, TabBar, HubGrid, and MobileHeader\n- Applied dual layout to StaffDashboard, AgendaSPA, and ChatPage\n- Cleaned up unused imports and fixed lints across pilot pages"
+  "timestamp": "2026-01-31T15:41:06.000Z",
+  "commit": "84e4b47",
+  "buildNumber": 160,
+  "releaseNotes": "Auto-generated from commit: feat: mobile rebuild phase 2 and desktop layout regression fix"
 }
