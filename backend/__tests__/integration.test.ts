@@ -32,7 +32,7 @@ describe('Health & Auth Endpoints', () => {
     describe('POST /auth/login (fail case)', () => {
         it('should return 401 for invalid credentials', async () => {
             const response = await request(app)
-                .post('/auth/login')
+                .post('/system-auth/login')
                 .send({ email: 'nonexistent@example.com', password: 'wrongpassword' });
 
             expect(response.status).toBe(401);

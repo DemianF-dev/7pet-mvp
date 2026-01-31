@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useChat } from 'ai/react';
-import { Brain, X, Send, Play, Minimize2, Loader2, Sparkles } from 'lucide-react';
+import { Brain, X, Send, Minimize2, Loader2, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 // Simple cn replacement if not imported

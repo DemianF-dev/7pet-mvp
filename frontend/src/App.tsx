@@ -82,7 +82,7 @@ import PWASettings from './components/PWASettings';
 import RouteSkeleton from './components/system/RouteSkeleton';
 import NetworkStatus from './components/NetworkStatus';
 import SocketStatusPill from './components/SocketStatusPill';
-import { AIChatWidget } from './components/AIChatWidget';
+
 
 import { NotificationProvider } from './context/NotificationContext';
 import { ServicesProvider } from './context/ServicesContext';

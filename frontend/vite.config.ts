@@ -8,9 +8,24 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: 'prompt',
+            registerType: 'autoUpdate',
             injectRegister: 'auto',
             includeAssets: ['favicon.ico', 'logo.png'],
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+                // 🛡️ CRITICAL: Do not cache API or Socket.io routes
+                navigateFallbackDenylist: [/^\/api/, /^\/socket.io/],
+                runtimeCaching: [
+                    {
+                        urlPattern: /^https:\/\/7pet-backend-production\.up\.railway\.app\/api/,
+                        handler: 'NetworkOnly',
+                    },
+                    {
+                        urlPattern: /^https:\/\/7pet-realtime-production\.up\.railway\.app\/socket\.io/,
+                        handler: 'NetworkOnly',
+                    }
+                ]
+            },
             manifest: {
                 name: '7Pet',
                 short_name: '7Pet',
