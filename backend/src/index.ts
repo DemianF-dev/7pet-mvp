@@ -340,11 +340,14 @@ app.get('/', (req, res) => {
 
 // Hardcoded version for stability during transition
 const now = new Date();
-const year = now.getFullYear();
-const month = String(now.getMonth() + 1).padStart(2, '0');
-const day = String(now.getDate()).padStart(2, '0');
-const hours = String(now.getHours()).padStart(2, '0');
-const minutes = String(now.getMinutes()).padStart(2, '0');
+// Use Brazil time for the version string to avoid "future time" confusion (UTC vs GMT-3)
+const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+
+const year = brazilTime.getFullYear();
+const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
+const day = String(brazilTime.getDate()).padStart(2, '0');
+const hours = String(brazilTime.getHours()).padStart(2, '0');
+const minutes = String(brazilTime.getMinutes()).padStart(2, '0');
 const versionInfo = {
     version: `BETA-${year}${month}${day}.${hours}:${minutes}-GEMINI`,
     timestamp: now.toISOString()
