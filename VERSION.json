@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260131-1541",
+  "version": "BETA20260131-1634",
   "stage": "BETA",
-  "timestamp": "2026-01-31T15:41:06.000Z",
-  "commit": "84e4b47",
-  "buildNumber": 160,
-  "releaseNotes": "Auto-generated from commit: feat: mobile rebuild phase 2 and desktop layout regression fix"
+  "timestamp": "2026-01-31T16:34:39.000Z",
+  "commit": "7f709c7",
+  "buildNumber": 161,
+  "releaseNotes": "Auto-generated from commit: Merge branch 'main' of https://github.com/DemianF-dev/7pet-mvp\n# Please enter a commit message to explain why this merge is necessary,\n# especially if it merges an updated upstream into a topic branch.\n#\n# Lines starting with '#' will be ignored, and an empty message aborts\n# the commit."
 }
