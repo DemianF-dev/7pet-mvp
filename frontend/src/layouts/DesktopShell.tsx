@@ -6,9 +6,9 @@ import StaffSidebar from '../components/StaffSidebar';
  */
 export default function DesktopShell() {
     return (
-        <div className="flex h-screen overflow-hidden bg-[var(--color-bg-primary)] !gap-0">
+        <div className="flex flex-row justify-start items-stretch h-screen overflow-hidden bg-[var(--color-bg-primary)] w-full">
             <StaffSidebar />
-            <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden relative !ml-0 !pl-0">
+            <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden relative m-0 p-0">
                 <Outlet />
             </main>
         </div>

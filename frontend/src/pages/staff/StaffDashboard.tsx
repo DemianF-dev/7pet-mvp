@@ -147,8 +147,9 @@ export default function StaffDashboard() {
     };
 
     return (
-        <main className="p-4 md:p-6 w-full space-y-4 flex-1">
+        <div className="p-4 md:p-6 w-full space-y-4 flex-1">
             <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+                {/* ... header content ... */}
                 <div>
                     <Breadcrumbs />
                     <DashboardGreeting
@@ -554,6 +555,6 @@ export default function StaffDashboard() {
                     </section>
                 </motion.div>
             )}
-        </main>
+        </div>
     );
 }
