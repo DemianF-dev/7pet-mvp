@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260131-1712",
+  "version": "BETA20260131-1727",
   "stage": "BETA",
-  "timestamp": "2026-01-31T17:12:16.000Z",
-  "commit": "512b0a8",
-  "buildNumber": 163,
-  "releaseNotes": "Auto-generated from commit: fix: removing ghost spacing in dashboard layout by eliminating rounded sidebar and legacy css margins"
+  "timestamp": "2026-01-31T17:27:40.000Z",
+  "commit": "77eca9c",
+  "buildNumber": 164,
+  "releaseNotes": "Auto-generated from commit: fix: restore glossy sidebar and eliminate all gutter spacing"
 }
