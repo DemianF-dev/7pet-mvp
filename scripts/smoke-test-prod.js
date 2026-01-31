@@ -1,7 +1,7 @@
 
 const https = require('https');
 
-const API_URL = 'https://7pet-backend-production.up.railway.app'; // Ajuste se seu URL de backend for diferente no Railway
+const API_URL = 'https://7pet-backend.vercel.app'; // URL do backend no Vercel
 
 console.log(`🔍 Testando saúde do backend em: ${API_URL}`);
 

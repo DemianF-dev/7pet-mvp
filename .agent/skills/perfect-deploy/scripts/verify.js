@@ -1,7 +1,7 @@
 const https = require('https');
 
 const CONFIG = {
-    backend: 'https://7pet-backend-production.up.railway.app/api/health',
+    backend: 'https://7pet-backend.vercel.app/health',
     realtime: 'https://7pet-realtime-production.up.railway.app/health',
     timeout: 10000
 };
