@@ -75,13 +75,12 @@ const DesenroscaPage = lazy(() => import('./pages/pausa/DesenroscaPage'));
 const PauseZenEspuma = lazy(() => import('./pages/pausa/PauseZenEspuma'));
 const PetMatchPage = lazy(() => import('./pages/pausa/PetMatchPage'));
 
-import FeedbackWidget from './components/FeedbackWidget';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWASettings from './components/PWASettings';
 import RouteSkeleton from './components/system/RouteSkeleton';
 import NetworkStatus from './components/NetworkStatus';
-import SocketStatusPill from './components/SocketStatusPill';
 
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -152,9 +151,7 @@ function App() {
     return (
         <ThemeProvider defaultTheme="system" storageKey="7pet-theme">
             <Toaster position="top-right" reverseOrder={false} />
-            <FeedbackWidget />
             <NetworkStatus />
-            <SocketStatusPill />
             <PWAInstallPrompt />
             <ModalEventProvider />
 

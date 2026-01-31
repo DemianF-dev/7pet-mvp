@@ -7,10 +7,39 @@ import { useAuthStore } from '../store/authStore';
 // Simple cn replacement if not imported
 const classNames = (...classes: (string | undefined | null | boolean)[]) => classes.filter(Boolean).join(' ');
 
-export const AIChatWidget = () => {
+
+interface AIChatWidgetProps {
+    externalIsOpen?: boolean;
+    onExternalClose?: () => void;
+    hideFloatingButton?: boolean;
+}
+
+export const AIChatWidget = ({ externalIsOpen, onExternalClose, hideFloatingButton }: AIChatWidgetProps = {}) => {
     const { user } = useAuthStore();
-    const [isOpen, setIsOpen] = useState(false);
+    const [internalIsOpen, setInternalIsOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Determines if we are using external or internal state
+    const isControlled = externalIsOpen !== undefined;
+    const isOpen = isControlled ? externalIsOpen : internalIsOpen;
+
+    const handleClose = () => {
+        if (isControlled && onExternalClose) {
+            onExternalClose();
+        } else {
+            setInternalIsOpen(false);
+        }
+    };
+
+    const toggleOpen = () => {
+        if (isControlled && onExternalClose) {
+            if (isOpen) onExternalClose();
+            // Note: Cannot externally "open" via this toggle if we are controlled, usually.
+            // But if controlled, the parent handles the button.
+        } else {
+            setInternalIsOpen(!internalIsOpen);
+        }
+    };
 
     // Authorization Check: Must be logged in AND have one of these roles OR be the dev email
     const allowed = ['ADMIN', 'MASTER', 'GESTAO', 'DIRETORIA'];
@@ -63,10 +92,10 @@ export const AIChatWidget = () => {
     if (!isAllowed) return null;
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end print:hidden">
+        <div className={`fixed bottom-4 right-4 z-50 flex flex-col items-end print:hidden ${hideFloatingButton ? 'pointer-events-none' : ''}`}>
             {/* Chat Window */}
             {isOpen && (
-                <div className="mb-4 w-[90vw] max-w-[400px] h-[500px] max-h-[70vh] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
+                <div className="mb-4 w-[90vw] max-w-[400px] h-[500px] max-h-[70vh] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300 pointer-events-auto">
                     {/* Header */}
                     <div className="p-3 bg-gradient-to-r from-violet-600 to-indigo-600 flex justify-between items-center text-white shrink-0">
                         <div className="flex items-center gap-2">
@@ -75,7 +104,7 @@ export const AIChatWidget = () => {
                             <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded text-white font-medium">BETA</span>
                         </div>
                         <button
-                            onClick={() => setIsOpen(false)}
+                            onClick={handleClose}
                             className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
                         >
                             <Minimize2 className="w-4 h-4" />
@@ -157,26 +186,28 @@ export const AIChatWidget = () => {
             )}
 
             {/* Toggle Button */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={classNames(
-                    "w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 group",
-                    isOpen ? "bg-gray-200 text-gray-600 rotate-90" : "bg-gradient-to-r from-violet-600 to-indigo-600 text-white"
-                )}
-            >
-                {isOpen ? (
-                    <X className="w-6 h-6" />
-                ) : (
-                    <Brain className="w-7 h-7 group-hover:animate-pulse" />
-                )}
+            {!hideFloatingButton && (
+                <button
+                    onClick={toggleOpen}
+                    className={classNames(
+                        "w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 group pointer-events-auto",
+                        isOpen ? "bg-gray-200 text-gray-600 rotate-90" : "bg-gradient-to-r from-violet-600 to-indigo-600 text-white"
+                    )}
+                >
+                    {isOpen ? (
+                        <X className="w-6 h-6" />
+                    ) : (
+                        <Brain className="w-7 h-7 group-hover:animate-pulse" />
+                    )}
 
-                {!isOpen && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
-                    </span>
-                )}
-            </button>
+                    {!isOpen && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                        </span>
+                    )}
+                </button>
+            )}
         </div>
     );
 };

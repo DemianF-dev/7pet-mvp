@@ -1,7 +1,7 @@
 import { useIsMobile } from '../hooks/useIsMobile';
 import DesktopShell from './DesktopShell';
 import MobileAppLayout from './MobileAppLayout';
-import { AIChatWidget } from '../components/AIChatWidget';
+import { FloatingActionDock } from '../components/ui/FloatingActionDock';
 
 /**
  * Root layout wrapper that switches between Desktop and Mobile shells
@@ -13,7 +13,7 @@ export default function AppShell() {
     return (
         <>
             {isMobile ? <MobileAppLayout /> : <DesktopShell />}
-            <AIChatWidget />
+            <FloatingActionDock />
         </>
     );
 }
