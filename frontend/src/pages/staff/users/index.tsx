@@ -16,6 +16,8 @@ import { UserFilters } from './components/UserFilters';
 import UserTable from './components/UserTable';
 import { UserFormModal } from './components/UserFormModal';
 import { RoleManagerModal } from './components/RoleManagerModal';
+import { MobileUsers } from './components/MobileUsers';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 import { prepareFormDataFromUser, canEditUser } from './utils/userHelpers';
 import { UserData, UserFormData } from './types';
 
@@ -98,6 +100,8 @@ export default function UserManager() {
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
     const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
+
+    const { isMobile } = useIsMobile();
 
     // Form data state - formData is managed by UserFormModal internally
     const [, setFormData] = useState<UserFormData>({
@@ -231,6 +235,24 @@ export default function UserManager() {
             }
         }
     }, [isLoading, users, searchParams, handleOpenUser, setSearchParams]);
+
+    if (isMobile) {
+        return (
+            <MobileUsers
+                users={users}
+                isLoading={isLoading}
+                onEdit={handleOpenUser}
+                onDelete={(id) => deleteUser(id, false)}
+                onRestore={restoreUser}
+                onNew={() => {
+                    setSelectedUser(null);
+                    setIsModalOpen(true);
+                }}
+                onTogglePassword={togglePasswordVisibility}
+                visiblePasswordIds={visiblePasswordIds}
+            />
+        );
+    }
 
     // Render access denied page
     if (!canAccess) {

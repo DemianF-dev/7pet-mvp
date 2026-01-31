@@ -36,6 +36,8 @@ import { UserNotificationMatrix } from '../../components/admin/UserNotificationM
 import { useAuthStore } from '../../store/authStore';
 import { Card, Badge, IconButton, Button } from '../../components/ui';
 import QueryState from '../../components/system/QueryState';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileManagement } from './MobileManagement';
 
 // Use CSS variable-based colors from design system
 const COLORS = [
@@ -99,6 +101,7 @@ export default function ManagementDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
     const { user } = useAuthStore();
+    const { isMobile } = useIsMobile();
     const isMaster = user?.role === 'MASTER';
 
     useEffect(() => {
@@ -139,6 +142,10 @@ export default function ManagementDashboard() {
     })) : [];
 
     const barData = kpis?.services?.slice(0, 5) || [];
+
+    if (isMobile) {
+        return <MobileManagement kpis={kpis} isLoading={isLoading} onRefresh={fetchKPIs} />;
+    }
 
     return (
         <main className="p-[var(--space-6)] md:p-[var(--space-10)] max-w-7xl mx-auto w-full pb-28 md:pb-10 overflow-y-auto custom-scrollbar flex-1">

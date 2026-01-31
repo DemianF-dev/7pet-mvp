@@ -15,6 +15,8 @@ import QueryState from '../../components/system/QueryState';
 import toast from 'react-hot-toast';
 import { GoalProgressCard } from '../../components/staff/GoalProgressCard';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileStrategy } from './MobileStrategy';
 
 interface Goal {
     id: string;
@@ -45,6 +47,7 @@ export default function StrategyManager() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL');
+    const { isMobile } = useIsMobile();
 
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -146,6 +149,121 @@ export default function StrategyManager() {
         const matchesStatus = filterStatus === 'ALL' || g.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
+
+    if (isMobile) {
+        return (
+            <>
+                <MobileStrategy
+                    goals={filteredGoals}
+                    isLoading={isLoading}
+                    searchTerm={searchTerm}
+                    onSearch={setSearchTerm}
+                    filterStatus={filterStatus}
+                    onFilterChange={setFilterStatus}
+                    onNewGoal={() => {
+                        setEditingId(null);
+                        setFormData({
+                            title: '',
+                            description: '',
+                            targetValue: 0,
+                            initialValue: 0,
+                            unit: 'unid',
+                            startDate: new Date().toISOString().split('T')[0],
+                            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            category: 'GERAL',
+                            department: '',
+                            staffIds: []
+                        });
+                        setIsModalOpen(true);
+                    }}
+                    onRefresh={fetchGoals}
+                />
+
+                <AnimatePresence>
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsModalOpen(false)}
+                                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ y: '100%', opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: '100%', opacity: 0 }}
+                                className="relative w-full self-end"
+                            >
+                                <Card className="p-0 overflow-hidden shadow-[var(--shadow-2xl)] border-transparent bg-[var(--color-bg-surface)] rounded-t-[40px] max-h-[90vh]">
+                                    <form onSubmit={handleCreateGoal}>
+                                        <div className="px-6 pt-6 pb-4 flex justify-between items-center border-b border-[var(--color-border-subtle)]">
+                                            <h2 className="text-xl font-[var(--font-weight-black)] text-[var(--color-text-primary)] uppercase tracking-tight">
+                                                {editingId ? 'Editar' : 'Nova'} Meta
+                                            </h2>
+                                            <IconButton icon={X} onClick={() => setIsModalOpen(false)} variant="ghost" aria-label="Fechar" size="sm" />
+                                        </div>
+
+                                        <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                                            <Input
+                                                label="Título"
+                                                required
+                                                placeholder="Título da meta"
+                                                value={formData.title}
+                                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                            />
+                                            <Select
+                                                label="Categoria"
+                                                value={formData.category}
+                                                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                                options={[
+                                                    { value: 'GERAL', label: 'Geral' },
+                                                    { value: 'SPA', label: 'SPA / Estética' },
+                                                    { value: 'LOGISTICA', label: 'Logística' }
+                                                ]}
+                                            />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input
+                                                    label="Alvo"
+                                                    type="number"
+                                                    value={formData.targetValue}
+                                                    onChange={e => setFormData({ ...formData, targetValue: Number(e.target.value) })}
+                                                />
+                                                <Input
+                                                    label="Unid."
+                                                    value={formData.unit}
+                                                    onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input
+                                                    label="Início"
+                                                    type="date"
+                                                    value={formData.startDate}
+                                                    onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                                                />
+                                                <Input
+                                                    label="Fim"
+                                                    type="date"
+                                                    value={formData.endDate}
+                                                    onChange={e => setFormData({ ...formData, endDate: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 pt-2 flex gap-3">
+                                            <Button type="button" onClick={() => setIsModalOpen(false)} variant="outline" className="flex-1 font-black text-[10px] h-12">CANCELAR</Button>
+                                            <Button type="submit" variant="primary" className="flex-1 font-black text-[10px] h-12 uppercase tracking-widest">{editingId ? 'SALVAR' : 'CRIAR'}</Button>
+                                        </div>
+                                    </form>
+                                </Card>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </>
+        );
+    }
 
     return (
         <main className="p-[var(--space-6)] md:p-[var(--space-10)] bg-[var(--color-bg-primary)] min-h-screen">

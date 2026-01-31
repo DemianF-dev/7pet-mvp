@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Edit2, Check, X, Truck, Scissors, HeadphonesIcon, Settings2, FileText, Search, ArrowLeft, Shield, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../../services/api';
 import { toast } from 'react-hot-toast';
+import { useIsMobile } from '../../../hooks/useIsMobile';
+import { MobileCollaborators } from './MobileCollaborators';
 
 
 interface StaffProfile {
@@ -45,6 +47,7 @@ const PAY_MODELS = [
 ];
 
 export default function StaffProfiles() {
+    const { isMobile } = useIsMobile();
     const navigate = useNavigate();
     const [profiles, setProfiles] = useState<StaffProfile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -235,6 +238,8 @@ export default function StaffProfiles() {
         const matchesDept = filterDept ? profile.department === filterDept : true;
         return matchesSearch && matchesDept;
     });
+
+    if (isMobile) return <MobileCollaborators />;
 
     if (loading) {
         return (

@@ -27,7 +27,16 @@ interface Product {
 
 type TabType = 'active' | 'trash';
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileProducts } from './MobileProducts';
+
 export default function ProductManager() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileProducts />;
+    }
+
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);

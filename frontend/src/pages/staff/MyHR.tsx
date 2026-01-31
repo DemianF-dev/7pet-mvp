@@ -49,7 +49,16 @@ interface TransportLeg {
 
 
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileMyHR } from './MobileMyHR';
+
 export default function MyHR() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileMyHR />;
+    }
+
     const [profile, setProfile] = useState<any>(null);
     const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
     const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);

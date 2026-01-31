@@ -21,6 +21,8 @@ import Badge from '../../components/ui/Badge';
 import OrderDetailsModal from '../../components/staff/OrderDetailsModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import QuoteEditor from './QuoteEditor';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileFinancial } from './MobileFinancial';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -72,6 +74,7 @@ export default function FinancialReports() {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
     const [selectedAppointmentData, setSelectedAppointmentData] = useState<any>(null);
+    const { isMobile } = useIsMobile();
 
     const fetchReports = async () => {
         setIsLoading(true);
@@ -205,6 +208,73 @@ export default function FinancialReports() {
             return { key, direction: 'asc' };
         });
     };
+
+    if (isMobile) {
+        return (
+            <>
+                <MobileFinancial
+                    invoices={sortedInvoices}
+                    isLoading={isLoading}
+                    searchTerm={searchTerm}
+                    onSearch={setSearchTerm}
+                    currentTotal={currentTotal}
+                    totalRevenue={totalRevenue}
+                    onOpenDetails={handleOpenDetails}
+                />
+
+                {/* Modals are still needed for mobile details */}
+                <AnimatePresence>
+                    {selectedOrderId && (
+                        <OrderDetailsModal
+                            isOpen={!!selectedOrderId}
+                            onClose={() => setSelectedOrderId(null)}
+                            orderId={selectedOrderId}
+                            onActionCompleted={fetchReports}
+                        />
+                    )}
+                    {selectedAppointmentData && (
+                        <AppointmentDetailsModal
+                            isOpen={!!selectedAppointmentData}
+                            onClose={() => setSelectedAppointmentData(null)}
+                            appointment={selectedAppointmentData}
+                            onSuccess={fetchReports}
+                            onModify={() => { }}
+                            onCopy={() => { }}
+                        />
+                    )}
+                    {selectedQuoteId && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                                onClick={() => setSelectedQuoteId(null)}
+                            />
+                            <motion.div
+                                initial={{ y: '100%', opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: '100%', opacity: 0 }}
+                                className="bg-white dark:bg-gray-800 rounded-t-[40px] w-full h-[90vh] overflow-y-auto relative z-10 shadow-2xl border-t border-gray-100 dark:border-gray-700 p-6 self-end"
+                            >
+                                <button
+                                    onClick={() => setSelectedQuoteId(null)}
+                                    className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all text-gray-400 z-[110]"
+                                >
+                                    <X size={24} />
+                                </button>
+                                <QuoteEditor
+                                    quoteId={selectedQuoteId}
+                                    onClose={() => setSelectedQuoteId(null)}
+                                    onUpdate={fetchReports}
+                                />
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </>
+        );
+    }
 
     return (
         <Container>

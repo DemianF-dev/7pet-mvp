@@ -19,6 +19,8 @@ import {
     Gamepad2,
     Layout,
     LogOut,
+    Target,
+    History,
     type LucideIcon,
 } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
@@ -98,6 +100,8 @@ export default function MobileMenuHub() {
                 { id: 'management', label: 'Dashboard Gestão', icon: BarChart3, path: '/staff/management' },
                 { id: 'marketing', label: 'Marketing / Avisos', icon: Bell, path: '/staff/marketing' },
                 { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/staff/reports' },
+                { id: 'strategy', label: 'Estratégia', icon: Target, path: '/staff/strategy' },
+                { id: 'recurrence', label: 'Recorrentes', icon: History, path: '/staff/recurrence' },
                 { id: 'users', label: 'Usuários', icon: Users, path: '/staff/users' },
             ],
         },

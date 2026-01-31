@@ -30,6 +30,8 @@ import { Container, Stack } from '../../components/layout/LayoutHelpers';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import IconButton from '../../components/ui/IconButton';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileServices } from './MobileServices';
 
 
 interface Service {
@@ -116,10 +118,28 @@ export default function ServiceManager() {
         responsibleId: ''
     });
 
+    const { isMobile } = useIsMobile();
+
     useEffect(() => {
         fetchServices();
         fetchUsers();
     }, [tab]);
+
+    if (isMobile) {
+        return (
+            <MobileServices
+                services={services}
+                isLoading={isLoading}
+                onEdit={handleOpenModal}
+                onDelete={handleDelete}
+                onRestore={handleRestore}
+                onDuplicate={handleDuplicate}
+                onNew={() => handleOpenModal()}
+                onRefresh={fetchServices}
+                tab={tab}
+            />
+        );
+    }
 
     // Auto-generate name from fields
     useEffect(() => {

@@ -43,6 +43,8 @@ import QueryState from '../../components/system/QueryState';
 import ResponsiveTable, { Column } from '../../components/system/ResponsiveTable';
 import { Container, Stack } from '../../components/layout/LayoutHelpers';
 import { Button, Input, Badge, IconButton, EmptyState, Card } from '../../components/ui';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileQuotes } from './MobileQuotes';
 
 interface QuoteItem {
     id: string;
@@ -86,6 +88,7 @@ export default function QuoteManager() {
     const [view, setView] = useState<'active' | 'trash' | 'history'>('active');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const { isMobile } = useIsMobile();
     void useState(false); // isBulkMode, setIsBulkMode - reserved for bulk selection mode
     const [, setSelectedQuoteId] = useState<string | null>(null); // selectedQuoteId - reserved for quick view
     const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -314,6 +317,21 @@ export default function QuoteManager() {
         if (aValue > bValue) return direction === 'asc' ? 1 : -1;
         return 0;
     });
+
+    if (isMobile) {
+        return (
+            <MobileQuotes
+                quotes={sortedQuotes}
+                isLoading={isLoading}
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                view={view}
+                onViewChange={setView}
+                onNewQuote={() => setIsManualQuoteModalOpen(true)}
+                onOpenDetails={(id) => navigate(`/staff/quotes/edit/${id}`)}
+            />
+        );
+    }
 
     const columns: Column<Quote>[] = [
         {

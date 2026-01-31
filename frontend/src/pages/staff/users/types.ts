@@ -37,6 +37,8 @@ export interface UserData {
     allowedGames?: any;
     isOnline?: boolean;
     lastSeenAt?: string;
+    deletedAt?: string;
+    photo?: string;
 }
 
 export interface UserFormData {

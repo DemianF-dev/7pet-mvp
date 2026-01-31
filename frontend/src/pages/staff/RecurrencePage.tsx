@@ -14,6 +14,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PackageCreationWizard from '../../components/PackageCreationWizard';
 import PackageInvoiceDetails from './PackageInvoiceDetails';
 import NewRecurrenceContract from './NewRecurrenceContract';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileRecurrence } from './MobileRecurrence';
 
 // Helper component for the list of recurring clients
 const RecurringList = ({
@@ -21,6 +23,7 @@ const RecurringList = ({
     onOpenWizard
 }: {
     type: 'SPA' | 'TRANSPORTE',
+    onTabChange: (type: 'SPA' | 'TRANSPORTE') => void,
     onOpenWizard: (customerId: string, contractId?: string) => void
 }) => {
     const [contracts, setContracts] = useState<any[]>([]);
@@ -49,6 +52,26 @@ const RecurringList = ({
         c.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.title?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return (
+            <MobileRecurrence
+                contracts={filtered}
+                isLoading={loading}
+                activeTab={type}
+                onTabChange={onTabChange}
+                searchTerm={searchTerm}
+                onSearch={setSearchTerm}
+                onNewContract={() => navigate('/staff/recurrence/new-contract', { state: { type } })}
+                onOpenWizard={onOpenWizard}
+                onViewCustomer={(id) => navigate(`/staff/customers/${id}`)}
+            />
+        );
+    }
+
+
 
     return (
         <div className="space-y-6">
@@ -145,6 +168,42 @@ export default function RecurrencePage() {
     const [activeTab, setActiveTab] = useState<'SPA' | 'TRANSPORTE'>('SPA');
     const [wizardData, setWizardData] = useState<{ open: boolean, customerId?: string, contractId?: string } | null>(null);
     const navigate = useNavigate();
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return (
+            <>
+                <main>
+                    <Routes>
+                        <Route index element={
+                            <RecurringList
+                                type={activeTab}
+                                onTabChange={setActiveTab}
+                                onOpenWizard={(customerId, contractId) => setWizardData({ open: true, customerId, contractId })}
+                            />
+                        } />
+                        <Route path="new-contract" element={<NewRecurrenceContract />} />
+                        <Route path="invoices/:id" element={<PackageInvoiceDetails />} />
+                    </Routes>
+                </main>
+
+                <AnimatePresence>
+                    {wizardData?.open && (
+                        <PackageCreationWizard
+                            customerId={wizardData.customerId!}
+                            contractId={wizardData.contractId}
+                            type={activeTab}
+                            onClose={() => setWizardData(null)}
+                            onSuccess={(invoice) => {
+                                setWizardData(null);
+                                navigate(`/staff/recurrence/invoices/${invoice.id}`);
+                            }}
+                        />
+                    )}
+                </AnimatePresence>
+            </>
+        );
+    }
 
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -186,6 +245,7 @@ export default function RecurrencePage() {
                     <Route index element={
                         <RecurringList
                             type={activeTab}
+                            onTabChange={setActiveTab}
                             onOpenWizard={(customerId, contractId) => setWizardData({ open: true, customerId, contractId })}
                         />
                     } />
