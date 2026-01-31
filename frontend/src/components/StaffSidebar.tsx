@@ -437,9 +437,9 @@ export default function StaffSidebar() {
                 )}
             </AnimatePresence>
 
-            {/* Desktop Sidebar Redesign - Flat/Full Height */}
+            {/* Desktop Sidebar Redesign - Floating Glass */}
             <aside
-                className={`hidden md:flex flex-col h-full shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-xl ${isCollapsed ? 'w-20' : 'w-[250px]'
+                className={`hidden md:flex flex-col relative h-full shrink-0 sidebar-glass-panel rounded-[var(--radius-2xl)] overflow-hidden ${isCollapsed ? 'w-20' : 'w-[250px]'
                     }`}
             >
                 {/* Sheen effect is handled via CSS ::before on .sidebar-glass-panel */}
