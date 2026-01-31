@@ -39,7 +39,16 @@ interface CartItem {
     stock?: number; // Available stock for validation
 }
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobilePOS } from './pos/MobilePOS';
+
 const POS: React.FC = () => {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobilePOS />;
+    }
+
     const { customers: customersService, pos: posService } = useServices();
     const [searchParams] = useSearchParams();
     const appointmentId = searchParams.get('appointmentId');

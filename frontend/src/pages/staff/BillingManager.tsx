@@ -39,7 +39,16 @@ interface Invoice {
     }>;
 }
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileBilling } from './billing/MobileBilling';
+
 export default function BillingManager() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileBilling />;
+    }
+
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -135,7 +144,8 @@ export default function BillingManager() {
         }
     };
 
-    const _handleDelete = async (invoiceId: string) => { void _handleDelete; // Reserved for future single-delete UI
+    const _handleDelete = async (invoiceId: string) => {
+        void _handleDelete; // Reserved for future single-delete UI
         if (!window.confirm('ATENÇÃO: Deseja realmente excluir esta fatura/orçamento?\n\nNota: Só é possível excluir faturas sem pagamentos registrados.')) return;
 
         try {
@@ -147,7 +157,8 @@ export default function BillingManager() {
         }
     };
 
-    const _handleDuplicate = async (invoiceId: string) => { void _handleDuplicate; // Reserved for future duplicate UI
+    const _handleDuplicate = async (invoiceId: string) => {
+        void _handleDuplicate; // Reserved for future duplicate UI
         if (!window.confirm('Deseja duplicar esta fatura/orçamento?\n\nA nova fatura terá vencimento em +30 dias.')) return;
 
         try {
@@ -191,7 +202,7 @@ export default function BillingManager() {
 
     const filteredInvoices = useMemo(() => {
         if (!Array.isArray(invoices)) return [];
-        
+
         return invoices.filter(i => {
             const matchesSearch = i.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 i.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -239,7 +250,7 @@ export default function BillingManager() {
     const InvoiceRow = ({ invoice }: { invoice: Invoice }) => {
         const paid = Array.isArray(invoice.paymentRecords) ? invoice.paymentRecords.reduce((acc, p) => acc + p.amount, 0) : 0;
         const isSelected = selectedIds.includes(invoice.id);
-        
+
         return (
             <div
                 className={`hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 ${isSelected ? 'bg-primary/[0.02]' : ''}`}
@@ -255,7 +266,7 @@ export default function BillingManager() {
                             className="rounded border-gray-300 text-primary focus:ring-primary"
                         />
                     </div>
-                    
+
                     {/* Customer / Quote Info */}
                     <div className="col-span-4">
                         <div className="flex items-center gap-3">
@@ -280,24 +291,24 @@ export default function BillingManager() {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Due Date */}
                     <div className="col-span-2">
                         <p className={`text-xs font-bold ${new Date(invoice.dueDate) < new Date() && invoice.status !== 'PAGO' ? 'text-red-500' : 'text-gray-500'}`}>
                             {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
                         </p>
                     </div>
-                    
+
                     {/* Amount */}
                     <div className="col-span-2 font-black text-secondary">
                         R$ {invoice.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
-                    
+
                     {/* Paid */}
                     <div className="col-span-2 font-bold text-green-600">
                         R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
-                    
+
                     {/* Status */}
                     <div className="col-span-2">
                         <div className="flex items-center justify-between">
@@ -445,22 +456,22 @@ export default function BillingManager() {
                                 className="rounded border-gray-300 text-primary focus:ring-primary"
                             />
                         </div>
-                        
+
                         {/* Headers */}
                         <div className="col-span-4">Cliente / Orçamento</div>
-                        <div 
+                        <div
                             className="col-span-2 cursor-pointer hover:text-primary transition-colors select-none"
                             onClick={() => handleSort('dueDate')}
                         >
                             <div className="flex items-center gap-1">Vencimento <ArrowUpDown size={14} /></div>
                         </div>
-                        <div 
+                        <div
                             className="col-span-2 cursor-pointer hover:text-primary transition-colors select-none"
                             onClick={() => handleSort('amount')}
                         >
                             <div className="flex items-center gap-1">Valor Total <ArrowUpDown size={14} /></div>
                         </div>
-                        <div 
+                        <div
                             className="col-span-2 cursor-pointer hover:text-primary transition-colors select-none"
                             onClick={() => handleSort('paid')}
                         >

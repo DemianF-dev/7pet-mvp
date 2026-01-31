@@ -13,8 +13,16 @@ import { DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../..
 import BackButton from '../../components/BackButton';
 import { MasterGate } from '../../components/security/MasterGate';
 import { DevCockpitPanel } from '../../components/staff/dev/DevCockpitPanel';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileStaffProfile } from './hr/MobileStaffProfile';
 
-const StaffProfile: React.FC = () => {
+export default function StaffProfile() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileStaffProfile />;
+    }
+
     const navigate = useNavigate();
     const { user, updateUser } = useAuthStore();
     const [loading, setLoading] = useState(false);
@@ -531,6 +539,4 @@ const StaffProfile: React.FC = () => {
     );
 
 };
-
-export default StaffProfile;
 

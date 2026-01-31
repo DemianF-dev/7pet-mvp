@@ -23,7 +23,7 @@ export const TabBar = () => {
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-t border-gray-200 dark:border-zinc-800 mobile-safe-bottom h-[calc(var(--tabbar-height)+env(safe-area-inset-bottom))]">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-t border-gray-200 dark:border-zinc-800 mobile-safe-bottom h-[calc(var(--tabbar-height)+env(safe-area-inset-bottom))] md:hidden">
             <div className="flex justify-around items-center h-full pb-[env(safe-area-inset-bottom)]">
                 {tabs.map((tab) => {
                     const isActive = location.pathname.startsWith(tab.path);

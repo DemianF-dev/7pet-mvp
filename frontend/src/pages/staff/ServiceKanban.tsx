@@ -47,7 +47,16 @@ const statusColumns = [
     { key: 'FINALIZADO', label: 'Finalizado', color: 'bg-green-500' }
 ];
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileKanban } from './kanban/MobileKanban';
+
 export default function ServiceKanban() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileKanban />;
+    }
+
     const location = useLocation();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);

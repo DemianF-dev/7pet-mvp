@@ -36,7 +36,16 @@ type TabType = 'active' | 'trash';
 
 // fetchCustomers removed as it's now handled by the service in the component closure
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileCustomers } from './customers/MobileCustomers';
+
 export default function CustomerManager() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileCustomers />;
+    }
+
     const { customers: customersService } = useServices();
 
     // Register mobile FAB action
@@ -50,17 +59,17 @@ export default function CustomerManager() {
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [tab, setTab] = useState<TabType>('active');
 
-// Use the new React Query hook for customer lists
+    // Use the new React Query hook for customer lists
     const { data: customersData, isLoading, isFetching } = useCustomersList(
         tab,
         {}, // No filters for now
         { enabled: true }
     );
-    
+
     // Extract customers array from the transformed data
     const customers = customersData?.customers || [];
 
-// Explicitly define Customer type for the mutation callback
+    // Explicitly define Customer type for the mutation callback
     const bulkDeleteMutation = useMutation({
         mutationFn: (ids: string[]) => customersService.bulkDelete(ids),
         onSuccess: () => {
@@ -122,7 +131,7 @@ export default function CustomerManager() {
         bulkRestoreMutation.mutate(selectedIds);
     };
 
-const filteredCustomers = (customers || []).filter(c =>
+    const filteredCustomers = (customers || []).filter(c =>
         c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone?.includes(searchTerm) ||
         c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -326,11 +335,11 @@ const filteredCustomers = (customers || []).filter(c =>
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-black text-secondary uppercase tracking-tighter text-lg">{customer.name}</span>
-<span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                    <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest">
                                                         CL-{String(((customer as any).user?.staffId ?? (customer as any).user?.seqId) || 1000).padStart(4, '0')}
                                                     </span>
                                                 </div>
-{(customer as any).pets && (customer as any).pets.length > 0 && (
+                                                {(customer as any).pets && (customer as any).pets.length > 0 && (
                                                     <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
                                                         {(customer as any).pets.length} Pet{(customer as any).pets.length > 1 ? 's' : ''}
                                                     </span>
@@ -343,7 +352,7 @@ const filteredCustomers = (customers || []).filter(c =>
                                                     <Phone size={14} />
                                                     <span className="font-bold">{customer.phone || '-'}</span>
                                                 </div>
-<div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <div className="flex items-center gap-2 text-xs text-gray-400">
                                                     <span className="font-medium">{(customer as any).user?.email || '-'}</span>
                                                 </div>
                                             </div>
@@ -358,7 +367,7 @@ const filteredCustomers = (customers || []).filter(c =>
                                                         </span>
                                                     ) : 'AVULSO'}
                                                 </span>
-{(customer as any).recurrenceDiscount && (customer as any).recurrenceDiscount > 0 && (
+                                                {(customer as any).recurrenceDiscount && (customer as any).recurrenceDiscount > 0 && (
                                                     <span className="text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                                                         {(customer as any).recurrenceDiscount}% OFF
                                                     </span>
@@ -368,7 +377,7 @@ const filteredCustomers = (customers || []).filter(c =>
                                         <td className="px-8 py-6 text-center">
                                             <div className="flex flex-col gap-1 items-center">
                                                 <div className="flex items-center gap-3">
-<span className="text-xs font-bold text-gray-500">
+                                                    <span className="text-xs font-bold text-gray-500">
                                                         <Calendar size={12} className="inline mr-1" />
                                                         {(customer as any)._count?.appointments || 0}
                                                     </span>
@@ -412,8 +421,8 @@ const filteredCustomers = (customers || []).filter(c =>
                                             </div>
                                             <div>
                                                 <h3 className="font-[var(--font-weight-black)] text-[var(--color-text-primary)] text-base tracking-tight leading-tight group-hover:text-[var(--color-accent-primary)] transition-colors">{customer.name}</h3>
-<p className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest mt-0.5">
-                                                     CL-{String(((customer as any).user?.staffId ?? (customer as any).user?.seqId) || 1000).padStart(4, '0')}
+                                                <p className="text-[10px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-widest mt-0.5">
+                                                    CL-{String(((customer as any).user?.staffId ?? (customer as any).user?.seqId) || 1000).padStart(4, '0')}
                                                 </p>
                                             </div>
                                         </div>
@@ -444,7 +453,7 @@ const filteredCustomers = (customers || []).filter(c =>
                                                 <span>{customer.phone}</span>
                                             </div>
                                         )}
-{(customer as any).address && (
+                                        {(customer as any).address && (
                                             <div className="flex items-start gap-2.5 text-[var(--font-size-xs)] text-[var(--color-text-tertiary)] font-[var(--font-weight-medium)]">
                                                 <MapPin size={14} className="text-[var(--color-text-tertiary)] opacity-60 mt-0.5 shrink-0" />
                                                 <span className="line-clamp-1">{(customer as any).address}</span>
@@ -457,7 +466,7 @@ const filteredCustomers = (customers || []).filter(c =>
                                             {customer.type === 'RECORRENTE' ? 'VIP' : 'AVULSO'}
                                         </Badge>
                                         <div className="flex items-center gap-4">
-<div className="flex flex-col items-end">
+                                            <div className="flex flex-col items-end">
                                                 <span className="text-[var(--font-size-xs)] font-[var(--font-weight-bold)] text-[var(--color-text-primary)]">{(customer as any)._count?.appointments || 0}</span>
                                                 <span className="text-[9px] font-[var(--font-weight-black)] text-[var(--color-text-tertiary)] uppercase tracking-tighter">AGENTES</span>
                                             </div>
@@ -547,7 +556,7 @@ const filteredCustomers = (customers || []).filter(c =>
                         isOpen={!!selectedCustomerId}
                         onClose={() => setSelectedCustomerId(null)}
                         customerId={selectedCustomerId}
-onUpdate={() => {
+                        onUpdate={() => {
                             setSelectedCustomerId(null);
                             queryClient.invalidateQueries({ queryKey: queryKeys.customers.list(tab) });
                         }}

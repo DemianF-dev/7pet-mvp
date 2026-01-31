@@ -60,7 +60,7 @@ export default function MobileTopBar({ onSearchClick, onMoreClick }: MobileTopBa
 
     return (
         <header
-            className="shrink-0 flex items-center justify-between px-4 h-16 landscape-compact bg-[var(--color-bg-surface)]/80 backdrop-blur-xl border-b border-[var(--color-border-subtle)] z-50 sticky top-0"
+            className="shrink-0 flex items-center justify-between px-4 h-16 landscape-compact bg-[var(--color-bg-surface)]/80 backdrop-blur-xl border-b border-[var(--color-border-subtle)] z-50 sticky top-0 md:hidden"
             style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
             <div className="flex items-center gap-2">

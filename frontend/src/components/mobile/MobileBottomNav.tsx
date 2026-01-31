@@ -34,7 +34,7 @@ export default function MobileBottomNav({ badges = {}, onMoreClick }: MobileBott
     return (
         <nav
             id="mobile-bottom-nav"
-            className="fixed bottom-0 left-0 right-0 z-[var(--z-bottom-nav)] bg-[var(--color-bg-surface)]/80 backdrop-blur-xl border-t border-[var(--color-border-subtle)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] landscape-compact"
+            className="fixed bottom-0 left-0 right-0 z-[var(--z-bottom-nav)] bg-[var(--color-bg-surface)]/80 backdrop-blur-xl border-t border-[var(--color-border-subtle)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] landscape-compact md:hidden"
             style={{
                 paddingBottom: 'var(--safe-area-bottom)',
                 height: 'calc(var(--nav-bottom-height) + var(--safe-area-bottom))'

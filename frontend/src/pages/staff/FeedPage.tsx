@@ -36,7 +36,16 @@ interface FeedWidgets {
     popularPosts: Post[];
 }
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileFeed } from './marketing/MobileFeed';
+
 export default function FeedPage() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileFeed />;
+    }
+
     const queryClient = useQueryClient();
     const [newPostContent, setNewPostContent] = useState('');
     const [activeTab, setActiveTab] = useState('mensagem');

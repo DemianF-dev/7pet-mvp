@@ -29,7 +29,16 @@ interface Transport {
     occurrences?: Occurrence[];
 }
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileTransport } from './transport/MobileTransport';
+
 export default function TransportManager() {
+    const { isMobile } = useIsMobile();
+
+    if (isMobile) {
+        return <MobileTransport />;
+    }
+
     const navigate = useNavigate();
     const [transports, setTransports] = useState<Transport[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -470,8 +479,8 @@ export default function TransportManager() {
                                         <div key={occ.id} className="relative">
                                             <div
                                                 className={`absolute -left-[41px] w-4 h-4 rounded-full border-4 border-[var(--color-bg-surface)] ${idx === 0
-                                                        ? 'bg-[var(--color-accent-primary)] ring-4 ring-[var(--color-accent-primary-alpha)]'
-                                                        : 'bg-[var(--color-fill-tertiary)]'
+                                                    ? 'bg-[var(--color-accent-primary)] ring-4 ring-[var(--color-accent-primary-alpha)]'
+                                                    : 'bg-[var(--color-fill-tertiary)]'
                                                     }`}
                                             />
                                             <div className="flex flex-col gap-1">

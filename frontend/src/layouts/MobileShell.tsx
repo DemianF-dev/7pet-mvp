@@ -7,10 +7,11 @@ interface MobileShellProps {
     children: ReactNode;
     title?: string;
     showBack?: boolean;
+    onBack?: () => void;
     rightAction?: ReactNode;
 }
 
-export const MobileShell = ({ children, title, showBack, rightAction }: MobileShellProps) => {
+export const MobileShell = ({ children, title, showBack, onBack, rightAction }: MobileShellProps) => {
     const location = useLocation();
 
     // Auto-detect title based on route if not provided
@@ -30,6 +31,7 @@ export const MobileShell = ({ children, title, showBack, rightAction }: MobileSh
             <MobileHeader
                 title={getAutoTitle()}
                 showBack={showBack}
+                onBack={onBack}
                 rightAction={rightAction}
             />
 

@@ -1,4 +1,3 @@
-import { Outlet } from 'react-router-dom';
 import { useIsMobile } from '../hooks/useIsMobile';
 import DesktopShell from './DesktopShell';
 import MobileAppLayout from './MobileAppLayout';
@@ -9,7 +8,7 @@ import { AIChatWidget } from '../components/AIChatWidget';
  * based on viewport width. Renders child routes via <Outlet />.
  */
 export default function AppShell() {
-    const isMobile = useIsMobile();
+    const { isMobile } = useIsMobile();
 
     return (
         <>
