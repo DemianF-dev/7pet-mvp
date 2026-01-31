@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260131-1413",
+  "version": "BETA20260131-1417",
   "stage": "BETA",
-  "timestamp": "2026-01-31T14:13:45.000Z",
-  "commit": "a879352",
-  "buildNumber": 157,
-  "releaseNotes": "Auto-generated from commit: feat(qa): add quality guardian and perfect deploy skills + fix pwa caching and tests"
+  "timestamp": "2026-01-31T14:17:42.000Z",
+  "commit": "3472472",
+  "buildNumber": 158,
+  "releaseNotes": "Auto-generated from commit: fix(deploy): update health check URLs to point to Vercel backend"
 }
