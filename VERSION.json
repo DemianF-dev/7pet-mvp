@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260130-1437",
+  "version": "BETA20260131-1413",
   "stage": "BETA",
-  "timestamp": "2026-01-30T14:37:16.000Z",
-  "commit": "03c3955",
-  "buildNumber": 156,
-  "releaseNotes": "Auto-generated from commit: fix: restore AI widget visibility and final user management update bug\n\n- Fixed UserManager.tsx to correctly pass selectedUser to onSave, resolving the 'Email/Password required' error when editing profiles.\n- Updated AIChatWidget.tsx to ensure master user (oidemianf@gmail.com) always has access, even if profile division is mismatched.\n- Added 'DIRETORIA' to allowed AI widget roles for better consistency.\n- This completes the 'redonda' (round/perfect) state of user management requested by the user."
+  "timestamp": "2026-01-31T14:13:45.000Z",
+  "commit": "a879352",
+  "buildNumber": 157,
+  "releaseNotes": "Auto-generated from commit: feat(qa): add quality guardian and perfect deploy skills + fix pwa caching and tests"
 }
