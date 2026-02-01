@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260131-1939",
+  "version": "BETA20260201-0144",
   "stage": "BETA",
-  "timestamp": "2026-01-31T19:39:30.000Z",
-  "commit": "9941cf3",
-  "buildNumber": 166,
-  "releaseNotes": "Auto-generated from commit: fix: adjust server version timestamp to use Brazil timezone"
+  "timestamp": "2026-02-01T01:44:05.000Z",
+  "commit": "5f49703",
+  "buildNumber": 167,
+  "releaseNotes": "Auto-generated from commit: feat: add additional pet surcharge to transport settings and fix staff layouts"
 }
