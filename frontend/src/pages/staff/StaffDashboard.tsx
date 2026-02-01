@@ -443,7 +443,7 @@ export default function StaffDashboard() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => navigate('/staff/agenda')}
+                                        onClick={() => navigate('/staff/agenda-spa')}
                                         className="text-[10px] uppercase font-[var(--font-weight-black)] tracking-widest"
                                     >
                                         Ver Tudo

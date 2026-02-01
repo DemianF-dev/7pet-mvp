@@ -6,7 +6,7 @@ import { safeBack } from '../../utils/safeBack';
  * Route configuration for mobile top bar titles and actions
  */
 const routeConfig: Record<string, { title: string; showBack?: boolean; showSearch?: boolean; fallback?: string }> = {
-    '/staff/dashboard': { title: 'Home' },
+    '/staff/dashboard': { title: 'Hoje' },
     '/staff/agenda-spa': { title: 'Agenda SPA', showSearch: true },
     '/staff/agenda-log': { title: 'Transporte', showSearch: true },
     '/staff/transport': { title: 'Transporte', showSearch: true },

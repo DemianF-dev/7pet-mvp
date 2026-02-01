@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import {
     Search, Plus, User, Phone,
-    MoreVertical, MessageCircle
+    MoreVertical, MessageCircle, Filter, Download, Calendar, TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MobileShell } from '../../../layouts/MobileShell';
 import { useCustomersList } from '../../../query/hooks/useCustomers';
 import CustomerDetailsModal from '../../../components/staff/CustomerDetailsModal';
+import { MobileFilters } from '../../../components/mobile/MobileFilters';
+import { DataImportExport } from '../../../components/mobile/DataImportExport';
 
 export const MobileCustomers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [tab, setTab] = useState<'active' | 'trash'>('active');
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [showDataImportExport, setShowDataImportExport] = useState(false);
 
     const { data: customersData, isLoading } = useCustomersList(
         tab,
@@ -58,8 +62,22 @@ export const MobileCustomers = () => {
                         placeholder="Nome ou telefone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl pl-10 pr-16 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500/20"
                     />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                        <button
+                            onClick={() => setShowFilters(true)}
+                            className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                            <Filter size={14} />
+                        </button>
+                        <button
+                            onClick={() => setShowDataImportExport(true)}
+                            className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                        >
+                            <Download size={14} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* 2. Tabs */}
@@ -169,6 +187,37 @@ export const MobileCustomers = () => {
                     />
                 )}
             </AnimatePresence>
+
+            {/* Filters Modal */}
+            <MobileFilters
+                isOpen={showFilters}
+                onClose={() => setShowFilters(false)}
+                onApply={(filters) => {
+                    setSearchTerm(filters.searchTerm);
+                }}
+                onReset={() => {
+                    setSearchTerm('');
+                }}
+                filters={{
+                    dateRange: { start: '', end: '' },
+                    valueRange: { min: 0, max: 0 },
+                    status: '',
+                    searchTerm: searchTerm
+                }}
+                title="Filtrar Clientes"
+                statuses={['ATIVO', 'INATIVO', 'VIP']}
+            />
+
+            {/* Data Import/Export Modal */}
+            <DataImportExport
+                isOpen={showDataImportExport}
+                onClose={() => setShowDataImportExport(false)}
+                exportType="customers"
+                data={filteredCustomers}
+                onImport={(file) => {
+                    console.log('Importing customers file:', file);
+                }}
+            />
         </MobileShell>
     );
 };

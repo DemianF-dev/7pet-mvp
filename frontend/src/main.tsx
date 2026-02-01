@@ -47,7 +47,7 @@ createRoot(document.getElementById('root')!).render(
         <ErrorBoundary>
             <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
                 <QueryClientProvider client={queryClient}>
-                    <BrowserRouter>
+                    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                         <App />
                     </BrowserRouter>
                 </QueryClientProvider>

@@ -10,10 +10,10 @@ export const TabBar = () => {
     // Staff Routes
     const tabs = isStaff ? [
         { path: '/staff/dashboard', icon: Home, label: 'Hoje' },
-        { path: '/staff/agenda', icon: Calendar, label: 'Agenda' },
+        { path: '/staff/agenda-spa', icon: Calendar, label: 'Agenda' },
         { path: '/staff/chat', icon: MessageSquare, label: 'Chat' },
         { path: '/staff/customers', icon: Users, label: 'Clientes' },
-        { path: '/staff/hub', icon: Grid, label: 'Menu' },
+        { path: '/staff/menu', icon: Grid, label: 'Menu' },
     ] : [
         // Client Routes (Placeholder)
         { path: '/client/dashboard', icon: Home, label: 'Início' },

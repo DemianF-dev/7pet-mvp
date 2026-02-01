@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
-import { X, Plus, Trash2, Truck, MapPin, RefreshCcw, Scissors, Droplets, Bug, AlertTriangle, Calendar, Minus, CheckCircle, Info, Eye, Edit } from 'lucide-react';
+import { X, Plus, Trash2, Truck, MapPin, RefreshCcw, Scissors, Droplets, Bug, AlertTriangle, Calendar, Minus, CheckCircle, Info, Eye, Edit, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ManualQuoteModalProps {
@@ -214,33 +214,55 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
         const discount = Number(info.discountPercent) || 0;
         let base = 0;
 
-        // Pernada 1: Largada (apenas KM, sem MIN)
-        if (info.legs.largada.active) {
-            base += (Number(info.legs.largada.km) * settings.kmPriceLargada);
-        }
-        // Pernada 2: Leva (KM + MIN)
-        if (info.legs.leva.active) {
-            base += (Number(info.legs.leva.km) * settings.kmPriceLeva) + (Number(info.legs.leva.min) * settings.minPriceLeva);
-        }
-        // Pernada 3: Traz (KM + MIN)
-        if (info.legs.traz.active) {
-            base += (Number(info.legs.traz.km) * settings.kmPriceTraz) + (Number(info.legs.traz.min) * settings.minPriceTraz);
-        }
-        // Pernada 4: Retorno (apenas KM, sem MIN)
-        if (info.legs.retorno.active) {
-            base += (Number(info.legs.retorno.km) * settings.kmPriceRetorno);
+        // Calcular base de acordo com tipo de transporte
+        if (transportType === 'ROUND_TRIP') {
+            // Pernada 1: Largada (apenas KM, sem MIN)
+            if (info.legs.largada.active) {
+                base += (Number(info.legs.largada.km) * settings.kmPriceLargada);
+            }
+            // Pernada 2: Leva (KM + MIN)
+            if (info.legs.leva.active) {
+                base += (Number(info.legs.leva.km) * settings.kmPriceLeva) + (Number(info.legs.leva.min) * settings.minPriceLeva);
+            }
+            // Pernada 3: Traz (KM + MIN)
+            if (info.legs.traz.active) {
+                base += (Number(info.legs.traz.km) * settings.kmPriceTraz) + (Number(info.legs.traz.min) * settings.minPriceTraz);
+            }
+            // Pernada 4: Retorno (apenas KM, sem MIN)
+            if (info.legs.retorno.active) {
+                base += (Number(info.legs.retorno.km) * settings.kmPriceRetorno);
+            }
+        } else if (transportType === 'PICK_UP') {
+            // Só Leva - apenas pernada 2
+            if (info.legs.leva.active) {
+                base += (Number(info.legs.leva.km) * settings.kmPriceLeva) + (Number(info.legs.leva.min) * settings.minPriceLeva);
+            }
+        } else if (transportType === 'DROP_OFF') {
+            // Só Traz - apenas pernada 3
+            if (info.legs.traz.active) {
+                base += (Number(info.legs.traz.km) * settings.kmPriceTraz) + (Number(info.legs.traz.min) * settings.minPriceTraz);
+            }
         }
 
-        // Surcharge pets
+        // Salvar base antes do acréscimo para exibir separadamente
+        const baseBeforeSurcharge = base;
+
+        // Surcharge pets (porcentagem configurável)
         const extraPets = Math.max(0, quote.petQuantity - 1);
-        base = base * (1 + (extraPets * 0.2));
+        const surchargePercentage = (settings?.additionalPetSurchargePercent || 20) / 100; // Configurable
+        const surchargeAmount = base * (extraPets * surchargePercentage);
+        base = base + surchargeAmount;
 
         // Desconto
         const final = base * (1 - (discount / 100));
 
         setTransportInfo({
             ...info,
-            estimatedPrice: Number(final.toFixed(2))
+            estimatedPrice: Number(final.toFixed(2)),
+            basePrice: baseBeforeSurcharge,
+            surchargeAmount: surchargeAmount,
+            surchargePercentage: surchargePercentage * 100,
+            extraPets: extraPets
         });
     };
 
@@ -283,61 +305,86 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
     };
 
     const getFilteredServices = () => {
+        console.log('[Filter] Total services loaded:', services.length);
+        
         // Se não tiver espécie definida, mostra tudo (fallback)
-        if (!pet.species) return services;
+        if (!pet.species) {
+            console.log('[Filter] No pet species defined, showing all services (fallback)');
+            return services;
+        }
 
         const pNorm = normalizeSpecies(pet.species);
         const pWeight = parseFloat(pet.weight) || 0;
         const pCoat = (pet.coatType || '').toUpperCase();
 
-        console.log('[Filter] Pet profile:', { species: pNorm, weight: pWeight, coat: pCoat });
+        console.log('[Filter] Pet profile:', { 
+            species: pet.species, 
+            normalized: pNorm, 
+            weight: pWeight, 
+            coat: pCoat,
+            allServices: services.length 
+        });
 
-        return services.filter(service => {
-            const serviceName = (service.name || '').toUpperCase();
+        const filteredServices = services.filter((service, index) => {
+            // Log primeiros 5 serviços para debug
+            if (index < 5) {
+                console.log(`[Filter] Service ${index}:`, {
+                    name: service.name,
+                    species: service.species,
+                    coatType: service.coatType,
+                    sizeLabel: service.sizeLabel,
+                    minWeight: service.minWeight,
+                    maxWeight: service.maxWeight
+                });
+            }
 
             // 1. Filtrar por espécie
             if (service.species) {
                 const sNorm = normalizeSpecies(service.species);
-                if (sNorm !== pNorm) return false;
-            }
-
-            // 2. Filtrar por porte/peso - Se o serviço tem faixa de peso, o pet DEVE estar nessa faixa
-            const sMinW = service.minWeight;
-            const sMaxW = service.maxWeight;
-
-            if (pWeight > 0) {
-                // Serviço tem peso mínimo e pet está abaixo
-                if (sMinW !== null && sMinW !== undefined && pWeight < sMinW) return false;
-                // Serviço tem peso máximo e pet está acima
-                if (sMaxW !== null && sMaxW !== undefined && pWeight > sMaxW) return false;
-            }
-
-            // 3. Filtrar por tipo de pelo
-            // Verificar se o serviço menciona um tipo de pelo específico no nome
-            if (pCoat) {
-                // Detectar se o nome do serviço é específico para um tipo de pelo
-                const serviceHasCurto = serviceName.includes('CURTO');
-                const serviceHasLongo = serviceName.includes('LONGO');
-                const serviceHasMedio = serviceName.includes('MEDIO') || serviceName.includes('MÉDIO');
-                const serviceHasCoatType = serviceHasCurto || serviceHasLongo || serviceHasMedio;
-
-                // Se o serviço especifica tipo de pelo, verificar se corresponde ao pet
-                if (serviceHasCoatType) {
-                    const petIsCurto = pCoat.includes('CURTO');
-                    const petIsLongo = pCoat.includes('LONGO');
-                    const petIsMedio = pCoat.includes('MEDIO') || pCoat.includes('MÉDIO');
-
-                    // Pet curto só vê serviços curto
-                    if (petIsCurto && !serviceHasCurto) return false;
-                    // Pet longo só vê serviços longo  
-                    if (petIsLongo && !serviceHasLongo) return false;
-                    // Pet médio só vê serviços médio
-                    if (petIsMedio && !serviceHasMedio) return false;
+                if (sNorm !== pNorm) {
+                    if (index < 5) console.log(`[Filter] ❌ Species mismatch: ${sNorm} != ${pNorm}`);
+                    return false;
                 }
             }
 
+            // 2. Filtrar por porte/peso - Usar sizeLabel primeiro, depois weight range
+            const serviceSizeLabel = (service.sizeLabel || '').toUpperCase();
+            
+            // Mapear peso para sizeLabel esperado
+            let expectedSizeLabel = '';
+            if (pWeight > 0) {
+                if (pWeight <= 5) expectedSizeLabel = 'MINI';
+                else if (pWeight <= 10) expectedSizeLabel = 'PEQUENO';
+                else if (pWeight <= 20) expectedSizeLabel = 'MÉDIO';
+                else if (pWeight <= 35) expectedSizeLabel = 'GRANDE';
+                else expectedSizeLabel = 'GIGANTE';
+                
+                // Se serviço tem sizeLabel definido, verificar se corresponde
+                if (serviceSizeLabel && expectedSizeLabel && serviceSizeLabel !== expectedSizeLabel) {
+                    if (index < 5) console.log(`[Filter] ❌ Size mismatch: ${serviceSizeLabel} != ${expectedSizeLabel} for weight ${pWeight}kg`);
+                    return false;
+                }
+            }
+
+            // 3. Filtrar por tipo de pelo - Usar coatType do serviço em vez do nome
+            if (pCoat && service.coatType) {
+                const serviceCoatType = (service.coatType || '').toUpperCase();
+                const petCoatType = pCoat.includes('CURTO') ? 'CURTO' : 
+                                   pCoat.includes('LONGO') ? 'LONGO' : 
+                                   pCoat.includes('MEDIO') || pCoat.includes('MÉDIO') ? 'MÉDIO' : '';
+
+                if (petCoatType && serviceCoatType && petCoatType !== serviceCoatType) {
+                    if (index < 5) console.log(`[Filter] ❌ Coat mismatch: pet ${petCoatType} != service ${serviceCoatType}`);
+                    return false;
+                }
+            }
+
+            if (index < 5) console.log(`[Filter] ✅ Service passed all filters: ${service.name}`);
             return true;
         });
+
+        console.log(`[Filter] Results: ${filteredServices.length}/${services.length} services passed filters`);
+        return filteredServices;
     };
 
     // Categoriza e organiza serviços de forma inteligente
@@ -484,6 +531,24 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
         const newItems = [...quote.items];
         newItems.splice(index, 1);
         setQuote({ ...quote, items: newItems });
+    };
+
+    const handleDuplicateItem = (index: number) => {
+        const itemToDuplicate = { ...quote.items[index] };
+        const newItems = [...quote.items];
+        
+        // Create a new item with same properties but new ID if exists
+        const duplicatedItem = {
+            ...itemToDuplicate,
+            id: undefined, // Let backend generate new ID
+            description: itemToDuplicate.description + ' (cópia)'
+        };
+        
+        // Insert right after the original item
+        newItems.splice(index + 1, 0, duplicatedItem);
+        setQuote({ ...quote, items: newItems });
+        
+        toast.success('Item duplicado com sucesso!');
     };
 
     const handleUpdateItem = (index: number, field: string, value: any) => {
@@ -1703,13 +1768,23 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                                         />
                                                     </div>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveItem(idx)}
-                                                    className="p-3 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDuplicateItem(idx)}
+                                                        className="p-3 text-blue-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                                                        title="Duplicar item"
+                                                    >
+                                                        <Copy size={16} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveItem(idx)}
+                                                        className="p-3 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
 
@@ -2056,7 +2131,14 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                                                 </p>
                                                                 <p className="text-[9px] text-gray-500">Qtd: {item.quantity} × R$ {item.price.toFixed(2)}</p>
                                                             </div>
-                                                            <div className="text-right">
+                                                            <div className="text-right flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleDuplicateItem(quote.items.findIndex(qi => qi.description === item.description && qi.price === item.price && !qi.isTransport))}
+                                                                    className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                                                                    title="Duplicar item"
+                                                                >
+                                                                    <Copy size={12} />
+                                                                </button>
                                                                 <p className="font-black text-sm text-secondary dark:text-white">R$ {(item.price * item.quantity).toFixed(2)}</p>
                                                             </div>
                                                         </div>
@@ -2128,14 +2210,46 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                                     Serviço Leva & Traz
                                                 </h3>
 
-                                                {/* Linha única com valor final */}
-                                                <div className="flex items-center justify-between p-3 bg-white/60 dark:bg-gray-800/40 rounded-lg">
-                                                    <div className="flex-1">
-                                                        <p className="font-bold text-sm text-orange-800 dark:text-orange-200">Leva e Traz</p>
-                                                        <p className="text-[9px] text-gray-500">Valor com desconto aplicado</p>
+                                                {/* Detalhamento do transporte */}
+                                                <div className="space-y-2">
+                                                    {/* Valor base */}
+                                                    <div className="flex items-center justify-between p-3 bg-white/60 dark:bg-gray-800/40 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-sm text-orange-800 dark:text-orange-200">
+                                                                {transportType === 'ROUND_TRIP' ? 'Leva e Traz' : 
+                                                                 transportType === 'PICK_UP' ? 'Só Leva (Coleta)' : 'Só Traz (Entrega)'}
+                                                            </p>
+                                                            <p className="text-[9px] text-gray-500">Valor base do transporte</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="font-black text-sm text-orange-800 dark:text-orange-200">R$ {(transportInfo?.basePrice || 0).toFixed(2)}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="font-black text-lg text-orange-800 dark:text-orange-200">R$ {transportTotal.toFixed(2)}</p>
+
+                                                    {/* Acréscimo por pets adicionais */}
+                                                    {transportInfo?.extraPets > 0 && (
+                                                        <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-sm text-yellow-800 dark:text-yellow-200">
+                                                                    Acréscimo ({transportInfo.extraPets} pet{transportInfo.extraPets > 1 ? 's' : ''} adicional{transportInfo.extraPets > 1 ? 'is' : ''})
+                                                                </p>
+                                                                <p className="text-[9px] text-gray-500">{transportInfo.surchargePercentage}% por pet adicional</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-black text-sm text-yellow-800 dark:text-yellow-200">+R$ {(transportInfo.surchargeAmount || 0).toFixed(2)}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Valor final */}
+                                                    <div className="flex items-center justify-between p-3 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-sm text-orange-800 dark:text-orange-200">Total do Transporte</p>
+                                                            <p className="text-[9px] text-gray-500">Valor com desconto aplicado</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="font-black text-lg text-orange-800 dark:text-orange-200">R$ {transportTotal.toFixed(2)}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

@@ -150,6 +150,19 @@ export function useRestoreQuote() {
     });
 }
 
+export function useBulkRestoreQuotes() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (ids: string[]) => api.post('/quotes/bulk-restore', { ids }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['quotes'] });
+            queryClient.invalidateQueries({ queryKey: ['staff-metrics'] });
+            toast.success('Orçamentos restaurados com sucesso');
+        }
+    });
+}
+
 export function usePermanentDeleteQuote() {
     const queryClient = useQueryClient();
 

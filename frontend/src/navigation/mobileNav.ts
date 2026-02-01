@@ -9,7 +9,6 @@ import {
     Gamepad2,
     Truck,
     TrendingUp,
-    Shield,
     UserCircle,
     Activity,
     Briefcase
@@ -34,10 +33,10 @@ export interface MobileNavItem {
 export const MOBILE_TABS: MobileNavItem[] = [
     {
         key: 'dashboard',
-        label: 'Home',
+        label: 'Hoje',
         path: '/staff/dashboard',
         icon: Home,
-        rolesAllowed: ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER']
+        rolesAllowed: ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA']
     },
     {
         key: 'agenda',
@@ -52,7 +51,7 @@ export const MOBILE_TABS: MobileNavItem[] = [
         label: 'Clientes',
         path: '/staff/customers',
         icon: Users,
-        rolesAllowed: ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER']
+        rolesAllowed: ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'COMERCIAL']
     },
     {
         key: 'quotes',
@@ -63,10 +62,10 @@ export const MOBILE_TABS: MobileNavItem[] = [
     },
     {
         key: 'activity',
-        label: 'Atividade',
+        label: 'Mural',
         path: '/staff/feed',
         icon: Activity,
-        rolesAllowed: ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER']
+        rolesAllowed: ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA']
     },
     {
         key: 'more',
@@ -78,6 +77,12 @@ export const MOBILE_TABS: MobileNavItem[] = [
 
 // Items for the "More" Drawer
 export const MOBILE_MORE: MobileNavItem[] = [
+    {
+        key: 'menu-hub',
+        label: 'Menu Geral',
+        path: '/staff/menu',
+        icon: MoreHorizontal
+    },
     {
         key: 'profile',
         label: 'Meu Perfil',
@@ -121,13 +126,6 @@ export const MOBILE_MORE: MobileNavItem[] = [
         label: 'Configurações',
         path: '/staff/settings',
         icon: Settings
-    },
-    {
-        key: 'audit',
-        label: 'Audit Console',
-        path: '/staff/audit',
-        icon: Shield,
-        rolesAllowed: ['MASTER']
     }
 ];
 

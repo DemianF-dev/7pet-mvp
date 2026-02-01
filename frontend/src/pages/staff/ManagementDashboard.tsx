@@ -177,11 +177,11 @@ export default function ManagementDashboard() {
 
                         <Button
                             variant="primary"
-                            onClick={() => navigate('/staff/marketing')}
+                            onClick={() => navigate('/staff/dashboard')}
                             icon={Bell}
                             className="hidden md:flex"
                         >
-                            Marketing
+                            Painel
                         </Button>
                     </div>
                 </div>

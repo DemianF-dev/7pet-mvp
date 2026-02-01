@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { TabBar } from '../components/mobile/TabBar';
 import { MobileHeader } from '../components/mobile/MobileHeader';
 import { useLocation } from 'react-router-dom';
 
@@ -11,8 +10,11 @@ interface MobileShellProps {
     rightAction?: ReactNode;
 }
 
+import { useInMobileShell } from '../context/MobileShellContext';
+
 export const MobileShell = ({ children, title, showBack, onBack, rightAction }: MobileShellProps) => {
     const location = useLocation();
+    const inGlobalShell = useInMobileShell();
 
     // Auto-detect title based on route if not provided
     const getAutoTitle = () => {
@@ -27,19 +29,22 @@ export const MobileShell = ({ children, title, showBack, onBack, rightAction }: 
     };
 
     return (
-        <div className="min-h-screen bg-[var(--mobile-bg-base)] text-gray-900 dark:text-white pb-[var(--tabbar-height)]">
-            <MobileHeader
-                title={getAutoTitle()}
-                showBack={showBack}
-                onBack={onBack}
-                rightAction={rightAction}
-            />
+        <div className={`min-h-screen bg-[var(--mobile-bg-base)] text-gray-900 dark:text-white ${!inGlobalShell ? 'pb-[var(--tabbar-height)]' : ''}`}>
+            {!inGlobalShell && (
+                <MobileHeader
+                    title={getAutoTitle()}
+                    showBack={showBack}
+                    onBack={onBack}
+                    rightAction={rightAction}
+                />
+            )}
 
-            <main className="pt-[var(--header-height)] px-4 mobile-safe-top">
+            <main className={`${!inGlobalShell ? 'pt-[var(--header-height)] px-4 mobile-safe-top' : ''}`}>
                 {children}
             </main>
 
-            <TabBar />
+            {/* TabBar removed to avoid duplication with MobileBottomNav */}
+            {/* <TabBar /> */}
         </div>
     );
 };

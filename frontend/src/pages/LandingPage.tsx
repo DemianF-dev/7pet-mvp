@@ -1,13 +1,24 @@
 import { useNavigate } from 'react-router-dom';
 import { User, ShieldCheck, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppImage from '../components/ui/AppImage';
-
+import { useAuthStore } from '../store/authStore';
 
 export default function LandingPage() {
     const navigate = useNavigate();
     const [showWASelector, setShowWASelector] = useState(false);
+    const { user } = useAuthStore();
+
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'CLIENTE') {
+                navigate('/client/dashboard');
+            } else {
+                navigate('/staff/dashboard');
+            }
+        }
+    }, [user, navigate]);
 
     const handleWhatsAppRedirect = (_type: 'personal' | 'business') => {
         const phone = '5511983966451';

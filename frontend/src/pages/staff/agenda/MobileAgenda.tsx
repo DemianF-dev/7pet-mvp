@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, PlusCircle, Calendar, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle, Calendar, Filter, CalendarDays, Grid3X3 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MobileShell } from '../../../layouts/MobileShell';
 import api from '../../../services/api';
@@ -55,9 +55,31 @@ export const MobileAgenda = () => {
         <MobileShell
             title="Agenda"
             rightAction={
-                <button className="p-2 text-blue-600">
-                    <Filter size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <div className="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl">
+                        <button
+                            className="p-2 rounded-lg bg-white dark:bg-zinc-700 text-blue-600 shadow-sm"
+                            title="Dia"
+                        >
+                            <CalendarDays size={16} />
+                        </button>
+                        <button
+                            className="p-2 rounded-lg text-gray-500"
+                            title="Semana"
+                        >
+                            <Grid3X3 size={16} />
+                        </button>
+                        <button
+                            className="p-2 rounded-lg text-gray-500"
+                            title="Mês"
+                        >
+                            <Calendar size={16} />
+                        </button>
+                    </div>
+                    <button className="p-2 text-blue-600">
+                        <Filter size={20} />
+                    </button>
+                </div>
             }
         >
             <div className="pb-24 space-y-4">

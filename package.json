@@ -10,7 +10,9 @@
     "build:backend": "cd backend && npm run vercel-build",
     "build": "npm run build:frontend && npm run build:backend",
     "backup:db": "cd api && npx tsx scripts/backup-database.ts",
-    "restore:db": "cd api && npx tsx scripts/restore-database.ts"
+    "restore:db": "cd api && npx tsx scripts/restore-database.ts",
+    "opencode": "opencode",
+    "opoencode": "opencode"
   },
   "workspaces": [
     "frontend",

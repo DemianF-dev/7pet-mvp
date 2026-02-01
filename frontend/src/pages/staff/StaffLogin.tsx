@@ -32,7 +32,7 @@ export default function StaffLogin() {
                 const response = await api.post('/system-auth/google', { idToken: tokenResponse.access_token });
                 const { user, token } = response.data;
                 const userRole = (user.role || '').toUpperCase().trim();
-                const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL'];
+                const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA'];
 
                 if (!staffRoles.includes(userRole)) {
                     throw new Error(`Área exclusiva para parceiros. Sua conta: ${userRole}`);
@@ -58,7 +58,7 @@ export default function StaffLogin() {
             const response = await api.post('/system-auth/login', { email, password, rememberMe });
             const { user, token } = response.data;
             const userRole = (user.role || '').toUpperCase().trim();
-            const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL'];
+            const staffRoles = ['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA'];
 
             if (!staffRoles.includes(userRole)) {
                 throw new Error('Acesso restrito a colaboradores.');

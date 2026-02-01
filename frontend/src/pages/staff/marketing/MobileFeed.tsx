@@ -4,9 +4,9 @@ import api from '../../../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
-    Send, MessageCircle, Heart, User,
+    Send, MessageCircle, Heart,
     Calendar, TrendingUp, Search, Plus,
-    X, Paperclip, Smile
+    Paperclip, Smile, CheckSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../../store/authStore';
@@ -34,6 +34,12 @@ interface Reaction {
     authorId: string;
 }
 
+interface FeedWidgets {
+    nextAppointments: any[];
+    myTasks: { status: string; count: number }[];
+    popularPosts: Post[];
+}
+
 export const MobileFeed = () => {
     const queryClient = useQueryClient();
     const { user } = useAuthStore();
@@ -47,6 +53,15 @@ export const MobileFeed = () => {
         queryFn: async () => {
             const res = await api.get('/feed');
             return res.data as Post[];
+        }
+    });
+
+    // Fetch Widgets
+    const { data: widgets, isLoading: widgetsLoading } = useQuery({
+        queryKey: ['feed-widgets'],
+        queryFn: async () => {
+            const res = await api.get('/staff/widgets');
+            return res.data as FeedWidgets;
         }
     });
 
@@ -95,7 +110,18 @@ export const MobileFeed = () => {
             }
         >
             <div className="space-y-6 pb-20">
-                {/* 1. Search */}
+                {/* 1. Welcome Card */}
+                <div className="bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl p-6 text-white shadow-lg relative overflow-hidden mobile-card">
+                    <div className="relative z-10">
+                        <h3 className="font-bold text-lg mb-1">Bem-vindo ao 7Pet</h3>
+                        <p className="opacity-90 text-sm">Organize suas tarefas e colabore com a equipe.</p>
+                    </div>
+                    <div className="absolute right-0 bottom-0 opacity-20 transform translate-x-4 translate-y-4">
+                        <MessageCircle size={80} />
+                    </div>
+                </div>
+
+                {/* 2. Search */}
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input
@@ -107,8 +133,94 @@ export const MobileFeed = () => {
                     />
                 </div>
 
-                {/* 2. Posts List */}
+                {/* 3. Mobile Widgets */}
                 <div className="space-y-4">
+                    {/* Next Appointments Widget */}
+                    <MobileWidgetCard title="Próximos Eventos" icon={<Calendar size={16} className="text-blue-500" />}>
+                        {widgetsLoading ? <div className="h-16 animate-pulse bg-gray-100 dark:bg-zinc-800 rounded-lg" /> : (
+                            <div className="space-y-2">
+                                {((widgets?.nextAppointments || []).length === 0) && <p className="text-xs text-gray-400 dark:text-zinc-400">Sem eventos próximos.</p>}
+                                {(widgets?.nextAppointments || []).slice(0, 3).map((apt: any) => (
+                                    <div key={apt.id} className="flex gap-2 items-start p-2 rounded-lg bg-gray-50 dark:bg-zinc-800/50">
+                                        <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg flex flex-col items-center justify-center shrink-0 border border-blue-100 dark:border-blue-800">
+                                            <span className="text-[8px] uppercase font-bold">{new Date(apt.startAt).toLocaleString('pt-BR', { month: 'short' })}</span>
+                                            <span className="text-sm font-bold leading-none">{new Date(apt.startAt).getDate()}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{apt.pet?.name} - {apt.service?.name || 'Serviço'}</div>
+                                            <div className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                                                {new Date(apt.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(widgets?.nextAppointments?.length || 0) > 3 && (
+                                    <button className="w-full text-center text-xs text-blue-500 font-medium hover:underline pt-1">
+                                        Ver todos ({widgets?.nextAppointments?.length})
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </MobileWidgetCard>
+
+                    {/* My Tasks Widget */}
+                    <MobileWidgetCard title="Minhas Tarefas" icon={<CheckSquare size={16} className="text-green-500" />}>
+                        {widgetsLoading ? <div className="h-16 animate-pulse bg-gray-100 dark:bg-zinc-800 rounded-lg" /> : (
+                            <div className="space-y-2">
+                                {widgets?.myTasks?.map((task: any) => (
+                                    <div key={task.status} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-700/50 last:border-0">
+                                        <span className="text-xs text-gray-600 dark:text-gray-300 capitalize">
+                                            {task.status.toLowerCase().replace('_', ' ')}
+                                        </span>
+                                        <span className="bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-white px-2 py-0.5 rounded-full text-xs font-bold">
+                                            {task.count}
+                                        </span>
+                                    </div>
+                                ))}
+                                {(!widgets?.myTasks || widgets.myTasks.length === 0) && 
+                                    <p className="text-xs text-gray-400 dark:text-zinc-400">Nenhuma tarefa ativa.</p>
+                                }
+                            </div>
+                        )}
+                    </MobileWidgetCard>
+
+                    {/* Popular Posts Widget */}
+                    <MobileWidgetCard title="Posts Populares" icon={<TrendingUp size={16} className="text-purple-500" />}>
+                        {widgetsLoading ? <div className="h-16 animate-pulse bg-gray-100 dark:bg-zinc-800 rounded-lg" /> : (
+                            <div className="space-y-3">
+                                {(widgets?.popularPosts || []).slice(0, 2).map((post: Post) => (
+                                    <div key={post.id} className="flex gap-2 items-start">
+                                        <div 
+                                            className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-black text-white"
+                                            style={{ backgroundColor: post.author.color || '#3b82f6' }}
+                                        >
+                                            {post.author.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-bold text-blue-600 mb-0.5 truncate">{post.author.name}</div>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{post.content}</p>
+                                            <div className="flex gap-3 mt-1 text-[9px] text-gray-400">
+                                                <span>{(post.reactions || []).length} curtidas</span>
+                                                <span>{(post.comments || []).length} comentários</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!widgets?.popularPosts || widgets.popularPosts.length === 0) && 
+                                    <p className="text-xs text-gray-400 dark:text-zinc-400">Nenhuma postagem popular.</p>
+                                }
+                            </div>
+                        )}
+                    </MobileWidgetCard>
+                </div>
+
+                {/* 4. Posts List */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <h2 className="text-sm font-black text-gray-800 dark:text-white">Feed</h2>
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700"></div>
+                    </div>
+                    
                     {isLoading ? (
                         <div className="flex justify-center py-20">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -160,6 +272,20 @@ export const MobileFeed = () => {
                 )}
             </AnimatePresence>
         </MobileShell>
+    );
+};
+
+const MobileWidgetCard = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => {
+    return (
+        <div className="mobile-card p-4">
+            <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2 font-bold text-sm text-gray-700 dark:text-gray-200">
+                    {icon}
+                    {title}
+                </div>
+            </div>
+            {children}
+        </div>
     );
 };
 

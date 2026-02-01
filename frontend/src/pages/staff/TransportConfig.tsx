@@ -22,7 +22,9 @@ export default function TransportConfig() {
         handlingTimeLargada: 0,
         handlingTimeLeva: 0,
         handlingTimeTraz: 0,
-        handlingTimeRetorno: 0
+        handlingTimeRetorno: 0,
+        // Acréscimo por pet adicional
+        additionalPetSurchargePercent: 20.0
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +52,8 @@ export default function TransportConfig() {
                 handlingTimeLargada: res.data.handlingTimeLargada ?? 0,
                 handlingTimeLeva: res.data.handlingTimeLeva ?? 0,
                 handlingTimeTraz: res.data.handlingTimeTraz ?? 0,
-                handlingTimeRetorno: res.data.handlingTimeRetorno ?? 0
+                handlingTimeRetorno: res.data.handlingTimeRetorno ?? 0,
+                additionalPetSurchargePercent: res.data.additionalPetSurchargePercent ?? 20.0
             });
         } catch (err) {
             console.error('Erro ao carregar configurações:', err);
@@ -318,6 +321,35 @@ export default function TransportConfig() {
                                 placeholder="0"
                             />
                             <p className="text-[9px] text-gray-400 text-center">minutos</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Acréscimo por Pet Adicional */}
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-8 rounded-[32px] border-2 border-yellow-100">
+                    <h3 className="text-lg font-black text-orange-900 mb-6 flex items-center gap-2">
+                        <div className="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-lg">🐕</div>
+                        Acréscimo por Pet Adicional
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Porcentagem de Acréscimo
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="100"
+                                    value={settings.additionalPetSurchargePercent}
+                                    onChange={(e) => handleChange('additionalPetSurchargePercent', e.target.value)}
+                                    className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-black text-2xl text-center text-secondary transition-all"
+                                    placeholder="20.0"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-2xl font-black">%</div>
+                            </div>
+                            <p className="text-[9px] text-gray-400 text-center mt-2">Valor aplicado por cada pet adicional no orçamento</p>
                         </div>
                     </div>
                 </div>

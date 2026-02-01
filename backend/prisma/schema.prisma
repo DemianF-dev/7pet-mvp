@@ -1109,6 +1109,7 @@ model TransportSettings {
   minRate              Float    @default(1.5)
   providerSharePercent Float    @default(60.0)
   taxPercent           Float    @default(5.0)
+  additionalPetSurchargePercent Float @default(20.0)
 }
 
 model User {

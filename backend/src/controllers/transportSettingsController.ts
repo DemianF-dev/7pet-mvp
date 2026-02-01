@@ -21,7 +21,8 @@ export const transportSettingsController = {
                     handlingTimeLargada: 0,
                     handlingTimeLeva: 0,
                     handlingTimeTraz: 0,
-                    handlingTimeRetorno: 0
+                    handlingTimeRetorno: 0,
+                    additionalPetSurchargePercent: 20.0
                 });
             }
 
@@ -67,6 +68,7 @@ export const transportSettingsController = {
                 handlingTimeLeva: safeInt(data.handlingTimeLeva, 0),
                 handlingTimeTraz: safeInt(data.handlingTimeTraz, 0),
                 handlingTimeRetorno: safeInt(data.handlingTimeRetorno, 0),
+                additionalPetSurchargePercent: safeFloat(data.additionalPetSurchargePercent, 20.0),
             };
 
             console.log('[TransportSettings] Processed update data:', updateData);

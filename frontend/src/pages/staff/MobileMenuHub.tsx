@@ -21,6 +21,9 @@ import {
     LogOut,
     Target,
     History,
+    Shield,
+    MessageCircle,
+    Activity,
     type LucideIcon,
 } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
@@ -46,6 +49,7 @@ interface MenuItem {
     path: string;
     badge?: number;
     color?: string;
+    permission?: string;
 }
 
 /**
@@ -67,6 +71,34 @@ export default function MobileMenuHub() {
         return role ? `${division} • ${role}` : division;
     }, [user]);
 
+    const checkPermission = (module: string) => {
+        if (!user) return false;
+        if ((user.role as any) === 'MASTER' || user.division === 'MASTER' || user.email === 'oidemianf@gmail.com') return true;
+
+        // Match Sidebar logic
+        let perms: string[] | null = null;
+        if (user.permissions) {
+            if (Array.isArray(user.permissions)) perms = user.permissions;
+            else if (typeof user.permissions === 'string') {
+                try { perms = JSON.parse(user.permissions); } catch (e) { perms = null; }
+            }
+        }
+        if (perms !== null) return perms.includes(module);
+
+        const userKey = user.division || user.role || 'CLIENTE';
+        // This is a simplified fallback for the hub
+        const roleDefaults: Record<string, string[]> = {
+            'ADMIN': ['dashboard', 'chat', 'feed', 'quotes', 'agenda-spa', 'agenda-log', 'customers', 'recurrence', 'services', 'management', 'billing', 'pos', 'reports', 'strategy', 'transport', 'transport-config', 'users', 'hr-collaborators', 'hr-pay-periods', 'support', 'notifications', 'profile', 'my-hr', 'settings'],
+            'GESTAO': ['dashboard', 'chat', 'feed', 'quotes', 'agenda-spa', 'agenda-log', 'customers', 'recurrence', 'services', 'management', 'billing', 'reports', 'strategy', 'transport', 'transport-config', 'hr-collaborators', 'support', 'notifications', 'profile', 'my-hr'],
+            'OPERACIONAL': ['dashboard', 'chat', 'feed', 'agenda-spa', 'customers', 'services', 'pos', 'notifications', 'profile', 'my-hr'],
+            'SPA': ['dashboard', 'chat', 'feed', 'agenda-spa', 'customers', 'notifications', 'profile', 'my-hr'],
+            'LOGISTICA': ['dashboard', 'feed', 'agenda-log', 'transport', 'notifications', 'profile', 'my-hr'],
+            'COMERCIAL': ['dashboard', 'chat', 'feed', 'quotes', 'customers', 'notifications', 'profile', 'my-hr']
+        };
+
+        return roleDefaults[userKey]?.includes(module) || false;
+    };
+
     const handleLogout = () => {
         if (window.confirm('Deseja realmente sair do sistema?')) {
             logout();
@@ -78,38 +110,45 @@ export default function MobileMenuHub() {
         {
             title: 'Ferramentas',
             items: [
-                { id: 'agenda-spa', label: 'Agenda SPA', icon: Calendar, path: '/staff/agenda-spa' },
-                { id: 'agenda-log', label: 'Agenda Transporte', icon: Truck, path: '/staff/agenda-log' },
-                { id: 'pos', label: 'Caixa (PDV)', icon: CreditCard, path: '/staff/pos' },
-                { id: 'transport', label: 'Transporte', icon: Truck, path: '/staff/transport' },
-                { id: 'quotes', label: 'Orçamentos', icon: FileText, path: '/staff/quotes' },
-                { id: 'customers', label: 'Clientes', icon: Users, path: '/staff/customers' },
-                { id: 'mural', label: 'Mural', icon: Layout, path: '/staff/feed' },
+                { id: 'agenda-spa', label: 'Agenda SPA', icon: Calendar, path: '/staff/agenda-spa', permission: 'agenda-spa' },
+                { id: 'agenda-log', label: 'Agenda Transporte', icon: Truck, path: '/staff/agenda-log', permission: 'agenda-log' },
+                { id: 'chat', label: 'Bate-papo', icon: MessageCircle, path: '/staff/chat', permission: 'chat' },
+                { id: 'pos', label: 'Caixa (PDV)', icon: CreditCard, path: '/staff/pos', permission: 'pos' },
+                { id: 'transport', label: 'Transporte', icon: Truck, path: '/staff/transport', permission: 'transport' },
+                { id: 'quotes', label: 'Orçamentos', icon: FileText, path: '/staff/quotes', permission: 'quotes' },
+                { id: 'customers', label: 'Clientes', icon: Users, path: '/staff/customers', permission: 'customers' },
+                { id: 'mural', label: 'Mural', icon: Activity, path: '/staff/feed', permission: 'feed' },
                 { id: 'pausa', label: 'Pausa (Mini-games)', icon: Gamepad2, path: '/pausa' },
             ],
         },
         {
-            title: 'Gestão',
+            title: 'Gestão & Administração',
             items: [
-                { id: 'services', label: 'Serviços', icon: ClipboardList, path: '/staff/services' },
-                { id: 'products', label: 'Produtos', icon: Package, path: '/staff/products' },
-                { id: 'billing', label: 'Faturamento', icon: CreditCard, path: '/staff/billing' },
-                { id: 'financeiro', label: 'Financeiro', icon: CreditCard, path: '/staff/billing' },
-                { id: 'transport-config', label: 'Config. Transporte', icon: Settings, path: '/staff/transport-config' },
-                { id: 'collaborators', label: 'Colaboradores', icon: Users, path: '/staff/hr/collaborators' },
-                { id: 'management', label: 'Dashboard Gestão', icon: BarChart3, path: '/staff/management' },
-                { id: 'marketing', label: 'Marketing / Avisos', icon: Bell, path: '/staff/marketing' },
-                { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/staff/reports' },
-                { id: 'strategy', label: 'Estratégia', icon: Target, path: '/staff/strategy' },
-                { id: 'recurrence', label: 'Recorrentes', icon: History, path: '/staff/recurrence' },
-                { id: 'users', label: 'Usuários', icon: Users, path: '/staff/users' },
+                { id: 'services', label: 'Serviços', icon: ClipboardList, path: '/staff/services', permission: 'services' },
+                { id: 'products', label: 'Produtos', icon: Package, path: '/staff/products', permission: 'management' },
+                { id: 'billing', label: 'Faturamento & Financeiro', icon: CreditCard, path: '/staff/billing', permission: 'billing' },
+                { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/staff/reports', permission: 'reports' },
+                { id: 'strategy', label: 'Estratégia', icon: Target, path: '/staff/strategy', permission: 'strategy' },
+                { id: 'management', label: 'Dashboard Gestão', icon: BarChart3, path: '/staff/management', permission: 'management' },
+                { id: 'recurrence', label: 'Recorrentes', icon: History, path: '/staff/recurrence', permission: 'recurrence' },
+                { id: 'audit', label: 'Auditoria do Sistema', icon: Shield, path: '/staff/audit', permission: 'audit' },
+                { id: 'users', label: 'Usuários / Cargos', icon: Users, path: '/staff/users', permission: 'users' },
+                { id: 'transport-config', label: 'Config. Transporte', icon: Settings, path: '/staff/transport-config', permission: 'transport-config' },
+            ],
+        },
+        {
+            title: 'Recursos Humanos',
+            items: [
+                { id: 'collaborators', label: 'Colaboradores', icon: Users, path: '/staff/hr/collaborators', permission: 'hr-collaborators' },
+                { id: 'pay-periods', label: 'Fechamentos (RH)', icon: Briefcase, path: '/staff/hr/pay-periods', permission: 'hr-pay-periods' },
+                { id: 'my-hr', label: 'Meu RH', icon: Briefcase, path: '/staff/my-hr', permission: 'my-hr' },
+                { id: 'marketing', label: 'Marketing / Avisos', icon: Bell, path: '/staff/marketing', permission: 'management' },
             ],
         },
         {
             title: 'Minha Conta',
             items: [
                 { id: 'profile', label: 'Meu Perfil', icon: UserCircle, path: '/staff/profile' },
-                { id: 'my-hr', label: 'Meu RH', icon: Briefcase, path: '/staff/my-hr' },
                 { id: 'notifications', label: 'Notificações', icon: Bell, path: '/staff/notifications', badge: unreadCount },
             ],
         },
@@ -188,38 +227,46 @@ export default function MobileMenuHub() {
 
             {/* Sections */}
             <div className="space-y-6 px-4">
-                {sections.map((section) => (
-                    <div key={section.title}>
-                        <h3 className="px-2 mb-3 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">
-                            {section.title}
-                        </h3>
-                        <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[32px] overflow-hidden shadow-sm divide-y divide-[var(--color-border)]">
-                            {section.items.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => handleItemClick(item)}
-                                        className="w-full px-5 py-4 flex items-center gap-4 active:bg-[var(--color-fill-tertiary)] transition-colors group"
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-primary)] flex items-center justify-center group-active:scale-90 transition-transform">
-                                            <Icon size={20} className={item.color || "text-[var(--color-text-secondary)]"} />
-                                        </div>
-                                        <span className={`flex-1 text-left font-bold text-sm ${item.color || "text-[var(--color-text-primary)]"}`}>
-                                            {item.label}
-                                        </span>
-                                        {item.badge !== undefined && item.badge > 0 && (
-                                            <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-[var(--color-error)] text-white text-[10px] font-black rounded-full">
-                                                {item.badge > 99 ? '99+' : item.badge}
+                {sections.map((section) => {
+                    const visibleItems = section.items.filter(item =>
+                        !item.permission || checkPermission(item.permission)
+                    );
+
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                        <div key={section.title}>
+                            <h3 className="px-2 mb-3 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">
+                                {section.title}
+                            </h3>
+                            <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[32px] overflow-hidden shadow-sm divide-y divide-[var(--color-border)]">
+                                {visibleItems.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => handleItemClick(item)}
+                                            className="w-full px-5 py-4 flex items-center gap-4 active:bg-[var(--color-fill-tertiary)] transition-colors group"
+                                        >
+                                            <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-primary)] flex items-center justify-center group-active:scale-90 transition-transform">
+                                                <Icon size={20} className={item.color || "text-[var(--color-text-secondary)]"} />
+                                            </div>
+                                            <span className={`flex-1 text-left font-bold text-sm ${item.color || "text-[var(--color-text-primary)]"}`}>
+                                                {item.label}
                                             </span>
-                                        )}
-                                        <ChevronRight size={18} className="text-[var(--color-text-tertiary)]" />
-                                    </button>
-                                );
-                            })}
+                                            {item.badge !== undefined && item.badge > 0 && (
+                                                <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-[var(--color-error)] text-white text-[10px] font-black rounded-full">
+                                                    {item.badge > 99 ? '99+' : item.badge}
+                                                </span>
+                                            )}
+                                            <ChevronRight size={18} className="text-[var(--color-text-tertiary)]" />
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Version Info */}
