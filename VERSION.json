@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260201-0144",
+  "version": "BETA20260202-0421",
   "stage": "BETA",
-  "timestamp": "2026-02-01T01:44:05.000Z",
-  "commit": "5f49703",
-  "buildNumber": 167,
-  "releaseNotes": "Auto-generated from commit: feat: add additional pet surcharge to transport settings and fix staff layouts"
+  "timestamp": "2026-02-02T04:21:01.000Z",
+  "commit": "6b398ed",
+  "buildNumber": 168,
+  "releaseNotes": "Auto-generated from commit: fix: quote calculations, transport summary and backend synchronization. Also fixed build errors in BrainService and index.ts."
 }
