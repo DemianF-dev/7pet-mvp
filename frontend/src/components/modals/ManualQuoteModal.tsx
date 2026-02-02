@@ -306,7 +306,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
     const getFilteredServices = () => {
         console.log('[Filter] Total services loaded:', services.length);
-        
+
         // Se não tiver espécie definida, mostra tudo (fallback)
         if (!pet.species) {
             console.log('[Filter] No pet species defined, showing all services (fallback)');
@@ -317,12 +317,12 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
         const pWeight = parseFloat(pet.weight) || 0;
         const pCoat = (pet.coatType || '').toUpperCase();
 
-        console.log('[Filter] Pet profile:', { 
-            species: pet.species, 
-            normalized: pNorm, 
-            weight: pWeight, 
+        console.log('[Filter] Pet profile:', {
+            species: pet.species,
+            normalized: pNorm,
+            weight: pWeight,
             coat: pCoat,
-            allServices: services.length 
+            allServices: services.length
         });
 
         const filteredServices = services.filter((service, index) => {
@@ -349,7 +349,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
             // 2. Filtrar por porte/peso - Usar sizeLabel primeiro, depois weight range
             const serviceSizeLabel = (service.sizeLabel || '').toUpperCase();
-            
+
             // Mapear peso para sizeLabel esperado
             let expectedSizeLabel = '';
             if (pWeight > 0) {
@@ -358,7 +358,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                 else if (pWeight <= 20) expectedSizeLabel = 'MÉDIO';
                 else if (pWeight <= 35) expectedSizeLabel = 'GRANDE';
                 else expectedSizeLabel = 'GIGANTE';
-                
+
                 // Se serviço tem sizeLabel definido, verificar se corresponde
                 if (serviceSizeLabel && expectedSizeLabel && serviceSizeLabel !== expectedSizeLabel) {
                     if (index < 5) console.log(`[Filter] ❌ Size mismatch: ${serviceSizeLabel} != ${expectedSizeLabel} for weight ${pWeight}kg`);
@@ -369,9 +369,9 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
             // 3. Filtrar por tipo de pelo - Usar coatType do serviço em vez do nome
             if (pCoat && service.coatType) {
                 const serviceCoatType = (service.coatType || '').toUpperCase();
-                const petCoatType = pCoat.includes('CURTO') ? 'CURTO' : 
-                                   pCoat.includes('LONGO') ? 'LONGO' : 
-                                   pCoat.includes('MEDIO') || pCoat.includes('MÉDIO') ? 'MÉDIO' : '';
+                const petCoatType = pCoat.includes('CURTO') ? 'CURTO' :
+                    pCoat.includes('LONGO') ? 'LONGO' :
+                        pCoat.includes('MEDIO') || pCoat.includes('MÉDIO') ? 'MÉDIO' : '';
 
                 if (petCoatType && serviceCoatType && petCoatType !== serviceCoatType) {
                     if (index < 5) console.log(`[Filter] ❌ Coat mismatch: pet ${petCoatType} != service ${serviceCoatType}`);
@@ -536,18 +536,18 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
     const handleDuplicateItem = (index: number) => {
         const itemToDuplicate = { ...quote.items[index] };
         const newItems = [...quote.items];
-        
+
         // Create a new item with same properties but new ID if exists
         const duplicatedItem = {
             ...itemToDuplicate,
             id: undefined, // Let backend generate new ID
             description: itemToDuplicate.description + ' (cópia)'
         };
-        
+
         // Insert right after the original item
         newItems.splice(index + 1, 0, duplicatedItem);
         setQuote({ ...quote, items: newItems });
-        
+
         toast.success('Item duplicado com sucesso!');
     };
 
@@ -783,8 +783,13 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
     // Descontos separados conforme novas regras (Aplicando também ao transporte se solicitado)
     const serviceDiscount = customer.type === 'RECORRENTE' ? allItems.reduce((acc, item) => {
-        // Desconto de recorrência sobre serviços e itens automáticos (incluindo transporte se for RECORRENTE)
-        if ((item.serviceId || item.isAutomatic) && !item.productId && discountRate > 0) {
+        const isTransport = item.description?.toLowerCase().includes('transporte') ||
+            item.description?.includes('🔄') ||
+            item.description?.includes('📦') ||
+            item.description?.includes('🏠');
+
+        // Desconto de recorrência sobre serviços, itens automáticos e transporte (desde que não seja produto)
+        if ((item.serviceId || item.isAutomatic || isTransport) && !item.productId && discountRate > 0) {
             return acc + (item.price * item.quantity * discountRate);
         }
         return acc;
@@ -2212,21 +2217,26 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
                                                 {/* Detalhamento do transporte */}
                                                 <div className="space-y-2">
-                                                    {/* Valor base */}
-                                                    <div className="flex items-center justify-between p-3 bg-white/60 dark:bg-gray-800/40 rounded-lg">
-                                                        <div className="flex-1">
-                                                            <p className="font-bold text-sm text-orange-800 dark:text-orange-200">
-                                                                {transportType === 'ROUND_TRIP' ? 'Leva e Traz' : 
-                                                                 transportType === 'PICK_UP' ? 'Só Leva (Coleta)' : 'Só Traz (Entrega)'}
-                                                            </p>
-                                                            <p className="text-[9px] text-gray-500">Valor base do transporte</p>
+                                                    {transportItems.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between p-3 bg-white/60 dark:bg-gray-800/40 rounded-lg">
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-sm text-orange-800 dark:text-orange-200">{item.description}</p>
+                                                                <p className="text-[9px] text-gray-500">Qtd: {item.quantity} × R$ {item.price.toFixed(2)}</p>
+                                                            </div>
+                                                            <div className="text-right flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleDuplicateItem(quote.items.findIndex(qi => qi.description === item.description && qi.price === item.price))}
+                                                                    className="p-1.5 text-orange-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-all"
+                                                                    title="Duplicar transporte"
+                                                                >
+                                                                    <Copy size={12} />
+                                                                </button>
+                                                                <p className="font-black text-sm text-orange-800 dark:text-orange-200">R$ {(item.price * item.quantity).toFixed(2)}</p>
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="font-black text-sm text-orange-800 dark:text-orange-200">R$ {(transportInfo?.basePrice || 0).toFixed(2)}</p>
-                                                        </div>
-                                                    </div>
+                                                    ))}
 
-                                                    {/* Acréscimo por pets adicionais */}
+                                                    {/* Acréscimo por pets adicionais (Se houver info de cálculo manual ainda ativa) */}
                                                     {transportInfo?.extraPets > 0 && (
                                                         <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                                                             <div className="flex-1">
@@ -2241,14 +2251,25 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                                         </div>
                                                     )}
 
-                                                    {/* Valor final */}
-                                                    <div className="flex items-center justify-between p-3 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg">
-                                                        <div className="flex-1">
-                                                            <p className="font-bold text-sm text-orange-800 dark:text-orange-200">Total do Transporte</p>
-                                                            <p className="text-[9px] text-gray-500">Valor com desconto aplicado</p>
+                                                    {/* Totais do Transporte */}
+                                                    <div className="pt-3 border-t border-orange-200 dark:border-orange-800 space-y-1">
+                                                        <div className="flex justify-between text-xs font-bold text-orange-600/60">
+                                                            <span>Subtotal Transporte:</span>
+                                                            <span>R$ {transportSubtotal.toFixed(2)}</span>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="font-black text-lg text-orange-800 dark:text-orange-200">R$ {transportTotal.toFixed(2)}</p>
+                                                        {transportDiscount > 0 && (
+                                                            <div className="flex justify-between text-xs font-bold text-green-600">
+                                                                <span>Desconto aplicado:</span>
+                                                                <span>- R$ {transportDiscount.toFixed(2)}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center justify-between p-3 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg mt-2">
+                                                            <div className="flex-1">
+                                                                <p className="font-black text-xs text-orange-800 dark:text-orange-200 uppercase tracking-widest">Total Líquido Transporte</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-black text-xl text-orange-800 dark:text-orange-200">R$ {transportTotal.toFixed(2)}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2311,7 +2332,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-sm font-black text-white uppercase tracking-widest mb-1">VALOR TOTAL FINAL</p>
-{Number(creditCardFee) > 0 && (
+                                                {Number(creditCardFee) > 0 && (
                                                     <p className="text-[10px] text-blue-100">Inclui taxa de cartão ({creditCardFee}%)</p>
                                                 )}
                                                 {totalDiscount > 0 && (

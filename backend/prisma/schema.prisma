@@ -1109,7 +1109,6 @@ model TransportSettings {
   minRate              Float    @default(1.5)
   providerSharePercent Float    @default(60.0)
   taxPercent           Float    @default(5.0)
-  additionalPetSurchargePercent Float @default(20.0)
 }
 
 model User {
@@ -1140,11 +1139,14 @@ model User {
   role                    String?
   plainPassword           String?
   division                String                       @default("CLIENTE")
+  allowCustomerProfile    Boolean                      @default(false)
   isEligible              Boolean                      @default(false)
   active                  Boolean                      @default(true)
   isSupportAgent          Boolean                      @default(false)
   allowedGames            Json?                        @default("[]")
   pauseMenuEnabled        Boolean                      @default(false)
+  xp                      Int                          @default(0)
+  level                   Int                          @default(1)
   lastSeenAt              DateTime?
   dropoffAppointments     Appointment[]                @relation("Appointment_dropoffProvider")
   appointments            Appointment[]
@@ -1166,6 +1168,7 @@ model User {
   reactions               Reaction[]
   assignedServices        Service[]
   staffProfile            StaffProfile?
+  pauseSessions           PauseSession[]
   transportLegs           TransportLeg[]
   notificationPreferences UserNotificationPreference[]
 
@@ -1539,4 +1542,35 @@ enum PackageInvoiceStatus {
 enum InvoiceSourceType {
   AGENDAMENTO
   AJUSTE_MANUAL
+}
+
+model PauseGame {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  slug        String         @unique // e.g., "zen-espuma"
+  active      Boolean        @default(true)
+  baseXp      Int            @default(10)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  sessions    PauseSession[]
+
+  @@index([slug])
+}
+
+model PauseSession {
+  id        String    @id @default(uuid())
+  userId    String
+  gameId    String
+  startTime DateTime  @default(now())
+  endTime   DateTime?
+  score     Float?    @default(0)
+  xpEarned  Int?      @default(0)
+  createdAt DateTime  @default(now())
+  game      PauseGame @relation(fields: [gameId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([startTime])
 }

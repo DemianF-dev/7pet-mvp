@@ -1,86 +1,195 @@
 /**
- * Card Component - Visual representation of a playing card
- * 
- * Standard playing card aesthetic with premium pet touches.
+ * Card Component - The Clean One Style
+ * Com suporte a drag & drop e double-click
  */
 
-import { Card as CardType, SUIT_SYMBOLS, Suit } from '../types';
-import '../../../styles/design-system-base.css';
-
-// Pet emojis for each suit
-const PET_EMOJIS: Record<Suit, string> = {
-    hearts: '🐶',     // Dog
-    diamonds: '🐱',   // Cat
-    clubs: '🐰',      // Rabbit
-    spades: '🐦'      // Bird
-};
+import { useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Card as CardType, SUIT_SYMBOLS, GameTheme } from '../types';
 
 interface CardProps {
     card: CardType;
     onClick?: () => void;
+    onDoubleClick?: () => void;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragEnd?: (e: React.DragEvent) => void;
     isSelected?: boolean;
     isClickable?: boolean;
     isDraggable?: boolean;
-    onDragStart?: (e: React.DragEvent | React.TouchEvent) => void;
-    onDragEnd?: (e: React.DragEvent | React.TouchEvent) => void;
-    onTouchStart?: (e: React.TouchEvent) => void;
-    onTouchMove?: (e: React.TouchEvent) => void;
-    onTouchEnd?: (e: React.TouchEvent) => void;
-    style?: React.CSSProperties;
+    theme: GameTheme;
 }
 
 export default function Card({
     card,
     onClick,
+    onDoubleClick,
+    onDragStart,
+    onDragEnd,
     isSelected,
-    isClickable,
-    isDraggable,
-    style
+    isClickable = true,
+    isDraggable = true,
+    theme
 }: CardProps) {
-    const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-    const canDrag = isDraggable && card.faceUp;
+    const suitColor = theme.suitColors[card.suit];
+    const clickTimeoutRef = useRef<number | null>(null);
+    const clickCountRef = useRef(0);
 
-    // Standard card proportions
-    const cardStyle: React.CSSProperties = {
-        width: '100%',
-        aspectRatio: '5/7',
-        borderRadius: '10px',
-        position: 'relative',
-        userSelect: 'none',
-        transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy transition
-        cursor: isClickable || canDrag ? 'pointer' : 'default',
-        boxShadow: isSelected
-            ? '0 0 0 4px #fbbf24, 0 12px 24px -8px rgba(251, 191, 36, 0.5)'
-            : '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
-        transform: isSelected ? 'scale(1.05) translateY(-8px)' : 'scale(1)',
-        zIndex: isSelected ? 50 : 1,
-        ...style
+    // Lidar com single click vs double click
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (!isClickable) return;
+
+        clickCountRef.current += 1;
+
+        if (clickCountRef.current === 1) {
+            // Primeiro clique - esperar para ver se é double click
+            clickTimeoutRef.current = window.setTimeout(() => {
+                if (clickCountRef.current === 1) {
+                    // Single click
+                    onClick?.();
+                }
+                clickCountRef.current = 0;
+            }, 250);
+        } else if (clickCountRef.current === 2) {
+            // Double click
+            if (clickTimeoutRef.current) {
+                clearTimeout(clickTimeoutRef.current);
+            }
+            clickCountRef.current = 0;
+            onDoubleClick?.();
+        }
     };
 
+    // Drag handlers
+    const handleDragStart = (e: React.DragEvent) => {
+        if (!isDraggable || !card.faceUp) {
+            e.preventDefault();
+            return;
+        }
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.id);
+        onDragStart?.(e);
+    };
+
+    const handleDragEnd = (e: React.DragEvent) => {
+        onDragEnd?.(e);
+    };
+
+    // Card back - minimalista
     if (!card.faceUp) {
         return (
             <div
-                onClick={isClickable ? onClick : undefined}
-                className="game-card back overflow-hidden"
+                className="clean-card back"
                 style={{
-                    ...cardStyle,
-                    background: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 100%)',
-                    border: '4px solid white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    backgroundColor: theme.cardBack,
+                    cursor: 'default'
+                }}
+            />
+        );
+    }
+
+    // Card face - design minimalista clean
+    return (
+        <motion.div
+            className={`clean-card face ${isSelected ? 'selected' : ''}`}
+            style={{
+                backgroundColor: theme.cardFace,
+                border: isSelected ? `3px solid ${theme.accent}` : '1px solid rgba(0,0,0,0.1)',
+                cursor: isClickable ? 'pointer' : 'default'
+            }}
+            onClick={handleClick}
+            draggable={isDraggable && card.faceUp}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            whileHover={isClickable ? { y: -4, transition: { duration: 0.15 } } : {}}
+            whileTap={isClickable ? { scale: 0.98 } : {}}
+        >
+            <div className="card-top-left" style={{ color: suitColor }}>
+                <span className="rank">{card.rank}</span>
+                <span className="suit">{SUIT_SYMBOLS[card.suit]}</span>
+            </div>
+
+            <div className="card-center" style={{ color: suitColor }}>
+                <span className="suit-large">{SUIT_SYMBOLS[card.suit]}</span>
+            </div>
+
+            <div className="card-bottom-right" style={{ color: suitColor }}>
+                <span className="rank">{card.rank}</span>
+                <span className="suit">{SUIT_SYMBOLS[card.suit]}</span>
+            </div>
+        </motion.div>
+    );
+}
+
+// Slot vazio para foundation ou tableau vazio
+export function EmptySlot({
+    suit,
+    theme,
+    onClick,
+    onDragOver,
+    onDrop,
+    isHighlighted
+}: {
+    suit?: string;
+    theme: GameTheme;
+    onClick?: () => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
+    isHighlighted?: boolean;
+}) {
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        onDragOver?.(e);
+    };
+
+    return (
+        <div
+            className={`clean-card empty ${isHighlighted ? 'highlight' : ''}`}
+            onClick={onClick}
+            onDragOver={handleDragOver}
+            onDrop={onDrop}
+            style={{
+                borderColor: isHighlighted ? theme.accent : 'rgba(255,255,255,0.15)',
+                backgroundColor: isHighlighted ? `${theme.accent}20` : 'rgba(255,255,255,0.03)'
+            }}
+        >
+            {suit && (
+                <span className="suit-hint" style={{ color: 'rgba(255,255,255,0.15)' }}>
+                    {SUIT_SYMBOLS[suit as keyof typeof SUIT_SYMBOLS]}
+                </span>
+            )}
+        </div>
+    );
+}
+
+// Stock pile (baralho)
+export function StockPile({
+    count,
+    theme,
+    onClick
+}: {
+    count: number;
+    theme: GameTheme;
+    onClick: () => void;
+}) {
+    if (count === 0) {
+        // Mostrar botão de reset
+        return (
+            <div
+                className="clean-card empty reset-stock"
+                onClick={onClick}
+                style={{
+                    cursor: 'pointer',
+                    borderColor: 'rgba(255,255,255,0.2)'
                 }}
             >
-                {/* Pattern Overlay */}
-                <div className="absolute inset-0 opacity-20"
-                    style={{
-                        backgroundImage: 'radial-gradient(white 2px, transparent 2px)',
-                        backgroundSize: '8px 8px'
-                    }}
-                />
-
-                <div className="relative bg-white/20 p-2 rounded-full backdrop-blur-sm">
-                    <div style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>🐾</div>
+                <div className="reset-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>
                 </div>
             </div>
         );
@@ -88,69 +197,14 @@ export default function Card({
 
     return (
         <div
-            onClick={isClickable ? onClick : undefined}
-            className={`game-card face ${isSelected ? 'selected' : ''}`}
+            className="clean-card stock-block"
+            onClick={onClick}
             style={{
-                ...cardStyle,
-                backgroundColor: 'white',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                border: '1px solid #e2e8f0',
+                backgroundColor: theme.accent,
+                cursor: 'pointer'
             }}
         >
-            {/* Top-Left Corner Rank & Suit */}
-            <div className="absolute top-1 left-1.5 flex flex-col items-center leading-none">
-                <span style={{
-                    fontSize: '12px',
-                    fontWeight: '800',
-                    color: isRed ? '#f43f5e' : '#334155',
-                    fontFamily: 'Quicksand, sans-serif'
-                }}>
-                    {card.rank}
-                </span>
-                <span style={{
-                    fontSize: '10px',
-                    color: isRed ? '#f43f5e' : '#334155',
-                    marginTop: '0px'
-                }}>
-                    {SUIT_SYMBOLS[card.suit]}
-                </span>
-            </div>
-
-            {/* Top-Right Pet Icon - Very subtle */}
-            <div className="absolute top-1.5 right-1.5 opacity-20 filter grayscale scale-75">
-                {PET_EMOJIS[card.suit]}
-            </div>
-
-            {/* Main Center Rank - Soft and Clean */}
-            <div style={{
-                fontSize: card.rank.length > 1 ? '22px' : '26px', // Slightly smaller if 2 digits
-                fontWeight: '600', // Reduced from 700
-                color: isRed ? '#f43f5e' : '#334155',
-                lineHeight: 1,
-                marginTop: '1px',
-                fontFamily: 'Quicksand, sans-serif'
-            }}>
-                {card.rank}
-            </div>
-
-            {/* Center Suit - Delicate */}
-            <div style={{
-                fontSize: '18px',
-                color: isRed ? '#f43f5e' : '#334155',
-                marginTop: '2px',
-                opacity: 0.8
-            }}>
-                {SUIT_SYMBOLS[card.suit]}
-            </div>
-
-            {/* Bottom-Right Corner (Inverted) */}
-            <div className="absolute bottom-1 right-1.5 flex flex-col items-center leading-none rotate-180 opacity-30">
-                <span style={{ fontSize: '10px', fontWeight: '800', color: isRed ? '#f43f5e' : '#334155' }}>{card.rank}</span>
-                <span style={{ fontSize: '9px', color: isRed ? '#f43f5e' : '#334155' }}>{SUIT_SYMBOLS[card.suit]}</span>
-            </div>
+            <span className="count">{count}</span>
         </div>
     );
 }

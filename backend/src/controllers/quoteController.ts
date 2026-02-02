@@ -1245,7 +1245,7 @@ export const quoteController = {
                     });
                 }
 
-                // 2.5 Apply Recurrence Discounts to SPA services
+                // 2.5 Apply Recurrence Discounts to ALL services (including transport and automated)
                 const recurrenceFrequency = quoteData.recurrenceFrequency || customer.recurrenceFrequency;
                 let discountRate = 0;
                 if (recurrenceFrequency === 'MENSAL') discountRate = 0.05;
@@ -1253,26 +1253,26 @@ export const quoteController = {
                 else if (recurrenceFrequency === 'SEMANAL') discountRate = 0.10;
 
                 if (discountRate > 0) {
-                    console.log(`[createManual] Aplicando desconto de recorrência: ${discountRate * 100}%`);
+                    console.log(`[createManual] Aplicando desconto de recorrência: ${discountRate * 100}% em todos os serviços`);
                     for (const item of processedItems) {
-                        if (item.serviceId) {
-                            const service = await tx.service.findUnique({ where: { id: item.serviceId } });
-                            if (service && service.category !== 'TRANSPORTE') {
-                                item.price = item.price * (1 - discountRate);
+                        // Aplica em tudo que não for produto (serviços, automáticos, transporte)
+                        if (!item.productId) {
+                            item.price = item.price * (1 - discountRate);
+                            if (!item.description.includes('% desc reg.')) {
                                 item.description += ` (${(discountRate * 100).toFixed(0)}% desc reg.)`;
                             }
                         }
                     }
                 }
 
-                // Apply Strategic Discount to Products
+                // Apply Strategic Discount to ALL items if AVULSO
                 const strategicDiscount = Number(quoteData.strategicDiscount) || 0;
                 if (strategicDiscount > 0) {
-                    console.log(`[createManual] Aplicando desconto estratégico em produtos: ${strategicDiscount}%`);
+                    console.log(`[createManual] Aplicando desconto estratégico em todos os itens: ${strategicDiscount}%`);
                     for (const item of processedItems) {
-                        if (item.productId) {
-                            const discountMultiplier = 1 - (strategicDiscount / 100);
-                            item.price = item.price * discountMultiplier;
+                        const discountMultiplier = 1 - (strategicDiscount / 100);
+                        item.price = item.price * discountMultiplier;
+                        if (!item.description.includes('% desc est.')) {
                             item.description += ` (${strategicDiscount}% desc est.)`;
                         }
                     }

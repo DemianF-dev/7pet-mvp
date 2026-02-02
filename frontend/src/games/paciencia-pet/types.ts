@@ -1,5 +1,6 @@
 /**
- * Paciência Pet - Type Definitions
+ * Paciência Pet - The Clean One Style
+ * Sistema de tipos e temas inspirado no design minimalista
  */
 
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
@@ -9,53 +10,97 @@ export interface Card {
     suit: Suit;
     rank: Rank;
     faceUp: boolean;
-    id: string; // Unique identifier for React keys
+    id: string;
 }
 
 export type Pile = Card[];
 
 export interface GameState {
-    deck: Pile;           // Stock (cards not yet dealt)
-    waste: Pile;          // Waste pile (cards drawn from deck)
-    foundations: {        // Four foundation piles (one per suit)
+    deck: Pile;
+    waste: Pile;
+    foundations: {
         hearts: Pile;
         diamonds: Pile;
         clubs: Pile;
         spades: Pile;
     };
-    tableau: Pile[];      // Seven tableau columns
-    selected: {           // Currently selected card/pile
+    tableau: Pile[];
+    selected: {
         source: 'deck' | 'waste' | 'foundation' | 'tableau' | null;
-        pileIndex?: number; // Index for tableau or foundation
-        cardIndex?: number; // Index of card in pile
-    } | null;
-    moveHistory: GameState[];  // For undo functionality
-    moves: number;        // Total moves made
-    isPaused: boolean;
-}
-
-export interface Move {
-    from: {
-        source: 'deck' | 'waste' | 'foundation' | 'tableau';
         pileIndex?: number;
         cardIndex?: number;
-    };
-    to: {
-        source: 'foundation' | 'tableau';
-        pileIndex?: number;
-    };
-    cards: Card[];
+    } | null;
+    moveHistory: GameState[];
+    moves: number;
+    score: number;
+    isPaused: boolean;
+    startTime: number;
+    endTime?: number;
 }
 
-// Suit colors
-export const SUIT_COLORS: Record<Suit, 'red' | 'black'> = {
-    hearts: 'red',
-    diamonds: 'red',
-    clubs: 'black',
-    spades: 'black'
-};
+export interface GameTheme {
+    id: string;
+    name: string;
+    bg: string;
+    surface: string;
+    accent: string;
+    text: string;
+    cardFace: string;
+    cardBack: string;
+    suitColors: Record<Suit, string>;
+}
 
-// Suit symbols (pet-themed)
+export const THEMES: GameTheme[] = [
+    {
+        id: 'red',
+        name: 'Classic Red',
+        bg: '#a54a4a',
+        surface: '#eeeeee',
+        accent: '#e53935',
+        text: '#333333',
+        cardFace: '#ffffff',
+        cardBack: '#e53935',
+        suitColors: {
+            hearts: '#e53935',
+            diamonds: '#e53935',
+            clubs: '#222222',
+            spades: '#222222'
+        }
+    },
+    {
+        id: 'blue',
+        name: 'Deep Ocean',
+        bg: '#2c70b8',
+        surface: '#eeeeee',
+        accent: '#5dade2',
+        text: '#333333',
+        cardFace: '#ffffff',
+        cardBack: '#5dade2',
+        suitColors: {
+            hearts: '#e53935',
+            diamonds: '#e53935',
+            clubs: '#222222',
+            spades: '#222222'
+        }
+    },
+    {
+        id: 'dark',
+        name: 'Midnight Pink',
+        bg: '#000000',
+        surface: '#1a1a1a',
+        accent: '#ff4081',
+        text: '#ffffff',
+        cardFace: '#333333',
+        cardBack: '#ff4081',
+        suitColors: {
+            hearts: '#ff4081',
+            diamonds: '#ff4081',
+            clubs: '#ffffff',
+            spades: '#ffffff'
+        }
+    }
+];
+
 export const SUIT_SYMBOLS: Record<Suit, string> = {
     hearts: '♥',
     diamonds: '♦',
@@ -63,19 +108,7 @@ export const SUIT_SYMBOLS: Record<Suit, string> = {
     spades: '♠'
 };
 
-// Rank values (for ordering)
 export const RANK_VALUES: Record<Rank, number> = {
-    'A': 1,
-    '2': 2,
-    '3': 3,
-    '4': 4,
-    '5': 5,
-    '6': 6,
-    '7': 7,
-    '8': 8,
-    '9': 9,
-    '10': 10,
-    'J': 11,
-    'Q': 12,
-    'K': 13
+    'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7,
+    '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13
 };

@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import GameHost from '../../components/games/GameHost';
 import BackButton from '../../components/BackButton';
 import '../../styles/design-system-base.css';
+import { gameService } from '../../services/gameService';
+import { toast } from 'react-hot-toast';
 
 // Lazy load the game module
 const gameLoader = () => import('../../games/zen-espuma');
@@ -9,6 +11,53 @@ const gameLoader = () => import('../../games/zen-espuma');
 export default function PauseZenEspuma() {
     const [reducedMotion, setReducedMotion] = useState(false);
     const [resetKey, setResetKey] = useState(0);
+    const sessionIdRef = useRef<string | null>(null);
+    const startTimeRef = useRef<number>(Date.now());
+
+    // Game ID for Zen Espuma (create this in DB or use slug later)
+    // For MVP we can fetch by slug or just assume ID is known/fetched. 
+    // Ideally we fetch the game list first. But for now let's assume we can start by slug or handle it.
+    // Actually gameService expects gameId. We should probably fetch it or hardcode if we know it.
+    // Let's hardcode "zen-espuma" as ID is dynamic. Wait, schema has slug.
+    // For now, I'll fetch the game list to find the ID.
+
+    useEffect(() => {
+        let active = true;
+
+        const initSession = async () => {
+            try {
+                const games = await gameService.listGames();
+                const game = games.find(g => g.slug === 'zen-espuma');
+
+                if (game && active) {
+                    const session = await gameService.startGameSession(game.id);
+                    sessionIdRef.current = session.id;
+                    startTimeRef.current = Date.now();
+                }
+            } catch (err) {
+                console.error("Failed to start game session", err);
+            }
+        };
+
+        initSession();
+
+        return () => {
+            active = false;
+            // End session on unmount
+            if (sessionIdRef.current) {
+                const duration = (Date.now() - startTimeRef.current) / 1000;
+                // Score is 0 for Zen Espuma (it's a zen game)
+                gameService.endGameSession(sessionIdRef.current, 0).then(result => {
+                    if (result.xpEarned > 0) {
+                        toast.success(`+${result.xpEarned} XP! ${result.leveledUp ? 'LEVEL UP!' : ''}`, {
+                            icon: '✨',
+                            style: { background: '#333', color: '#fff' }
+                        });
+                    }
+                }).catch(e => console.error(e));
+            }
+        };
+    }, []);
 
     const handleReset = () => {
         setResetKey(prev => prev + 1);

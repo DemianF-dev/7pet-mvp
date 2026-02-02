@@ -1,6 +1,6 @@
 /**
- * Paciência Pet - GameModule Implementation
- * 
+ * Paciencia Pet - GameModule Implementation
+ *
  * Entry point for the game. Implements the GameModule interface
  * to integrate with GameHost.
  */
@@ -13,20 +13,13 @@ import { GameState } from './types';
 class PacienciaModule implements GameModule {
     private root: Root | null = null;
 
-    mount(container: HTMLElement, options?: GameOptions): void {
+    mount(container: HTMLElement, _options?: GameOptions): void {
         this.root = createRoot(container);
-
-        this.root.render(
-            <PacienciaGame
-                onWin={options?.onWin}
-                reducedMotion={options?.reducedMotion}
-            />
-        );
+        this.root.render(<PacienciaGame />);
     }
 
     pause(): void {
         // Game state is managed internally by PacienciaGame component
-        // React will handle the pause state naturally
     }
 
     resume(): void {
@@ -41,8 +34,7 @@ class PacienciaModule implements GameModule {
     }
 
     getState(): GenericGameState {
-        // Get state from localStorage if needed
-        const saved = localStorage.getItem('7pet_paciencia_saved_game');
+        const saved = localStorage.getItem('paciencia_pet_v3');
         if (saved) {
             try {
                 return JSON.parse(saved) as GameState;
@@ -54,8 +46,7 @@ class PacienciaModule implements GameModule {
     }
 
     setState(state: GenericGameState): void {
-        // Save state to localStorage
-        localStorage.setItem('7pet_paciencia_saved_game', JSON.stringify(state));
+        localStorage.setItem('paciencia_pet_v3', JSON.stringify(state));
     }
 }
 

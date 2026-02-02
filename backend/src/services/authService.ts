@@ -41,6 +41,9 @@ export const register = async (data: any) => {
         staffId = (lastStaff?.staffId || 0) + 1;
     }
 
+    // RULE: PAUSA menu enabled by default for CLIENTE (users), disabled for collaborators
+    const pauseMenuEnabled = role === 'CLIENTE' ? true : false;
+
     let user = await prisma.user.create({
         data: {
             email,
@@ -59,6 +62,7 @@ export const register = async (data: any) => {
             birthday: data.birthday ? new Date(data.birthday) : undefined,
             staffId,
             isEligible: false,
+            pauseMenuEnabled,
             customer: role === 'CLIENTE' ? {
                 create: {
                     name: name || `${data.firstName || ''} ${data.lastName || ''} `.trim(),
@@ -154,6 +158,7 @@ export const registerManual = async (tx: any, data: any) => {
 
         if (!user) {
             // Criar usuário com senha temporária (seqId)
+            // RULE: PAUSA menu enabled by default for CLIENTE users
             user = await tx.user.create({
                 data: {
                     email: customer.email,
@@ -166,6 +171,7 @@ export const registerManual = async (tx: any, data: any) => {
                     phone: customer.phone,
                     address: customer.address,
                     isEligible: false,
+                    pauseMenuEnabled: true,
                     customer: {
                         create: {
                             name: customer.name,

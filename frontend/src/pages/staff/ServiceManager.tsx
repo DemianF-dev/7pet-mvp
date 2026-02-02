@@ -578,7 +578,7 @@ export default function ServiceManager() {
     ];
 
     return (
-        <Container>
+        <div className="w-full max-w-7xl">
             <Stack gap={10} className="py-10">
                 <header>
                     <Breadcrumbs />
@@ -1373,6 +1373,6 @@ export default function ServiceManager() {
                     )
                 }
             </Stack>
-        </Container>
+        </div>
     );
 }

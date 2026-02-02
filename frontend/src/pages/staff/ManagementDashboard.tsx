@@ -148,7 +148,7 @@ export default function ManagementDashboard() {
     }
 
     return (
-        <main className="p-[var(--space-6)] md:p-[var(--space-10)] max-w-7xl mx-auto w-full pb-28 md:pb-10 overflow-y-auto custom-scrollbar flex-1">
+        <div className="max-w-7xl w-full pb-28 md:pb-10">
             <header className="mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
@@ -447,7 +447,7 @@ export default function ManagementDashboard() {
                 <p>Role: {user?.role}</p>
                 <p>Is Master: {isMaster ? 'YES' : 'NO'}</p>
             </div>
-        </main >
+        </div>
     );
 }
 

@@ -210,7 +210,7 @@ export default function ProductManager() {
 
 
     return (
-        <main className="p-6 md:p-10">
+        <div className="w-full max-w-7xl pb-20">
             <header className="mb-10">
                 <Breadcrumbs />
                 <BackButton className="mb-4 ml-[-1rem]" />
@@ -495,6 +495,6 @@ export default function ProductManager() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </main>
+        </div>
     );
 }

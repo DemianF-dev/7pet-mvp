@@ -12,7 +12,12 @@
       "Bash(git -C \"C:\\\\Users\\\\oidem\\\\antigravity\\\\scratch\\\\7pet-mvp\" show 2151db9 --stat)",
       "Bash(git -C \"C:\\\\Users\\\\oidem\\\\antigravity\\\\scratch\\\\7pet-mvp\" diff 2151db9~1 2151db9 -- frontend/)",
       "Bash(npm run build:frontend:*)",
-      "Bash(npm run build:backend:*)"
+      "Bash(npm run build:backend:*)",
+      "WebSearch",
+      "WebFetch(domain:play.google.com)",
+      "WebFetch(domain:apkcombo.com)",
+      "WebFetch(domain:www.appbrain.com)",
+      "Bash(npm run build:*)"
     ]
   }
 }

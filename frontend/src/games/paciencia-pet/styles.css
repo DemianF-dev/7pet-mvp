@@ -1,0 +1,499 @@
+/**
+ * Paciencia Pet - The Clean One Styles
+ * Design minimalista com suporte a drag & drop
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap');
+
+/* ========== ROOT CONTAINER ========== */
+
+.clean-solitaire-root {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: white;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    transition: background-color 0.4s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== HEADER ========== */
+
+.clean-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    height: 60px;
+    flex-shrink: 0;
+}
+
+.header-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.time-display {
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+}
+
+/* ========== GAME BOARD ========== */
+
+.clean-board {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    overflow: hidden;
+}
+
+.board-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.board-row.top {
+    margin-bottom: 16px;
+    align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.board-row.tableau {
+    flex: 1;
+    gap: 4px;
+    min-height: 0;
+}
+
+/* ========== CARD STYLES ========== */
+
+.clean-card {
+    width: 11vw;
+    max-width: 80px;
+    min-width: 40px;
+    aspect-ratio: 5/7;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: hidden;
+}
+
+.clean-card.face {
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px;
+}
+
+.clean-card.back {
+    cursor: default;
+}
+
+.clean-card.selected {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+    z-index: 100 !important;
+}
+
+.clean-card.empty {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.clean-card.empty.highlight {
+    border-color: currentColor;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.clean-card.dummy {
+    background: transparent;
+    box-shadow: none;
+    border: 2px dashed rgba(255, 255, 255, 0.08);
+}
+
+/* Dragging state */
+.clean-card[draggable="true"] {
+    cursor: grab;
+}
+
+.clean-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* ========== CARD CONTENT ========== */
+
+.card-top-left {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+
+.card-top-left .rank {
+    font-size: clamp(0.9rem, 3vw, 1.3rem);
+    font-weight: 700;
+}
+
+.card-top-left .suit {
+    font-size: clamp(0.7rem, 2.5vw, 1rem);
+}
+
+.card-bottom-right {
+    position: absolute;
+    bottom: 4px;
+    right: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    transform: rotate(180deg);
+}
+
+.card-bottom-right .rank {
+    font-size: clamp(0.9rem, 3vw, 1.3rem);
+    font-weight: 700;
+}
+
+.card-bottom-right .suit {
+    font-size: clamp(0.7rem, 2.5vw, 1rem);
+}
+
+.card-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.card-center .suit-large {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+}
+
+.suit-hint {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+}
+
+/* ========== STOCK PILE ========== */
+
+.stock-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+.stock-block .count {
+    font-size: clamp(0.9rem, 3vw, 1.2rem);
+    font-weight: 700;
+    color: white;
+}
+
+.reset-stock {
+    cursor: pointer;
+}
+
+.reset-icon {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ========== FOUNDATIONS & STOCK/WASTE ========== */
+
+.foundations {
+    display: flex;
+    gap: 6px;
+}
+
+.stock-waste {
+    display: flex;
+    gap: 6px;
+}
+
+.slot-wrapper {
+    width: 11vw;
+    max-width: 80px;
+    min-width: 40px;
+}
+
+/* ========== TABLEAU ========== */
+
+.tableau-col {
+    flex: 1;
+    position: relative;
+    min-height: 300px;
+    max-width: 11vw;
+}
+
+.card-stack-wrapper {
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+/* ========== FOOTER ========== */
+
+.clean-footer {
+    height: 72px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+    flex-shrink: 0;
+}
+
+.footer-circle-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.footer-circle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.footer-circle-btn:active {
+    transform: scale(0.92);
+}
+
+.footer-circle-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (min-width: 768px) {
+    .clean-card {
+        width: 10vw;
+        max-width: 90px;
+        border-radius: 10px;
+    }
+
+    .slot-wrapper {
+        width: 10vw;
+        max-width: 90px;
+    }
+
+    .tableau-col {
+        max-width: 10vw;
+        min-height: 350px;
+    }
+
+    .foundations,
+    .stock-waste {
+        gap: 8px;
+    }
+
+    .board-row.tableau {
+        gap: 8px;
+    }
+
+    .clean-board {
+        padding: 12px 20px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .clean-card {
+        width: 8vw;
+        max-width: 100px;
+        border-radius: 12px;
+    }
+
+    .slot-wrapper {
+        width: 8vw;
+        max-width: 100px;
+    }
+
+    .tableau-col {
+        max-width: 8vw;
+        min-height: 400px;
+    }
+
+    .foundations,
+    .stock-waste {
+        gap: 10px;
+    }
+
+    .board-row.tableau {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .clean-header {
+        padding: 8px 12px;
+        height: 52px;
+    }
+
+    .time-display {
+        font-size: 1.1rem;
+    }
+
+    .clean-card {
+        width: 12.5vw;
+        border-radius: 6px;
+    }
+
+    .slot-wrapper {
+        width: 12.5vw;
+    }
+
+    .tableau-col {
+        max-width: 12.5vw;
+        min-height: 250px;
+    }
+
+    .foundations,
+    .stock-waste {
+        gap: 4px;
+    }
+
+    .board-row.tableau {
+        gap: 3px;
+    }
+
+    .board-row.top {
+        margin-bottom: 12px;
+    }
+
+    .clean-footer {
+        height: 64px;
+        gap: 16px;
+    }
+
+    .footer-circle-btn {
+        width: 42px;
+        height: 42px;
+    }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .clean-header {
+        height: 44px;
+        padding: 6px 12px;
+    }
+
+    .clean-footer {
+        height: 52px;
+    }
+
+    .clean-card {
+        width: 8vw;
+    }
+
+    .slot-wrapper {
+        width: 8vw;
+    }
+
+    .tableau-col {
+        min-height: 150px;
+        max-width: 8vw;
+    }
+
+    .board-row.top {
+        margin-bottom: 8px;
+    }
+}
+
+/* ========== TOUCH DEVICES ========== */
+
+@media (hover: none) and (pointer: coarse) {
+    .clean-card,
+    .icon-btn,
+    .footer-circle-btn {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .icon-btn:hover,
+    .footer-circle-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+}
+
+/* ========== SAFE AREAS ========== */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+    .clean-header {
+        padding-top: max(12px, env(safe-area-inset-top));
+    }
+
+    .clean-footer {
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+@media (prefers-reduced-motion: reduce) {
+    .clean-card,
+    .icon-btn,
+    .footer-circle-btn {
+        transition: none;
+    }
+}
+
+.icon-btn:focus-visible,
+.footer-circle-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+}

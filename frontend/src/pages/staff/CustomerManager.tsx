@@ -27,7 +27,7 @@ import toast from 'react-hot-toast';
 import { Button, Input, Card, Badge, IconButton, EmptyState } from '../../components/ui';
 import QueryState from '../../components/system/QueryState';
 import VirtualList from '../../components/system/VirtualList';
-import { Container } from '../../components/layout/LayoutHelpers';
+// Container removed as it's no longer used for centered layout
 import { useCustomersList } from '../../query/hooks/useCustomers';
 import { queryKeys } from '../../query/keys';
 
@@ -140,7 +140,7 @@ export default function CustomerManager() {
     );
 
     return (
-        <Container as="main" className="pb-32">
+        <div className="w-full max-w-7xl pb-32">
             <header className="mb-10">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex flex-col gap-1">
@@ -563,6 +563,6 @@ export default function CustomerManager() {
                     />
                 )}
             </AnimatePresence>
-        </Container>
+        </div>
     );
 }

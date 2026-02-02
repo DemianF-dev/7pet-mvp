@@ -52,6 +52,7 @@ import devRoutes from './routes/devRoutes';
 import posRoutes from './routes/posRoutes';
 import recurrenceRoutes from './routes/recurrenceRoutes';
 import brainRoutes from './routes/brainRoutes';
+import gameRoutes from './routes/gameRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -328,6 +329,7 @@ app.use('/packages', packageRoutes);
 app.use('/recurrence', recurrenceRoutes);
 app.use('/dev', devRoutes); // MASTER-only developer tools
 app.use('/brain', brainRoutes);
+app.use('/games', gameRoutes);
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 // TEMPORARILY DISABLED to prevent DB timeout errors

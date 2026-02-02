@@ -107,8 +107,8 @@ export default function FeedPage() {
 
     return (
         <>
-            <main className="w-full p-0 md:p-10 pb-32 overflow-x-hidden overflow-y-auto custom-scrollbar flex-1">
-                <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8">
+            <div className="w-full pb-32">
+                <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8">
 
                     {/* Main Feed Area (8 columns) */}
                     <div className="lg:col-span-8 space-y-4 md:space-y-6">
@@ -248,7 +248,7 @@ export default function FeedPage() {
                         </WidgetCard>
                     </div>
                 </div>
-            </main>
+            </div>
 
             {/* Mobile Actions */}
             <MobileFab onClick={() => setActiveTab('mobile-compose')} />

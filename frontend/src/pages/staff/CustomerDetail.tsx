@@ -458,7 +458,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     if (loading) return <RouteSkeleton />;
 
     const content = (
-        <div className="max-w-[1400px] mx-auto">
+        <div className="w-full max-w-6xl pb-20">
             {/* Header com breadcrumbs simplificados ou nada se for Bitrix-style */}
             <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

@@ -484,7 +484,7 @@ export const createUser = async (req: Request, res: Response) => {
             email, password, role, division, name, phone, notes, permissions,
             admissionDate, birthday, document, address, color,
             firstName, lastName,
-            isSupportAgent, active
+            isSupportAgent, active, allowCustomerProfile
         } = req.body;
 
         // RULE: Only Master can create Admin or Master
@@ -504,6 +504,9 @@ export const createUser = async (req: Request, res: Response) => {
         const actualRole = role || 'CLIENTE';
         const actualDivision = division || 'CLIENTE';
         const finalName = name || `${firstName || ''} ${lastName || ''}`.trim();
+
+        // RULE: PAUSA menu enabled by default for CLIENTE (users), disabled for collaborators
+        const pauseMenuEnabled = actualRole === 'CLIENTE' ? true : false;
 
         const user = await prisma.user.create({
             data: {
@@ -526,8 +529,10 @@ export const createUser = async (req: Request, res: Response) => {
                 isEligible: req.body.isEligible !== undefined ? req.body.isEligible : false,
                 isSupportAgent: isSupportAgent !== undefined ? isSupportAgent : false,
                 active: active !== undefined ? active : true,
+                pauseMenuEnabled,
                 staffId: (actualRole && actualRole !== 'CLIENTE') ? await getNextStaffId(actualRole) : undefined,
-                customer: (actualDivision === 'CLIENTE' || actualRole === 'CLIENTE') ? {
+                allowCustomerProfile: allowCustomerProfile || false,
+                customer: (actualDivision === 'CLIENTE' || actualRole === 'CLIENTE' || allowCustomerProfile) ? {
                     create: {
                         name: finalName || email,
                         phone: phone || null,
@@ -569,7 +574,7 @@ export const updateUser = async (req: Request, res: Response) => {
             email, password, isEligible,
             admissionDate, birthday, document, address, color,
             firstName, lastName,
-            isSupportAgent, active
+            isSupportAgent, active, allowCustomerProfile
         } = req.body;
 
         console.log('📝 updateUser - Received payload:', {
@@ -600,6 +605,7 @@ export const updateUser = async (req: Request, res: Response) => {
         if (isSupportAgent !== undefined) updateData.isSupportAgent = isSupportAgent;
         if (active !== undefined) updateData.active = active;
         if (division !== undefined) updateData.division = division;
+        if (allowCustomerProfile !== undefined) updateData.allowCustomerProfile = allowCustomerProfile;
 
         // DEV ONLY: Gamification & Pause Menu Access
         // Only oidemianf@gmail.com can enable/disable games for users
@@ -648,6 +654,20 @@ export const updateUser = async (req: Request, res: Response) => {
             data: updateData,
             include: { customer: true }
         });
+
+        // Auto-create customer profile if allowed but missing
+        if (user.allowCustomerProfile && !user.customer) {
+            console.log('🔄 Transforming user to staff-customer:', user.email);
+            await prisma.customer.create({
+                data: {
+                    userId: user.id,
+                    name: user.name || user.email,
+                    phone: user.phone || null,
+                    address: user.address || null,
+                    cpf: user.document || null,
+                }
+            });
+        }
 
         // Sync Document (User) with CPF (Customer) if provided
         if (document !== undefined && user.customer) {

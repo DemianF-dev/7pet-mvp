@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Lock, Unlock, Shield, Briefcase, Check, Trash2, RotateCcw } from 'lucide-react';
 
-import { 
-    UserData, 
-    UserFormData, 
+import {
+    UserData,
+    UserFormData,
     RolePermission,
-    TabType 
+    TabType
 } from '../types';
 import { PERMISSION_MODULES } from '../../../../constants/permissions';
 import { DIVISION_LABELS, getDivisionBgClass, getDivisionTextClass } from '../../../../constants/divisions';
@@ -65,6 +65,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         isEligible: false,
         isSupportAgent: false,
         active: true,
+        allowCustomerProfile: false,
         isCustomRole: false,
         pauseMenuEnabled: false,
         allowedGames: []
@@ -102,6 +103,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
                 isEligible: selectedUser.isEligible !== undefined ? selectedUser.isEligible : false,
                 isSupportAgent: selectedUser.isSupportAgent !== undefined ? selectedUser.isSupportAgent : false,
                 active: selectedUser.active !== undefined ? selectedUser.active : true,
+                allowCustomerProfile: selectedUser.allowCustomerProfile || false,
                 isCustomRole: selectedUser.role ? !isStandardRole : false,
                 pauseMenuEnabled: selectedUser.pauseMenuEnabled || false,
                 allowedGames: Array.isArray(selectedUser.allowedGames) ? selectedUser.allowedGames : []
@@ -328,11 +330,27 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
                                         {formData.isSupportAgent ? 'HABILITADO' : 'DESABILITADO'}
                                     </div>
                                 </label>
+
+                                <label className="flex items-center gap-3 p-4 bg-orange-50/50 rounded-2xl cursor-pointer hover:bg-orange-50 transition-colors border border-orange-100 mt-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.allowCustomerProfile}
+                                        onChange={e => setFormData({ ...formData, allowCustomerProfile: e.target.checked })}
+                                        className="w-5 h-5 rounded-lg text-orange-500 focus:ring-orange-500 transition-all"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="text-sm font-black text-secondary uppercase tracking-tight">Permitir uso como Cliente</div>
+                                        <div className="text-[10px] font-bold text-gray-400">Autoriza este colaborador a ser selecionado como cliente em vendas e orçamentos.</div>
+                                    </div>
+                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.allowCustomerProfile ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'}`}>
+                                        {formData.allowCustomerProfile ? 'AUTORIZADO' : 'NEGADO'}
+                                    </div>
+                                </label>
                             </div>
                         )}
 
                         {/* Customer Status Controls */}
-                        {formData.division === 'CLIENTE' && (
+                        {(formData.division === 'CLIENTE' || formData.allowCustomerProfile) && (
                             <div className="pt-4 border-t border-gray-50 mt-4 space-y-3">
                                 <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
                                     <Shield size={14} /> Status e Acesso do Cliente
@@ -556,7 +574,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
                                 ) : (
                                     <button
                                         onClick={() => onDelete(selectedUser)}
-                                disabled={!!(selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster)}
+                                        disabled={!!(selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster)}
                                         className="flex items-center gap-2 text-red-500 font-black text-xs hover:underline disabled:opacity-30 disabled:no-underline"
                                     >
                                         <Trash2 size={16} /> Excluir Conta

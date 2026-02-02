@@ -13,20 +13,17 @@ if (!JWT_SECRET) {
 export const authenticate = async (req: any, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
-        // console.log(`[Auth] Header: ${authHeader ? 'Present' : 'Missing'}`);
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            // Security: Removed authentication token logging
             return res.status(401).json({ error: 'Não autorizado' });
         }
 
         const token = authHeader.split(' ')[1];
-        
+
         // JWT Hardening: Fix algorithm to prevent confusion attacks
         const decoded: any = jwt.verify(token, JWT_SECRET, {
             algorithms: ['HS256'] // Force algorithm to prevent 'none' or other algorithm attacks
         });
-        // console.log(`[Auth] Token decoded for UserID: ${decoded.userId}`);
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },

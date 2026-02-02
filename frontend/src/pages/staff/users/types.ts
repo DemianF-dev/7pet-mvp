@@ -33,6 +33,7 @@ export interface UserData {
     isEligible?: boolean;
     isSupportAgent?: boolean;
     active?: boolean;
+    allowCustomerProfile?: boolean;
     pauseMenuEnabled?: boolean;
     allowedGames?: any;
     isOnline?: boolean;
@@ -60,6 +61,7 @@ export interface UserFormData {
     isEligible: boolean;
     isSupportAgent: boolean;
     active: boolean;
+    allowCustomerProfile: boolean;
     isCustomRole: boolean;
     pauseMenuEnabled: boolean;
     allowedGames: string[];

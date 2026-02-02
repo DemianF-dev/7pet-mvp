@@ -120,7 +120,7 @@ export default function UserTable({
                             <RotateCcw size={18} />
                         </button>
                     ) : (
-                        u.customer?.id && (
+                        u.customer?.id && (u.role === 'CLIENTE' || u.allowCustomerProfile === true) && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onViewCustomer(u.customer!.id); }}
                                 className="p-2.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition-all"

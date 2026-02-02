@@ -277,7 +277,7 @@ export default function UserManager() {
     }
 
     return (
-        <Container>
+        <div className="w-full max-w-7xl">
             <Stack gap={10} className="py-10">
                 <header>
                     <Breadcrumbs />
@@ -545,6 +545,6 @@ export default function UserManager() {
                     onUpdate={fetchUsers}
                 />
             </Stack>
-        </Container>
+        </div>
     );
 }

@@ -335,7 +335,7 @@ export default function BillingManager() {
 
 
     return (
-        <main className="p-6 md:p-10">
+        <div className="w-full max-w-7xl pb-10">
             <header className="mb-10">
                 <Breadcrumbs />
                 <BackButton className="mb-4 ml-[-1rem]" />
@@ -523,6 +523,6 @@ export default function BillingManager() {
                     />
                 )}
             </AnimatePresence>
-        </main>
+        </div>
     );
 }

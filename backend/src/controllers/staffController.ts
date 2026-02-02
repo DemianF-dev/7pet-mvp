@@ -34,7 +34,8 @@ export const staffController = {
                 totalPetsServedData,
                 rejectedQuotes,
                 noResponseQuotes,
-                todaySpaCount
+                todaySpaCount,
+                activeSession
             ] = await Promise.all([
                 // Today's appointments
                 prisma.appointment.count({
@@ -101,6 +102,10 @@ export const staffController = {
                         status: { notIn: ['CANCELADO', 'NO_SHOW'] },
                         deletedAt: null
                     }
+                }),
+                // POS Status
+                prisma.cashSession.findFirst({
+                    where: { status: 'OPEN' as any }
                 })
             ]);
             console.log('[getDashboardMetrics] Basic counts finished');
@@ -189,7 +194,8 @@ export const staffController = {
                     day: revenueDay._sum.amount || 0,
                     week: revenueWeek._sum.amount || 0,
                     month: revenueMonth._sum.amount || 0
-                }
+                },
+                posStatus: activeSession ? 'ABERTO' : 'FECHADO'
             });
         } catch (error: any) {
             console.error('Error fetching staff metrics:', error);

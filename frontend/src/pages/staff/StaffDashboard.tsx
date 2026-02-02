@@ -147,7 +147,7 @@ export default function StaffDashboard() {
     };
 
     return (
-        <div className="p-4 md:p-6 w-full space-y-4 flex-1">
+        <div className="w-full max-w-7xl space-y-4">
             <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
                 {/* ... header content ... */}
                 <div>
@@ -312,10 +312,10 @@ export default function StaffDashboard() {
                                 },
                                 {
                                     label: 'PDV / Caixa',
-                                    value: 'ABERTO',
+                                    value: metrics?.posStatus || 'FECHADO',
                                     icon: <ShoppingCart size={22} />,
-                                    color: 'text-emerald-500',
-                                    bg: 'bg-emerald-500/10',
+                                    color: (metrics?.posStatus === 'ABERTO') ? 'text-emerald-500' : 'text-gray-400',
+                                    bg: (metrics?.posStatus === 'ABERTO') ? 'bg-emerald-500/10' : 'bg-gray-100 dark:bg-gray-700/50',
                                     link: '/staff/pos',
                                     trend: 'Iniciar Nova Venda'
                                 }

@@ -63,6 +63,12 @@ export const customerController = {
             const customers = await prisma.customer.findMany({
                 where: {
                     deletedAt: null,
+                    user: {
+                        OR: [
+                            { role: 'CLIENTE' },
+                            { allowCustomerProfile: true }
+                        ]
+                    },
                     OR: [
                         { name: { contains: q, mode: Prisma.QueryMode.insensitive } },
                         { phone: { contains: q, mode: Prisma.QueryMode.insensitive } },
@@ -205,7 +211,15 @@ export const customerController = {
             const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
             const skip = (page - 1) * limit;
 
-            const where = { deletedAt: null };
+            const where = {
+                deletedAt: null,
+                user: {
+                    OR: [
+                        { role: 'CLIENTE' },
+                        { allowCustomerProfile: true }
+                    ]
+                }
+            };
             const total = await prisma.customer.count({ where });
 
             const customers = await prisma.customer.findMany({

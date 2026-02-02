@@ -55,18 +55,8 @@ export default function ChatPage() {
         queryFn: async () => {
             const query = userSearchQuery.trim();
             const url = query ? `/chat/users?query=${encodeURIComponent(query)}` : '/chat/users';
-            console.log(`[ChatPage] Buscando usuários. URL: ${url}, Query: "${query}"`);
 
             const res = await api.get(url);
-            console.log(`[ChatPage] Resposta da API:`, res.data);
-
-            // Se não houver query, tentar obter todos os usuários
-            if (!query || query.trim() === '') {
-                console.log('[ChatPage] Query vazia, buscando todos os usuários...');
-            }
-
-            // Debug: Verificar estrutura da resposta
-            console.log('[ChatPage] Estrutura da resposta:', typeof res.data, Array.isArray(res.data));
 
             // Tentar diferentes abordagens dependendo da estrutura
             let users = [];
@@ -81,15 +71,12 @@ export default function ChatPage() {
                 // A resposta tem dados de debug
                 users = res.data.users;
             } else {
-                console.error('[ChatPage] Estrutura de resposta inesperada:', res.data);
+                console.warn('[ChatPage] Estrutura de resposta inesperada:', res.data);
                 users = [];
             }
 
-            console.log(`[ChatPage] Usuários recebidos (bruto): ${users.length}`);
-
             // Filter out current user
             const filteredUsers = users.filter((u: any) => u.id !== user?.id);
-            console.log(`[ChatPage] Usuários após filtro (exceto ${user?.id}): ${filteredUsers.length}`);
 
             return filteredUsers;
         },

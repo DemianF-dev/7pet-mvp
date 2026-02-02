@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import ResponsiveTable, { Column } from '../../components/system/ResponsiveTable';
-import { Container, Stack } from '../../components/layout/LayoutHelpers';
+import { Stack } from '../../components/layout/LayoutHelpers';
 import Badge from '../../components/ui/Badge';
 import OrderDetailsModal from '../../components/staff/OrderDetailsModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
@@ -277,7 +277,7 @@ export default function FinancialReports() {
     }
 
     return (
-        <Container>
+        <div className="w-full max-w-7xl">
             <Stack gap={10} className="py-10">
                 <header>
                     <Breadcrumbs />
@@ -453,6 +453,6 @@ export default function FinancialReports() {
                     </div>
                 )}
             </AnimatePresence>
-        </Container>
+        </div>
     );
 }

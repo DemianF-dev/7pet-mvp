@@ -61,7 +61,7 @@ const AuditConsole: React.FC = () => {
     };
 
     return (
-        <div className="p-8">
+        <div className="w-full max-w-7xl">
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-secondary tracking-tight">Console de <span className="text-primary">Auditoria</span></h1>

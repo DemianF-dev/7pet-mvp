@@ -12,26 +12,18 @@ import {
     useReactivateQuote
 } from '../../hooks/useQuotes';
 import {
-    X,
     Search,
     Filter,
     Edit,
     Trash2,
-    Copy,
-    RefreshCcw,
     Archive,
-    Share2,
-    Calendar,
     DollarSign,
     Settings,
     Plus,
-    CheckSquare,
-    Square
 } from 'lucide-react';
-import AppointmentFormModal from '../../components/staff/AppointmentFormModal';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import { getQuoteStatusColor } from '../../utils/statusColors';
 import CascadeDeleteModal from '../../components/modals/CascadeDeleteModal';
@@ -40,8 +32,8 @@ import Breadcrumbs from '../../components/staff/Breadcrumbs';
 import ManualQuoteModal from '../../components/modals/ManualQuoteModal';
 import QueryState from '../../components/system/QueryState';
 import ResponsiveTable, { Column } from '../../components/system/ResponsiveTable';
-import { Container, Stack } from '../../components/layout/LayoutHelpers';
-import { Button, Input, Badge, IconButton, EmptyState, Card } from '../../components/ui';
+import { Button, Input, Badge, IconButton, EmptyState } from '../../components/ui';
+import { Stack } from '../../components/layout/LayoutHelpers';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileQuotes } from './MobileQuotes';
 import { useRegisterMobileAction } from '../../hooks/useMobileActions';
@@ -86,35 +78,23 @@ export default function QuoteManager() {
     const [view, setView] = useState<'active' | 'trash' | 'history'>('active');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-    // Register Mobile FAB Action
-    useRegisterMobileAction('new_quote', () => setIsManualQuoteModalOpen(true));
-
-    const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
-    const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [viewAppointmentData, setViewAppointmentData] = useState<any>(null);
+    const [isManualQuoteModalOpen, setIsManualQuoteModalOpen] = useState(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    // Adicionados novamente (estavam sendo usados mas foram deletados acidentalmente)
+    const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [viewCustomerData, setViewCustomerData] = useState<string | null>(null);
     const [preFillData, setPreFillData] = useState<any>(null);
     const [appointmentSelectionQuote, setAppointmentSelectionQuote] = useState<Quote | null>(null);
     const [selectedQuoteForDelete, setSelectedQuoteForDelete] = useState<string | null>(null);
-    const [isManualQuoteModalOpen, setIsManualQuoteModalOpen] = useState(false);
-
-    // Advanced Filters
+    const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [valueRange, setValueRange] = useState({ min: 0, max: 0 });
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-    // Sorting
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
-
-    const handleSort = (key: string) => {
-        setSortConfig(current => {
-            if (current?.key === key) {
-                return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
-            }
-            return { key, direction: 'asc' };
-        });
-    };
+    // Register Mobile FAB Action
+    useRegisterMobileAction('new_quote', () => setIsManualQuoteModalOpen(true));
 
     // React Query Hooks
     const { data: quotes = [], isLoading } = useQuotes(view);
@@ -379,27 +359,14 @@ export default function QuoteManager() {
             className: 'text-right',
             render: (quote) => (
                 <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
-                    <IconButton icon={Edit} onClick={() => navigate(`/staff/quotes/${quote.id}`)} variant="ghost" size="sm" />
+                    <IconButton icon={Edit} onClick={() => navigate(`/staff/quotes/${quote.id}`)} variant="ghost" size="sm" aria-label="Editar Orçamento" />
                 </div>
             )
         }
     ];
 
-    const handleViewAppointment = async (q: Quote) => {
-        if (!q || !q.appointments) return;
-        const appts = Array.isArray(q.appointments) ? q.appointments : [];
-
-        if (appts.length === 1) {
-            try {
-                const res = await api.get(`/appointments/${appts[0].id}`);
-                setViewAppointmentData(res.data);
-                setSelectedAppointmentId(appts[0].id);
-            } catch (err) {
-                console.error('Erro ao buscar agendamento', err);
-            }
-        } else if (appts.length > 1) {
-            setAppointmentSelectionQuote(q);
-        }
+    const handleViewAppointment = (appointment: any) => {
+        setViewAppointmentData(appointment);
     };
 
     const handleBulkRestore = async (ids: string[]) => {
@@ -440,7 +407,7 @@ export default function QuoteManager() {
         }
 
         return (
-            <Container>
+            <div className="w-full max-w-7xl">
                 <Stack gap={10} className="py-10 pb-32">
                     <header>
                         <div className="flex items-center justify-between mb-8">
@@ -455,8 +422,8 @@ export default function QuoteManager() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <IconButton icon={DollarSign} onClick={handleBatchBill} variant="secondary" className="bg-orange-500/10 text-orange-600" />
-                                <IconButton icon={Settings} onClick={() => navigate('/staff/transport-config')} variant="secondary" />
+                                <IconButton icon={DollarSign} onClick={handleBatchBill} variant="secondary" className="bg-orange-500/10 text-orange-600" aria-label="Faturamento em Lote" />
+                                <IconButton icon={Settings} onClick={() => navigate('/staff/transport-config')} variant="secondary" aria-label="Configurações de Transporte" />
                                 <Button
                                     onClick={() => setIsManualQuoteModalOpen(true)}
                                     variant="primary"
@@ -487,7 +454,7 @@ export default function QuoteManager() {
                                         <option value="ALL">TODOS</option>
                                         {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
-                                    <IconButton icon={Filter} size="sm" variant={showAdvancedFilters ? 'primary' : 'ghost'} onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} />
+                                    <IconButton icon={Filter} size="sm" variant={showAdvancedFilters ? 'primary' : 'ghost'} onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} aria-label="Filtrar" />
                                 </div>
                             </div>
 
@@ -511,7 +478,7 @@ export default function QuoteManager() {
                     <QueryState
                         isLoading={isLoading}
                         isEmpty={filteredQuotes.length === 0}
-                        emptyMessage="Nenhum orçamento encontrado."
+                        emptyState={<EmptyState title="Nenhum orçamento encontrado" description="Tente outros termos de busca." icon={Archive} />}
                     >
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <ResponsiveTable
@@ -527,7 +494,7 @@ export default function QuoteManager() {
                         </div>
                     </QueryState>
                 </Stack>
-            </Container>
+            </div>
         );
     };
 
@@ -566,7 +533,16 @@ export default function QuoteManager() {
                     <AppointmentDetailsModal
                         isOpen={!!viewAppointmentData}
                         onClose={() => setViewAppointmentData(null)}
-                        appointmentId={selectedAppointmentId || ''}
+                        appointment={viewAppointmentData}
+                        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                        onModify={(appt) => {
+                            setViewAppointmentData(null);
+                            navigate(`/staff/appointments/edit/${appt.id}`);
+                        }}
+                        onCopy={(appt) => {
+                            setViewAppointmentData(null);
+                            // Logic for copying if needed
+                        }}
                     />
                 )}
             </AnimatePresence>
