@@ -570,7 +570,12 @@ export const quoteController = {
                 transportLevaAt: z.string().optional(),
                 transportTrazAt: z.string().optional(),
                 petId: z.string().optional(),
-                transportLegs: z.any().optional()
+                transportLegs: z.any().optional(),
+                isRecurring: z.boolean().optional(),
+                recurrenceFrequency: z.string().optional(),
+                recurrenceType: z.enum(['SPA', 'TRANSPORTE', 'AMBOS']).optional(),
+                transportWeeklyFrequency: z.number().int().optional(),
+                metadata: z.any().optional(),
             }).parse(req.body);
 
             const user = (req as any).user;
@@ -580,7 +585,8 @@ export const quoteController = {
 
             // Prepare update data
             const updateData: any = {
-                totalAmount: data.totalAmount
+                totalAmount: data.totalAmount,
+                metadata: data.metadata
             };
 
             if (data.desiredAt) {
@@ -648,6 +654,9 @@ export const quoteController = {
             if (data.hasParasites !== undefined) updateData.hasParasites = data.hasParasites;
             if (data.petQuantity !== undefined) updateData.petQuantity = data.petQuantity;
             if (data.petId !== undefined) updateData.petId = data.petId;
+            if (data.isRecurring !== undefined) updateData.isRecurring = data.isRecurring;
+            if (data.recurrenceFrequency !== undefined) updateData.frequency = data.recurrenceFrequency;
+            // Removed recurrenceType and transportWeeklyFrequency as they are not in the schema
 
             if (data.items) {
                 // Determine status logic: if items are priced > 0 and status is SOLICITADO, maybe move to CALCULADO?
@@ -714,17 +723,13 @@ export const quoteController = {
                         deleteMany: {},
                         create: (req.body.transportLegs as any[]).map((leg: any) => ({
                             id: randomUUID(),
-                            kind: leg.legType,
-                            originAddress: leg.origin,
-                            destinationAddress: leg.destination,
-                            distanceKm: Number(leg.distance || 0),
-                            durationMin: Math.round(Number(leg.duration || 0)),
-                            chargeKm: Number(leg.distance || 0),
-                            chargeMin: 0,
-                            kmRate: 0,
-                            minRate: 0,
-                            subtotal: Number(leg.price || 0),
-                            assignedProviderId: leg.assignedProviderId
+                            legType: leg.legType,
+                            originAddress: leg.origin || leg.originAddress,
+                            destinationAddress: leg.destination || leg.destinationAddress,
+                            kms: Number(leg.distance || leg.kms || 0),
+                            minutes: Math.round(Number(leg.duration || leg.minutes || 0)),
+                            price: Number(leg.price || 0),
+                            providerId: leg.assignedProviderId || leg.providerId
                         }))
                     } : undefined
                 }
@@ -755,6 +760,36 @@ export const quoteController = {
                 return res.status(400).json({ error: 'Erro de validação', details: error.issues });
             }
             return res.status(500).json({ error: 'Internal server error', message: error instanceof Error ? error.message : String(error) });
+        }
+    },
+
+    async schedule(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { occurrences } = req.body;
+            const user = (req as any).user;
+
+            if (user.role === 'CLIENTE') {
+                return res.status(403).json({ error: 'Apenas colaboradores podem realizar o agendamento.' });
+            }
+
+            if (!occurrences || !Array.isArray(occurrences)) {
+                return res.status(400).json({ error: 'Payload inválido. "occurrences" deve ser um array.' });
+            }
+
+            const result = await quoteService.scheduleQuote(id, { occurrences }, user);
+
+            return res.status(200).json({
+                message: 'Agendamentos realizados com sucesso',
+                count: result.length,
+                appointments: result
+            });
+
+        } catch (error: any) {
+            console.error('[QuoteController] Error scheduling quote:', error);
+            return res.status(400).json({
+                error: error.message || 'Erro ao agendar orçamento.'
+            });
         }
     },
 
@@ -1052,6 +1087,23 @@ export const quoteController = {
             });
             console.log(`[Quote] Calculation result: `, result);
 
+            // Persist LEGS V2
+            await prisma.transportLeg.deleteMany({
+                where: { quoteId: id }
+            });
+
+            await prisma.transportLeg.createMany({
+                data: result.legs.map(leg => ({
+                    quoteId: id,
+                    legType: leg.kind as any,
+                    originAddress: leg.originAddress,
+                    destinationAddress: leg.destinationAddress,
+                    kms: leg.distanceKm,
+                    minutes: Math.round(leg.durationMin),
+                    price: leg.subtotal,
+                }))
+            });
+
             return res.status(200).json({
                 total: result.totals.totalAfterDiscount,
                 totalBeforeDiscount: result.totals.totalBeforeDiscount,
@@ -1154,6 +1206,9 @@ export const quoteController = {
      * Criação de orçamento manual com cadastro simultâneo de cliente e pet
      */
     async createManual(req: Request, res: Response) {
+        // Store customer email for error logging
+        let customerEmail: string | undefined;
+
         try {
             const user = (req as any).user;
             if (user.role === 'CLIENTE') {
@@ -1161,6 +1216,7 @@ export const quoteController = {
             }
 
             const { customer, pet, quote: quoteData } = req.body;
+            customerEmail = customer?.email;
             console.log('[createManual] Iniciando processamento:', {
                 customerEmail: customer?.email,
                 quoteType: quoteData?.type,
@@ -1168,14 +1224,40 @@ export const quoteController = {
             });
 
             // Basic validation
-            if (!customer || !customer.email || !customer.name) {
-                return res.status(400).json({ error: 'Dados do cliente (nome e email) são obrigatórios.' });
+            if (!customer) {
+                return res.status(400).json({ error: 'Dados do cliente são obrigatórios.' });
+            }
+            if (!customer.email) {
+                return res.status(400).json({ error: 'Email do cliente é obrigatório.' });
+            }
+            if (!customer.name) {
+                return res.status(400).json({ error: 'Nome do cliente é obrigatório.' });
+            }
+            if (!quoteData) {
+                return res.status(400).json({ error: 'Dados do orçamento são obrigatórios.' });
             }
 
             const result = await prisma.$transaction(async (tx: any) => {
                 // 1. Register/Get Customer and Pet
                 console.log('[createManual] Registrando/Localizando cliente e pet...');
-                const { customer: dbCustomer, pet: dbPet } = await authService.registerManual(tx as any, { customer, pet });
+                console.log('[createManual] Dados recebidos:', {
+                    customer: { ...customer, email: customer?.email },
+                    pet: pet ? { name: pet.name, id: pet.id } : null
+                });
+
+                let dbCustomer, dbPet;
+                try {
+                    const result = await authService.registerManual(tx as any, { customer, pet });
+                    dbCustomer = result.customer;
+                    dbPet = result.pet;
+                    console.log('[createManual] Cliente/Pet registrado:', {
+                        customerId: dbCustomer?.id,
+                        petId: dbPet?.id
+                    });
+                } catch (authError: any) {
+                    console.error('[createManual] Erro ao registrar cliente/pet:', authError);
+                    throw new Error(`Falha ao criar cliente/pet: ${authError.message}`);
+                }
 
                 if (!dbCustomer) {
                     throw new Error('Falha ao criar/localizar perfil do cliente.');
@@ -1183,15 +1265,24 @@ export const quoteController = {
 
                 // 2. Process Items (fetch prices)
                 console.log('[createManual] Processando itens e preços...');
+                console.log('[createManual] Items recebidos:', quoteData?.items?.length || 0);
                 const processedItems = quoteData.items ? await Promise.all(quoteData.items.map(async (item: any) => {
                     let price = Number(item.price) || 0;
                     let description = item.description;
+                    let productId = item.productId || null;
+                    let serviceId = item.serviceId || null;
 
-                    if (item.serviceId) {
-                        const service = await tx.service.findUnique({ where: { id: item.serviceId } });
+                    if (serviceId) {
+                        const service = await tx.service.findUnique({ where: { id: serviceId } });
                         if (service) {
                             price = (Number(item.price) > 0) ? Number(item.price) : service.basePrice;
                             description = description || service.name;
+                        }
+                    } else if (productId) {
+                        const product = await tx.product.findUnique({ where: { id: productId } });
+                        if (product) {
+                            price = (Number(item.price) > 0) ? Number(item.price) : product.price;
+                            description = description || product.name;
                         }
                     }
 
@@ -1199,7 +1290,8 @@ export const quoteController = {
                         description: description || 'Sem descrição',
                         quantity: Number(item.quantity) || 1,
                         price,
-                        serviceId: item.serviceId
+                        serviceId,
+                        productId
                     };
                 })) : [];
 
@@ -1245,21 +1337,52 @@ export const quoteController = {
                     });
                 }
 
-                // 2.5 Apply Recurrence Discounts to ALL services (including transport and automated)
-                const recurrenceFrequency = quoteData.recurrenceFrequency || customer.recurrenceFrequency;
-                let discountRate = 0;
-                if (recurrenceFrequency === 'MENSAL') discountRate = 0.05;
-                else if (recurrenceFrequency === 'QUINZENAL') discountRate = 0.07;
-                else if (recurrenceFrequency === 'SEMANAL') discountRate = 0.10;
+                // 2.5 Apply Recurrence Discounts
+                // Safe access to customer properties
+                const customerType = customer?.type || 'AVULSO';
+                const recurrenceFrequency = quoteData.recurrenceFrequency || customer?.recurrenceFrequency || null;
+                const transportWeeklyFreq = 1; // Default since it was removed from UI
 
-                if (discountRate > 0) {
-                    console.log(`[createManual] Aplicando desconto de recorrência: ${discountRate * 100}% em todos os serviços`);
+                console.log('[createManual] Dados de recorrência:', {
+                    customerType,
+                    recurrenceFrequency,
+                    transportWeeklyFreq
+                });
+
+                let spaDiscountRate = 0;
+                const validFrequencies = ['SEMANAL', 'QUINZENAL', 'MENSAL'];
+                const safeFrequency = validFrequencies.includes(recurrenceFrequency || '') ? (recurrenceFrequency as any) : null;
+
+                if (customerType === 'RECORRENTE') {
+                    if (safeFrequency === 'MENSAL') spaDiscountRate = 0.05;
+                    else if (safeFrequency === 'QUINZENAL') spaDiscountRate = 0.07;
+                    else if (safeFrequency === 'SEMANAL') spaDiscountRate = 0.10;
+                }
+
+                let transportDiscountRate = 0;
+                if (customerType === 'RECORRENTE') {
+                    if (transportWeeklyFreq <= 2) transportDiscountRate = 0.05;
+                    else if (transportWeeklyFreq <= 4) transportDiscountRate = 0.07;
+                    else if (transportWeeklyFreq <= 6) transportDiscountRate = 0.10;
+                }
+
+                if (spaDiscountRate > 0 || transportDiscountRate > 0) {
+                    console.log(`[createManual] Aplicando descontos: SPA=${spaDiscountRate * 100}%, Transp=${transportDiscountRate * 100}%`);
                     for (const item of processedItems) {
-                        // Aplica em tudo que não for produto (serviços, automáticos, transporte)
-                        if (!item.productId) {
-                            item.price = item.price * (1 - discountRate);
+                        const isTransport = item.description?.toLowerCase().includes('transporte') ||
+                            item.description?.includes('🔄') ||
+                            item.description?.includes('📦') ||
+                            item.description?.includes('🏠');
+
+                        if (isTransport && transportDiscountRate > 0) {
+                            item.price = item.price * (1 - transportDiscountRate);
                             if (!item.description.includes('% desc reg.')) {
-                                item.description += ` (${(discountRate * 100).toFixed(0)}% desc reg.)`;
+                                item.description += ` (${(transportDiscountRate * 100).toFixed(0)}% desc reg.)`;
+                            }
+                        } else if (!isTransport && !item.productId && spaDiscountRate > 0) {
+                            item.price = item.price * (1 - spaDiscountRate);
+                            if (!item.description.includes('% desc reg.')) {
+                                item.description += ` (${(spaDiscountRate * 100).toFixed(0)}% desc reg.)`;
                             }
                         }
                     }
@@ -1285,62 +1408,97 @@ export const quoteController = {
                     throw new Error('Valor total calculado é inválido (NaN). Verifique os preços dos itens.');
                 }
 
-                // Sanitize items - ensure serviceId is null not undefined
-                const sanitizedItems = processedItems.map((item: any) => ({
-                    id: randomUUID(),
-                    description: item.description || 'Item sem descrição',
-                    quantity: item.quantity || 1,
-                    price: item.price || 0,
-                    serviceId: item.serviceId || null
-                }));
+                 // Sanitize items
+                 const sanitizedItems = processedItems.map((item: any) => ({
+                     id: randomUUID(), // Ensure each item has an ID
+                     description: item.description || 'Item sem descrição',
+                     quantity: Number(item.quantity) || 1,
+                     price: Number(item.price) || 0,
+                     serviceId: item.serviceId || null,
+                     productId: item.productId || null
+                 }));
 
                 console.log('[createManual] Criando registro de orçamento...');
+                console.log('[createManual] Dados do orçamento:', {
+                    customerId: dbCustomer.id,
+                    petId: dbPet?.id || null,
+                    type: quoteData.type || 'SPA',
+                    totalAmount,
+                    itemsCount: sanitizedItems.length,
+                    userId: user?.id || 'SYSTEM'
+                });
+
+                // Validate required fields
+                if (!user?.id) {
+                    console.warn('[createManual] user.id não encontrado, usando SYSTEM');
+                }
 
                 // 3. Create Quote
-                const quote = await tx.quote.create({
-                    data: {
+                let quote;
+                try {
+                    quote = await tx.quote.create({
+                        data: {
+                            customerId: dbCustomer.id,
+                            petId: dbPet?.id || null,
+                            type: quoteData.type || 'SPA',
+                            desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
+                            transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address,
+                            transportDestination: quoteData.transportDestination || "7Pet",
+                            transportReturnAddress: quoteData.transportReturnAddress,
+                            transportPeriod: quoteData.transportPeriod,
+                            petQuantity: Number(quoteData.petQuantity) || 1,
+                            hairLength: quoteData.hairLength,
+                            hasKnots: quoteData.hasKnots || false,
+                            knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
+                            hasParasites: quoteData.hasParasites || false,
+                            parasiteTypes: quoteData.parasiteTypes,
+                            parasiteComments: quoteData.parasiteComments,
+                            wantsMedicatedBath: quoteData.wantsMedicatedBath || false,
+                            transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
+                            transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
+                            status: 'SOLICITADO',
+                            totalAmount,
+                            isRecurring: customerType === 'RECORRENTE',
+                            frequency: (customerType === 'RECORRENTE') ? safeFrequency : null,
+                            packageDiscount: spaDiscountRate > 0 ? spaDiscountRate : null,
+                             metadata: {
+                                 recurrenceType: 'SPA',
+                                 transportWeeklyFrequency: customerType === 'RECORRENTE' ? transportWeeklyFreq : 1,
+                             },
+                            statusHistory: {
+                                create: {
+                                    id: randomUUID(),
+                                    oldStatus: 'NONE',
+                                    newStatus: 'SOLICITADO',
+                                    changedBy: user.id || 'SYSTEM',
+                                    reason: 'Criado manualmente pelo operador'
+                                }
+                            },
+                            items: {
+                                create: sanitizedItems
+                            }
+                        },
+                        include: {
+                            items: true,
+                            pet: { select: { name: true } },
+                            customer: { select: { name: true } }
+                        }
+                    });
+                } catch (prismaError: any) {
+                    console.error('[createManual] Erro ao criar quote no Prisma. Dados da tentativa:', JSON.stringify({
                         customerId: dbCustomer.id,
                         petId: dbPet?.id || null,
                         type: quoteData.type || 'SPA',
-                        desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
-                        transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address,
-                        transportDestination: quoteData.transportDestination || "7Pet",
-                        transportReturnAddress: quoteData.transportReturnAddress,
-                        transportPeriod: quoteData.transportPeriod,
-                        petQuantity: Number(quoteData.petQuantity) || 1,
-                        hairLength: quoteData.hairLength,
-                        hasKnots: quoteData.hasKnots || false,
-                        knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
-                        hasParasites: quoteData.hasParasites || false,
-                        parasiteTypes: quoteData.parasiteTypes,
-                        parasiteComments: quoteData.parasiteComments,
-                        wantsMedicatedBath: quoteData.wantsMedicatedBath || false,
-                        transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
-                        transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
-                        status: 'SOLICITADO',
-                        totalAmount,
-                        isRecurring: customer.type === 'RECORRENTE',
-                        frequency: (customer.type === 'RECORRENTE') ? recurrenceFrequency : null,
-                        packageDiscount: discountRate > 0 ? discountRate : null,
-                        statusHistory: {
-                            create: {
-                                id: randomUUID(),
-                                oldStatus: 'NONE',
-                                newStatus: 'SOLICITADO',
-                                changedBy: user.id || 'SYSTEM',
-                                reason: 'Criado manualmente pelo operador'
-                            }
-                        },
-                        items: {
-                            create: sanitizedItems
-                        }
-                    },
-                    include: {
-                        items: true,
-                        pet: { select: { name: true } },
-                        customer: { select: { name: true } }
-                    }
-                });
+                        isRecurring: customerType === 'RECORRENTE',
+                        frequency: (customerType === 'RECORRENTE') ? safeFrequency : null,
+                        itemsCount: sanitizedItems.length,
+                        totalAmount
+                    }, null, 2));
+                    console.error('[createManual] Erro ao criar quote no Prisma:', prismaError);
+                    console.error('[createManual] Prisma error code:', prismaError.code);
+                    console.error('[createManual] Prisma error meta:', prismaError.meta);
+                    throw new Error(`Erro ao criar orçamento no banco: ${prismaError.message}`);
+                }
 
                 // Create audit log
                 await auditService.logEvent((req as any).audit, {
@@ -1362,10 +1520,22 @@ export const quoteController = {
             console.log('[createManual] Orçamento criado com sucesso ID:', result.id);
             return res.status(201).json(result);
         } catch (error: any) {
-            console.error('[createManual] Erro fatal:', error);
+            console.error('[createManual] ====================');
+            console.error('[createManual] Erro fatal capturado:', error);
+            console.error('[createManual] Error message:', error.message);
+            console.error('[createManual] Error code:', error.code);
+            console.error('[createManual] Error stack:', error.stack);
+            console.error('[createManual] ====================');
+
+            // Return detailed error for debugging
             return res.status(500).json({
                 error: 'Erro interno ao processar orçamento manual',
                 message: error.message,
+                details: {
+                    code: error.code,
+                    meta: error.meta,
+                    customerEmail: customerEmail
+                },
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }

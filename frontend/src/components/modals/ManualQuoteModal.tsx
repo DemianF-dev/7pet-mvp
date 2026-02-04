@@ -18,6 +18,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
     const [showSummary, setShowSummary] = useState(false);
     const [strategicDiscount, setStrategicDiscount] = useState<number | ''>(0);
     const [creditCardFee, setCreditCardFee] = useState<number | ''>(0); // Taxa de cartão de crédito em %
+    const [selectionStep, setSelectionStep] = useState(true);
 
     // Form State
     const [customer, setCustomer] = useState({
@@ -59,7 +60,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
     const [customerPets, setCustomerPets] = useState<any[]>([]);
 
     const [quote, setQuote] = useState({
-        type: 'SPA',
+        type: 'SPA' as 'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE',
         desiredAt: '',
         transportOrigin: '',
         transportDestination: '7Pet',
@@ -98,7 +99,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                     setSearchResults(res.data);
                     setShowSuggestions(res.data.length > 0);
                 } catch (error) {
-                    console.error('Erro na busca ativa:', error);
+                    // Silenciar erros de busca para não poluir o console
                 }
             } else if (!query) {
                 setSearchResults([]);
@@ -119,8 +120,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
             const svcData = Array.isArray(svcRes.data) ? svcRes.data : (svcRes.data.items || []);
             const prodData = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data.items || []);
 
-            console.log('[ManualQuoteModal] Serviços carregados:', svcData.length);
-            console.log('[ManualQuoteModal] Produtos carregados:', prodData.length);
+
 
             setServices(svcData);
             setProducts(prodData);
@@ -305,11 +305,8 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
     };
 
     const getFilteredServices = () => {
-        console.log('[Filter] Total services loaded:', services.length);
-
         // Se não tiver espécie definida, mostra tudo (fallback)
         if (!pet.species) {
-            console.log('[Filter] No pet species defined, showing all services (fallback)');
             return services;
         }
 
@@ -317,32 +314,11 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
         const pWeight = parseFloat(pet.weight) || 0;
         const pCoat = (pet.coatType || '').toUpperCase();
 
-        console.log('[Filter] Pet profile:', {
-            species: pet.species,
-            normalized: pNorm,
-            weight: pWeight,
-            coat: pCoat,
-            allServices: services.length
-        });
-
-        const filteredServices = services.filter((service, index) => {
-            // Log primeiros 5 serviços para debug
-            if (index < 5) {
-                console.log(`[Filter] Service ${index}:`, {
-                    name: service.name,
-                    species: service.species,
-                    coatType: service.coatType,
-                    sizeLabel: service.sizeLabel,
-                    minWeight: service.minWeight,
-                    maxWeight: service.maxWeight
-                });
-            }
-
+        const filteredServices = services.filter((service) => {
             // 1. Filtrar por espécie
             if (service.species) {
                 const sNorm = normalizeSpecies(service.species);
                 if (sNorm !== pNorm) {
-                    if (index < 5) console.log(`[Filter] ❌ Species mismatch: ${sNorm} != ${pNorm}`);
                     return false;
                 }
             }
@@ -359,9 +335,19 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                 else if (pWeight <= 35) expectedSizeLabel = 'GRANDE';
                 else expectedSizeLabel = 'GIGANTE';
 
-                // Se serviço tem sizeLabel definido, verificar se corresponde
-                if (serviceSizeLabel && expectedSizeLabel && serviceSizeLabel !== expectedSizeLabel) {
-                    if (index < 5) console.log(`[Filter] ❌ Size mismatch: ${serviceSizeLabel} != ${expectedSizeLabel} for weight ${pWeight}kg`);
+                // If service has sizeLabel defined, check if it matches roughly
+                const sizes = ['MINI', 'PEQUENO', 'MÉDIO', 'GRANDE', 'GIGANTE'];
+                const serviceIdx = sizes.indexOf(serviceSizeLabel);
+                const expectedIdx = sizes.indexOf(expectedSizeLabel);
+
+                // For manual quotes, we allow a margin of 1 level (e.g. PEQUENO pet can see MINI and MÉDIO services)
+                if (serviceIdx !== -1 && expectedIdx !== -1) {
+                    const diff = Math.abs(serviceIdx - expectedIdx);
+                    if (diff > 1) {
+                        return false;
+                    }
+                } else if (serviceSizeLabel && expectedSizeLabel && serviceSizeLabel !== expectedSizeLabel) {
+                    // Fallback for labels not in our weight array
                     return false;
                 }
             }
@@ -374,16 +360,13 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                         pCoat.includes('MEDIO') || pCoat.includes('MÉDIO') ? 'MÉDIO' : '';
 
                 if (petCoatType && serviceCoatType && petCoatType !== serviceCoatType) {
-                    if (index < 5) console.log(`[Filter] ❌ Coat mismatch: pet ${petCoatType} != service ${serviceCoatType}`);
                     return false;
                 }
             }
 
-            if (index < 5) console.log(`[Filter] ✅ Service passed all filters: ${service.name}`);
             return true;
         });
 
-        console.log(`[Filter] Results: ${filteredServices.length}/${services.length} services passed filters`);
         return filteredServices;
     };
 
@@ -677,19 +660,46 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
     const confirmCreateQuote = async () => {
         setIsLoading(true);
         try {
+            // Validações adicionais no frontend
+            if (!customer.email || !customer.name) {
+                toast.error('Nome e email do cliente são obrigatórios');
+                setIsLoading(false);
+                return;
+            }
+
+            if (!pet.name) {
+                toast.error('Nome do pet é obrigatório');
+                setIsLoading(false);
+                return;
+            }
+
+            // Garantir que items seja sempre um array
+            const itemsForQuote = quote.items || [];
+            
+            if (itemsForQuote.length === 0 && quote.type !== 'TRANSPORTE') {
+                toast.error('Adicione pelo menos um item ao orçamento');
+                setIsLoading(false);
+                return;
+            }
+
             const payload = {
                 customer: {
                     ...customer,
-                    recurrenceFrequency: customer.type === 'RECORRENTE' ? customer.recurrenceFrequency : null
+                    recurrenceFrequency: customer.type === 'RECORRENTE' ? customer.recurrenceFrequency : null,
                 },
-                pet,
+                pet: {
+                    ...pet,
+                    weight: parseFloat(pet.weight) || 0 // Ensure weight is numeric
+                },
                 quote: {
                     ...quote,
+                    items: itemsForQuote, // Ensure items are included
                     recurrenceFrequency: customer.type === 'RECORRENTE' ? customer.recurrenceFrequency : null,
+                    type: quote.type || 'SPA',
                     transportOrigin: quote.transportOrigin || customer.address,
                     transportReturnAddress: quote.isReturnSame ? (quote.transportOrigin || customer.address) : quote.transportReturnAddress,
                     hasKnots: pet.hasKnots,
-                    knotRegions: pet.knotRegions.join(', '),
+                    knotRegions: Array.isArray(pet.knotRegions) ? pet.knotRegions.join(', ') : '',
                     hasParasites: pet.hasParasites,
                     parasiteTypes: pet.parasiteTypes,
                     wantsMedicatedBath: pet.wantsMedicatedBath,
@@ -697,13 +707,31 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                 }
             };
 
+            console.log('[ManualQuoteModal] Enviando payload:', payload);
             const res = await api.post('/quotes/manual', payload);
             toast.success('Orçamento criado com sucesso! Agora está em status CALCULADO para revisão.');
             onSuccess(res.data);
             onClose();
         } catch (error: any) {
             console.error('Erro ao criar orçamento manual:', error);
-            toast.error(error.response?.data?.error || 'Erro ao criar orçamento');
+            
+            // Tratamento melhorado de erros
+            let errorMessage = 'Erro ao criar orçamento';
+            
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData.details) {
+                    errorMessage = JSON.stringify(errorData.details);
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
             setShowSummary(false);
@@ -766,7 +794,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
 
     if (!isOpen) return null;
 
-    const getDiscountRate = () => {
+    const getSpaDiscountRate = () => {
         if (customer.type === 'AVULSO') return 0;
         if (customer.recurrenceFrequency === 'MENSAL') return 0.05;
         if (customer.recurrenceFrequency === 'QUINZENAL') return 0.07;
@@ -774,29 +802,34 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
         return 0;
     };
 
+    const getTransportDiscountRate = () => {
+        if (customer.type === 'AVULSO') return 0;
+        return 0.05; // Default discount for recurring transport
+    };
+
     const knotItems = getKnotItems();
     const medicatedBathItem = getMedicatedBathItem();
     const allItems = [...quote.items, ...knotItems, ...(medicatedBathItem ? [medicatedBathItem] : [])];
 
     const totalBase = allItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const discountRate = getDiscountRate();
+    const spaDiscountRate = getSpaDiscountRate();
+    const transportDiscountRate = getTransportDiscountRate();
 
-    // Descontos separados conforme novas regras (Aplicando também ao transporte se solicitado)
     const serviceDiscount = customer.type === 'RECORRENTE' ? allItems.reduce((acc, item) => {
         const isTransport = item.description?.toLowerCase().includes('transporte') ||
             item.description?.includes('🔄') ||
             item.description?.includes('📦') ||
             item.description?.includes('🏠');
 
-        // Desconto de recorrência sobre serviços, itens automáticos e transporte (desde que não seja produto)
-        if ((item.serviceId || item.isAutomatic || isTransport) && !item.productId && discountRate > 0) {
-            return acc + (item.price * item.quantity * discountRate);
+        if (isTransport) {
+            return acc + (item.price * item.quantity * transportDiscountRate);
+        } else if ((item.serviceId || item.isAutomatic) && !item.productId) {
+            return acc + (item.price * item.quantity * spaDiscountRate);
         }
         return acc;
     }, 0) : 0;
 
     const productDiscount = customer.type === 'AVULSO' ? allItems.reduce((acc, item) => {
-        // Desconto estratégico para AVULSO em todos os itens (SPA + Transporte)
         if (Number(strategicDiscount) > 0) {
             return acc + (item.price * item.quantity * (Number(strategicDiscount) / 100));
         }
@@ -842,1180 +875,1265 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/30 dark:bg-gray-900/50">
-                                {/* 1. Cliente */}
-                                <section className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
-                                    <h3 className="text-lg font-black text-secondary dark:text-white flex items-center gap-3 uppercase tracking-tight">
-                                        <div className="w-10 h-10 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-500 flex items-center justify-center font-black">1</div>
-                                        Dados do Cliente
-                                    </h3>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                        <div className="md:col-span-8 relative">
-                                            <div className="flex justify-between items-center mb-2 ml-1">
-                                                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nome Completo *</label>
-                                                {searchMode === 'EXISTING' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setCustomer({ id: '', name: '', email: '', phone: '', address: '', type: 'AVULSO', recurrenceFrequency: 'MENSAL' });
-                                                            setSearchMode('NEW');
-                                                        }}
-                                                        className="text-[9px] font-black text-blue-500 uppercase hover:underline"
-                                                    >
-                                                        Limpar / Novo
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="relative">
-                                                <input
-                                                    required
-                                                    type="text"
-                                                    value={customer.name}
-                                                    onChange={e => setCustomer({ ...customer, name: e.target.value })}
-                                                    onFocus={() => searchResults.length > 0 && setShowSuggestions(true)}
-                                                    className={`w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500 ${searchMode === 'EXISTING' ? 'ring-2 ring-blue-500/20' : ''}`}
-                                                    placeholder="Ex: João Silva"
-                                                />
-                                                {searchMode === 'EXISTING' && <CheckCircle size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-500" />}
-                                            </div>
-
-                                            {/* Suggestions Popover */}
-                                            <AnimatePresence>
-                                                {showSuggestions && searchResults.length > 0 && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 10 }}
-                                                        className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-60 overflow-y-auto"
-                                                    >
-                                                        <div className="p-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
-                                                            <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Clientes Encontrados:</span>
-                                                        </div>
-                                                        {searchResults.map((res: any) => (
-                                                            <button
-                                                                key={res.id}
-                                                                type="button"
-                                                                onClick={() => handleSelectCustomer(res)}
-                                                                className="w-full px-5 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-between border-b border-gray-50 dark:border-gray-700 last:border-none"
-                                                            >
-                                                                <div>
-                                                                    <p className="text-sm font-black text-secondary dark:text-white">{res.name}</p>
-                                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{res.phone || res.user?.email}</p>
-                                                                </div>
-                                                                <div className="flex gap-2">
-                                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tighter">Existente</span>
-                                                                    <Plus size={14} className="text-blue-500" />
-                                                                </div>
-                                                            </button>
-                                                        ))}
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
+                            {selectionStep ? (
+                                <div className="flex-1 overflow-y-auto p-10 bg-gray-50/30 dark:bg-gray-900/50">
+                                    <div className="flex flex-col items-center text-center mb-12">
+                                        <div className="w-20 h-20 bg-primary/10 rounded-[32px] flex items-center justify-center text-primary mb-6">
+                                            <Scissors size={40} className="animate-pulse" />
                                         </div>
-                                        <div className="md:col-span-4">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tipo de Orçamento</label>
-                                            <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCustomer({ ...customer, type: 'AVULSO' })}
-                                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${customer.type === 'AVULSO' ? 'bg-white dark:bg-gray-600 text-secondary dark:text-white shadow-sm' : 'text-gray-400 dark:text-gray-500'}`}
-                                                >
-                                                    Avulso
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCustomer({ ...customer, type: 'RECORRENTE' })}
-                                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${customer.type === 'RECORRENTE' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400'}`}
-                                                >
-                                                    Recorrente
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {customer.type === 'RECORRENTE' && (
-                                            <div className="md:col-span-12 animate-in slide-in-from-top-2">
-                                                <div className="grid grid-cols-3 gap-3 p-4 bg-purple-50 rounded-[32px] border border-purple-100">
-                                                    {[
-                                                        { id: 'MENSAL', label: 'Mensal', desc: '1 banho/mês', discount: '5% SPA' },
-                                                        { id: 'QUINZENAL', label: 'Quinzenal', desc: '2 banhos/mês', discount: '7% SPA' },
-                                                        { id: 'SEMANAL', label: 'Semanal', desc: '4+ banhos/mês', discount: '10% SPA' },
-                                                    ].map(freq => (
-                                                        <button
-                                                            key={freq.id}
-                                                            type="button"
-                                                            onClick={() => setCustomer({ ...customer, recurrenceFrequency: freq.id as any })}
-                                                            className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all ${customer.recurrenceFrequency === freq.id ? 'bg-purple-600 text-white shadow-xl scale-105' : 'bg-white text-purple-400 hover:bg-purple-100'}`}
-                                                        >
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">{freq.label}</span>
-                                                            <span className="text-[8px] font-bold opacity-70">{freq.desc}</span>
-                                                            <div className={`mt-1 px-2 py-0.5 rounded-lg font-black text-[9px] ${customer.recurrenceFrequency === freq.id ? 'bg-white/20' : 'bg-purple-100 text-purple-600'}`}>
-                                                                {freq.discount}
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="md:col-span-6">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email *</label>
-                                            <input
-                                                required
-                                                type="email"
-                                                value={customer.email}
-                                                onChange={e => setCustomer({ ...customer, email: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                placeholder="joao@email.com"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-6 relative">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Telefone</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={customer.phone}
-                                                    onChange={e => setCustomer({ ...customer, phone: e.target.value })}
-                                                    onFocus={() => searchResults.length > 0 && setShowSuggestions(true)}
-                                                    className={`w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500 ${searchMode === 'EXISTING' ? 'ring-2 ring-blue-500/20' : ''}`}
-                                                    placeholder="(11) 99999-9999"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="md:col-span-12">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Endereço (Padrão para Transporte)</label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
-                                                <input
-                                                    type="text"
-                                                    value={customer.address}
-                                                    onChange={e => {
-                                                        const val = e.target.value;
-                                                        setCustomer({ ...customer, address: val });
-                                                        if (!quote.transportOrigin) {
-                                                            setQuote({ ...quote, transportOrigin: val });
-                                                        }
-                                                    }}
-                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl pl-14 pr-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                    placeholder="Rua, Número, Bairro, Cidade - CEP"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* 2. Pet */}
-                                <section className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
-                                    <h3 className="text-lg font-black text-secondary dark:text-white flex items-center gap-3 uppercase tracking-tight">
-                                        <div className="w-10 h-10 rounded-2xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-500 flex items-center justify-center font-black">2</div>
-                                        Dados do Pet
-                                        {customerPets.length > 0 && (
-                                            <div className="ml-auto flex items-center gap-2">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selecionar:</span>
-                                                <select
-                                                    onChange={(e) => {
-                                                        const p = customerPets.find(cp => cp.id === e.target.value);
-                                                        if (p) {
-                                                            setPet({
-                                                                id: p.id,
-                                                                name: p.name,
-                                                                species: p.species,
-                                                                breed: p.breed || '',
-                                                                weight: p.weight?.toString() || '',
-                                                                coatType: p.coatType || 'CURTO',
-                                                                temperament: p.temperament || 'DOCIL',
-                                                                age: p.age || '',
-                                                                observations: p.observations || '',
-                                                                hasKnots: p.hasKnots || false,
-                                                                knotRegions: p.knotRegions ? (typeof p.knotRegions === 'string' ? p.knotRegions.split(',') : p.knotRegions) : [],
-                                                                hasParasites: p.hasParasites || false,
-                                                                hasMattedFur: p.hasMattedFur || false,
-                                                                healthIssues: p.healthIssues || '',
-                                                                allergies: p.allergies || '',
-                                                                parasiteTypes: p.parasiteTypes || '',
-                                                                parasiteComments: p.parasiteComments || '',
-                                                                wantsMedicatedBath: false
-                                                            });
-                                                        } else {
-                                                            // Reset to new pet
-                                                            setPet({
-                                                                id: '',
-                                                                name: '',
-                                                                species: 'Canino',
-                                                                breed: '',
-                                                                weight: '',
-                                                                coatType: 'CURTO',
-                                                                temperament: 'DOCIL',
-                                                                age: '',
-                                                                observations: '',
-                                                                hasKnots: false,
-                                                                knotRegions: [],
-                                                                hasParasites: false,
-                                                                hasMattedFur: false,
-                                                                healthIssues: '',
-                                                                allergies: '',
-                                                                parasiteTypes: '',
-                                                                parasiteComments: '',
-                                                                wantsMedicatedBath: false
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="bg-gray-100 border-none rounded-xl px-3 py-1 text-xs font-bold text-secondary outline-none focus:ring-2 focus:ring-purple-500/20"
-                                                    value={pet.id}
-                                                >
-                                                    <option value="">+ Novo Pet</option>
-                                                    {customerPets.map(p => (
-                                                        <option key={p.id} value={p.id}>{p.name} ({p.breed || 'SRD'})</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-                                    </h3>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                        <div className="md:col-span-2">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome do Pet</label>
-                                            <input
-                                                type="text"
-                                                value={pet.name}
-                                                onChange={e => setPet({ ...pet, name: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                placeholder="Ex: Rex"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Espécie</label>
-                                            <select
-                                                value={pet.species}
-                                                onChange={e => setPet({ ...pet, species: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                            >
-                                                <option value="Canino">🐕 Cachorro</option>
-                                                <option value="Felino">🐈 Gato</option>
-                                                <option value="Outro">🐾 Outro</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Raça</label>
-                                            <input
-                                                type="text"
-                                                value={pet.breed}
-                                                onChange={e => setPet({ ...pet, breed: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                placeholder="Ex: Poodle"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Peso (kg)</label>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={pet.weight}
-                                                onChange={e => setPet({ ...pet, weight: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                placeholder="0.0"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Pelagem</label>
-                                            <select
-                                                value={pet.coatType}
-                                                onChange={e => setPet({ ...pet, coatType: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                            >
-                                                <option value="CURTO">Curto</option>
-                                                <option value="MEDIO">Médio</option>
-                                                <option value="LONGO">Longo</option>
-                                            </select>
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Observações de Saúde/Comportamento</label>
-                                            <input
-                                                type="text"
-                                                value={pet.observations}
-                                                onChange={e => setPet({ ...pet, observations: e.target.value })}
-                                                className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                placeholder="Ex: Alérgico a perfume, morde se tocar na calda..."
-                                            />
-                                        </div>
+                                        <h3 className="text-3xl font-black text-secondary dark:text-white uppercase tracking-tight mb-3">Escolha o Tipo de Orçamento</h3>
+                                        <p className="text-gray-500 font-medium max-w-md">Selecione o fluxo desejado para que o sistema prepare as ferramentas e automações ideais.</p>
                                     </div>
 
-                                    {/* Características Avançadas (Nós, Parasitas) */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50 dark:border-gray-700">
-                                        {/* Nó e Desembolo */}
-                                        <div className={`p-5 rounded-3xl border-2 transition-all ${pet.hasKnots ? 'border-orange-200 bg-orange-50/30' : 'border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30'}`}>
-                                            <label className="flex items-center justify-between cursor-pointer mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-xl ${pet.hasKnots ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                                                        <Scissors size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-sm font-black text-secondary dark:text-white uppercase tracking-tight">O Pet possui nós?</span>
-                                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">Adiciona itens de desembolo ao total</p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPet({ ...pet, hasKnots: !pet.hasKnots })}
-                                                    className={`w-12 h-7 rounded-full relative transition-all ${pet.hasKnots ? 'bg-orange-500 shadow-lg shadow-orange-500/30' : 'bg-gray-200'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${pet.hasKnots ? 'left-6' : 'left-1'}`} />
-                                                </button>
-                                            </label>
-
-                                            {pet.hasKnots && (
-                                                <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                                                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest ml-1">Selecione as Regiões afetadas:</p>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                        {[
-                                                            'Orelhas', 'Rostinho', 'Pescoço', 'Barriga',
-                                                            'Pata Frontal Esquerda', 'Pata Frontal Direita',
-                                                            'Pata Traseira Esquerda', 'Pata Traseira Direita',
-                                                            'Bumbum', 'Rabo'
-                                                        ].map(region => (
-                                                            <button
-                                                                key={region}
-                                                                type="button"
-                                                                onClick={() => toggleKnotRegion(region.toLowerCase())}
-                                                                className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all border ${pet.knotRegions.includes(region.toLowerCase()) ? 'bg-orange-500 border-orange-500 text-white shadow-md' : 'bg-white border-orange-100 text-orange-400 hover:bg-orange-50'}`}
-                                                            >
-                                                                {region}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Parasitas e Banho Medicamentoso */}
-                                        <div className="space-y-4">
-                                            <div className={`p-5 rounded-3xl border-2 transition-all ${pet.hasParasites ? 'border-red-200 bg-red-50/30' : 'border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30'}`}>
-                                                <label className="flex items-center justify-between cursor-pointer">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-xl ${pet.hasParasites ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                                                            <Bug size={18} />
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-sm font-black text-secondary dark:text-white uppercase tracking-tight">Presença de Parasitas?</span>
-                                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">Pulgas ou carrapatos identificados</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPet({ ...pet, hasParasites: !pet.hasParasites })}
-                                                        className={`w-12 h-7 rounded-full relative transition-all ${pet.hasParasites ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-gray-200'}`}
-                                                    >
-                                                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${pet.hasParasites ? 'left-6' : 'left-1'}`} />
-                                                    </button>
-                                                </label>
-
-                                                {pet.hasParasites && (
-                                                    <div className="mt-4 flex gap-2 animate-in slide-in-from-top-2">
-                                                        {['PULGA', 'CARRAPATO', 'AMBOS'].map(type => (
-                                                            <button
-                                                                key={type}
-                                                                type="button"
-                                                                onClick={() => setPet({ ...pet, parasiteTypes: type })}
-                                                                className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase border transition-all ${pet.parasiteTypes === type ? 'bg-red-500 border-red-500 text-white shadow-md' : 'bg-white border-red-100 text-red-300 hover:bg-red-50'}`}
-                                                            >
-                                                                {type}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className={`p-5 rounded-3xl border-2 transition-all ${pet.wantsMedicatedBath ? 'border-blue-200 bg-blue-50/30' : 'border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30'}`}>
-                                                <label className="flex items-center justify-between cursor-pointer">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-xl ${pet.wantsMedicatedBath ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                                                            <Droplets size={18} />
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-sm font-black text-secondary dark:text-white uppercase tracking-tight">Banho Medicamentoso?</span>
-                                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">Adiciona (+ R$ 45,00) ao total</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPet({ ...pet, wantsMedicatedBath: !pet.wantsMedicatedBath })}
-                                                        className={`w-12 h-7 rounded-full relative transition-all ${pet.wantsMedicatedBath ? 'bg-blue-500 shadow-lg shadow-blue-500/30' : 'bg-gray-200'}`}
-                                                    >
-                                                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${pet.wantsMedicatedBath ? 'left-6' : 'left-1'}`} />
-                                                    </button>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* 3. Logística de Transporte */}
-                                <section className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-black text-secondary dark:text-white flex items-center gap-3 uppercase tracking-tight">
-                                            <div className="w-10 h-10 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center font-black">3</div>
-                                            Logística (Transporte)
-                                        </h3>
-                                        <div className="px-4 py-2 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-2">
-                                            <span className="text-[10px] font-black text-orange-600 uppercase">Incluir Transporte?</span>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {[
+                                            {
+                                                id: 'SPA',
+                                                title: 'SPA & Estética',
+                                                desc: 'Banhos, tosas e tratamentos. Sem logística de transporte.',
+                                                icon: Droplets,
+                                                color: 'blue',
+                                                gradient: 'from-blue-500/20 to-cyan-500/20'
+                                            },
+                                            {
+                                                id: 'TRANSPORTE',
+                                                title: 'Apenas Transporte',
+                                                desc: 'Logística de leva e traz. Ideal para traslados avulsos.',
+                                                icon: Truck,
+                                                color: 'orange',
+                                                gradient: 'from-orange-500/20 to-yellow-500/20'
+                                            },
+                                            {
+                                                id: 'SPA_TRANSPORTE',
+                                                title: 'SPA + Transporte',
+                                                desc: 'Fluxo completo. Estética com retirada e entrega domiciliar.',
+                                                icon: RefreshCcw,
+                                                color: 'purple',
+                                                gradient: 'from-purple-500/20 to-pink-500/20'
+                                            }
+                                        ].map(opt => (
                                             <button
+                                                key={opt.id}
                                                 type="button"
-                                                onClick={() => setQuote({ ...quote, type: quote.type === 'SPA_TRANSPORTE' ? 'SPA' : 'SPA_TRANSPORTE' })}
-                                                className={`w-10 h-6 rounded-full relative transition-all ${quote.type.includes('TRANSPORTE') ? 'bg-orange-500' : 'bg-gray-200'}`}
+                                                onClick={() => {
+                                                    setQuote({ ...quote, type: opt.id as any });
+                                                    setSelectionStep(false);
+                                                }}
+                                                className="group relative flex flex-col p-8 bg-white dark:bg-gray-800 rounded-[40px] border-2 border-transparent hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 transition-all text-left overflow-hidden"
                                             >
-                                                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${quote.type.includes('TRANSPORTE') ? 'left-4.5' : 'left-0.5'}`} />
+                                                <div className={`absolute inset-0 bg-gradient-to-br ${opt.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                                <div className="relative z-10">
+                                                    <div className={`w-14 h-14 rounded-2xl bg-${opt.color}-500/10 text-${opt.color}-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                                                        <opt.icon size={28} />
+                                                    </div>
+                                                    <h4 className="text-xl font-black text-secondary dark:text-white uppercase tracking-tight mb-2">{opt.title}</h4>
+                                                    <p className="text-xs font-bold text-gray-400 dark:text-gray-500 leading-relaxed">{opt.desc}</p>
+                                                </div>
                                             </button>
-                                        </div>
+                                        ))}
                                     </div>
+                                </div>
+                            ) : (
+                                <><form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/30 dark:bg-gray-900/50">
+                                    {/* Botão Voltar para Seleção */}
+                                    <div className="flex justify-start">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectionStep(true)}
+                                            className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 hover:text-primary transition-colors"
+                                        >
+                                            <RefreshCcw size={12} /> Alterar Tipo de Orçamento ({quote.type})
+                                        </button>
+                                    </div>
+                                    {/* 1. Cliente */}
+                                    <section className="bg-white dark:bg-gray-800 p-8 rounded-[40px] border border-gray-100 dark:border-gray-700 shadow-xl shadow-blue-500/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <h3 className="text-xl font-black text-secondary dark:text-white flex items-center gap-4 uppercase tracking-tighter">
+                                            <div className="w-12 h-12 rounded-[20px] bg-blue-500 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/20 ring-4 ring-blue-500/10">1</div>
+                                            Dados do Cliente
+                                        </h3>
 
-                                    {quote.type.includes('TRANSPORTE') && (
-                                        <div className="space-y-6 animate-in fade-in duration-500">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Origem (Busca)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={quote.transportOrigin || customer.address}
-                                                            onChange={e => setQuote({ ...quote, transportOrigin: e.target.value })}
-                                                            className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-orange-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
-                                                            placeholder="Endereço de coleta..."
-                                                        />
-                                                    </div>
-                                                    <div className="p-5 bg-orange-50/30 rounded-[32px] border border-orange-100/50">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest">Retorno no mesmo endereço?</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setQuote({ ...quote, isReturnSame: !quote.isReturnSame })}
-                                                                className={`w-12 h-7 rounded-full transition-all relative ${quote.isReturnSame ? 'bg-orange-500 shadow-md shadow-orange-500/20' : 'bg-gray-200'}`}
-                                                            >
-                                                                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${quote.isReturnSame ? 'left-6' : 'left-1'}`} />
-                                                            </button>
-                                                        </div>
-                                                        {!quote.isReturnSame && (
-                                                            <div className="mt-4 animate-in slide-in-from-top-2">
-                                                                <label className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-2 block ml-1">Destino do Retorno</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={quote.transportReturnAddress}
-                                                                    onChange={e => setQuote({ ...quote, transportReturnAddress: e.target.value })}
-                                                                    placeholder="Endereço final..."
-                                                                    className="w-full bg-white dark:bg-gray-700 border-none rounded-xl px-5 py-4 text-xs font-bold text-secondary dark:text-white shadow-sm"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                            <div className="md:col-span-8 relative">
+                                                <div className="flex justify-between items-center mb-2 ml-1">
+                                                    <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nome Completo *</label>
+                                                    {searchMode === 'EXISTING' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCustomer({ id: '', name: '', email: '', phone: '', address: '', type: 'AVULSO', recurrenceFrequency: 'MENSAL' });
+                                                                setSearchMode('NEW');
+                                                            }}
+                                                            className="text-[9px] font-black text-blue-500 uppercase hover:underline"
+                                                        >
+                                                            Limpar / Novo
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="relative">
+                                                    <input
+                                                        required
+                                                        type="text"
+                                                        value={customer.name}
+                                                        onChange={e => setCustomer({ ...customer, name: e.target.value })}
+                                                        onFocus={() => searchResults.length > 0 && setShowSuggestions(true)}
+                                                        className={`w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500 ${searchMode === 'EXISTING' ? 'ring-2 ring-blue-500/20' : ''}`}
+                                                        placeholder="Ex: João Silva"
+                                                    />
+                                                    {searchMode === 'EXISTING' && <CheckCircle size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-500" />}
                                                 </div>
 
-                                                <div className="space-y-6">
-                                                    <div className="flex flex-col gap-4">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Período Preferencial</label>
-                                                        <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                                                            {['MANHA', 'TARDE', 'NOITE'].map((p) => (
+                                                {/* Suggestions Popover */}
+                                                <AnimatePresence>
+                                                    {showSuggestions && searchResults.length > 0 && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: 10 }}
+                                                            className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-60 overflow-y-auto"
+                                                        >
+                                                            <div className="p-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
+                                                                <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Clientes Encontrados:</span>
+                                                            </div>
+                                                            {searchResults.map((res: any) => (
                                                                 <button
-                                                                    key={p}
+                                                                    key={res.id}
                                                                     type="button"
-                                                                    onClick={() => setQuote({ ...quote, transportPeriod: p as any })}
-                                                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${quote.transportPeriod === p ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:text-secondary'}`}
+                                                                    onClick={() => handleSelectCustomer(res)}
+                                                                    className="w-full px-5 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-between border-b border-gray-50 dark:border-gray-700 last:border-none"
                                                                 >
-                                                                    {p === 'MANHA' ? 'Manhã' : p === 'TARDE' ? 'Tarde' : 'Noite'}
+                                                                    <div>
+                                                                        <p className="text-sm font-black text-secondary dark:text-white">{res.name}</p>
+                                                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{res.phone || res.user?.email}</p>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tighter">Existente</span>
+                                                                        <Plus size={14} className="text-blue-500" />
+                                                                    </div>
+                                                                </button>
+                                                            ))}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                            <div className="md:col-span-4">
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tipo de Orçamento</label>
+                                                <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomer({ ...customer, type: 'AVULSO' })}
+                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${customer.type === 'AVULSO' ? 'bg-white dark:bg-gray-600 text-secondary dark:text-white shadow-sm' : 'text-gray-400 dark:text-gray-500'}`}
+                                                    >
+                                                        Avulso
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomer({ ...customer, type: 'RECORRENTE' })}
+                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${customer.type === 'RECORRENTE' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400'}`}
+                                                    >
+                                                        Recorrente
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {customer.type === 'RECORRENTE' && (
+                                                <div className="md:col-span-12 space-y-4 animate-in slide-in-from-top-2">
+                                                    {/* Frequência SPA */}
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 ml-1">Frequência de Banhos (SPA)</label>
+                                                        <div className="grid grid-cols-3 gap-3 p-4 bg-purple-50 rounded-[32px] border border-purple-100">
+                                                            {[
+                                                                { id: 'MENSAL', label: 'Mensal', desc: '1 banho/mês', discount: '5% SPA' },
+                                                                { id: 'QUINZENAL', label: 'Quinzenal', desc: '2 banhos/mês', discount: '7% SPA' },
+                                                                { id: 'SEMANAL', label: 'Semanal', desc: '4+ banhos/mês', discount: '10% SPA' },
+                                                            ].map(freq => (
+                                                                <button
+                                                                    key={freq.id}
+                                                                    type="button"
+                                                                    onClick={() => setCustomer({ ...customer, recurrenceFrequency: freq.id as any })}
+                                                                    className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all ${customer.recurrenceFrequency === freq.id ? 'bg-purple-600 text-white shadow-xl scale-105' : 'bg-white text-purple-400 hover:bg-purple-100'}`}
+                                                                >
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">{freq.label}</span>
+                                                                    <span className="text-[8px] font-bold opacity-70">{freq.desc}</span>
+                                                                    <div className={`mt-1 px-2 py-0.5 rounded-lg font-black text-[9px] ${customer.recurrenceFrequency === freq.id ? 'bg-white/20' : 'bg-purple-100 text-purple-600'}`}>
+                                                                        {freq.discount}
+                                                                    </div>
                                                                 </button>
                                                             ))}
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-orange-500 uppercase tracking-widest ml-1 mb-2 block">Horário Leva (Busca)</label>
-                                                            <input
-                                                                type="datetime-local"
-                                                                value={quote.transportLevaAt}
-                                                                onChange={e => setQuote({ ...quote, transportLevaAt: e.target.value })}
-                                                                className="w-full bg-orange-50/50 border-none rounded-2xl px-5 py-4 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-orange-500/20"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest ml-1 mb-2 block">Horário Traz (Entrega)</label>
-                                                            <input
-                                                                type="datetime-local"
-                                                                value={quote.transportTrazAt}
-                                                                onChange={e => setQuote({ ...quote, transportTrazAt: e.target.value })}
-                                                                className="w-full bg-teal-50/50 border-none rounded-2xl px-5 py-4 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between p-5 bg-gray-50 dark:bg-gray-700/50 rounded-[32px] border border-gray-100 dark:border-gray-600">
-                                                        <span className="text-secondary dark:text-white font-black text-[10px] uppercase tracking-widest ml-1">Qtd. de Pets</span>
-                                                        <div className="flex items-center gap-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl shadow-sm">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setQuote({ ...quote, petQuantity: Math.max(1, quote.petQuantity - 1) })}
-                                                                className="p-1 text-gray-400 hover:text-secondary"
-                                                            >
-                                                                <Minus size={16} />
-                                                            </button>
-                                                            <span className="font-black text-secondary dark:text-white min-w-[20px] text-center">{quote.petQuantity}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setQuote({ ...quote, petQuantity: quote.petQuantity + 1 })}
-                                                                className="p-1 text-gray-400 hover:text-secondary dark:hover:text-white"
-                                                            >
-                                                                <Plus size={16} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="md:col-span-6">
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email *</label>
+                                                <input
+                                                    required
+                                                    type="email"
+                                                    value={customer.email}
+                                                    onChange={e => setCustomer({ ...customer, email: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                    placeholder="joao@email.com"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-6 relative">
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Telefone</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={customer.phone}
+                                                        onChange={e => setCustomer({ ...customer, phone: e.target.value })}
+                                                        onFocus={() => searchResults.length > 0 && setShowSuggestions(true)}
+                                                        className={`w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500 ${searchMode === 'EXISTING' ? 'ring-2 ring-blue-500/20' : ''}`}
+                                                        placeholder="(11) 99999-9999"
+                                                    />
                                                 </div>
                                             </div>
-
-                                            {/* TIPO DE TRANSPORTE (AGORA ANTES DO CÁLCULO) */}
-                                            <div className="space-y-4 mb-4">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Tipo de Transporte</label>
-                                                <div className="flex bg-gray-50 dark:bg-gray-700 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-600 gap-2">
-                                                    {[
-                                                        { value: 'ROUND_TRIP', label: '🔄 Leva e Traz' },
-                                                        { value: 'PICK_UP', label: '📦 Só Leva' },
-                                                        { value: 'DROP_OFF', label: '🏠 Só Traz' }
-                                                    ].map(type => (
-                                                        <button
-                                                            key={type.value}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setTransportType(type.value as any);
-                                                                // Removido o cálculo automático de 50%. 
-                                                                // O operador altera o valor se desejar.
-                                                            }}
-                                                            className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${transportType === type.value
-                                                                ? 'bg-orange-500 text-white shadow-lg'
-                                                                : 'bg-white dark:bg-gray-600 text-gray-400 dark:text-gray-300 border border-transparent hover:border-orange-200 dark:hover:bg-gray-500'
-                                                                }`}
-                                                        >
-                                                            {type.label}
-                                                        </button>
-                                                    ))}
+                                            <div className="md:col-span-12">
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Endereço (Padrão para Transporte)</label>
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                                                    <input
+                                                        type="text"
+                                                        value={customer.address}
+                                                        onChange={e => {
+                                                            const val = e.target.value;
+                                                            setCustomer({ ...customer, address: val });
+                                                            if (!quote.transportOrigin) {
+                                                                setQuote({ ...quote, transportOrigin: val });
+                                                            }
+                                                        }}
+                                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl pl-14 pr-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                        placeholder="Rua, Número, Bairro, Cidade - CEP"
+                                                    />
                                                 </div>
                                             </div>
+                                        </div>
+                                    </section>
 
-                                            <div className="p-6 bg-blue-50/50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-900/30 flex items-center justify-between gap-6 overflow-hidden relative">
-                                                <div className="relative z-10">
-                                                    <h4 className="text-xs font-black text-blue-800 dark:text-blue-300 uppercase flex items-center gap-2 mb-1"><RefreshCcw size={14} /> Cálculo Inteligente</h4>
-                                                    <p className="text-[10px] font-bold text-blue-600/70 dark:text-blue-400/70 max-w-[300px]">Cálculo automático baseado na distância entre a coleta e a 7Pet via Google Maps.</p>
-                                                    {transportInfo && transportInfo.legs && (
-                                                        <div className="mt-4 space-y-4 animate-in slide-in-from-left">
-                                                            {/* Grade de Pernadas Detalhada */}
-                                                            <div className="space-y-3">
-                                                                {[
-                                                                    { id: 'largada', label: '🚀 Largada (Loja -> Coleta)', color: 'bg-blue-50 text-blue-600', showMin: false },
-                                                                    { id: 'leva', label: '📦 Leva (Coleta -> Loja)', color: 'bg-green-50 text-green-600', showMin: true },
-                                                                    { id: 'traz', label: '🏠 Traz (Loja -> Entrega)', color: 'bg-purple-50 text-purple-600', showMin: true },
-                                                                    { id: 'retorno', label: '🔄 Retorno (Entrega -> Loja)', color: 'bg-orange-50 text-orange-600', showMin: false }
-                                                                ].map(leg => (
-                                                                    <div key={leg.id} className={`p-3 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4 transition-all ${transportInfo.legs[leg.id].active ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700 opacity-60'}`}>
-                                                                        {/* Toggle para ativar/desativar pernada */}
+                                    {/* 2. Pet */}
+                                    <section className="bg-white dark:bg-gray-800 p-8 rounded-[40px] border border-gray-100 dark:border-gray-700 shadow-xl shadow-purple-500/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <h3 className="text-xl font-black text-secondary dark:text-white flex items-center gap-4 uppercase tracking-tighter">
+                                                <div className="w-12 h-12 rounded-[20px] bg-purple-500 text-white flex items-center justify-center font-black shadow-lg shadow-purple-500/20 ring-4 ring-purple-500/10">2</div>
+                                                Dados do Pet
+                                            </h3>
+                                            {customerPets.length > 0 && (
+                                                <div className="ml-auto flex items-center gap-2">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selecionar:</span>
+                                                    <select
+                                                        onChange={(e) => {
+                                                            const p = customerPets.find(cp => cp.id === e.target.value);
+                                                            if (p) {
+                                                                setPet({
+                                                                    id: p.id,
+                                                                    name: p.name,
+                                                                    species: p.species,
+                                                                    breed: p.breed || '',
+                                                                    weight: p.weight?.toString() || '',
+                                                                    coatType: p.coatType || 'CURTO',
+                                                                    temperament: p.temperament || 'DOCIL',
+                                                                    age: p.age || '',
+                                                                    observations: p.observations || '',
+                                                                    hasKnots: p.hasKnots || false,
+                                                                    knotRegions: p.knotRegions ? (typeof p.knotRegions === 'string' ? p.knotRegions.split(',') : p.knotRegions) : [],
+                                                                    hasParasites: p.hasParasites || false,
+                                                                    hasMattedFur: p.hasMattedFur || false,
+                                                                    healthIssues: p.healthIssues || '',
+                                                                    allergies: p.allergies || '',
+                                                                    parasiteTypes: p.parasiteTypes || '',
+                                                                    parasiteComments: p.parasiteComments || '',
+                                                                    wantsMedicatedBath: false
+                                                                });
+                                                            } else {
+                                                                // Reset to new pet
+                                                                setPet({
+                                                                    id: '',
+                                                                    name: '',
+                                                                    species: 'Canino',
+                                                                    breed: '',
+                                                                    weight: '',
+                                                                    coatType: 'CURTO',
+                                                                    temperament: 'DOCIL',
+                                                                    age: '',
+                                                                    observations: '',
+                                                                    hasKnots: false,
+                                                                    knotRegions: [],
+                                                                    hasParasites: false,
+                                                                    hasMattedFur: false,
+                                                                    healthIssues: '',
+                                                                    allergies: '',
+                                                                    parasiteTypes: '',
+                                                                    parasiteComments: '',
+                                                                    wantsMedicatedBath: false
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="bg-gray-100 border-none rounded-xl px-3 py-1 text-xs font-bold text-secondary outline-none focus:ring-2 focus:ring-purple-500/20"
+                                                        value={pet.id}
+                                                    >
+                                                        <option value="">+ Novo Pet</option>
+                                                        {customerPets.map(p => (
+                                                            <option key={p.id} value={p.id}>{p.name} ({p.breed || 'SRD'})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                            <div className="md:col-span-2">
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome do Pet</label>
+                                                <input
+                                                    type="text"
+                                                    value={pet.name}
+                                                    onChange={e => setPet({ ...pet, name: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                    placeholder="Ex: Rex"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Espécie</label>
+                                                <select
+                                                    value={pet.species}
+                                                    onChange={e => setPet({ ...pet, species: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                                >
+                                                    <option value="Canino">🐕 Cachorro</option>
+                                                    <option value="Felino">🐈 Gato</option>
+                                                    <option value="Outro">🐾 Outro</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Raça</label>
+                                                <input
+                                                    type="text"
+                                                    value={pet.breed}
+                                                    onChange={e => setPet({ ...pet, breed: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                    placeholder="Ex: Poodle"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Peso (kg)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={pet.weight}
+                                                    onChange={e => setPet({ ...pet, weight: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                    placeholder="0.0"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Pelagem</label>
+                                                <select
+                                                    value={pet.coatType}
+                                                    onChange={e => setPet({ ...pet, coatType: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                                >
+                                                    <option value="CURTO">Curto</option>
+                                                    <option value="MEDIO">Médio</option>
+                                                    <option value="LONGO">Longo</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Observações de Saúde/Comportamento</label>
+                                                <input
+                                                    type="text"
+                                                    value={pet.observations}
+                                                    onChange={e => setPet({ ...pet, observations: e.target.value })}
+                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-purple-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                    placeholder="Ex: Alérgico a perfume, morde se tocar na calda..."
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {quote.type !== 'TRANSPORTE' && (
+                                            <>
+                                                {/* Características Avançadas (Nós, Parasitas) */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50 dark:border-gray-700">
+                                                    {/* Nó e Desembolo */}
+                                                    <div className={`p-5 rounded-3xl border-2 transition-all ${pet.hasKnots ? 'border-orange-200 bg-orange-50/30' : 'border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30'}`}>
+                                                        <label className="flex items-center justify-between cursor-pointer mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`p-2 rounded-xl ${pet.hasKnots ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                                                    <Scissors size={18} />
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-sm font-black text-secondary dark:text-white uppercase tracking-tight">O Pet possui nós?</span>
+                                                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">Adiciona itens de desembolo ao total</p>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPet({ ...pet, hasKnots: !pet.hasKnots })}
+                                                                className={`w-12 h-7 rounded-full relative transition-all ${pet.hasKnots ? 'bg-orange-500 shadow-lg shadow-orange-500/30' : 'bg-gray-200'}`}
+                                                            >
+                                                                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${pet.hasKnots ? 'left-6' : 'left-1'}`} />
+                                                            </button>
+                                                        </label>
+
+                                                        {pet.hasKnots && (
+                                                            <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                                                <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest ml-1">Selecione as Regiões afetadas:</p>
+                                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                                    {[
+                                                                        'Orelhas', 'Rostinho', 'Pescoço', 'Barriga',
+                                                                        'Pata Frontal Esquerda', 'Pata Frontal Direita',
+                                                                        'Pata Traseira Esquerda', 'Pata Traseira Direita',
+                                                                        'Bumbum', 'Rabo'
+                                                                    ].map(region => (
                                                                         <button
+                                                                            key={region}
                                                                             type="button"
-                                                                            onClick={() => {
-                                                                                const next = {
-                                                                                    ...transportInfo,
-                                                                                    legs: {
-                                                                                        ...transportInfo.legs,
-                                                                                        [leg.id]: {
-                                                                                            ...transportInfo.legs[leg.id],
-                                                                                            active: !transportInfo.legs[leg.id].active
-                                                                                        }
-                                                                                    }
-                                                                                };
-                                                                                setTransportInfo(next);
-                                                                                recalculateTransport(next);
-                                                                            }}
-                                                                            className={`w-10 h-5 rounded-full transition-all relative flex-shrink-0 ${transportInfo.legs[leg.id].active ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                                            onClick={() => toggleKnotRegion(region.toLowerCase())}
+                                                                            className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight transition-all border ${pet.knotRegions.includes(region.toLowerCase()) ? 'bg-orange-500 border-orange-500 text-white shadow-md' : 'bg-white border-orange-100 text-orange-400 hover:bg-orange-50'}`}
                                                                         >
-                                                                            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${transportInfo.legs[leg.id].active ? 'left-5' : 'left-0.5'}`} />
+                                                                            {region}
                                                                         </button>
-                                                                        <div className="flex-1">
-                                                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${leg.color}`}>{leg.label}</span>
-                                                                        </div>
-                                                                        <div className={`flex items-center gap-3 ${!transportInfo.legs[leg.id].active && 'pointer-events-none'}`}>
-                                                                            <div className="w-20">
-                                                                                <label className="text-[7px] font-black text-gray-400 uppercase block mb-0.5">KM</label>
-                                                                                <input
-                                                                                    type="number"
-                                                                                    step="0.1"
-                                                                                    value={transportInfo.legs[leg.id].km}
-                                                                                    onChange={e => {
-                                                                                        const next = { ...transportInfo, legs: { ...transportInfo.legs, [leg.id]: { ...transportInfo.legs[leg.id], km: e.target.value } } };
-                                                                                        setTransportInfo(next);
-                                                                                        recalculateTransport(next);
-                                                                                    }}
-                                                                                    className="w-full text-[10px] font-black text-secondary dark:text-white bg-white dark:bg-gray-700 rounded-lg px-2 py-1 outline-none border border-gray-100 dark:border-gray-600 focus:border-blue-200"
-                                                                                />
-                                                                            </div>
-                                                                            {leg.showMin && (
-                                                                                <div className="w-20">
-                                                                                    <label className="text-[7px] font-black text-gray-400 uppercase block mb-0.5">MIN</label>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        value={transportInfo.legs[leg.id].min}
-                                                                                        onChange={e => {
-                                                                                            const next = { ...transportInfo, legs: { ...transportInfo.legs, [leg.id]: { ...transportInfo.legs[leg.id], min: e.target.value } } };
-                                                                                            setTransportInfo(next);
-                                                                                            recalculateTransport(next);
-                                                                                        }}
-                                                                                        className="w-full text-[10px] font-black text-secondary dark:text-white bg-white dark:bg-gray-700 rounded-lg px-2 py-1 outline-none border border-gray-100 dark:border-gray-600 focus:border-blue-200"
-                                                                                    />
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Parasitas e Banho Medicamentoso */}
+                                                    <div className="space-y-4">
+                                                        <div className={`p-5 rounded-3xl border-2 transition-all ${pet.hasParasites ? 'border-red-200 bg-red-50/30' : 'border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30'}`}>
+                                                            <label className="flex items-center justify-between cursor-pointer">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`p-2 rounded-xl ${pet.hasParasites ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                                                        <Bug size={18} />
                                                                     </div>
-                                                                ))}
+                                                                    <div>
+                                                                        <span className="text-sm font-black text-secondary dark:text-white uppercase tracking-tight">Presença de Parasitas?</span>
+                                                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">Pulgas ou carrapatos identificados</p>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPet({ ...pet, hasParasites: !pet.hasParasites })}
+                                                                    className={`w-12 h-7 rounded-full relative transition-all ${pet.hasParasites ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-gray-200'}`}
+                                                                >
+                                                                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${pet.hasParasites ? 'left-6' : 'left-1'}`} />
+                                                                </button>
+                                                            </label>
+
+                                                            {pet.hasParasites && (
+                                                                <div className="mt-4 flex gap-2 animate-in slide-in-from-top-2">
+                                                                    {['PULGA', 'CARRAPATO', 'AMBOS'].map(type => (
+                                                                        <button
+                                                                            key={type}
+                                                                            type="button"
+                                                                            onClick={() => setPet({ ...pet, parasiteTypes: type })}
+                                                                            className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase border transition-all ${pet.parasiteTypes === type ? 'bg-red-500 border-red-500 text-white shadow-md' : 'bg-white border-red-100 text-red-300 hover:bg-red-50'}`}
+                                                                        >
+                                                                            {type}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className={`p-5 rounded-3xl border-2 transition-all ${pet.wantsMedicatedBath ? 'border-blue-200 bg-blue-50/30' : 'border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/30'}`}>
+                                                            <label className="flex items-center justify-between cursor-pointer">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`p-2 rounded-xl ${pet.wantsMedicatedBath ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                                                        <Droplets size={18} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-sm font-black text-secondary dark:text-white uppercase tracking-tight">Banho Medicamentoso?</span>
+                                                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">Adiciona (+ R$ 45,00) ao total</p>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPet({ ...pet, wantsMedicatedBath: !pet.wantsMedicatedBath })}
+                                                                    className={`w-12 h-7 rounded-full relative transition-all ${pet.wantsMedicatedBath ? 'bg-blue-500 shadow-lg shadow-blue-500/30' : 'bg-gray-200'}`}
+                                                                >
+                                                                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${pet.wantsMedicatedBath ? 'left-6' : 'left-1'}`} />
+                                                                </button>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </section>
+
+                                    {/* 3. Logística de Transporte */}
+                                    {quote.type !== 'SPA' && (
+                                        <section className="bg-white dark:bg-gray-800 p-8 rounded-[40px] border border-gray-100 dark:border-gray-700 shadow-xl shadow-orange-500/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-xl font-black text-secondary dark:text-white flex items-center gap-4 uppercase tracking-tighter">
+                                                    <div className="w-12 h-12 rounded-[20px] bg-orange-500 text-white flex items-center justify-center font-black shadow-lg shadow-orange-500/20 ring-4 ring-orange-500/10">3</div>
+                                                    Logística (Transporte)
+                                                </h3>
+                                                <div className="px-4 py-2 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-2">
+                                                    <span className="text-[10px] font-black text-orange-600 uppercase">Incluir Transporte?</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setQuote({ ...quote, type: quote.type === 'SPA_TRANSPORTE' ? 'SPA' : 'SPA_TRANSPORTE' })}
+                                                        className={`w-10 h-6 rounded-full relative transition-all ${quote.type.includes('TRANSPORTE') ? 'bg-orange-500' : 'bg-gray-200'}`}
+                                                    >
+                                                        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${quote.type.includes('TRANSPORTE') ? 'left-4.5' : 'left-0.5'}`} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {quote.type.includes('TRANSPORTE') && (
+                                                <div className="space-y-6 animate-in fade-in duration-500">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Origem (Busca)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={quote.transportOrigin || customer.address}
+                                                                    onChange={e => setQuote({ ...quote, transportOrigin: e.target.value })}
+                                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl px-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-orange-500/20 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-500"
+                                                                    placeholder="Endereço de coleta..."
+                                                                />
+                                                            </div>
+                                                            <div className="p-5 bg-orange-50/30 rounded-[32px] border border-orange-100/50">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest">Retorno no mesmo endereço?</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setQuote({ ...quote, isReturnSame: !quote.isReturnSame })}
+                                                                        className={`w-12 h-7 rounded-full transition-all relative ${quote.isReturnSame ? 'bg-orange-500 shadow-md shadow-orange-500/20' : 'bg-gray-200'}`}
+                                                                    >
+                                                                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${quote.isReturnSame ? 'left-6' : 'left-1'}`} />
+                                                                    </button>
+                                                                </div>
+                                                                {!quote.isReturnSame && (
+                                                                    <div className="mt-4 animate-in slide-in-from-top-2">
+                                                                        <label className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-2 block ml-1">Destino do Retorno</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={quote.transportReturnAddress}
+                                                                            onChange={e => setQuote({ ...quote, transportReturnAddress: e.target.value })}
+                                                                            placeholder="Endereço final..."
+                                                                            className="w-full bg-white dark:bg-gray-700 border-none rounded-xl px-5 py-4 text-xs font-bold text-secondary dark:text-white shadow-sm"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            <div className="flex flex-col gap-4">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Período Preferencial</label>
+                                                                <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                                                                    {['MANHA', 'TARDE', 'NOITE'].map((p) => (
+                                                                        <button
+                                                                            key={p}
+                                                                            type="button"
+                                                                            onClick={() => setQuote({ ...quote, transportPeriod: p as any })}
+                                                                            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${quote.transportPeriod === p ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:text-secondary'}`}
+                                                                        >
+                                                                            {p === 'MANHA' ? 'Manhã' : p === 'TARDE' ? 'Tarde' : 'Noite'}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
                                                             </div>
 
-                                                            {/* Desconto Geral */}
-                                                            <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm w-full">
-                                                                <div className="flex items-center justify-between">
-                                                                    <label className="text-[8px] font-black text-blue-400 dark:text-blue-300 uppercase tracking-widest">Desconto no Transporte (%)</label>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-orange-500 uppercase tracking-widest ml-1 mb-2 block">Horário Leva (Busca)</label>
                                                                     <input
-                                                                        type="number"
-                                                                        value={transportInfo.discountPercent}
-                                                                        onChange={e => {
-                                                                            const next = { ...transportInfo, discountPercent: e.target.value };
-                                                                            setTransportInfo(next);
-                                                                            recalculateTransport(next);
-                                                                        }}
-                                                                        className="w-16 text-right text-xs font-black text-blue-600 dark:text-blue-400 outline-none bg-transparent"
+                                                                        type="datetime-local"
+                                                                        value={quote.transportLevaAt}
+                                                                        onChange={e => setQuote({ ...quote, transportLevaAt: e.target.value })}
+                                                                        className="w-full bg-orange-50/50 border-none rounded-2xl px-5 py-4 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-orange-500/20"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest ml-1 mb-2 block">Horário Traz (Entrega)</label>
+                                                                    <input
+                                                                        type="datetime-local"
+                                                                        value={quote.transportTrazAt}
+                                                                        onChange={e => setQuote({ ...quote, transportTrazAt: e.target.value })}
+                                                                        className="w-full bg-teal-50/50 border-none rounded-2xl px-5 py-4 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-teal-500/20"
                                                                     />
                                                                 </div>
                                                             </div>
 
-                                                            {/* Valor Editável e Info */}
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex-1">
-                                                                    <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block ml-1">Valor Final Sugerido</label>
-                                                                    <div className="relative">
-                                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 font-black text-xs">R$</span>
-                                                                        <input
-                                                                            type="number"
-                                                                            step="0.01"
-                                                                            value={transportInfo.estimatedPrice ?? ''}
-                                                                            onChange={e => {
-                                                                                const val = e.target.value;
-                                                                                setTransportInfo({
-                                                                                    ...transportInfo,
-                                                                                    estimatedPrice: val === '' ? '' : parseFloat(val)
-                                                                                });
-                                                                            }}
-                                                                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 rounded-xl font-black text-lg text-blue-600 dark:text-blue-400 border-2 border-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                                                        />
-                                                                    </div>
+                                                            <div className="flex items-center justify-between p-5 bg-gray-50 dark:bg-gray-700/50 rounded-[32px] border border-gray-100 dark:border-gray-600">
+                                                                <span className="text-secondary dark:text-white font-black text-[10px] uppercase tracking-widest ml-1">Qtd. de Pets</span>
+                                                                <div className="flex items-center gap-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl shadow-sm">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setQuote({ ...quote, petQuantity: Math.max(1, quote.petQuantity - 1) })}
+                                                                        className="p-1 text-gray-400 hover:text-secondary"
+                                                                    >
+                                                                        <Minus size={16} />
+                                                                    </button>
+                                                                    <span className="font-black text-secondary dark:text-white min-w-[20px] text-center">{quote.petQuantity}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setQuote({ ...quote, petQuantity: quote.petQuantity + 1 })}
+                                                                        className="p-1 text-gray-400 hover:text-secondary dark:hover:text-white"
+                                                                    >
+                                                                        <Plus size={16} />
+                                                                    </button>
                                                                 </div>
-                                                                {transportInfo.settings && (
-                                                                    <div className="px-4 py-3 bg-blue-100/50 dark:bg-blue-900/30 rounded-xl text-[8px] leading-tight space-y-1.5 border border-blue-200 dark:border-blue-800">
-                                                                        {quote.petQuantity > 1 && <div className="font-bold text-blue-600 dark:text-blue-300">+{(quote.petQuantity - 1) * 20}% Pets Adic.</div>}
-                                                                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                                                            <span className="text-blue-500 font-black">R$/KM:</span>
-                                                                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded font-black text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
-                                                                                {((transportInfo.settings.kmPriceLeva + transportInfo.settings.kmPriceTraz) / 2).toFixed(2)}
-                                                                            </span>
-                                                                            <Info size={10} className="text-gray-400" />
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                                                            <span className="text-blue-500 font-black">R$/Min:</span>
-                                                                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded font-black text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
-                                                                                {((transportInfo.settings.minPriceLeva + transportInfo.settings.minPriceTraz) / 2).toFixed(2)}
-                                                                            </span>
-                                                                            <Info size={10} className="text-gray-400" />
-                                                                        </div>
-                                                                        <div className="text-[7px] text-blue-500/70 dark:text-blue-400/70 mt-1 italic flex items-center gap-1">
-                                                                            <AlertTriangle size={9} />
-                                                                            Valores travados (Conf. Transporte)
-                                                                        </div>
-                                                                    </div>
-                                                                )}
                                                             </div>
-
-                                                            {/* Botão Incluir */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleAddTransportToQuote}
-                                                                className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm uppercase flex items-center justify-center gap-2 hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
-                                                            >
-                                                                <CheckCircle size={16} /> Incluir no Orçamento
-                                                            </button>
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    disabled={isCalculatingTransport}
-                                                    onClick={handleCalculateTransport}
-                                                    className="relative z-10 px-6 py-3 bg-white dark:bg-gray-800 border-2 border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center gap-2 disabled:opacity-50"
-                                                >
-                                                    {isCalculatingTransport ? (
-                                                        <RefreshCcw size={16} className="animate-spin" />
-                                                    ) : 'Calcular Agora'}
-                                                </button>
-                                                <div className="absolute right-0 top-0 text-blue-100 translate-x-10 -translate-y-10">
-                                                    <Truck size={140} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </section>
+                                                    </div>
 
-                                {/* 4. Itens do Orçamento */}
-                                <section className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="text-lg font-black text-secondary dark:text-white flex items-center gap-3 uppercase tracking-tight">
-                                            <div className="w-10 h-10 rounded-2xl bg-green-500/10 text-green-500 flex items-center justify-center font-black">4</div>
-                                            Itens do Orçamento
-                                        </h3>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAddItem()}
-                                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all"
-                                        >
-                                            <Plus size={14} /> Adicionar Item
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        {quote.items.map((item, idx) => (
-                                            <div key={idx} className="group relative flex flex-wrap md:flex-nowrap gap-4 items-end bg-gray-50/50 dark:bg-gray-700/50 p-4 rounded-2xl border border-transparent hover:border-blue-100 dark:hover:border-blue-800 hover:bg-white dark:hover:bg-gray-700 transition-all">
-                                                <div className="flex-1 min-w-[200px]">
-                                                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Serviço / Descrição</label>
-                                                    <div className="relative">
-                                                        {!item.isManual ? (
-                                                            <>
-                                                                <select
-                                                                    value={item.serviceId || item.productId || ''}
-                                                                    onChange={e => handleUpdateItem(idx, 'serviceId', e.target.value)}
-                                                                    className={`w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black ${(!item.serviceId && !item.productId) ? 'text-gray-300' : 'text-secondary dark:text-white'} outline-none shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none`}
-                                                                >
-                                                                    <option value="">🛒 Selecione um Serviço ou Produto...</option>
-
-                                                                    {/* Serviços Categorizados */}
-                                                                    {(() => {
-                                                                        const cats = getCategorizedServices();
-                                                                        return (
-                                                                            <>
-                                                                                {cats.banho.length > 0 && (
-                                                                                    <optgroup label="🛁 BANHOS (4 Tipos)">
-                                                                                        {cats.banho.map(s => (
-                                                                                            <option key={s.id} value={s.id}>
-                                                                                                {s.name} - R$ {s.basePrice.toFixed(2)}
-                                                                                                {s.sizeLabel && ` • ${s.sizeLabel}`}
-                                                                                                {s.coatType && ` • ${s.coatType}`}
-                                                                                            </option>
-                                                                                        ))}
-                                                                                    </optgroup>
-                                                                                )}
-
-                                                                                {cats.tosa.length > 0 && (
-                                                                                    <optgroup label="✂️ TOSAS (Higiênica, Estética, Raça, Bebê)">
-                                                                                        {cats.tosa.map(s => (
-                                                                                            <option key={s.id} value={s.id}>
-                                                                                                {s.name} - R$ {s.basePrice.toFixed(2)}
-                                                                                                {s.sizeLabel && ` • ${s.sizeLabel}`}
-                                                                                            </option>
-                                                                                        ))}
-                                                                                    </optgroup>
-                                                                                )}
-
-                                                                                {cats.extras.length > 0 && (
-                                                                                    <optgroup label="⭐ SERVIÇOS EXTRAS">
-                                                                                        {cats.extras.map(s => (
-                                                                                            <option key={s.id} value={s.id}>
-                                                                                                {s.name} - R$ {s.basePrice.toFixed(2)}
-                                                                                                {s.sizeLabel && ` • ${s.sizeLabel}`}
-                                                                                            </option>
-                                                                                        ))}
-                                                                                    </optgroup>
-                                                                                )}
-                                                                            </>
-                                                                        );
-                                                                    })()}
-
-                                                                    {/* Produtos Categorizados */}
-                                                                    {(() => {
-                                                                        const prodCats = getCategorizedProducts();
-                                                                        return (
-                                                                            <>
-                                                                                {prodCats.banho.length > 0 && (
-                                                                                    <optgroup label="🧴 PRODUTOS BANHO">
-                                                                                        {prodCats.banho.map(p => (
-                                                                                            <option key={p.id} value={p.id}>
-                                                                                                {p.name} - R$ {p.price.toFixed(2)}
-                                                                                            </option>
-                                                                                        ))}
-                                                                                    </optgroup>
-                                                                                )}
-
-                                                                                {prodCats.tosa.length > 0 && (
-                                                                                    <optgroup label="✄ PRODUTOS TOSA">
-                                                                                        {prodCats.tosa.map(p => (
-                                                                                            <option key={p.id} value={p.id}>
-                                                                                                {p.name} - R$ {p.price.toFixed(2)}
-                                                                                            </option>
-                                                                                        ))}
-                                                                                    </optgroup>
-                                                                                )}
-
-                                                                                {prodCats.extras.length > 0 && (
-                                                                                    <optgroup label="🎁 PRODUTOS EXTRAS">
-                                                                                        {prodCats.extras.map(p => (
-                                                                                            <option key={p.id} value={p.id}>
-                                                                                                {p.name} - R$ {p.price.toFixed(2)}
-                                                                                            </option>
-                                                                                        ))}
-                                                                                    </optgroup>
-                                                                                )}
-                                                                            </>
-                                                                        );
-                                                                    })()}
-
-                                                                    <option value="MANUAL_UPGRADE">✏️ Digitar item personalizado...</option>
-                                                                </select>
-                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300">
-                                                                    <Info size={14} />
-                                                                </div>
-                                                            </>
-                                                        ) : (
-                                                            <div className="relative flex items-center">
-                                                                <input
-                                                                    type="text"
-                                                                    value={item.description}
-                                                                    onChange={e => handleUpdateItem(idx, 'description', e.target.value)}
-                                                                    className="w-full bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200/50 dark:border-blue-800/50 rounded-xl px-4 py-3 text-xs font-black text-blue-600 dark:text-blue-400 outline-none shadow-sm focus:border-blue-500 transition-all"
-                                                                    placeholder="Digite para buscar serviço ou produto..."
-                                                                />
+                                                    {/* TIPO DE TRANSPORTE (AGORA ANTES DO CÁLCULO) */}
+                                                    <div className="space-y-4 mb-4">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Tipo de Transporte</label>
+                                                        <div className="flex bg-gray-50 dark:bg-gray-700 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-600 gap-2">
+                                                            {[
+                                                                { value: 'ROUND_TRIP', label: '🔄 Leva e Traz' },
+                                                                { value: 'PICK_UP', label: '📦 Só Leva' },
+                                                                { value: 'DROP_OFF', label: '🏠 Só Traz' }
+                                                            ].map(type => (
                                                                 <button
+                                                                    key={type.value}
                                                                     type="button"
                                                                     onClick={() => {
-                                                                        const n = [...quote.items];
-                                                                        n[idx] = { ...n[idx], isManual: false, serviceId: 'PENDING' };
-                                                                        setQuote({ ...quote, items: n });
+                                                                        setTransportType(type.value as any);
+                                                                        // Removido o cálculo automático de 50%. 
+                                                                        // O operador altera o valor se desejar.
                                                                     }}
-                                                                    className="absolute right-3 text-blue-400 hover:text-blue-600 p-1"
-                                                                    title="Escolher serviço do catálogo"
+                                                                    className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${transportType === type.value
+                                                                        ? 'bg-orange-500 text-white shadow-lg'
+                                                                        : 'bg-white dark:bg-gray-600 text-gray-400 dark:text-gray-300 border border-transparent hover:border-orange-200 dark:hover:bg-gray-500'
+                                                                        }`}
                                                                 >
-                                                                    <RefreshCcw size={12} />
+                                                                    {type.label}
                                                                 </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
 
-                                                                {/* Sugestões de Itens (Serviços + Produtos) */}
-                                                                <AnimatePresence>
-                                                                    {activeItemSearch?.index === idx && (
-                                                                        <motion.div
-                                                                            initial={{ opacity: 0, y: -10 }}
-                                                                            animate={{ opacity: 1, y: 0 }}
-                                                                            exit={{ opacity: 0, y: -10 }}
-                                                                            className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-blue-100 dark:border-blue-900/50 z-[100] max-h-60 overflow-y-auto"
-                                                                        >
-                                                                            {[...services, ...products]
-                                                                                .filter(i => i.name.toLowerCase().includes(activeItemSearch.query.toLowerCase()))
-                                                                                .slice(0, 10)
-                                                                                .map(match => (
-                                                                                    <button
-                                                                                        key={match.id}
-                                                                                        type="button"
-                                                                                        onClick={() => selectSuggestedItem(idx, match)}
-                                                                                        className="w-full p-4 flex items-center justify-between hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border-b border-gray-50 dark:border-gray-700 last:border-none group"
-                                                                                    >
-                                                                                        <div className="text-left">
-                                                                                            <p className="text-xs font-black text-secondary dark:text-white group-hover:text-blue-600">{match.name}</p>
-                                                                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
-                                                                                                {match.basePrice !== undefined ? '🛠️ Serviço' : '📦 Produto'}
-                                                                                                {match.category && ` • ${match.category}`}
-                                                                                            </p>
+                                                    <div className="p-6 bg-blue-50/50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-900/30 flex items-center justify-between gap-6 overflow-hidden relative">
+                                                        <div className="relative z-10">
+                                                            <h4 className="text-xs font-black text-blue-800 dark:text-blue-300 uppercase flex items-center gap-2 mb-1"><RefreshCcw size={14} /> Cálculo Inteligente</h4>
+                                                            <p className="text-[10px] font-bold text-blue-600/70 dark:text-blue-400/70 max-w-[300px]">Cálculo automático baseado na distância entre a coleta e a 7Pet via Google Maps.</p>
+                                                            {transportInfo && transportInfo.legs && (
+                                                                <div className="mt-4 space-y-4 animate-in slide-in-from-left">
+                                                                    {/* Grade de Pernadas Detalhada */}
+                                                                    <div className="space-y-3">
+                                                                        {[
+                                                                            { id: 'largada', label: '🚀 Largada (Loja -> Coleta)', color: 'bg-blue-50 text-blue-600', showMin: false },
+                                                                            { id: 'leva', label: '📦 Leva (Coleta -> Loja)', color: 'bg-green-50 text-green-600', showMin: true },
+                                                                            { id: 'traz', label: '🏠 Traz (Loja -> Entrega)', color: 'bg-purple-50 text-purple-600', showMin: true },
+                                                                            { id: 'retorno', label: '🔄 Retorno (Entrega -> Loja)', color: 'bg-orange-50 text-orange-600', showMin: false }
+                                                                        ].map(leg => (
+                                                                            <div key={leg.id} className={`p-3 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4 transition-all ${transportInfo.legs[leg.id].active ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700 opacity-60'}`}>
+                                                                                {/* Toggle para ativar/desativar pernada */}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        const next = {
+                                                                                            ...transportInfo,
+                                                                                            legs: {
+                                                                                                ...transportInfo.legs,
+                                                                                                [leg.id]: {
+                                                                                                    ...transportInfo.legs[leg.id],
+                                                                                                    active: !transportInfo.legs[leg.id].active
+                                                                                                }
+                                                                                            }
+                                                                                        };
+                                                                                        setTransportInfo(next);
+                                                                                        recalculateTransport(next);
+                                                                                    }}
+                                                                                    className={`w-10 h-5 rounded-full transition-all relative flex-shrink-0 ${transportInfo.legs[leg.id].active ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                                                >
+                                                                                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${transportInfo.legs[leg.id].active ? 'left-5' : 'left-0.5'}`} />
+                                                                                </button>
+                                                                                <div className="flex-1">
+                                                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${leg.color}`}>{leg.label}</span>
+                                                                                </div>
+                                                                                <div className={`flex items-center gap-3 ${!transportInfo.legs[leg.id].active && 'pointer-events-none'}`}>
+                                                                                    <div className="w-20">
+                                                                                        <label className="text-[7px] font-black text-gray-400 uppercase block mb-0.5">KM</label>
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="0.1"
+                                                                                            value={transportInfo.legs[leg.id].km}
+                                                                                            onChange={e => {
+                                                                                                const next = { ...transportInfo, legs: { ...transportInfo.legs, [leg.id]: { ...transportInfo.legs[leg.id], km: e.target.value } } };
+                                                                                                setTransportInfo(next);
+                                                                                                recalculateTransport(next);
+                                                                                            }}
+                                                                                            className="w-full text-[10px] font-black text-secondary dark:text-white bg-white dark:bg-gray-700 rounded-lg px-2 py-1 outline-none border border-gray-100 dark:border-gray-600 focus:border-blue-200"
+                                                                                        />
+                                                                                    </div>
+                                                                                    {leg.showMin && (
+                                                                                        <div className="w-20">
+                                                                                            <label className="text-[7px] font-black text-gray-400 uppercase block mb-0.5">MIN</label>
+                                                                                            <input
+                                                                                                type="number"
+                                                                                                value={transportInfo.legs[leg.id].min}
+                                                                                                onChange={e => {
+                                                                                                    const next = { ...transportInfo, legs: { ...transportInfo.legs, [leg.id]: { ...transportInfo.legs[leg.id], min: e.target.value } } };
+                                                                                                    setTransportInfo(next);
+                                                                                                    recalculateTransport(next);
+                                                                                                }}
+                                                                                                className="w-full text-[10px] font-black text-secondary dark:text-white bg-white dark:bg-gray-700 rounded-lg px-2 py-1 outline-none border border-gray-100 dark:border-gray-600 focus:border-blue-200"
+                                                                                            />
                                                                                         </div>
-                                                                                        <span className="text-xs font-black text-blue-500">R$ {(match.price || match.basePrice || 0).toFixed(2)}</span>
-                                                                                    </button>
-                                                                                ))}
-                                                                        </motion.div>
-                                                                    )}
-                                                                </AnimatePresence>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="w-24">
-                                                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Qtd</label>
-                                                    <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+
+                                                                    {/* Desconto Geral */}
+                                                                    <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm w-full">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <label className="text-[8px] font-black text-blue-400 dark:text-blue-300 uppercase tracking-widest">Desconto no Transporte (%)</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                value={transportInfo.discountPercent}
+                                                                                onChange={e => {
+                                                                                    const next = { ...transportInfo, discountPercent: e.target.value };
+                                                                                    setTransportInfo(next);
+                                                                                    recalculateTransport(next);
+                                                                                }}
+                                                                                className="w-16 text-right text-xs font-black text-blue-600 dark:text-blue-400 outline-none bg-transparent"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Valor Editável e Info */}
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="flex-1">
+                                                                            <label className="text-[9px] font-black text-blue-600 uppercase mb-1 block ml-1">Valor Final Sugerido</label>
+                                                                            <div className="relative">
+                                                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 font-black text-xs">R$</span>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={transportInfo.estimatedPrice ?? ''}
+                                                                                    onChange={e => {
+                                                                                        const val = e.target.value;
+                                                                                        setTransportInfo({
+                                                                                            ...transportInfo,
+                                                                                            estimatedPrice: val === '' ? '' : parseFloat(val)
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 rounded-xl font-black text-lg text-blue-600 dark:text-blue-400 border-2 border-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        {transportInfo.settings && (
+                                                                            <div className="px-4 py-3 bg-blue-100/50 dark:bg-blue-900/30 rounded-xl text-[8px] leading-tight space-y-1.5 border border-blue-200 dark:border-blue-800">
+                                                                                {quote.petQuantity > 1 && <div className="font-bold text-blue-600 dark:text-blue-300">+{(quote.petQuantity - 1) * 20}% Pets Adic.</div>}
+                                                                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                                                                    <span className="text-blue-500 font-black">R$/KM:</span>
+                                                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded font-black text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                                                                        {((transportInfo.settings.kmPriceLeva + transportInfo.settings.kmPriceTraz) / 2).toFixed(2)}
+                                                                                    </span>
+                                                                                    <Info size={10} className="text-gray-400" />
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                                                                    <span className="text-blue-500 font-black">R$/Min:</span>
+                                                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded font-black text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                                                                        {((transportInfo.settings.minPriceLeva + transportInfo.settings.minPriceTraz) / 2).toFixed(2)}
+                                                                                    </span>
+                                                                                    <Info size={10} className="text-gray-400" />
+                                                                                </div>
+                                                                                <div className="text-[7px] text-blue-500/70 dark:text-blue-400/70 mt-1 italic flex items-center gap-1">
+                                                                                    <AlertTriangle size={9} />
+                                                                                    Valores travados (Conf. Transporte)
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Botão Incluir */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleAddTransportToQuote}
+                                                                        className="w-full py-3 bg-blue-500 text-white rounded-xl font-black text-sm uppercase flex items-center justify-center gap-2 hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
+                                                                    >
+                                                                        <CheckCircle size={16} /> Incluir no Orçamento
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
-                                                            className="p-3 text-gray-300 hover:text-secondary"
+                                                            disabled={isCalculatingTransport}
+                                                            onClick={handleCalculateTransport}
+                                                            className="relative z-10 px-6 py-3 bg-white dark:bg-gray-800 border-2 border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center gap-2 disabled:opacity-50"
                                                         >
-                                                            <Minus size={14} />
+                                                            {isCalculatingTransport ? (
+                                                                <RefreshCcw size={16} className="animate-spin" />
+                                                            ) : 'Calcular Agora'}
                                                         </button>
-                                                        <span className="flex-1 text-center font-black text-secondary dark:text-white text-xs">{item.quantity}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
-                                                            className="p-3 text-gray-300 hover:text-secondary"
-                                                        >
-                                                            <Plus size={14} />
-                                                        </button>
+                                                        <div className="absolute right-0 top-0 text-blue-100 translate-x-10 -translate-y-10">
+                                                            <Truck size={140} />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="w-32">
-                                                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Preço Unit.</label>
-                                                    <div className="relative">
-                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] font-black">R$</span>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={item.price ?? ''}
-                                                            onChange={e => {
-                                                                const val = e.target.value;
-                                                                handleUpdateItem(idx, 'price', val === '' ? 0 : parseFloat(val));
-                                                            }}
-                                                            className="w-full bg-white dark:bg-gray-800 border-none rounded-xl pl-10 pr-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-green-500/20 transition-all"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDuplicateItem(idx)}
-                                                        className="p-3 text-blue-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
-                                                        title="Duplicar item"
-                                                    >
-                                                        <Copy size={16} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveItem(idx)}
-                                                        className="p-3 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-
-                                        {quote.items.length === 0 && (
-                                            <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-700/50 border-2 border-dashed border-gray-100 dark:border-gray-600 rounded-3xl group hover:border-blue-200 transition-all cursor-pointer" onClick={() => handleAddItem()}>
-                                                <div className="w-12 h-12 bg-white dark:bg-gray-600 rounded-2xl flex items-center justify-center text-gray-300 dark:text-gray-400 mx-auto mb-4 group-hover:text-blue-500 transition-all">
-                                                    <Plus size={24} />
-                                                </div>
-                                                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum item adicionado</p>
-                                                <p className="text-[10px] font-bold text-gray-300">Clique para adicionar o primeiro serviço</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Subsessões de Produtos */}
-                                    <div className="mt-6 space-y-4">
-                                        <h4 className="text-sm font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                            <span className="w-6 h-6 bg-purple-500/10 text-purple-500 rounded-lg flex items-center justify-center text-xs">📦</span>
-                                            Produtos Inteligentes (baseados no perfil do pet)
-                                        </h4>
-
-                                        {/* Produto de Banho */}
-                                        {(() => {
-                                            const prodCats = getCategorizedProducts();
-                                            return prodCats.banho.length > 0 && (
-                                                <div className="p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                                                    <label className="block text-[9px] font-black text-blue-700 dark:text-blue-300 uppercase tracking-widest mb-2 ml-1">
-                                                        🧴 Produto de Banho (opcional)
-                                                    </label>
-                                                    <select
-                                                        value={selectedProductBanho?.id || ''}
-                                                        onChange={(e) => {
-                                                            const prod = prodCats.banho.find(p => p.id === e.target.value);
-                                                            setSelectedProductBanho(prod || null);
-                                                            if (prod) {
-                                                                handleAddItem(prod);
-                                                            }
-                                                        }}
-                                                        className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                                    >
-                                                        <option value="">Selecionar produto de banho...</option>
-                                                        {prodCats.banho.map(p => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.name} - R$ {p.price.toFixed(2)}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <p className="mt-2 text-[9px] font-medium text-blue-600 dark:text-blue-400 ml-1">
-                                                        {prodCats.banho.length} produto(s) compatível(is) com {pet.species} {pet.weight}kg {pet.coatType}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Produto de Tosa */}
-                                        {(() => {
-                                            const prodCats = getCategorizedProducts();
-                                            return prodCats.tosa.length > 0 && (
-                                                <div className="p-4 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/30">
-                                                    <label className="block text-[9px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-2 ml-1">
-                                                        ✄ Produto de Tosa (opcional)
-                                                    </label>
-                                                    <select
-                                                        value={selectedProductTosa?.id || ''}
-                                                        onChange={(e) => {
-                                                            const prod = prodCats.tosa.find(p => p.id === e.target.value);
-                                                            setSelectedProductTosa(prod || null);
-                                                            if (prod) {
-                                                                handleAddItem(prod);
-                                                            }
-                                                        }}
-                                                        className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                    >
-                                                        <option value="">Selecionar produto de tosa...</option>
-                                                        {prodCats.tosa.map(p => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.name} - R$ {p.price.toFixed(2)}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <p className="mt-2 text-[9px] font-medium text-amber-600 dark:text-amber-400 ml-1">
-                                                        {prodCats.tosa.length} produto(s) compatível(is) com {pet.species} {pet.weight}kg {pet.coatType}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Produto Extra */}
-                                        {(() => {
-                                            const prodCats = getCategorizedProducts();
-                                            return prodCats.extras.length > 0 && (
-                                                <div className="p-4 bg-purple-50/30 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
-                                                    <label className="block text-[9px] font-black text-purple-700 dark:text-purple-300 uppercase tracking-widest mb-2 ml-1">
-                                                        🎁 Produto Extra (opcional)
-                                                    </label>
-                                                    <select
-                                                        value={selectedProductExtra?.id || ''}
-                                                        onChange={(e) => {
-                                                            const prod = prodCats.extras.find(p => p.id === e.target.value);
-                                                            setSelectedProductExtra(prod || null);
-                                                            if (prod) {
-                                                                handleAddItem(prod);
-                                                            }
-                                                        }}
-                                                        className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                                    >
-                                                        <option value="">Selecionar produto extra...</option>
-                                                        {prodCats.extras.map(p => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.name} - R$ {p.price.toFixed(2)}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <p className="mt-2 text-[9px] font-medium text-purple-600 dark:text-purple-400 ml-1">
-                                                        {prodCats.extras.length} produto(s) compatível(is) com {pet.species} {pet.weight}kg {pet.coatType}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                </section>
-
-                                {/* 5. Previsão de Atendimento */}
-                                <section className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
-                                    <h3 className="text-lg font-black text-secondary dark:text-white flex items-center gap-3 uppercase tracking-tight">
-                                        <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-black">5</div>
-                                        Previsão de Atendimento
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Data e Hora Prevista</label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
-                                                <input
-                                                    type="datetime-local"
-                                                    value={quote.desiredAt ? new Date(new Date(quote.desiredAt).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-                                                    onChange={e => setQuote({ ...quote, desiredAt: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl pl-14 pr-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                                />
-                                            </div>
-                                            <p className="mt-2 text-[10px] font-medium text-gray-400 ml-1">Sugestão de data e horário para execução</p>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* Resumo e Total */}
-                                <div className="mt-8 pt-8 border-t border-gray-50 dark:border-gray-700 space-y-6">
-                                    {/* Desconto Estratégico (Manual) - Apenas para AVULSO */}
-                                    {customer.type === 'AVULSO' && (
-                                        <div className="p-6 bg-purple-50/50 dark:bg-purple-900/10 rounded-3xl border border-purple-100 dark:border-purple-800/30">
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                <div>
-                                                    <h4 className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest flex items-center gap-2">
-                                                        <span className="w-5 h-5 bg-purple-500 text-white rounded-lg flex items-center justify-center text-[10px]">💎</span>
-                                                        Desconto Estratégico (Vendas/Negociação)
-                                                    </h4>
-                                                    <p className="text-[10px] font-medium text-purple-600/70 dark:text-purple-400/70 mt-1">
-                                                        Aplique um desconto manual para clientes avulsos para incentivar a venda ou negociação
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="100"
-                                                        step="0.1"
-                                                        value={strategicDiscount ?? ''}
-                                                        onChange={e => {
-                                                            const val = e.target.value;
-                                                            setStrategicDiscount(val === '' ? '' : parseFloat(val));
-                                                        }}
-                                                        className="w-20 text-center px-3 py-2 bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl font-black text-purple-600 dark:text-purple-400 outline-none focus:border-purple-500 transition-all"
-                                                    />
-                                                    <span className="text-sm font-black text-purple-600 dark:text-purple-400">%</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                            )}
+                                        </section>
                                     )}
 
-                                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                                        <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 max-w-md">
-                                            <AlertTriangle className="text-yellow-600 shrink-0" size={24} />
-                                            <p className="text-[10px] font-bold text-yellow-700 dark:text-yellow-400">
-                                                <span className="font-black uppercase block mb-1">Nota para o Operador:</span>
-                                                Fatores como desembolo (nós) e transporte calculado via Maps serão processados automaticamente ao salvar, podendo alterar o valor total final se não incluídos manualmente.
-                                            </p>
+
+                                    {/* 4. Itens do Orçamento */}
+                                    <section className="bg-white dark:bg-gray-800 p-8 rounded-[40px] border border-gray-100 dark:border-gray-700 shadow-xl shadow-green-500/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-xl font-black text-secondary dark:text-white flex items-center gap-4 uppercase tracking-tighter">
+                                                <div className="w-12 h-12 rounded-[20px] bg-green-500 text-white flex items-center justify-center font-black shadow-lg shadow-green-500/20 ring-4 ring-green-500/10">4</div>
+                                                Itens do Orçamento
+                                            </h3>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAddItem()}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all"
+                                            >
+                                                <Plus size={14} /> Adicionar Item
+                                            </button>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="flex flex-col items-end mb-1 space-y-0.5">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Total Parcial Estimado</span>
-                                                {serviceDiscount > 0 && (
-                                                    <span className="text-[10px] font-black text-green-500 uppercase">
-                                                        Desc. Recorrência ({customer.recurrenceFrequency}): - R$ {serviceDiscount.toFixed(2)}
-                                                    </span>
-                                                )}
-                                                {productDiscount > 0 && (
-                                                    <span className="text-[10px] font-black text-purple-500 uppercase">
-                                                        Desc. Estratégico (Produtos): - R$ {productDiscount.toFixed(2)}
-                                                    </span>
-                                                )}
+
+                                        <div className="space-y-4">
+                                            {quote.items.map((item, idx) => (
+                                                <div key={idx} className="group relative flex flex-wrap md:flex-nowrap gap-4 items-end bg-gray-50/50 dark:bg-gray-700/50 p-4 rounded-2xl border border-transparent hover:border-blue-100 dark:hover:border-blue-800 hover:bg-white dark:hover:bg-gray-700 transition-all">
+                                                    <div className="flex-1 min-w-[200px]">
+                                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Serviço / Descrição</label>
+                                                        <div className="relative">
+                                                            {!item.isManual ? (
+                                                                <>
+                                                                    <select
+                                                                        value={item.serviceId || item.productId || ''}
+                                                                        onChange={e => handleUpdateItem(idx, 'serviceId', e.target.value)}
+                                                                        className={`w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black ${(!item.serviceId && !item.productId) ? 'text-gray-300' : 'text-secondary dark:text-white'} outline-none shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none`}
+                                                                    >
+                                                                        <option value="">🛒 Selecione um Serviço ou Produto...</option>
+
+                                                                        {/* Serviços Categorizados */}
+                                                                        {(() => {
+                                                                            const cats = getCategorizedServices();
+                                                                            return (
+                                                                                <>
+                                                                                    {cats.banho.length > 0 && (
+                                                                                        <optgroup label="🛁 BANHOS (4 Tipos)">
+                                                                                            {cats.banho.map(s => (
+                                                                                                <option key={s.id} value={s.id}>
+                                                                                                    {s.name} - R$ {s.basePrice.toFixed(2)}
+                                                                                                    {s.sizeLabel && ` • ${s.sizeLabel}`}
+                                                                                                    {s.coatType && ` • ${s.coatType}`}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </optgroup>
+                                                                                    )}
+
+                                                                                    {cats.tosa.length > 0 && (
+                                                                                        <optgroup label="✂️ TOSAS (Higiênica, Estética, Raça, Bebê)">
+                                                                                            {cats.tosa.map(s => (
+                                                                                                <option key={s.id} value={s.id}>
+                                                                                                    {s.name} - R$ {s.basePrice.toFixed(2)}
+                                                                                                    {s.sizeLabel && ` • ${s.sizeLabel}`}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </optgroup>
+                                                                                    )}
+
+                                                                                    {cats.extras.length > 0 && (
+                                                                                        <optgroup label="⭐ SERVIÇOS EXTRAS">
+                                                                                            {cats.extras.map(s => (
+                                                                                                <option key={s.id} value={s.id}>
+                                                                                                    {s.name} - R$ {s.basePrice.toFixed(2)}
+                                                                                                    {s.sizeLabel && ` • ${s.sizeLabel}`}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </optgroup>
+                                                                                    )}
+                                                                                </>
+                                                                            );
+                                                                        })()}
+
+                                                                        {/* Produtos Categorizados */}
+                                                                        {(() => {
+                                                                            const prodCats = getCategorizedProducts();
+                                                                            return (
+                                                                                <>
+                                                                                    {prodCats.banho.length > 0 && (
+                                                                                        <optgroup label="🧴 PRODUTOS BANHO">
+                                                                                            {prodCats.banho.map(p => (
+                                                                                                <option key={p.id} value={p.id}>
+                                                                                                    {p.name} - R$ {p.price.toFixed(2)}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </optgroup>
+                                                                                    )}
+
+                                                                                    {prodCats.tosa.length > 0 && (
+                                                                                        <optgroup label="✄ PRODUTOS TOSA">
+                                                                                            {prodCats.tosa.map(p => (
+                                                                                                <option key={p.id} value={p.id}>
+                                                                                                    {p.name} - R$ {p.price.toFixed(2)}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </optgroup>
+                                                                                    )}
+
+                                                                                    {prodCats.extras.length > 0 && (
+                                                                                        <optgroup label="🎁 PRODUTOS EXTRAS">
+                                                                                            {prodCats.extras.map(p => (
+                                                                                                <option key={p.id} value={p.id}>
+                                                                                                    {p.name} - R$ {p.price.toFixed(2)}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </optgroup>
+                                                                                    )}
+                                                                                </>
+                                                                            );
+                                                                        })()}
+
+                                                                        <option value="MANUAL_UPGRADE">✏️ Digitar item personalizado...</option>
+                                                                    </select>
+                                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300">
+                                                                        <Info size={14} />
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="relative flex items-center">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.description}
+                                                                        onChange={e => handleUpdateItem(idx, 'description', e.target.value)}
+                                                                        className="w-full bg-blue-50/50 dark:bg-blue-900/20 border-2 border-blue-200/50 dark:border-blue-800/50 rounded-xl px-4 py-3 text-xs font-black text-blue-600 dark:text-blue-400 outline-none shadow-sm focus:border-blue-500 transition-all"
+                                                                        placeholder="Digite para buscar serviço ou produto..."
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const n = [...quote.items];
+                                                                            n[idx] = { ...n[idx], isManual: false, serviceId: 'PENDING' };
+                                                                            setQuote({ ...quote, items: n });
+                                                                        }}
+                                                                        className="absolute right-3 text-blue-400 hover:text-blue-600 p-1"
+                                                                        title="Escolher serviço do catálogo"
+                                                                    >
+                                                                        <RefreshCcw size={12} />
+                                                                    </button>
+
+                                                                    {/* Sugestões de Itens (Serviços + Produtos) */}
+                                                                    <AnimatePresence>
+                                                                        {activeItemSearch?.index === idx && (
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, y: -10 }}
+                                                                                animate={{ opacity: 1, y: 0 }}
+                                                                                exit={{ opacity: 0, y: -10 }}
+                                                                                className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-blue-100 dark:border-blue-900/50 z-[100] max-h-60 overflow-y-auto"
+                                                                            >
+                                                                                {[...services, ...products]
+                                                                                    .filter(i => i.name.toLowerCase().includes(activeItemSearch.query.toLowerCase()))
+                                                                                    .slice(0, 10)
+                                                                                    .map(match => (
+                                                                                        <button
+                                                                                            key={match.id}
+                                                                                            type="button"
+                                                                                            onClick={() => selectSuggestedItem(idx, match)}
+                                                                                            className="w-full p-4 flex items-center justify-between hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border-b border-gray-50 dark:border-gray-700 last:border-none group"
+                                                                                        >
+                                                                                            <div className="text-left">
+                                                                                                <p className="text-xs font-black text-secondary dark:text-white group-hover:text-blue-600">{match.name}</p>
+                                                                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+                                                                                                    {match.basePrice !== undefined ? '🛠️ Serviço' : '📦 Produto'}
+                                                                                                    {match.category && ` • ${match.category}`}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            <span className="text-xs font-black text-blue-500">R$ {(match.price || match.basePrice || 0).toFixed(2)}</span>
+                                                                                        </button>
+                                                                                    ))}
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Qtd</label>
+                                                        <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
+                                                                className="p-3 text-gray-300 hover:text-secondary"
+                                                            >
+                                                                <Minus size={14} />
+                                                            </button>
+                                                            <span className="flex-1 text-center font-black text-secondary dark:text-white text-xs">{item.quantity}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
+                                                                className="p-3 text-gray-300 hover:text-secondary"
+                                                            >
+                                                                <Plus size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Preço Unit.</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] font-black">R$</span>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                value={item.price ?? ''}
+                                                                onChange={e => {
+                                                                    const val = e.target.value;
+                                                                    handleUpdateItem(idx, 'price', val === '' ? 0 : parseFloat(val));
+                                                                }}
+                                                                className="w-full bg-white dark:bg-gray-800 border-none rounded-xl pl-10 pr-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-green-500/20 transition-all"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDuplicateItem(idx)}
+                                                            className="p-3 text-blue-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                                                            title="Duplicar item"
+                                                        >
+                                                            <Copy size={16} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveItem(idx)}
+                                                            className="p-3 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {quote.items.length === 0 && (
+                                                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-700/50 border-2 border-dashed border-gray-100 dark:border-gray-600 rounded-3xl group hover:border-blue-200 transition-all cursor-pointer" onClick={() => handleAddItem()}>
+                                                    <div className="w-12 h-12 bg-white dark:bg-gray-600 rounded-2xl flex items-center justify-center text-gray-300 dark:text-gray-400 mx-auto mb-4 group-hover:text-blue-500 transition-all">
+                                                        <Plus size={24} />
+                                                    </div>
+                                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum item adicionado</p>
+                                                    <p className="text-[10px] font-bold text-gray-300">Clique para adicionar o primeiro serviço</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Subsessões de Produtos */}
+                                        <div className="mt-6 space-y-4">
+                                            <h4 className="text-sm font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <span className="w-6 h-6 bg-purple-500/10 text-purple-500 rounded-lg flex items-center justify-center text-xs">📦</span>
+                                                Produtos Inteligentes (baseados no perfil do pet)
+                                            </h4>
+
+                                            {/* Produto de Banho */}
+                                            {(() => {
+                                                const prodCats = getCategorizedProducts();
+                                                return prodCats.banho.length > 0 && (
+                                                    <div className="p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                                                        <label className="block text-[9px] font-black text-blue-700 dark:text-blue-300 uppercase tracking-widest mb-2 ml-1">
+                                                            🧴 Produto de Banho (opcional)
+                                                        </label>
+                                                        <select
+                                                            value={selectedProductBanho?.id || ''}
+                                                            onChange={(e) => {
+                                                                const prod = prodCats.banho.find(p => p.id === e.target.value);
+                                                                setSelectedProductBanho(prod || null);
+                                                                if (prod) {
+                                                                    handleAddItem(prod);
+                                                                }
+                                                            }}
+                                                            className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                                        >
+                                                            <option value="">Selecionar produto de banho...</option>
+                                                            {prodCats.banho.map(p => (
+                                                                <option key={p.id} value={p.id}>
+                                                                    {p.name} - R$ {p.price.toFixed(2)}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <p className="mt-2 text-[9px] font-medium text-blue-600 dark:text-blue-400 ml-1">
+                                                            {prodCats.banho.length} produto(s) compatível(is) com {pet.species} {pet.weight}kg {pet.coatType}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* Produto de Tosa */}
+                                            {(() => {
+                                                const prodCats = getCategorizedProducts();
+                                                return prodCats.tosa.length > 0 && (
+                                                    <div className="p-4 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/30">
+                                                        <label className="block text-[9px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-2 ml-1">
+                                                            ✄ Produto de Tosa (opcional)
+                                                        </label>
+                                                        <select
+                                                            value={selectedProductTosa?.id || ''}
+                                                            onChange={(e) => {
+                                                                const prod = prodCats.tosa.find(p => p.id === e.target.value);
+                                                                setSelectedProductTosa(prod || null);
+                                                                if (prod) {
+                                                                    handleAddItem(prod);
+                                                                }
+                                                            }}
+                                                            className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                                        >
+                                                            <option value="">Selecionar produto de tosa...</option>
+                                                            {prodCats.tosa.map(p => (
+                                                                <option key={p.id} value={p.id}>
+                                                                    {p.name} - R$ {p.price.toFixed(2)}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <p className="mt-2 text-[9px] font-medium text-amber-600 dark:text-amber-400 ml-1">
+                                                            {prodCats.tosa.length} produto(s) compatível(is) com {pet.species} {pet.weight}kg {pet.coatType}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* Produto Extra */}
+                                            {(() => {
+                                                const prodCats = getCategorizedProducts();
+                                                return prodCats.extras.length > 0 && (
+                                                    <div className="p-4 bg-purple-50/30 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
+                                                        <label className="block text-[9px] font-black text-purple-700 dark:text-purple-300 uppercase tracking-widest mb-2 ml-1">
+                                                            🎁 Produto Extra (opcional)
+                                                        </label>
+                                                        <select
+                                                            value={selectedProductExtra?.id || ''}
+                                                            onChange={(e) => {
+                                                                const prod = prodCats.extras.find(p => p.id === e.target.value);
+                                                                setSelectedProductExtra(prod || null);
+                                                                if (prod) {
+                                                                    handleAddItem(prod);
+                                                                }
+                                                            }}
+                                                            className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-xs font-black text-secondary dark:text-white outline-none shadow-sm focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                                        >
+                                                            <option value="">Selecionar produto extra...</option>
+                                                            {prodCats.extras.map(p => (
+                                                                <option key={p.id} value={p.id}>
+                                                                    {p.name} - R$ {p.price.toFixed(2)}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <p className="mt-2 text-[9px] font-medium text-purple-600 dark:text-purple-400 ml-1">
+                                                            {prodCats.extras.length} produto(s) compatível(is) com {pet.species} {pet.weight}kg {pet.coatType}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </section>
+
+
+                                    {/* 5. Previsão de Atendimento */}
+                                    <section className="bg-white dark:bg-gray-800 p-8 rounded-[40px] border border-gray-100 dark:border-gray-700 shadow-xl shadow-blue-500/5 space-y-8">
+                                        <h3 className="text-xl font-black text-secondary dark:text-white flex items-center gap-4 uppercase tracking-tighter">
+                                            <div className="w-12 h-12 rounded-[20px] bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-600/20 ring-4 ring-blue-600/10">5</div>
+                                            Previsão de Atendimento
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Data e Hora Prevista</label>
+                                                <div className="relative">
+                                                    <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={quote.desiredAt ? new Date(new Date(quote.desiredAt).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                                        onChange={e => setQuote({ ...quote, desiredAt: e.target.value })}
+                                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl pl-14 pr-5 py-4 font-bold text-secondary dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                                    />
+                                                </div>
+                                                <p className="mt-2 text-[10px] font-medium text-gray-400 ml-1">Sugestão de data e horário para execução</p>
                                             </div>
-                                            <div className="text-4xl font-black text-secondary dark:text-white tabular-nums flex items-baseline gap-1">
-                                                <span className="text-lg opacity-30">R$</span> {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </div>
+                                    </section>
+
+                                    {/* Resumo e Total */}
+                                    <div className="mt-8 pt-8 border-t border-gray-50 dark:border-gray-700 space-y-6">
+                                        {/* Desconto Estratégico (Manual) - Apenas para AVULSO */}
+                                        {customer.type === 'AVULSO' && (
+                                            <div className="p-6 bg-purple-50/50 dark:bg-purple-900/10 rounded-3xl border border-purple-100 dark:border-purple-800/30">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div>
+                                                        <h4 className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                                                            <span className="w-5 h-5 bg-purple-500 text-white rounded-lg flex items-center justify-center text-[10px]">💎</span>
+                                                            Desconto Estratégico (Vendas/Negociação)
+                                                        </h4>
+                                                        <p className="text-[10px] font-medium text-purple-600/70 dark:text-purple-400/70 mt-1">
+                                                            Aplique um desconto manual para clientes avulsos para incentivar a venda ou negociação
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.1"
+                                                            value={strategicDiscount ?? ''}
+                                                            onChange={e => {
+                                                                const val = e.target.value;
+                                                                setStrategicDiscount(val === '' ? '' : parseFloat(val));
+                                                            }}
+                                                            className="w-20 text-center px-3 py-2 bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl font-black text-purple-600 dark:text-purple-400 outline-none focus:border-purple-500 transition-all"
+                                                        />
+                                                        <span className="text-sm font-black text-purple-600 dark:text-purple-400">%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                            <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 max-w-md">
+                                                <AlertTriangle className="text-yellow-600 shrink-0" size={24} />
+                                                <p className="text-[10px] font-bold text-yellow-700 dark:text-yellow-400">
+                                                    <span className="font-black uppercase block mb-1">Nota para o Operador:</span>
+                                                    Fatores como desembolo (nós) e transporte calculado via Maps serão processados automaticamente ao salvar, podendo alterar o valor total final se não incluídos manualmente.
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="flex flex-col items-end mb-1 space-y-0.5">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Total Parcial Estimado</span>
+                                                    {serviceDiscount > 0 && (
+                                                        <span className="text-[10px] font-black text-green-500 uppercase">
+                                                            Desc. Recorrência: - R$ {serviceDiscount.toFixed(2)}
+                                                        </span>
+                                                    )}
+                                                    {productDiscount > 0 && (
+                                                        <span className="text-[10px] font-black text-purple-500 uppercase">
+                                                            Desc. Estratégico (Produtos): - R$ {productDiscount.toFixed(2)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-4xl font-black text-secondary dark:text-white tabular-nums flex items-baseline gap-1">
+                                                    <span className="text-lg opacity-30">R$</span> {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
 
-                            {/* Footer */}
-                            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className="px-6 py-2 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    disabled={isLoading}
-                                    onClick={handleSubmit}
-                                    className="px-8 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
-                                >
-                                    {isLoading ? 'Salvando...' : 'Criar Orçamento'}
-                                </button>
-                            </div>
+                                    {/* Footer */}
+                                    <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={onClose}
+                                            className="px-6 py-2 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            disabled={isLoading}
+                                            onClick={handleSubmit}
+                                            className="px-8 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
+                                        >
+                                            {isLoading ? 'Salvando...' : 'Criar Orçamento'}
+                                        </button>
+                                    </div></>
+                            )}
                         </motion.div>
                     </div>
 
@@ -2064,7 +2182,9 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                             <div><span className="font-bold text-gray-600 dark:text-gray-400">Telefone:</span> <span className="text-secondary dark:text-white">{customer.phone || 'Não informado'}</span></div>
                                             <div><span className="font-bold text-gray-600 dark:text-gray-400">Tipo:</span> <span className={`px-2 py-0.5 rounded text-xs font-black ${customer.type === 'RECORRENTE' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}>{customer.type}</span></div>
                                             {customer.type === 'RECORRENTE' && (
-                                                <div className="col-span-2"><span className="font-bold text-gray-600 dark:text-gray-400">Frequência:</span> <span className="font-black text-purple-600 dark:text-purple-400">{customer.recurrenceFrequency}</span></div>
+                                                <div className="col-span-2 space-y-1">
+                                                    <div><span className="font-bold text-gray-600 dark:text-gray-400">Frequência SPA:</span> <span className="font-black text-purple-600 dark:text-purple-400">{customer.recurrenceFrequency}</span></div>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -2098,8 +2218,8 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                         // Desconto de recorrência sobre serviços (Apenas para RECORRENTE)
                                         const recurrenceDiscountAmount = customer.type === 'RECORRENTE' ? spaItems.reduce((acc, item) => {
                                             // Se for serviço (tem serviceId ou é automático sem productId)
-                                            if ((item.serviceId || item.isAutomatic) && !item.productId && discountRate > 0) {
-                                                return acc + (item.price * item.quantity * discountRate);
+                                            if ((item.serviceId || item.isAutomatic) && !item.productId && spaDiscountRate > 0) {
+                                                return acc + (item.price * item.quantity * spaDiscountRate);
                                             }
                                             return acc;
                                         }, 0) : 0;
@@ -2166,7 +2286,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                                     </div>
                                                     {recurrenceDiscountAmount > 0 && (
                                                         <div className="flex justify-between">
-                                                            <span className="text-green-600 dark:text-green-400 font-bold">Desconto Recorrência ({(discountRate * 100).toFixed(0)}%):</span>
+                                                            <span className="text-green-600 dark:text-green-400 font-bold">Desconto Recorrência ({(spaDiscountRate * 100).toFixed(0)}%):</span>
                                                             <span className="font-black text-green-600 dark:text-green-400">- R$ {recurrenceDiscountAmount.toFixed(2)}</span>
                                                         </div>
                                                     )}
@@ -2196,7 +2316,7 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                                         const transportSubtotal = transportItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
                                         // Desconto no transporte conforme tipo de cliente
-                                        const transportRecurrenceDiscount = customer.type === 'RECORRENTE' ? (transportSubtotal * discountRate) : 0;
+                                        const transportRecurrenceDiscount = customer.type === 'RECORRENTE' ? (transportSubtotal * transportDiscountRate) : 0;
                                         const transportStrategicDiscount = customer.type === 'AVULSO' ? (transportSubtotal * (Number(strategicDiscount) / 100)) : 0;
 
                                         // Usar o maior desconto ou o de transporte específico se houver
