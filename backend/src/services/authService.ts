@@ -106,6 +106,17 @@ export const register = async (data: any) => {
 export const registerManual = async (tx: any, data: any) => {
     const { customer, pet } = data;
 
+    // Validações básicas
+    if (!customer) {
+        throw new Error('Dados do cliente são obrigatórios');
+    }
+    if (!customer.email) {
+        throw new Error('Email do cliente é obrigatório');
+    }
+    if (!customer.name) {
+        throw new Error('Nome do cliente é obrigatório');
+    }
+
     let user = null;
 
     // 1. If ID is provided, it's an existing customer to modify/merge
@@ -143,7 +154,7 @@ export const registerManual = async (tx: any, data: any) => {
                     phone: customer.phone || user.customer.phone,
                     address: customer.address || user.customer.address,
                     type: customer.type || user.customer.type,
-                    recurrenceFrequency: customer.recurrenceFrequency || user.customer.recurrenceFrequency
+                    recurrenceFrequency: customer.recurrenceFrequency || user.customer.recurrenceFrequency,
                 }
             });
         }
@@ -161,15 +172,15 @@ export const registerManual = async (tx: any, data: any) => {
             // RULE: PAUSA menu enabled by default for CLIENTE users
             user = await tx.user.create({
                 data: {
-                    email: customer.email,
+                    email: customer.email || '',
                     passwordHash: "TEMPORARY",
                     role: 'CLIENTE',
                     division: 'CLIENTE',
-                    name: customer.name,
+                    name: customer.name || 'Cliente',
                     firstName: customer.firstName || (customer.name ? customer.name.split(' ')[0] : 'Cliente'),
                     lastName: customer.lastName || (customer.name ? customer.name.split(' ').slice(1).join(' ') : ''),
-                    phone: customer.phone,
-                    address: customer.address,
+                    phone: customer.phone || '',
+                    address: customer.address || '',
                     isEligible: false,
                     pauseMenuEnabled: true,
                     customer: {

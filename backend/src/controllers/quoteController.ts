@@ -1525,6 +1525,10 @@ export const quoteController = {
             console.error('[createManual] Error message:', error.message);
             console.error('[createManual] Error code:', error.code);
             console.error('[createManual] Error stack:', error.stack);
+            
+            // Log do payload recebido para debug
+            console.error('[createManual] Payload recebido:', JSON.stringify(req.body, null, 2));
+            
             console.error('[createManual] ====================');
 
             // Return detailed error for debugging

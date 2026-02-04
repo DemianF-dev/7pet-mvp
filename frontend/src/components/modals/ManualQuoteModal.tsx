@@ -696,18 +696,22 @@ export default function ManualQuoteModal({ isOpen, onClose, onSuccess }: ManualQ
                     items: itemsForQuote, // Ensure items are included
                     recurrenceFrequency: customer.type === 'RECORRENTE' ? customer.recurrenceFrequency : null,
                     type: quote.type || 'SPA',
-                    transportOrigin: quote.transportOrigin || customer.address,
+                    desiredAt: quote.desiredAt || null,
+                    transportOrigin: quote.transportOrigin || customer.address || '',
+                    transportDestination: quote.transportDestination || '7Pet',
                     transportReturnAddress: quote.isReturnSame ? (quote.transportOrigin || customer.address) : quote.transportReturnAddress,
-                    hasKnots: pet.hasKnots,
+                    transportPeriod: quote.transportPeriod || 'MANHA',
+                    petQuantity: Number(quote.petQuantity) || 1,
+                    hasKnots: Boolean(pet.hasKnots),
                     knotRegions: Array.isArray(pet.knotRegions) ? pet.knotRegions.join(', ') : '',
-                    hasParasites: pet.hasParasites,
-                    parasiteTypes: pet.parasiteTypes,
-                    wantsMedicatedBath: pet.wantsMedicatedBath,
-                    strategicDiscount
+                    hasParasites: Boolean(pet.hasParasites),
+                    parasiteTypes: pet.parasiteTypes || '',
+                    wantsMedicatedBath: Boolean(pet.wantsMedicatedBath),
+                    strategicDiscount: Number(strategicDiscount) || 0
                 }
             };
 
-            console.log('[ManualQuoteModal] Enviando payload:', payload);
+            console.log('[ManualQuoteModal] Enviando payload:', JSON.stringify(payload, null, 2));
             const res = await api.post('/quotes/manual', payload);
             toast.success('Orçamento criado com sucesso! Agora está em status CALCULADO para revisão.');
             onSuccess(res.data);
