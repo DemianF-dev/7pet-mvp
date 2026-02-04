@@ -1433,51 +1433,59 @@ export const quoteController = {
                     console.warn('[createManual] user.id não encontrado, usando SYSTEM');
                 }
 
-                // 3. Create Quote
-                let quote;
-                try {
-                    quote = await tx.quote.create({
-                        data: {
-                            customerId: dbCustomer.id,
-                            petId: dbPet?.id || null,
-                            type: quoteData.type || 'SPA',
-                            desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
-                            transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address,
-                            transportDestination: quoteData.transportDestination || "7Pet",
-                            transportReturnAddress: quoteData.transportReturnAddress,
-                            transportPeriod: quoteData.transportPeriod,
-                            petQuantity: Number(quoteData.petQuantity) || 1,
-                            hairLength: quoteData.hairLength,
-                            hasKnots: quoteData.hasKnots || false,
-                            knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
-                            hasParasites: quoteData.hasParasites || false,
-                            parasiteTypes: quoteData.parasiteTypes,
-                            parasiteComments: quoteData.parasiteComments,
-                            wantsMedicatedBath: quoteData.wantsMedicatedBath || false,
-                            transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
-                            transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
-                            status: 'SOLICITADO',
-                            totalAmount,
-                            isRecurring: customerType === 'RECORRENTE',
-                            frequency: (customerType === 'RECORRENTE') ? safeFrequency : null,
-                            packageDiscount: spaDiscountRate > 0 ? spaDiscountRate : null,
+                 // 3. Create Quote
+                 let quote;
+                 try {
+                     console.log('[createManual] Preparando criação do quote com dados:', {
+                         customerId: dbCustomer.id,
+                         petId: dbPet?.id || null,
+                         type: quoteData.type || 'SPA',
+                         totalAmount,
+                         itemsCount: sanitizedItems.length
+                     });
+
+                     quote = await tx.quote.create({
+                         data: {
+                             customerId: dbCustomer.id,
+                             petId: dbPet?.id || null,
+                             type: (quoteData.type as any) || 'SPA',
+                             desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
+                             transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address || '',
+                             transportDestination: quoteData.transportDestination || "7Pet",
+                             transportReturnAddress: quoteData.transportReturnAddress || null,
+                             transportPeriod: (quoteData.transportPeriod as any) || null,
+                             petQuantity: Number(quoteData.petQuantity) || 1,
+                             hairLength: quoteData.hairLength || null,
+                             hasKnots: Boolean(quoteData.hasKnots) || false,
+                             knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
+                             hasParasites: Boolean(quoteData.hasParasites) || false,
+                             parasiteTypes: quoteData.parasiteTypes || null,
+                             parasiteComments: quoteData.parasiteComments || null,
+                             wantsMedicatedBath: Boolean(quoteData.wantsMedicatedBath) || false,
+                             transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
+                             transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
+                             status: 'SOLICITADO' as any,
+                             totalAmount: Number(totalAmount) || 0,
+                             isRecurring: Boolean(customerType === 'RECORRENTE'),
+                             frequency: (customerType === 'RECORRENTE') ? (safeFrequency as any) : null,
+                             packageDiscount: spaDiscountRate > 0 ? Number(spaDiscountRate) : null,
                              metadata: {
                                  recurrenceType: 'SPA',
                                  transportWeeklyFrequency: customerType === 'RECORRENTE' ? transportWeeklyFreq : 1,
                              },
-                            statusHistory: {
-                                create: {
-                                    id: randomUUID(),
-                                    oldStatus: 'NONE',
-                                    newStatus: 'SOLICITADO',
-                                    changedBy: user.id || 'SYSTEM',
-                                    reason: 'Criado manualmente pelo operador'
-                                }
-                            },
-                            items: {
-                                create: sanitizedItems
-                            }
-                        },
+                             statusHistory: {
+                                 create: {
+                                     id: randomUUID(),
+                                     oldStatus: 'NONE',
+                                     newStatus: 'SOLICITADO',
+                                     changedBy: user.id || 'SYSTEM',
+                                     reason: 'Criado manualmente pelo operador'
+                                 }
+                             },
+                             items: {
+                                 create: sanitizedItems
+                             }
+                         },
                         include: {
                             items: true,
                             pet: { select: { name: true } },
