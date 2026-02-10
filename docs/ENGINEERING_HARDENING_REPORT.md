@@ -101,6 +101,8 @@ Pontos ruins:
 - `npm run test`  
   Resultado: **passou** (backend jest + frontend `tsc --project tsconfig.typecheck.json`).  
   Observação: Jest reportou *open handles* (warning). Não falhou.
+- `npm run test:ci -w backend`  
+  Resultado: **passou** com `--detectOpenHandles` (nenhum handle aberto detectado).
 
 ### Arquivos alterados (principais)
 - `docs/ENGINEERING_HARDENING_REPORT.md`

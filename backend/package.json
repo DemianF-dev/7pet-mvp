@@ -11,7 +11,7 @@
         "vercel-build": "rm -rf dist && prisma generate && tsc",
         "test": "jest",
         "test:watch": "jest --watch",
-        "test:ci": "jest --runInBand --forceExit",
+        "test:ci": "jest --runInBand --detectOpenHandles",
         "typecheck": "tsc --noEmit",
         "rls:apply": "npx tsx scripts/configure_all_rls.ts",
         "security:check": "npm audit",
