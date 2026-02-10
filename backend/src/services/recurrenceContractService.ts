@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import logger from '../utils/logger';
 import { createAuditLog } from '../utils/auditLogger';
 import { RecurrenceType, ContractStatus, PackageFrequency } from '@prisma/client';
+import { validateContractInput } from '../domain/recurrence/contractValidation';
 
 export interface CreateContractInput {
     customerId: string;
@@ -16,6 +17,11 @@ export interface CreateContractInput {
 
 export const createContract = async (input: CreateContractInput) => {
     const { createdBy, ...data } = input;
+
+    const createErrors = validateContractInput(data, { require: ['customerId', 'type', 'title', 'frequency'] });
+    if (createErrors.length > 0) {
+        throw new Error(createErrors[0]);
+    }
 
     return await prisma.$transaction(async (tx) => {
         const contract = await tx.recurrenceContract.create({
@@ -65,6 +71,11 @@ export const listContracts = async (filters: {
 
 export const updateContract = async (id: string, data: Partial<CreateContractInput>, updatedBy: string) => {
     const { createdBy, ...updateData } = data; // ignore createdBy if it's there
+
+    const updateErrors = validateContractInput(updateData);
+    if (updateErrors.length > 0) {
+        throw new Error(updateErrors[0]);
+    }
 
     return await prisma.$transaction(async (tx) => {
         const contract = await tx.recurrenceContract.update({

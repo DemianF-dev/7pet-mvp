@@ -4,6 +4,7 @@ import * as auditService from './auditService';
 import hrService from './hrService';
 import { randomUUID } from 'crypto';
 import { logInfo, logError } from '../utils/logger';
+import { validateAppointmentCreateInput } from '../domain/appointments/appointmentValidation';
 
 export const create = async (data: {
     customerId: string;
@@ -24,35 +25,18 @@ export const create = async (data: {
 }, isStaff: boolean = false) => {
     const now = new Date();
 
-    // ⚠️ VALIDAÇÃO: Data no passado
-    if (data.startAt < now) {
-        if (!isStaff) {
-            // CLIENTES: Bloqueio total
-            throw new Error('❌ Não é possível agendar para uma data/horário que já passou. Por favor, escolha uma data futura.');
-        } else if (!data.overridePastDateCheck) {
-            // STAFF: Avisar e pedir confirmação
-            const error: any = new Error(
-                `⚠️ ATENÇÃO: Você está tentando agendar para ${data.startAt.toLocaleString('pt-BR')} que já passou. Confirme se isso está correto.`
-            );
-            error.code = 'PAST_DATE_WARNING';
-            error.appointmentDate = data.startAt.toISOString();
-            throw error;
-        }
-        // Se overridePastDateCheck === true, permite continuar (staff confirmou)
+    const issues = validateAppointmentCreateInput(data, isStaff, now);
+    const warning = issues.find(issue => issue.code === 'PAST_DATE_WARNING');
+    if (warning) {
+        const error: any = new Error(warning.message);
+        error.code = warning.code;
+        error.appointmentDate = warning.appointmentDate;
+        throw error;
     }
 
-    // Business Rule: Appointments must be at least 12h in advance
-    const minLeadTime = 12 * 60 * 60 * 1000; // 12h in ms
-    if (!isStaff && data.startAt.getTime() - Date.now() < minLeadTime) {
-        throw new Error('Agendamentos devem ser feitos com no mínimo 12h de antecedência.');
-    }
-
-    // ⚠️ VALIDATION: Logistics Providers (Required for Staff)
-    // Se for LOGISTICA ou tiver transporte, exige os responsáveis
-    const isLogistics = data.category === 'LOGISTICA' || (data.category === 'SPA' && !!data.transport);
-    if (isStaff && isLogistics) {
-        if (!data.pickupProviderId) throw new Error('Obrigatório selecionar o motorista LEVA (Coleta).');
-        if (!data.dropoffProviderId) throw new Error('Obrigatório selecionar o motorista TRAZ (Entrega).');
+    const errorIssue = issues.find(issue => issue.level === 'error');
+    if (errorIssue) {
+        throw new Error(errorIssue.message);
     }
 
     // Check if customer is blocked
