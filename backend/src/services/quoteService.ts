@@ -921,32 +921,7 @@ export const scheduleQuote = async (id: string, data: { occurrences: any[]; idem
             }
         });
 
-        // 4. Validation Loop
-        occurrences.forEach((occ, idx) => {
-            const rowNum = idx + 1;
-
-            if ((quote.type === 'SPA' || quote.type === 'SPA_TRANSPORTE') && !occ.spaAt) {
-                throw new HttpError(400, `Linha ${rowNum}: Data do SPA é obrigatória.`, 'VALIDATION_ERROR');
-            }
-
-            if (quote.type === 'TRANSPORTE' || quote.type === 'SPA_TRANSPORTE') {
-                const isRoundTrip = quote.transportType === 'ROUND_TRIP' || (!quote.transportType && quote.type === 'SPA_TRANSPORTE');
-                const isPickup = quote.transportType === 'PICK_UP';
-                const isDropoff = quote.transportType === 'DROP_OFF';
-
-                if (isRoundTrip || isPickup) {
-                    if (!occ.levaAt) throw new HttpError(400, `Linha ${rowNum}: Horário de Busca (Leva) é obrigatória.`, 'VALIDATION_ERROR');
-                    if (!occ.levaDriverId) throw new HttpError(400, `Linha ${rowNum}: Motorista da Busca é obrigatório.`, 'VALIDATION_ERROR');
-                }
-
-                if (isRoundTrip || isDropoff) {
-                    if (!occ.trazAt) throw new HttpError(400, `Linha ${rowNum}: Horário de Entrega (Traz) é obrigatório.`, 'VALIDATION_ERROR');
-                    if (!occ.trazDriverId) throw new HttpError(400, `Linha ${rowNum}: Motorista da Entrega é obrigatório.`, 'VALIDATION_ERROR');
-                }
-            }
-        });
-
-        // 5. Create Invoice if needed
+        // 4. Create Invoice if needed
         const existingInvoiceForThisQuote = await tx.invoice.findFirst({
             where: { quotes: { some: { id: quote.id } } }
         });
@@ -969,7 +944,7 @@ export const scheduleQuote = async (id: string, data: { occurrences: any[]; idem
 
         const createdAppointments = [];
 
-        // 4. Create Appointments for each Occurence
+        // 5. Create Appointments for each Occurrence
         for (const occ of occurrences) {
 
             // --- SPA ---
@@ -1203,3 +1178,4 @@ export const listRecurringQuotes = async (customerId: string) => {
         return totalApps > 1 || (totalApps === 1 && futureApps === 1);
     });
 };
+
