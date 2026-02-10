@@ -1,8 +1,8 @@
-# Engineering Hardening Report (my7pet)
+﻿# Engineering Hardening Report (my7pet)
 
 Date: 2026-02-10
 
-## PASSO 0 — Diagnóstico (curto e direto)
+## PASSO 0 — Diagnostico (curto e direto)
 
 ### Stack e Estrutura
 - Monorepo com workspaces `frontend` e `backend` (npm, `package-lock.json` no root).
@@ -10,17 +10,17 @@ Date: 2026-02-10
 - Backend: Node.js + Express + TypeScript + Prisma + Postgres; Socket.io; Zod.
 - Outras pastas: `api/`, `realtime/`, `shared/`, `scripts/`, `docs/`, `reports/`.
 
-### Scripts Disponíveis (visão geral)
+### Scripts Disponiveis (visao geral)
 - Root: `dev:frontend`, `dev:backend`, `build:*`, `backup:db`, `restore:db`.
 - Backend: `test`, `lint`, `build`, `vercel-build`, `security:*`, `rls:apply`.
 - Frontend: `build`, `test` (tsc), `lint`.
 
-### Padrões Atuais
+### Padroes Atuais
 - Backend organizado em `routes/`, `controllers/`, `services/`, `middlewares/`, `utils/`.
-- Lógica de negócio crítica concentrada em serviços grandes (ex.: `quoteService.ts`).
-- Frontend concentra muita regra em componentes/pages grandes (pouca extração de módulos puros).
+- Logica de negocio critica concentrada em servicos grandes (ex.: `quoteService.ts`).
+- Frontend concentra muita regra em componentes/pages grandes (pouca extracao de modulos puros).
 
-### Pontos Críticos (tamanho/complexidade)
+### Pontos Criticos (tamanho/complexidade)
 Top arquivos por tamanho (risco alto de bugs/efeitos colaterais):
 1. `frontend/src/components/modals/ManualQuoteModal.tsx` (~262 KB)
 2. `frontend/src/pages/staff/UserManager.backup.tsx` (~113 KB)
@@ -46,62 +46,70 @@ Top arquivos por tamanho (risco alto de bugs/efeitos colaterais):
 22. `frontend/src/pages/staff/CustomerManager.tsx` (~35 KB)
 23. `frontend/src/components/staff/dev/TransportSimulator.tsx` (~35 KB)
 
-### Áreas de Alto Risco (fluxos)
-- **Orçamentos → Aprovar/Agendar → Wizard → Appointments/Legs**:
-  - Lógica pesada em `quoteService.ts` com múltiplas ramificações e exclusões em massa.
+### Areas de Alto Risco (fluxos)
+- **Orcamentos -> Aprovar/Agendar -> Wizard -> Appointments/Legs**:
+  - Logica pesada em `quoteService.ts` com multiplas ramificacoes e exclusoes em massa.
 - **Undo schedule**:
-  - Reversão em lote sem idempotência explícita e validações reduzidas.
-- **Transporte recorrente (geração até fim do mês)**:
-  - Sinais de recorrência estão espalhados; dependem de snapshots/metadata e agendamentos em lote.
+  - Reversao em lote sem idempotencia explicita e validacoes reduzidas.
+- **Transporte recorrente (geracao ate fim do mes)**:
+  - Sinais de recorrencia estao espalhados; dependem de snapshots/metadata e agendamentos em lote.
 - **Financeiro (Invoices/Quote status)**:
-  - `invoiceRoutes.ts` contém múltiplas mudanças de status e side-effects.
+  - `invoiceRoutes.ts` contem multiplas mudancas de status e side-effects.
 
-### Avaliação Crua (sem anestesia)
+### Avaliacao Crua (sem anestesia)
 Pontos bons:
-- Prisma + transações: base sólida para consistência.
-- Rotas separadas e uso de services sugere intenção de organização.
-- Zod presente (potencial para validação consistente).
+- Prisma + transacoes: base solida para consistencia.
+- Rotas separadas e uso de services sugere intencao de organizacao.
+- Zod presente (potencial para validacao consistente).
 
 Pontos ruins:
-- Arquivos gigantes com regras misturadas (UI + regra + I/O) → difícil de testar e propenso a regressão.
-- Regras críticas de agenda/transporte sem idempotência explícita.
-- Erros em fluxos críticos são `throw new Error` genérico (pior para client e observabilidade).
-- “Emergency routes” expostos no backend (risco de segurança e vazamento de dados).
+- Arquivos gigantes com regras misturadas (UI + regra + I/O) -> dificil de testar e propenso a regressao.
+- Regras criticas de agenda/transporte sem idempotencia explicita.
+- Erros em fluxos criticos sao `throw new Error` generico (pior para client e observabilidade).
+- “Emergency routes” expostos no backend (risco de seguranca e vazamento de dados).
 
-## PASSO 1 — Guardrails de Qualidade (CI + padrões)
+Nota (0-10):
+- Estabilidade atual: 5.5
+- Previsibilidade de fluxos criticos: 4.5
+- Seguranca operacional (erro/observabilidade): 5.0
+- Testabilidade: 4.0
+
+## PASSO 1 — Guardrails de Qualidade (CI + padroes)
 - Scripts padronizados adicionados no root: `lint`, `typecheck`, `test`, `check`.
-- `frontend`/`backend` agora expõem `typecheck`.
-- CI reforçado com lint + typecheck + test (backend) e lint + typecheck + build (frontend).
+- `frontend`/`backend` agora expoem `typecheck`.
+- CI reforcado com lint + typecheck + test (backend) e lint + typecheck + build (frontend).
 - Definition of Done criada em `docs/DEFINITION_OF_DONE.md`.
 
-## PASSO 2 — Hardening de Fluxos Críticos
-- Orçamentos → Aprovar/Agendar → Wizard:
-  - Validação backend centralizada de ocorrências (SPA/Transporte).
-  - Idempotência por hash/metadata para agendamentos recorrentes.
+## PASSO 2 — Hardening de Fluxos Criticos
+- Orcamentos -> Aprovar/Agendar -> Wizard:
+  - Validacao backend centralizada de ocorrencias (SPA/Transporte).
+  - Idempotencia por hash/metadata para agendamentos recorrentes.
+  - Rejeicao de ocorrencias duplicadas no payload.
   - Respostas com status HTTP apropriado (400/404/409).
 - Undo schedule:
-  - Status inválido agora retorna 409 (conflito) com mensagem clara.
+  - Status invalido retorna 409 (conflito) com mensagem clara.
+  - Justificativa obrigatoria retorna 400 com codigo padronizado.
 - Transporte recorrente (pacotes):
-  - Validação de motorista e payload duplicado.
-  - Idempotência via detecção de agendamentos existentes.
+  - Validacao de motorista e payload duplicado.
+  - Idempotencia via deteccao de agendamentos existentes.
 
-## PASSO 3 — Refatoração Segura
-- Regras/validações extraídas para módulos puros testáveis:
+## PASSO 3 — Refatoracao Segura
+- Regras/validacoes extraidas para modulos puros testaveis:
   - `backend/src/domain/scheduling/scheduleUtils.ts`
   - `backend/src/domain/recurrence/recurrenceUtils.ts`
-- Testes unitários adicionados cobrindo validação, idempotência, recorrência e exigência de motorista.
+- Testes unitarios adicionados cobrindo validacao, idempotencia, recorrencia e exigencia de motorista.
 
 ## Evidence
 
 ### Comandos executados (resumo)
-- `npm run lint`  
-  Resultado: **0 erros**, **1168 warnings** (backend+frontend). Observação: warning do Node sobre `MODULE_TYPELESS_PACKAGE_JSON` em `backend/eslint.config.js`.
-- `npm run typecheck`  
+- `npm run lint`
+  Resultado: **0 erros**, **1168 warnings** (backend+frontend). Observacao: warning do Node sobre `MODULE_TYPELESS_PACKAGE_JSON` em `backend/eslint.config.js`.
+- `npm run typecheck`
   Resultado: **passou** (backend + frontend usando `tsconfig.typecheck.json`).
-- `npm run test`  
-  Resultado: **passou** (backend jest + frontend `tsc --project tsconfig.typecheck.json`).  
-  Observação: Jest reportou *open handles* (warning). Não falhou.
-- `npm run test:ci -w backend`  
+- `npm run test`
+  Resultado: **passou** (backend jest + frontend `tsc --project tsconfig.typecheck.json`).
+  Observacao: Jest reportou *open handles* (warning). Nao falhou.
+- `npm run test:ci -w backend`
   Resultado: **passou** com `--detectOpenHandles` (nenhum handle aberto detectado).
 
 ### Arquivos alterados (principais)
@@ -148,21 +156,21 @@ Pontos ruins:
 - `frontend/src/pages/staff/users/utils/userHelpers.ts`
 - `frontend/src/pages/staff/users/components/MobileUsers.tsx`
 
-### Checklist Antes/Depois (segurança e previsibilidade)
+### Checklist Antes/Depois (seguranca e previsibilidade)
 **Antes**
-- Sem idempotência explícita no agendamento de orçamentos/recorrências.
-- Erros genéricos (`throw new Error`) sem status HTTP consistente.
+- Sem idempotencia explicita no agendamento de orcamentos/recorrencias.
+- Erros genericos (`throw new Error`) sem status HTTP consistente.
 - CI sem gate de lint/typecheck/test unificados.
-- Testes unitários de recorrência/schedule inexistentes.
+- Testes unitarios de recorrencia/schedule inexistentes.
 
 **Depois**
-- Idempotência e hashing de schedule no backend.
-- Validações de ocorrência e de motorista no backend.
+- Idempotencia e hashing de schedule no backend.
+- Validacoes de ocorrencia e de motorista no backend (inclui duplicadas).
 - Erros padronizados com `HttpError` e status 400/404/409.
 - CI com lint + typecheck + test (backend) e lint + typecheck + build (frontend).
-- Testes unitários novos para recorrência e idempotência.
+- Testes unitarios novos para recorrencia e idempotencia.
 
-### Validação manual (passo a passo curto)
-1. **Quote → Schedule**: agendar o mesmo orçamento duas vezes com mesmo `Idempotency-Key` e verificar que não duplica.
-2. **Undo schedule**: tentar desfazer agendamento já cancelado e verificar erro 409.
-3. **Recorrência transporte**: gerar recorrências até fim do mês e confirmar que não há duplicações.
+### Validacao manual (passo a passo curto)
+1. **Quote -> Schedule**: agendar o mesmo orcamento duas vezes com mesmo `Idempotency-Key` e verificar que nao duplica.
+2. **Undo schedule**: tentar desfazer agendamento ja cancelado e verificar erro 409.
+3. **Recorrencia transporte**: gerar recorrencias ate fim do mes e confirmar que nao ha duplicacoes.
