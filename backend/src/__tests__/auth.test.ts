@@ -1,7 +1,12 @@
 import request from 'supertest';
-import app from '../index';
 import { prismaMock } from '../lib/prismaMock';
 import bcrypt from 'bcryptjs';
+
+let app: typeof import('../index').default;
+
+beforeAll(async () => {
+    app = (await import('../index')).default;
+});
 
 describe('Auth Endpoints', () => {
 
@@ -80,7 +85,7 @@ describe('Auth Endpoints', () => {
             } as any);
 
             const res = await request(app)
-                .post('/auth/register')
+                .post('/system-auth/register')
                 .send(userData);
 
             expect(res.statusCode).toEqual(201);
@@ -101,7 +106,7 @@ describe('Auth Endpoints', () => {
             } as any);
 
             const res = await request(app)
-                .post('/auth/register')
+                .post('/system-auth/register')
                 .send({
                     name: 'Duplicate',
                     firstName: 'Dup',
@@ -130,10 +135,10 @@ describe('Auth Endpoints', () => {
             };
 
             // authService.login uses findFirst
-            prismaMock.user.findFirst.mockResolvedValue(mockUser as any);
+            prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
             const res = await request(app)
-                .post('/auth/login')
+                .post('/system-auth/login')
                 .send({
                     email: 'login@test.com',
                     password: password
@@ -155,17 +160,17 @@ describe('Auth Endpoints', () => {
                 role: 'CLIENTE'
             };
 
-            prismaMock.user.findFirst.mockResolvedValue(mockUser as any);
+            prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
             const res = await request(app)
-                .post('/auth/login')
+                .post('/system-auth/login')
                 .send({
                     email: 'login@test.com',
                     password: 'WRONG_PASSWORD'
                 });
 
             expect(res.statusCode).toEqual(401);
-            expect(res.body).toHaveProperty('error', 'Credenciais inválidas');
+            expect(res.body).toHaveProperty('error', 'Senha incorreta. Verifique suas credenciais.');
         });
     });
 });

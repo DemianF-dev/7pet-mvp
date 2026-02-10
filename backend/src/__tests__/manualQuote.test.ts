@@ -1,13 +1,19 @@
 import request from 'supertest';
-import app from '../index';
 import { prismaMock } from '../lib/prismaMock';
 import * as authService from '../services/authService';
+
+let app: typeof import('../index').default;
+
+beforeAll(async () => {
+    app = (await import('../index')).default;
+});
 
 jest.mock('../middlewares/authMiddleware', () => ({
     authenticate: (req: any, res: any, next: any) => {
         req.user = { id: 'staff-1', role: 'ADMIN' };
         next();
-    }
+    },
+    authorize: () => (req: any, res: any, next: any) => next()
 }));
 
 describe('Manual Quote Creation', () => {
