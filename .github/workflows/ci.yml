@@ -24,23 +24,25 @@ jobs:
           cache: 'npm'
 
       - name: Install Root Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma Client
         run: npm run postinstall
 
-      - name: Backend - Install Dependencies
-        working-directory: ./backend
-        run: npm install
+      - name: Backend - Lint
+        run: npm run lint -w backend
+
+      - name: Backend - Typecheck
+        run: npm run typecheck -w backend
 
       - name: Backend - Run Tests
-        working-directory: ./backend
-        run: npm test -- --passWithNoTests
+        run: npm run test:ci -w backend
 
-      - name: Frontend - Install Dependencies
-        working-directory: ./frontend
-        run: npm install
+      - name: Frontend - Lint
+        run: npm run lint -w frontend
+
+      - name: Frontend - Typecheck
+        run: npm run typecheck -w frontend
 
       - name: Frontend - Build
-        working-directory: ./frontend
-        run: npm run build
+        run: npm run build -w frontend
