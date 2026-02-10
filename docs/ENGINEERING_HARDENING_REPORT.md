@@ -98,7 +98,7 @@ Nota (0-10):
   - `backend/src/domain/scheduling/scheduleUtils.ts`
   - `backend/src/domain/recurrence/recurrenceUtils.ts`
 - Testes unitarios adicionados cobrindo validacao, idempotencia, recorrencia e exigencia de motorista.
-- Validacoes de agendamento e contrato centralizadas em modulos puros (ppointmentValidation, contractValidation).
+- Validacoes de agendamento e contrato centralizadas em modulos puros (appointmentValidation, contractValidation).
 - Removida validacao duplicada no scheduleQuote (usa apenas scheduleUtils).
 
 ## Evidence
@@ -176,5 +176,7 @@ Nota (0-10):
 1. **Quote -> Schedule**: agendar o mesmo orcamento duas vezes com mesmo `Idempotency-Key` e verificar que nao duplica.
 2. **Undo schedule**: tentar desfazer agendamento ja cancelado e verificar erro 409.
 3. **Recorrencia transporte**: gerar recorrencias ate fim do mes e confirmar que nao ha duplicacoes.
+
+
 
 
