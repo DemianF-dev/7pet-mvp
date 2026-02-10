@@ -13,7 +13,7 @@ import * as transportCalc from '../services/transportCalculationService';
 import * as transportUnified from '../services/transportCalculationUnifiedService';
 import { logInfo, logError, logWarn } from '../utils/logger';
 import { ServicePriceConfigService } from '../services/servicePriceConfigService';
-import { isHttpError } from '../utils/httpError';
+import { isHttpError, HttpError } from '../utils/httpError';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
 
@@ -1344,7 +1344,7 @@ export const quoteController = {
             const { reason } = req.body;
             const user = (req as any).user;
 
-            if (!reason) throw new Error('Justificativa é obrigatória para desfazer o agendamento.');
+            if (!reason) throw new HttpError(400, 'Justificativa e obrigatoria para desfazer o agendamento.', 'MISSING_REASON');
 
             const result = await quoteService.undoSchedule(id, reason, user);
 

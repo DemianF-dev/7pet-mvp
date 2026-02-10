@@ -14,6 +14,20 @@ describe('scheduleUtils', () => {
         expect(result.errors.join(' ')).toContain('Motorista');
     });
 
+    it('rejects duplicate occurrences', () => {
+        const date = new Date('2026-02-03T10:00:00.000Z').toISOString();
+        const result = validateOccurrencesForQuote({
+            quoteType: 'SPA',
+            occurrences: [
+                { spaAt: date, itemIds: ['a'] },
+                { spaAt: date, itemIds: ['a'] }
+            ]
+        });
+
+        expect(result.valid).toBe(false);
+        expect(result.errors.join(' ')).toContain('duplicada');
+    });
+
     it('buildScheduleHash is stable across occurrence order', () => {
         const occA = {
             spaAt: new Date('2026-02-01T10:00:00.000Z').toISOString(),

@@ -31,6 +31,7 @@ export const validateOccurrencesForQuote = (input: {
 }): OccurrenceValidationResult => {
     const { quoteType, transportType, occurrences } = input;
     const errors: string[] = [];
+    const seen = new Set<string>();
 
     const requiresSpa = quoteType === 'SPA' || quoteType === 'SPA_TRANSPORTE';
     const requiresTransport = quoteType === 'TRANSPORTE' || quoteType === 'SPA_TRANSPORTE';
@@ -41,6 +42,12 @@ export const validateOccurrencesForQuote = (input: {
 
     occurrences.forEach((occ, index) => {
         const row = index + 1;
+        const key = buildOccurrenceKey(occ);
+        if (seen.has(key)) {
+            errors.push(`Linha ${row}: Ocorrencia duplicada.`);
+        } else {
+            seen.add(key);
+        }
 
         if (requiresSpa) {
             if (!occ.spaAt) {
@@ -76,6 +83,18 @@ const normalizeOccurrence = (occ: OccurrenceInput) => ({
     trazDriverId: occ.trazDriverId || null,
     itemIds: occ.itemIds ? [...occ.itemIds].sort() : []
 });
+
+const buildOccurrenceKey = (occ: OccurrenceInput) => {
+    const normalized = normalizeOccurrence(occ);
+    return [
+        normalized.spaAt || '',
+        normalized.levaAt || '',
+        normalized.trazAt || '',
+        normalized.levaDriverId || '',
+        normalized.trazDriverId || '',
+        (normalized.itemIds || []).join(',')
+    ].join('|');
+};
 
 export const buildScheduleHash = (input: {
     quoteId: string;
@@ -121,3 +140,4 @@ export const mergeMetadata = (current: unknown, updates: Record<string, unknown>
     const base = current && typeof current === 'object' && !Array.isArray(current) ? current : {};
     return { ...base, ...updates };
 };
+
