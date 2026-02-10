@@ -20,6 +20,7 @@ interface CalculateTransportParams {
     address2?: string;          // Destination address (required for TL2)
     stopAddress?: string;       // Optional intermediate stop
     discountPercent?: number;
+    petQuantity?: number;
 }
 
 interface TransportLegData {
@@ -94,9 +95,9 @@ async function getRouteWithCache(
 
     // Cache miss - buscar do Google Maps
     console.log(`[TransportUnified] Fetching from Google Maps: ${origin} -> ${destination}`);
-    
+
     const result = await mapsService.calculateTransportDetailed(origin, destination, 'ROUND_TRIP');
-    
+
     // Extrair dados do primeiro leg
     const firstLeg = result.breakdown.largada;
     if (!firstLeg) {
@@ -141,7 +142,16 @@ async function getRouteWithCache(
 export async function calculateTransportQuoteUnified(
     params: CalculateTransportParams
 ): Promise<TransportCalculationResult> {
-    const { plan, mode, destinationIsThePet, address1, address2, stopAddress, discountPercent = 0 } = params;
+    const {
+        plan,
+        mode,
+        destinationIsThePet,
+        address1,
+        address2,
+        stopAddress,
+        discountPercent = 0,
+        petQuantity
+    } = params;
 
     // Validações
     if (plan === 'TL1' && !destinationIsThePet) {
@@ -162,7 +172,11 @@ export async function calculateTransportQuoteUnified(
         throw new Error('Transport settings not configured. Please contact support.');
     }
 
-    const { kmRate, minRate, taxPercent, providerSharePercent } = settings;
+    const {
+        kmPriceLargada, kmPriceLeva, kmPriceTraz, kmPriceRetorno,
+        minPriceLargada, minPriceLeva, minPriceTraz, minPriceRetorno,
+        taxPercent, providerSharePercent, additionalPetSurchargePercent, kmRate, minRate
+    } = settings;
 
     const legs: TransportLegData[] = [];
     let totalLevaBeforeDiscount = 0;
@@ -178,7 +192,7 @@ export async function calculateTransportQuoteUnified(
 
         if (mode === 'LEVA' || mode === 'LEVA_TRAZ') {
             // PARTIDA: loja -> cliente (KM apenas)
-            const partidaSubtotal = route.distanceKm * kmRate;
+            const partidaSubtotal = route.distanceKm * kmPriceLargada;
             legs.push({
                 kind: 'PARTIDA',
                 originAddress: STORE_ADDRESS,
@@ -186,15 +200,15 @@ export async function calculateTransportQuoteUnified(
                 distanceKm: route.distanceKm,
                 durationMin: route.durationMin,
                 chargeKm: route.distanceKm,
-                chargeMin: 0,  // Sem cobrança de MIN para PARTIDA
-                kmRate,
-                minRate,
+                chargeMin: 0,
+                kmRate: kmPriceLargada,
+                minRate: minPriceLargada,
                 subtotal: partidaSubtotal,
                 handlingTime: 0
             });
 
             // LEVA: cliente -> loja (KM + MIN)
-            const levaSubtotal = (route.distanceKm * kmRate) + ((route.durationMin + (route.handlingTime || 0)) * minRate);
+            const levaSubtotal = (route.distanceKm * kmPriceLeva) + ((route.durationMin + (route.handlingTime || 0)) * minPriceLeva);
             legs.push({
                 kind: 'LEVA',
                 originAddress: clientAddress,
@@ -203,8 +217,8 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route.durationMin,
                 chargeKm: route.distanceKm,
                 chargeMin: route.durationMin + (route as any).handlingTime || 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceLeva,
+                minRate: minPriceLeva,
                 subtotal: levaSubtotal,
                 handlingTime: (route as any).handlingTime || 0
             });
@@ -214,7 +228,7 @@ export async function calculateTransportQuoteUnified(
 
         if (mode === 'TRAZ' || mode === 'LEVA_TRAZ') {
             // TRAZ: loja -> cliente (KM + MIN)
-            const trazSubtotal = (route.distanceKm * kmRate) + ((route.durationMin + (route as any).handlingTime || 0) * minRate);
+            const trazSubtotal = (route.distanceKm * kmPriceTraz) + ((route.durationMin + (route as any).handlingTime || 0) * minPriceTraz);
             legs.push({
                 kind: 'TRAZ',
                 originAddress: STORE_ADDRESS,
@@ -223,14 +237,14 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route.durationMin,
                 chargeKm: route.distanceKm,
                 chargeMin: route.durationMin + (route as any).handlingTime || 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceTraz,
+                minRate: minPriceTraz,
                 subtotal: trazSubtotal,
                 handlingTime: (route as any).handlingTime || 0
             });
 
             // RETORNO: cliente -> loja (KM apenas)
-            const retornoSubtotal = route.distanceKm * kmRate;
+            const retornoSubtotal = route.distanceKm * kmPriceRetorno;
             legs.push({
                 kind: 'RETORNO',
                 originAddress: clientAddress,
@@ -238,9 +252,9 @@ export async function calculateTransportQuoteUnified(
                 distanceKm: route.distanceKm,
                 durationMin: route.durationMin,
                 chargeKm: route.distanceKm,
-                chargeMin: 0,  // Sem cobrança de MIN para RETORNO
-                kmRate,
-                minRate,
+                chargeMin: 0,
+                kmRate: kmPriceRetorno,
+                minRate: minPriceRetorno,
                 subtotal: retornoSubtotal,
                 handlingTime: 0
             });
@@ -260,7 +274,7 @@ export async function calculateTransportQuoteUnified(
 
         if (mode === 'LEVA' || mode === 'LEVA_TRAZ') {
             // PARTIDA: loja -> cliente (KM apenas)
-            const partidaSubtotal = route1.distanceKm * kmRate;
+            const partidaSubtotal = route1.distanceKm * kmPriceLargada;
             legs.push({
                 kind: 'PARTIDA',
                 originAddress: STORE_ADDRESS,
@@ -269,14 +283,14 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route1.durationMin,
                 chargeKm: route1.distanceKm,
                 chargeMin: 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceLargada,
+                minRate: minPriceLargada,
                 subtotal: partidaSubtotal,
                 handlingTime: 0
             });
 
             // LEVA: cliente -> destino (KM + MIN)
-            const levaSubtotal = (route2.distanceKm * kmRate) + ((route2.durationMin + (route2 as any).handlingTime || 0) * minRate);
+            const levaSubtotal = (route2.distanceKm * kmPriceLeva) + ((route2.durationMin + (route2 as any).handlingTime || 0) * minPriceLeva);
             legs.push({
                 kind: 'LEVA',
                 originAddress: originAddr,
@@ -285,15 +299,15 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route2.durationMin,
                 chargeKm: route2.distanceKm,
                 chargeMin: route2.durationMin + (route2 as any).handlingTime || 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceLeva,
+                minRate: minPriceLeva,
                 subtotal: levaSubtotal,
                 handlingTime: (route2 as any).handlingTime || 0
             });
 
             // RETORNO: destino -> loja (KM apenas)
             const route3 = await getRouteWithCache(destAddr, STORE_ADDRESS);
-            const retornoSubtotal = route3.distanceKm * kmRate;
+            const retornoSubtotal = route3.distanceKm * kmPriceRetorno;
             legs.push({
                 kind: 'RETORNO',
                 originAddress: destAddr,
@@ -302,8 +316,8 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route3.durationMin,
                 chargeKm: route3.distanceKm,
                 chargeMin: 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceRetorno,
+                minRate: minPriceRetorno,
                 subtotal: retornoSubtotal,
                 handlingTime: 0
             });
@@ -314,7 +328,7 @@ export async function calculateTransportQuoteUnified(
         if (mode === 'TRAZ' || mode === 'LEVA_TRAZ') {
             // TRAZ em TL2: lógica similar mas invertida
             const route1Traz = await getRouteWithCache(STORE_ADDRESS, originAddr);
-            const partidaTrazSubtotal = route1Traz.distanceKm * kmRate;
+            const partidaTrazSubtotal = route1Traz.distanceKm * kmPriceLargada;
             legs.push({
                 kind: 'PARTIDA',
                 originAddress: STORE_ADDRESS,
@@ -323,14 +337,14 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route1Traz.durationMin,
                 chargeKm: route1Traz.distanceKm,
                 chargeMin: 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceLargada,
+                minRate: minPriceLargada,
                 subtotal: partidaTrazSubtotal,
                 handlingTime: 0
             });
 
             const route2Traz = await getRouteWithCache(originAddr, destAddr);
-            const trazSubtotal = (route2Traz.distanceKm * kmRate) + ((route2Traz.durationMin + (route2Traz as any).handlingTime || 0) * minRate);
+            const trazSubtotal = (route2Traz.distanceKm * kmPriceTraz) + ((route2Traz.durationMin + (route2Traz as any).handlingTime || 0) * minPriceTraz);
             legs.push({
                 kind: 'TRAZ',
                 originAddress: originAddr,
@@ -339,14 +353,14 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route2Traz.durationMin,
                 chargeKm: route2Traz.distanceKm,
                 chargeMin: route2Traz.durationMin + (route2Traz as any).handlingTime || 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceTraz,
+                minRate: minPriceTraz,
                 subtotal: trazSubtotal,
                 handlingTime: (route2Traz as any).handlingTime || 0
             });
 
             const route3Traz = await getRouteWithCache(destAddr, STORE_ADDRESS);
-            const retornoTrazSubtotal = route3Traz.distanceKm * kmRate;
+            const retornoTrazSubtotal = route3Traz.distanceKm * kmPriceRetorno;
             legs.push({
                 kind: 'RETORNO',
                 originAddress: destAddr,
@@ -355,8 +369,8 @@ export async function calculateTransportQuoteUnified(
                 durationMin: route3Traz.durationMin,
                 chargeKm: route3Traz.distanceKm,
                 chargeMin: 0,
-                kmRate,
-                minRate,
+                kmRate: kmPriceRetorno,
+                minRate: minPriceRetorno,
                 subtotal: retornoTrazSubtotal,
                 handlingTime: 0
             });
@@ -366,17 +380,27 @@ export async function calculateTransportQuoteUnified(
     }
 
     // Calcular totais
-    const totalBeforeDiscount = legs.reduce((sum, leg) => sum + leg.subtotal, 0);
+    const totalBeforeSurcharge = legs.reduce((sum, leg) => sum + leg.subtotal, 0);
+
+    // Aplicar taxa de pets adicionais (se houver mais de 1 pet)
+    const extraPets = Math.max(0, (petQuantity || 1) - 1);
+    const surchargePercent = extraPets * (additionalPetSurchargePercent || 0);
+    const surchargeAmount = totalBeforeSurcharge * (surchargePercent / 100);
+
+    const totalBeforeDiscount = totalBeforeSurcharge + surchargeAmount;
     const discountAmount = totalBeforeDiscount * (discountPercent / 100);
     const totalAfterDiscount = totalBeforeDiscount - discountAmount;
 
-    // Calcular totais separados LEVA/TRAZ com desconto
+    // Fator de acréscimo (1.0 = sem pets extras, 1.2 = 20% extra etc)
+    const surchargeFactor = 1 + (surchargePercent / 100);
+
+    // Calcular totais separados LEVA/TRAZ com desconto e surcharge
     const totalLevaAfterDiscount = totalLevaBeforeDiscount > 0
-        ? totalLevaBeforeDiscount - (totalLevaBeforeDiscount * (discountPercent / 100))
+        ? (totalLevaBeforeDiscount * surchargeFactor) - ((totalLevaBeforeDiscount * surchargeFactor) * (discountPercent / 100))
         : undefined;
 
     const totalTrazAfterDiscount = totalTrazBeforeDiscount > 0
-        ? totalTrazBeforeDiscount - (totalTrazBeforeDiscount * (discountPercent / 100))
+        ? (totalTrazBeforeDiscount * surchargeFactor) - ((totalTrazBeforeDiscount * surchargeFactor) * (discountPercent / 100))
         : undefined;
 
     return {
