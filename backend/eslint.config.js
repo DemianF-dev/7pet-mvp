@@ -16,6 +16,10 @@ export default [
             ...tsPlugin.configs.recommended.rules,
             "@typescript-eslint/no-explicit-any": "warn",
             "@typescript-eslint/no-unused-vars": "warn",
+            "@typescript-eslint/ban-ts-comment": "warn",
+            "@typescript-eslint/no-require-imports": "off",
+            "@typescript-eslint/no-non-null-asserted-optional-chain": "warn",
+            "@typescript-eslint/no-unsafe-function-type": "warn",
         },
     },
 ];
