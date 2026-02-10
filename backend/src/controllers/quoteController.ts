@@ -13,6 +13,7 @@ import * as transportCalc from '../services/transportCalculationService';
 import * as transportUnified from '../services/transportCalculationUnifiedService';
 import { logInfo, logError, logWarn } from '../utils/logger';
 import { ServicePriceConfigService } from '../services/servicePriceConfigService';
+import { isHttpError } from '../utils/httpError';
 
 // const prisma = new PrismaClient(); // Removed in favor of imported instance
 
@@ -33,6 +34,7 @@ const quoteSchema = z.object({
     transportDestination: z.string().optional(),
     transportReturnAddress: z.string().optional(),
     transportPeriod: z.enum(['MANHA', 'TARDE', 'NOITE']).optional(),
+    transportType: z.enum(['PICK_UP', 'DROP_OFF', 'ROUND_TRIP']).optional(),
     hasKnots: z.boolean().optional(),
     knotRegions: z.string().optional(),
     hairLength: z.string().optional(),
@@ -181,6 +183,7 @@ export const quoteController = {
                     petQuantity: data.petQuantity || 1,
                     transportLevaAt: data.transportLevaAt ? new Date(data.transportLevaAt) : null,
                     transportTrazAt: data.transportTrazAt ? new Date(data.transportTrazAt) : null,
+                    transportType: data.transportType,
                     status: data.saveAsDraft ? 'RASCUNHO' : 'SOLICITADO',
                     totalAmount,
                     statusHistory: {
@@ -353,6 +356,22 @@ export const quoteController = {
         }
     },
 
+    async listRecurring(req: Request, res: Response) {
+        try {
+            const { customerId } = req.query;
+
+            if (!customerId) {
+                return res.status(400).json({ error: 'customerId é obrigatório.' });
+            }
+
+            const quotes = await quoteService.listRecurringQuotes(customerId as string);
+            return res.json(quotes);
+        } catch (error: any) {
+            console.error('Erro ao listar orçamentos recorrentes:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
     async get(req: Request, res: Response) {
         try {
             const { id } = req.params;
@@ -387,7 +406,13 @@ export const quoteController = {
                             id: true,
                             startAt: true,
                             status: true,
-                            category: true
+                            category: true,
+                            services: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            }
                         }
                     },
                     statusHistory: {
@@ -550,6 +575,7 @@ export const quoteController = {
                     description: z.string().min(1),
                     quantity: z.number().default(1),
                     price: z.number().default(0),
+                    discount: z.number().default(0),
                     serviceId: z.string().optional().nullable(),
                     performerId: z.string().optional().nullable()
                 })).optional(),
@@ -576,6 +602,9 @@ export const quoteController = {
                 recurrenceType: z.enum(['SPA', 'TRANSPORTE', 'AMBOS']).optional(),
                 transportWeeklyFrequency: z.number().int().optional(),
                 metadata: z.any().optional(),
+                notes: z.string().optional(),
+                transportType: z.any().optional(),
+                transportDiscountPercent: z.number().optional()
             }).parse(req.body);
 
             const user = (req as any).user;
@@ -656,14 +685,18 @@ export const quoteController = {
             if (data.petId !== undefined) updateData.petId = data.petId;
             if (data.isRecurring !== undefined) updateData.isRecurring = data.isRecurring;
             if (data.recurrenceFrequency !== undefined) updateData.frequency = data.recurrenceFrequency;
-            // Removed recurrenceType and transportWeeklyFrequency as they are not in the schema
+            if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+            if (data.transportWeeklyFrequency !== undefined) updateData.transportWeeklyFrequency = data.transportWeeklyFrequency;
+            if (data.recurrenceType !== undefined) updateData.recurrenceType = data.recurrenceType;
+            if (req.body.transportType !== undefined) updateData.transportType = req.body.transportType;
+            if (req.body.transportDiscountPercent !== undefined) updateData.transportDiscountPercent = req.body.transportDiscountPercent;
 
             if (data.items) {
                 // Determine status logic: if items are priced > 0 and status is SOLICITADO, maybe move to CALCULADO?
                 // For now, let's just stick to explicit status changes from frontend.
 
-                // Recalculate total if needed
-                const itemsTotal = data.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                // Recalculate total with discounts
+                const itemsTotal = data.items.reduce((acc, item) => acc + (item.price * item.quantity * (1 - (item.discount || 0) / 100)), 0);
                 updateData.totalAmount = data.totalAmount ?? itemsTotal;
 
                 // VALIDATION: Ensure all serviceIds and performerIds actually exist to prevent FK errors
@@ -708,6 +741,7 @@ export const quoteController = {
                             description: item.description,
                             quantity: item.quantity,
                             price: item.price,
+                            discount: item.discount || 0,
                             serviceId: validServiceId || null,
                             performerId: validPerformerId || null
                         };
@@ -768,6 +802,7 @@ export const quoteController = {
             const { id } = req.params;
             const { occurrences } = req.body;
             const user = (req as any).user;
+            const idempotencyKey = req.header('Idempotency-Key') || undefined;
 
             if (user.role === 'CLIENTE') {
                 return res.status(403).json({ error: 'Apenas colaboradores podem realizar o agendamento.' });
@@ -777,7 +812,7 @@ export const quoteController = {
                 return res.status(400).json({ error: 'Payload inválido. "occurrences" deve ser um array.' });
             }
 
-            const result = await quoteService.scheduleQuote(id, { occurrences }, user);
+            const result = await quoteService.scheduleQuote(id, { occurrences, idempotencyKey }, user);
 
             return res.status(200).json({
                 message: 'Agendamentos realizados com sucesso',
@@ -787,9 +822,97 @@ export const quoteController = {
 
         } catch (error: any) {
             console.error('[QuoteController] Error scheduling quote:', error);
-            return res.status(400).json({
-                error: error.message || 'Erro ao agendar orçamento.'
+            if (isHttpError(error)) {
+                return res.status(error.status).json({
+                    error: error.message,
+                    code: error.code,
+                    details: error.details || null
+                });
+            }
+            return res.status(500).json({
+                error: error?.message || 'Erro ao agendar orçamento.'
             });
+        }
+    },
+
+    async calculateTransportEstimate(req: Request, res: Response) {
+        try {
+            const { type, origin, destination, stops } = req.body;
+
+            // Validate basic requirements
+            if (!origin) return res.status(400).json({ error: 'Origem é obrigatória' });
+
+            const result = await require('../services/transportService').calculateTransport({
+                origin,
+                destination,
+                type: type || 'ROUND_TRIP',
+                stops
+            });
+
+            return res.json(result);
+        } catch (error: any) {
+            console.error('Erro ao calcular transporte:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
+    // Route Presets
+    async createPreset(req: Request, res: Response) {
+        try {
+            const user = (req as any).user;
+            const { name, customerId, petId, type, origin, destination, stops } = req.body;
+
+            if (!customerId) return res.status(400).json({ error: 'Cliente é obrigatório' });
+            if (!name) return res.status(400).json({ error: 'Nome do favorito é obrigatório' });
+
+            const preset = await prisma.routePreset.create({
+                data: {
+                    customerId,
+                    petId,
+                    name,
+                    type,
+                    origin,
+                    destination,
+                    stops: stops ? stops : undefined,
+                    routeJson: { origin, destination, stops, type },
+                    version: 1,
+                    lastUsedAt: new Date()
+                }
+            });
+
+            return res.status(201).json(preset);
+        } catch (error: any) {
+            console.error('Erro ao criar favorito de rota:', error);
+            return res.status(500).json({ error: 'Erro ao salvar favorito' });
+        }
+    },
+
+    async listPresets(req: Request, res: Response) {
+        try {
+            const { customerId } = req.query;
+            if (!customerId) return res.status(400).json({ error: 'Cliente é obrigatório' });
+
+            const presets = await prisma.routePreset.findMany({
+                where: { customerId: String(customerId) },
+                orderBy: { createdAt: 'desc' },
+                include: { pet: { select: { name: true } } }
+            });
+
+            return res.json(presets);
+        } catch (error: any) {
+            console.error('Erro ao listar favoritos:', error);
+            return res.status(500).json({ error: 'Erro ao listar favoritos' });
+        }
+    },
+
+    async deletePreset(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            await prisma.routePreset.delete({ where: { id } });
+            return res.status(204).send();
+        } catch (error: any) {
+            console.error('Erro ao excluir favorito:', error);
+            return res.status(500).json({ error: 'Erro ao excluir favorito' });
         }
     },
 
@@ -1083,7 +1206,8 @@ export const quoteController = {
                 mode: transportType === 'PICK_UP' ? 'LEVA' : transportType === 'DROP_OFF' ? 'TRAZ' : 'LEVA_TRAZ',
                 destinationIsThePet: true,
                 address1: address,
-                address2: destinationAddress
+                address2: destinationAddress,
+                petQuantity: quote.petQuantity || 1
             });
             console.log(`[Quote] Calculation result: `, result);
 
@@ -1186,21 +1310,58 @@ export const quoteController = {
 
     /**
      * One-Click Scheduling: Approve quote and create appointment in one action
+     * Supports both single and recurring appointments
      */
     async approveAndSchedule(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { performerId } = req.body;
+            const { performerId, occurrences } = req.body;
             const user = (req as any).user;
+            const idempotencyKey = req.header('Idempotency-Key') || undefined;
 
-            const result = await quoteService.approveAndSchedule(id, performerId, user);
+            const result = await quoteService.approveAndSchedule(id, performerId, user, occurrences, idempotencyKey);
 
             return res.status(200).json(result);
         } catch (error: any) {
             console.error('Erro no One-Click Scheduling:', error);
-            return res.status(400).json({ error: error.message || 'Erro ao processar agendamento automático' });
+            if (isHttpError(error)) {
+                return res.status(error.status).json({
+                    error: error.message,
+                    code: error.code,
+                    details: error.details || null
+                });
+            }
+            return res.status(500).json({ error: error.message || 'Erro ao processar agendamento automático' });
         }
     },
+
+    /**
+     * Undo Scheduling
+     */
+    async undoSchedule(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { reason } = req.body;
+            const user = (req as any).user;
+
+            if (!reason) throw new Error('Justificativa é obrigatória para desfazer o agendamento.');
+
+            const result = await quoteService.undoSchedule(id, reason, user);
+
+            return res.status(200).json(result);
+        } catch (error: any) {
+            console.error('Erro ao desfazer agendamento:', error);
+            if (isHttpError(error)) {
+                return res.status(error.status).json({
+                    error: error.message,
+                    code: error.code,
+                    details: error.details || null
+                });
+            }
+            return res.status(500).json({ error: error.message || 'Erro ao desfazer agendamento' });
+        }
+    },
+
 
     /**
      * Criação de orçamento manual com cadastro simultâneo de cliente e pet
@@ -1341,7 +1502,7 @@ export const quoteController = {
                 // Safe access to customer properties
                 const customerType = customer?.type || 'AVULSO';
                 const recurrenceFrequency = quoteData.recurrenceFrequency || customer?.recurrenceFrequency || null;
-                const transportWeeklyFreq = 1; // Default since it was removed from UI
+                const transportWeeklyFreq = Number(quoteData.transportWeeklyFrequency) || Number(customer?.transportDaysPerWeek) || 1;
 
                 console.log('[createManual] Dados de recorrência:', {
                     customerType,
@@ -1353,17 +1514,19 @@ export const quoteController = {
                 const validFrequencies = ['SEMANAL', 'QUINZENAL', 'MENSAL'];
                 const safeFrequency = validFrequencies.includes(recurrenceFrequency || '') ? (recurrenceFrequency as any) : null;
 
-                if (customerType === 'RECORRENTE') {
+                // Desconto SPA (apenas para tipos que incluem SPA)
+                if (customerType === 'RECORRENTE' && quoteData.type !== 'TRANSPORTE') {
                     if (safeFrequency === 'MENSAL') spaDiscountRate = 0.05;
                     else if (safeFrequency === 'QUINZENAL') spaDiscountRate = 0.07;
                     else if (safeFrequency === 'SEMANAL') spaDiscountRate = 0.10;
                 }
 
+                // Desconto Transporte (apenas para tipos que incluem TRANSPORTE)
                 let transportDiscountRate = 0;
-                if (customerType === 'RECORRENTE') {
-                    if (transportWeeklyFreq <= 2) transportDiscountRate = 0.05;
-                    else if (transportWeeklyFreq <= 4) transportDiscountRate = 0.07;
-                    else if (transportWeeklyFreq <= 6) transportDiscountRate = 0.10;
+                if (customerType === 'RECORRENTE' && quoteData.type !== 'SPA') {
+                    if (transportWeeklyFreq >= 5) transportDiscountRate = 0.10; // 5-6 dias
+                    else if (transportWeeklyFreq >= 3) transportDiscountRate = 0.07; // 3-4 dias
+                    else transportDiscountRate = 0.05; // 1-2 dias
                 }
 
                 if (spaDiscountRate > 0 || transportDiscountRate > 0) {
@@ -1375,15 +1538,9 @@ export const quoteController = {
                             item.description?.includes('🏠');
 
                         if (isTransport && transportDiscountRate > 0) {
-                            item.price = item.price * (1 - transportDiscountRate);
-                            if (!item.description.includes('% desc reg.')) {
-                                item.description += ` (${(transportDiscountRate * 100).toFixed(0)}% desc reg.)`;
-                            }
+                            item.discount = (transportDiscountRate * 100);
                         } else if (!isTransport && !item.productId && spaDiscountRate > 0) {
-                            item.price = item.price * (1 - spaDiscountRate);
-                            if (!item.description.includes('% desc reg.')) {
-                                item.description += ` (${(spaDiscountRate * 100).toFixed(0)}% desc reg.)`;
-                            }
+                            item.discount = (spaDiscountRate * 100);
                         }
                     }
                 }
@@ -1401,22 +1558,23 @@ export const quoteController = {
                     }
                 }
 
-                const totalAmount = processedItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+                const totalAmount = processedItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity * (1 - (item.discount || 0) / 100)), 0);
 
                 // Validation of totalAmount to avoid NaN
                 if (isNaN(totalAmount)) {
                     throw new Error('Valor total calculado é inválido (NaN). Verifique os preços dos itens.');
                 }
 
-                 // Sanitize items
-                 const sanitizedItems = processedItems.map((item: any) => ({
-                     id: randomUUID(), // Ensure each item has an ID
-                     description: item.description || 'Item sem descrição',
-                     quantity: Number(item.quantity) || 1,
-                     price: Number(item.price) || 0,
-                     serviceId: item.serviceId || null,
-                     productId: item.productId || null
-                 }));
+                // Sanitize items
+                const sanitizedItems = processedItems.map((item: any) => ({
+                    id: randomUUID(), // Ensure each item has an ID
+                    description: item.description || 'Item sem descrição',
+                    quantity: Number(item.quantity) || 1,
+                    price: Number(item.price) || 0,
+                    discount: Number(item.discount) || 0,
+                    serviceId: item.serviceId || null,
+                    productId: item.productId || null
+                }));
 
                 console.log('[createManual] Criando registro de orçamento...');
                 console.log('[createManual] Dados do orçamento:', {
@@ -1433,59 +1591,61 @@ export const quoteController = {
                     console.warn('[createManual] user.id não encontrado, usando SYSTEM');
                 }
 
-                 // 3. Create Quote
-                 let quote;
-                 try {
-                     console.log('[createManual] Preparando criação do quote com dados:', {
-                         customerId: dbCustomer.id,
-                         petId: dbPet?.id || null,
-                         type: quoteData.type || 'SPA',
-                         totalAmount,
-                         itemsCount: sanitizedItems.length
-                     });
+                // 3. Create Quote
+                let quote;
+                try {
+                    console.log('[createManual] Preparando criação do quote com dados:', {
+                        customerId: dbCustomer.id,
+                        petId: dbPet?.id || null,
+                        type: quoteData.type || 'SPA',
+                        totalAmount,
+                        itemsCount: sanitizedItems.length
+                    });
 
-                     quote = await tx.quote.create({
-                         data: {
-                             customerId: dbCustomer.id,
-                             petId: dbPet?.id || null,
-                             type: (quoteData.type as any) || 'SPA',
-                             desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
-                             transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address || '',
-                             transportDestination: quoteData.transportDestination || "7Pet",
-                             transportReturnAddress: quoteData.transportReturnAddress || null,
-                             transportPeriod: (quoteData.transportPeriod as any) || null,
-                             petQuantity: Number(quoteData.petQuantity) || 1,
-                             hairLength: quoteData.hairLength || null,
-                             hasKnots: Boolean(quoteData.hasKnots) || false,
-                             knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
-                             hasParasites: Boolean(quoteData.hasParasites) || false,
-                             parasiteTypes: quoteData.parasiteTypes || null,
-                             parasiteComments: quoteData.parasiteComments || null,
-                             wantsMedicatedBath: Boolean(quoteData.wantsMedicatedBath) || false,
-                             transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
-                             transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
-                             status: 'SOLICITADO' as any,
-                             totalAmount: Number(totalAmount) || 0,
-                             isRecurring: Boolean(customerType === 'RECORRENTE'),
-                             frequency: (customerType === 'RECORRENTE') ? (safeFrequency as any) : null,
-                             packageDiscount: spaDiscountRate > 0 ? Number(spaDiscountRate) : null,
-                             metadata: {
-                                 recurrenceType: 'SPA',
-                                 transportWeeklyFrequency: customerType === 'RECORRENTE' ? transportWeeklyFreq : 1,
-                             },
-                             statusHistory: {
-                                 create: {
-                                     id: randomUUID(),
-                                     oldStatus: 'NONE',
-                                     newStatus: 'SOLICITADO',
-                                     changedBy: user.id || 'SYSTEM',
-                                     reason: 'Criado manualmente pelo operador'
-                                 }
-                             },
-                             items: {
-                                 create: sanitizedItems
-                             }
-                         },
+                    quote = await tx.quote.create({
+                        data: {
+                            customerId: dbCustomer.id,
+                            petId: dbPet?.id || null,
+                            type: (quoteData.type as any) || 'SPA',
+                            desiredAt: (quoteData.desiredAt && quoteData.desiredAt !== '') ? new Date(quoteData.desiredAt) : null,
+                            transportOrigin: quoteData.transportOrigin || dbCustomer.address || customer.address || '',
+                            transportDestination: quoteData.transportDestination || "7Pet",
+                            transportReturnAddress: quoteData.transportReturnAddress || null,
+                            transportType: (quoteData.transportType as any) || 'ROUND_TRIP',
+                            transportPeriod: (quoteData.transportPeriod as any) || null,
+                            petQuantity: Number(quoteData.petQuantity) || 1,
+                            hairLength: quoteData.hairLength || null,
+                            hasKnots: Boolean(quoteData.hasKnots) || false,
+                            knotRegions: typeof quoteData.knotRegions === 'string' ? quoteData.knotRegions : null,
+                            hasParasites: Boolean(quoteData.hasParasites) || false,
+                            parasiteTypes: quoteData.parasiteTypes || null,
+                            parasiteComments: quoteData.parasiteComments || null,
+                            wantsMedicatedBath: Boolean(quoteData.wantsMedicatedBath) || false,
+                            transportLevaAt: (quoteData.transportLevaAt && quoteData.transportLevaAt !== '') ? new Date(quoteData.transportLevaAt) : null,
+                            transportTrazAt: (quoteData.transportTrazAt && quoteData.transportTrazAt !== '') ? new Date(quoteData.transportTrazAt) : null,
+                            status: 'SOLICITADO' as any,
+                            totalAmount: Number(totalAmount) || 0,
+                            isRecurring: Boolean(customerType === 'RECORRENTE'),
+                            frequency: (customerType === 'RECORRENTE') ? (safeFrequency as any) : null,
+                            packageDiscount: spaDiscountRate > 0 ? Number(spaDiscountRate) : null,
+                            metadata: {
+                                ...(quoteData.metadata || {}),
+                                recurrenceType: (quoteData.type === 'TRANSPORTE') ? 'TRANSPORTE' : (quoteData.type === 'SPA_TRANSPORTE' ? 'AMBOS' : 'SPA'),
+                                transportWeeklyFrequency: customerType === 'RECORRENTE' ? transportWeeklyFreq : 1,
+                            },
+                            statusHistory: {
+                                create: {
+                                    id: randomUUID(),
+                                    oldStatus: 'NONE',
+                                    newStatus: 'SOLICITADO',
+                                    changedBy: user.id || 'SYSTEM',
+                                    reason: 'Criado manualmente pelo operador'
+                                }
+                            },
+                            items: {
+                                create: sanitizedItems
+                            }
+                        },
                         include: {
                             items: true,
                             pet: { select: { name: true } },
@@ -1528,15 +1688,31 @@ export const quoteController = {
             console.log('[createManual] Orçamento criado com sucesso ID:', result.id);
             return res.status(201).json(result);
         } catch (error: any) {
+            // CRITICAL: Log error to a file we can definitely read
+            try {
+                const fs = require('fs');
+                const logPath = require('path').join(process.cwd(), 'debug_error.log');
+                const logContent = `\n--- ERROR AT ${new Date().toISOString()} ---\n` +
+                    `Message: ${error.message}\n` +
+                    `Stack: ${error.stack}\n` +
+                    `Body: ${JSON.stringify(req.body, null, 2)}\n` +
+                    `Audit: ${JSON.stringify((req as any).audit, null, 2)}\n` +
+                    `User: ${JSON.stringify((req as any).user, null, 2)}\n` +
+                    `--- END ERROR ---\n`;
+                fs.appendFileSync(logPath, logContent);
+            } catch (loggingError) {
+                console.error('[createManual] Failed to write to debug file:', loggingError);
+            }
+
             console.error('[createManual] ====================');
             console.error('[createManual] Erro fatal capturado:', error);
             console.error('[createManual] Error message:', error.message);
             console.error('[createManual] Error code:', error.code);
             console.error('[createManual] Error stack:', error.stack);
-            
+
             // Log do payload recebido para debug
             console.error('[createManual] Payload recebido:', JSON.stringify(req.body, null, 2));
-            
+
             console.error('[createManual] ====================');
 
             // Return detailed error for debugging
@@ -1548,7 +1724,7 @@ export const quoteController = {
                     meta: error.meta,
                     customerEmail: customerEmail
                 },
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                stack: error.stack // MANDATORY for debug now
             });
         }
     },

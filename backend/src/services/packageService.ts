@@ -4,6 +4,8 @@ import { randomUUID } from 'crypto';
 import { createTransaction } from './financialService';
 import { messagingService } from './messagingService';
 import { createAuditLog } from '../utils/auditLogger';
+import { HttpError } from '../utils/httpError';
+import { areAllRequestedKeysPresent, buildAppointmentKey } from '../domain/scheduling/scheduleUtils';
 
 /**
  * Package Service - Manages recurring packages, scheduling, and billing
@@ -301,11 +303,75 @@ export const schedulePackageMonth = async (input: SchedulePackageInput) => {
         include: { customer: true, pet: true }
     });
 
-    if (!pkg) throw new Error('Pacote não encontrado');
-    if (pkg.status !== 'ATIVO') throw new Error('Pacote não está ativo');
+    if (!pkg) throw new HttpError(404, 'Pacote não encontrado', 'PACKAGE_NOT_FOUND');
+    if (pkg.status !== 'ATIVO') throw new HttpError(409, 'Pacote não está ativo', 'PACKAGE_INACTIVE');
+
+    const normalizedAppointments = appointments.map((appt, index) => {
+        if (!(appt.startAt instanceof Date) || Number.isNaN(appt.startAt.getTime())) {
+            throw new HttpError(400, `Agendamento ${index + 1}: startAt inválido.`, 'INVALID_DATE');
+        }
+
+        if (appt.isTransport) {
+            if (!appt.transportType) {
+                throw new HttpError(400, `Agendamento ${index + 1}: transportType é obrigatório para transporte.`, 'MISSING_TRANSPORT_TYPE');
+            }
+            if (!appt.performerId) {
+                throw new HttpError(400, `Agendamento ${index + 1}: motorista é obrigatório para transporte.`, 'MISSING_DRIVER');
+            }
+        }
+
+        return appt;
+    });
+
+    const requestedKeys = new Set(normalizedAppointments.map((appt) => buildAppointmentKey({
+        startAt: appt.startAt,
+        category: appt.isTransport ? 'LOGISTICA' : 'SPA',
+        transportType: appt.isTransport ? appt.transportType : null,
+        performerId: appt.performerId || null
+    })));
+
+    if (requestedKeys.size !== normalizedAppointments.length) {
+        throw new HttpError(409, 'Há agendamentos duplicados no payload.', 'DUPLICATE_REQUEST');
+    }
+
+    const requestedDates = normalizedAppointments.map(a => a.startAt);
+    const existingAppointments = await prisma.appointment.findMany({
+        where: {
+            recurringPackageId: packageId,
+            startAt: { in: requestedDates }
+        },
+        include: { transportDetails: true }
+    });
+
+    if (existingAppointments.length > 0) {
+        const existingKeys = new Set(existingAppointments.map((appt: any) => buildAppointmentKey({
+            startAt: appt.startAt,
+            category: appt.category,
+            transportType: appt.transportDetails?.type || null,
+            performerId: appt.performerId || null
+        })));
+
+        if (areAllRequestedKeysPresent(existingKeys, requestedKeys)) {
+            return {
+                success: true,
+                idempotent: true,
+                appointments: existingAppointments,
+                message: 'Agendamentos já existem para o período solicitado.'
+            };
+        }
+
+        return {
+            success: false,
+            conflicts: existingAppointments.map((appt: any) => ({
+                date: appt.startAt,
+                reason: 'Agendamento já existe para este horário'
+            })),
+            message: 'Existem conflitos de agendamento para este pacote.'
+        };
+    }
 
     // Check availability for all dates
-    const conflicts = await checkAvailability(appointments.map(a => a.startAt));
+    const conflicts = await checkAvailability(normalizedAppointments.map(a => a.startAt));
     if (conflicts.length > 0) {
         return {
             success: false,
@@ -317,7 +383,7 @@ export const schedulePackageMonth = async (input: SchedulePackageInput) => {
     const result = await prisma.$transaction(async (tx) => {
         const createdAppointments = [];
 
-        for (const appt of appointments) {
+        for (const appt of normalizedAppointments) {
             const appointmentData: any = {
                 customer: { connect: { id: pkg.customerId } },
                 pet: { connect: { id: pkg.petId } },

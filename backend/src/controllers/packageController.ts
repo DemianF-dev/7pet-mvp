@@ -160,7 +160,8 @@ export const scheduleMonth = async (req: Request, res: Response, next: NextFunct
             return res.status(409).json(result);
         }
 
-        res.status(201).json(result);
+        const status = result.idempotent ? 200 : 201;
+        res.status(status).json(result);
     } catch (error: any) {
         logError('[PackageController] scheduleMonth error:', error);
         next(error);
