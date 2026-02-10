@@ -46,6 +46,7 @@ interface DashboardMetrics {
     todaySpaCount: number;
     rejectedQuotes: number;
     noResponseQuotes: number;
+    posStatus?: string;
     revenue: {
         day: number;
         week: number;
@@ -58,9 +59,12 @@ interface WidgetData {
         id: string;
         startAt: string;
         status: string;
+        category: string;
         pet: { name: string };
         customer: { name: string };
-        services: { name: string }[];
+        services: { name: string; basePrice: number }[];
+        transportLegs?: { legType: string; price: number }[];
+        transportSnapshot?: { totalAmount: number };
     }[];
     myTasks: { status: string; count: number }[];
     popularPosts: {
@@ -202,7 +206,7 @@ export default function StaffDashboard() {
                                 {isMaster && (
                                     <button
                                         onClick={() => navigate('/staff/strategy')}
-                                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                                        className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline"
                                     >
                                         Gerenciar Metas
                                     </button>
@@ -228,13 +232,13 @@ export default function StaffDashboard() {
                                     { label: 'Faturamento Semana', value: metrics?.revenue?.week || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10' },
                                     { label: 'Faturamento Mês', value: metrics?.revenue?.month || 0, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' },
                                 ].map((fin, idx) => (
-                                    <SpotlightCard key={idx} className="bg-white dark:bg-gray-800 p-6 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                                    <SpotlightCard key={idx} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{fin.label}</p>
-                                                <h3 className={`text-2xl font-black ${fin.color}`}>{formatCurrency(fin.value)}</h3>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{fin.label}</p>
+                                                <h3 className={`text-2xl font-bold ${fin.color}`}>{formatCurrency(fin.value)}</h3>
                                             </div>
-                                            <div className={`p-3 ${fin.bg} rounded-2xl`}>
+                                            <div className={`p-3 ${fin.bg} rounded-xl`}>
                                                 <DollarSign size={20} className={fin.color} />
                                             </div>
                                         </div>
@@ -258,7 +262,7 @@ export default function StaffDashboard() {
                     <section className="space-y-4">
                         <div className="flex items-center gap-2 ml-1">
                             <Zap size={18} className="text-[var(--color-accent-primary)]" />
-                            <h2 className="text-sm font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)]">Operações do Dia</h2>
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">Operações do Dia</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
                             {[
@@ -327,11 +331,11 @@ export default function StaffDashboard() {
                                         hover
                                     >
                                         <div>
-                                            <div className={`w-12 h-12 ${card.bg} ${card.color} rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110`}>
+                                            <div className={`w-12 h-12 ${card.bg} ${card.color} rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105`}>
                                                 {card.icon}
                                             </div>
-                                            <p className="text-[var(--color-text-tertiary)] font-[var(--font-weight-black)] uppercase tracking-widest text-[9px] mb-1">{card.label}</p>
-                                            <h3 className={`text-4xl font-[var(--font-weight-black)] ${card.urgent ? 'text-red-600' : 'text-[var(--color-text-primary)]'}`}>{card.value}</h3>
+                                            <p className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-widest text-[9px] mb-1">{card.label}</p>
+                                            <h3 className={`text-4xl font-bold ${card.urgent ? 'text-red-600' : 'text-[var(--color-text-primary)]'}`}>{card.value}</h3>
                                         </div>
                                         <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent-primary)] transition-colors">
                                             {card.trend} <ArrowRight size={12} className="group-hover:translate-x-1 transition-all" />
@@ -356,12 +360,12 @@ export default function StaffDashboard() {
                                     { label: 'Total Pets', value: metrics?.totalPetsServed || 0, icon: <PawPrint size={20} />, sub: 'Atendidos' },
                                     { label: 'Recorrentes', value: metrics?.recurrentClients || 0, icon: <RefreshCcw size={20} />, sub: 'Fidelizados' },
                                 ].map((stat, idx) => (
-                                    <Card key={idx} className="p-4 flex flex-col items-center text-center">
+                                    <Card key={idx} className="p-4 flex flex-col items-center text-center rounded-2xl">
                                         <div className="p-3 bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] rounded-full mb-2">
                                             {stat.icon}
                                         </div>
-                                        <h4 className="text-2xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">{stat.value}</h4>
-                                        <p className="text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)] mt-1">{stat.label}</p>
+                                        <h4 className="text-2xl font-bold text-[var(--color-text-primary)]">{stat.value}</h4>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] mt-1">{stat.label}</p>
                                         <p className="text-[9px] text-[var(--color-text-tertiary)] italic mt-2">{stat.sub}</p>
                                     </Card>
                                 ))}
@@ -376,9 +380,9 @@ export default function StaffDashboard() {
                                 <div className="space-y-4">
                                     {metrics?.statusCounts?.map((s, idx) => (
                                         <div key={idx} className="space-y-2">
-                                            <div className="flex justify-between text-[11px] font-[var(--font-weight-black)] uppercase tracking-wider">
+                                            <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider">
                                                 <span className="text-[var(--color-text-tertiary)]">{s.status}</span>
-                                                <span className="text-[var(--color-text-primary)] font-[var(--font-weight-black)]">{s._count}</span>
+                                                <span className="text-[var(--color-text-primary)] font-bold">{s._count}</span>
                                             </div>
                                             <div className="h-2.5 w-full bg-[var(--color-fill-secondary)] rounded-full overflow-hidden">
                                                 <motion.div
@@ -400,22 +404,22 @@ export default function StaffDashboard() {
                                 <h2 className="text-sm font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-text-tertiary)]">Conversão & Retenção</h2>
                             </div>
                             <div className="space-y-3">
-                                <Card className="p-4 relative overflow-hidden" hover>
+                                <Card className="p-4 relative overflow-hidden rounded-2xl" hover>
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest text-[var(--color-error)] mb-1">Orçamentos Recusados</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-error)] mb-1">Orçamentos Recusados</p>
                                         <div className="flex items-end gap-2">
-                                            <h3 className="text-4xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">{metrics?.rejectedQuotes || 0}</h3>
+                                            <h3 className="text-4xl font-bold text-[var(--color-text-primary)]">{metrics?.rejectedQuotes || 0}</h3>
                                             <span className="text-xs text-[var(--color-text-tertiary)] mb-2 font-bold opacity-60">Perda Potencial</span>
                                         </div>
                                     </div>
                                     <XCircle size={60} className="absolute -right-4 -bottom-4 text-[var(--color-error)] opacity-5" />
                                 </Card>
 
-                                <Card className="p-4 relative overflow-hidden" hover>
+                                <Card className="p-4 relative overflow-hidden rounded-2xl" hover>
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-[var(--font-weight-black)] uppercase tracking-widest text-orange-400 mb-1">Sem Retorno (+3 dias)</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400 mb-1">Sem Retorno (+3 dias)</p>
                                         <div className="flex items-end gap-2">
-                                            <h3 className="text-4xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">{metrics?.noResponseQuotes || 0}</h3>
+                                            <h3 className="text-4xl font-bold text-[var(--color-text-primary)]">{metrics?.noResponseQuotes || 0}</h3>
                                             <span className="text-xs text-[var(--color-text-tertiary)] mb-2 font-bold opacity-60">Follow-up Pendente</span>
                                         </div>
                                     </div>
@@ -470,19 +474,32 @@ export default function StaffDashboard() {
                                         widgets?.nextAppointments.map((apt) => (
                                             <div
                                                 key={apt.id}
-                                                className="group flex items-center gap-4 p-4 rounded-2xl border border-transparent hover:border-[var(--color-accent-primary-alpha)] hover:bg-[var(--color-accent-primary-alpha)]/5 transition-all"
+                                                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-[var(--color-accent-primary-alpha)] hover:bg-[var(--color-accent-primary-alpha)]/5 transition-all"
                                             >
-                                                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)]">
-                                                    <span className="text-[10px] font-[var(--font-weight-black)] uppercase leading-none">{format(new Date(apt.startAt), 'MMM', { locale: ptBR })}</span>
-                                                    <span className="text-lg font-[var(--font-weight-black)]">{format(new Date(apt.startAt), 'dd')}</span>
+                                                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] shadow-inner">
+                                                    <span className="text-[10px] font-bold uppercase leading-none opacity-60">{format(new Date(apt.startAt), 'MMM', { locale: ptBR })}</span>
+                                                    <span className="text-lg font-bold">{format(new Date(apt.startAt), 'dd')}</span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="font-bold text-[var(--color-text-primary)] truncate flex items-center gap-2">
                                                         {apt.pet.name} <span className="text-[var(--color-border)] font-normal">|</span> {apt.customer.name}
                                                     </h4>
                                                     <p className="text-[10px] text-[var(--color-text-tertiary)] font-medium truncate">
-                                                        {apt.services.map(s => s.name).join(', ')}
+                                                        {[
+                                                            ...apt.services.map(s => `${s.name} (R$ ${Number(s.basePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })})`),
+                                                            ...(apt.transportLegs || []).map((l: any) => `${l.legType} (R$ ${Number(l.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })})`),
+                                                            ...((!apt.transportLegs?.length && apt.category === 'LOGISTICA' && apt.transportSnapshot) ? [`Transporte (R$ ${Number(apt.transportSnapshot.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 0 })})`] : [])
+                                                        ].join(', ')}
                                                     </p>
+                                                    <div className="mt-1 flex items-center gap-1.5">
+                                                        <span className="text-[11px] font-[var(--font-weight-black)] text-[var(--color-accent-primary)] tabular-nums">
+                                                            Total: R$ {(
+                                                                apt.services.reduce((acc, s) => acc + Number(s.basePrice || 0), 0) +
+                                                                (apt.transportLegs || []).reduce((acc: number, l: any) => acc + Number(l.price || 0), 0) +
+                                                                ((!apt.transportLegs?.length && apt.category === 'LOGISTICA' && apt.transportSnapshot) ? Number(apt.transportSnapshot.totalAmount || 0) : 0)
+                                                            ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-xs font-[var(--font-weight-black)] text-[var(--color-text-primary)]">

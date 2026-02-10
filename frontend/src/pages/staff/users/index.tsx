@@ -123,6 +123,7 @@ export default function UserManager() {
         isEligible: false,
         isSupportAgent: false,
         active: true,
+        allowCustomerProfile: false,
         isCustomRole: false,
         pauseMenuEnabled: false,
         allowedGames: []
@@ -168,6 +169,7 @@ export default function UserManager() {
             isEligible: false,
             isSupportAgent: false,
             active: true,
+            allowCustomerProfile: false,
             isCustomRole: false,
             pauseMenuEnabled: false,
             allowedGames: []
@@ -242,8 +244,8 @@ export default function UserManager() {
                 users={users}
                 isLoading={isLoading}
                 onEdit={handleOpenUser}
-                onDelete={(id) => deleteUser(id, false)}
-                onRestore={restoreUser}
+                onDelete={(user) => deleteUser(user, false)}
+                onRestore={(user) => restoreUser(user)}
                 onNew={() => {
                     setSelectedUser(null);
                     setIsModalOpen(true);
@@ -265,7 +267,7 @@ export default function UserManager() {
                     <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mb-8 mx-auto shadow-xl shadow-red-500/10">
                         <Lock size={40} />
                     </div>
-                    <h2 className="text-3xl font-black text-secondary mb-4 uppercase tracking-tight">Acesso Restrito</h2>
+                    <h2 className="text-3xl font-bold text-secondary mb-4 uppercase tracking-tight">Acesso Restrito</h2>
                     <p className="text-gray-400 font-bold mb-10 leading-relaxed">
                         Esta área é exclusiva para administradores. <br />
                         Seu nível atual de acesso não permite gerenciar usuários.
@@ -293,7 +295,7 @@ export default function UserManager() {
                                 <span className="text-xs font-bold text-secondary">{users.length} Colaboradores</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                {isMaster && (
+                                {(isMaster || currentUser?.role?.toUpperCase() === 'ADMIN') && (
                                     <button
                                         onClick={() => setIsRoleModalOpen(true)}
                                         className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-secondary transition-colors group flex items-center gap-2"
@@ -317,13 +319,13 @@ export default function UserManager() {
                     <div className="mt-8 flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 w-fit">
                         <button
                             onClick={() => handleTabChange('active')}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
                         >
                             Ativos
                         </button>
                         <button
                             onClick={() => handleTabChange('trash')}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
                         >
                             <Trash size={14} /> Lixeira
                         </button>
@@ -358,30 +360,30 @@ export default function UserManager() {
                                     className="bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 min-w-[600px] max-w-full overflow-x-auto no-scrollbar"
                                 >
                                     <div className="flex items-center gap-4 border-r border-white/10 pr-6 mr-2">
-                                        <span className="bg-primary text-white text-xs font-black min-w-[32px] h-8 rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                                        <span className="bg-primary text-white text-xs font-bold min-w-[32px] h-8 rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
                                             {selectedIds.length}
                                         </span>
-                                        <p className="text-sm font-black uppercase tracking-widest whitespace-nowrap">Selecionados</p>
+                                        <p className="text-sm font-bold uppercase tracking-widest whitespace-nowrap">Selecionados</p>
                                     </div>
 
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={() => handleBulkStatusChange('available')}
-                                            className="bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-green-500/20 whitespace-nowrap"
+                                            className="bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-green-500/20 whitespace-nowrap"
                                         >
                                             <Check size={14} /> Disponível
                                         </button>
 
                                         <button
                                             onClick={() => handleBulkStatusChange('blockQuotes')}
-                                            className="bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-amber-500/20 whitespace-nowrap"
+                                            className="bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-amber-500/20 whitespace-nowrap"
                                         >
                                             <Lock size={14} /> Bloquear Orçamentos
                                         </button>
 
                                         <button
                                             onClick={() => handleBulkStatusChange('blockSystem')}
-                                            className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-red-500/20 whitespace-nowrap"
+                                            className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-red-500/20 whitespace-nowrap"
                                         >
                                             <Shield size={14} /> Bloquear Acesso
                                         </button>
@@ -389,7 +391,7 @@ export default function UserManager() {
                                         {tab === 'trash' && (
                                             <button
                                                 onClick={handleBulkRestore}
-                                                className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex items-center gap-2 whitespace-nowrap"
+                                                className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex items-center gap-2 whitespace-nowrap"
                                             >
                                                 <RotateCcw size={14} /> Restaurar
                                             </button>
@@ -397,7 +399,7 @@ export default function UserManager() {
 
                                         <button
                                             onClick={handleBulkDelete}
-                                            className="bg-white/10 hover:bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-white/10 hover:border-red-600 whitespace-nowrap ml-2"
+                                            className="bg-white/10 hover:bg-red-600 text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-white/10 hover:border-red-600 whitespace-nowrap ml-2"
                                         >
                                             <Trash size={14} /> {tab === 'trash' ? 'Excluir Permanente' : 'Lixeira'}
                                         </button>
@@ -406,7 +408,7 @@ export default function UserManager() {
                                     <div className="ml-auto flex items-center border-l border-white/10 pl-6">
                                         <button
                                             onClick={() => setSelectedIds([])}
-                                            className="text-white/40 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                                            className="text-white/40 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors"
                                         >
                                             Cancelar
                                         </button>
@@ -453,14 +455,14 @@ export default function UserManager() {
                             <button
                                 onClick={() => setCurrentPage(1)}
                                 disabled={currentPage === 1}
-                                className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Primeira
                             </button>
                             <button
                                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                 disabled={currentPage === 1}
-                                className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 ‹
                             </button>
@@ -482,7 +484,7 @@ export default function UserManager() {
                                         <button
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === pageNum
+                                            className={`w-10 h-10 rounded-xl text-xs font-bold transition-all ${currentPage === pageNum
                                                 ? 'bg-primary text-white shadow-lg scale-110'
                                                 : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'
                                                 }`}
@@ -496,14 +498,14 @@ export default function UserManager() {
                             <button
                                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                 disabled={currentPage === totalPages}
-                                className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 ›
                             </button>
                             <button
                                 onClick={() => setCurrentPage(totalPages)}
                                 disabled={currentPage === totalPages}
-                                className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Última
                             </button>
@@ -512,38 +514,49 @@ export default function UserManager() {
                 </div>
 
                 {/* User Form Modal */}
-                <UserFormModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    selectedUser={selectedUser}
-                    tab={tab}
-                    showModalPassword={showModalPassword}
-                    setShowModalPassword={setShowModalPassword}
-                    rolePermissions={rolePermissions}
-                    isMaster={isMaster}
-                    currentUser={currentUser}
-                    onSave={(data) => saveUser(data, selectedUser)}
-                    onDelete={(user: UserData) => deleteUser(user, false)}
-                    onRestore={(user: UserData) => restoreUser(user)}
-                    onRoleChange={handleRoleChange}
-                    togglePermission={togglePermission}
-                    onViewCustomer={handleOpenCustomerDetail}
-                />
+                <AnimatePresence>
+                    {isModalOpen && (
+                        <UserFormModal
+                            isOpen={isModalOpen}
+                            onClose={() => setIsModalOpen(false)}
+                            selectedUser={selectedUser}
+                            tab={tab}
+                            showModalPassword={showModalPassword}
+                            setShowModalPassword={setShowModalPassword}
+                            rolePermissions={rolePermissions}
+                            isMaster={isMaster}
+                            currentUser={currentUser}
+                            onSave={(data) => saveUser(data, selectedUser)}
+                            onDelete={(user: UserData) => deleteUser(user, false)}
+                            onRestore={(user: UserData) => restoreUser(user)}
+                            onRoleChange={handleRoleChange}
+                            onViewCustomer={handleOpenCustomerDetail}
+                        />
+                    )}
+                </AnimatePresence>
 
                 {/* Role Manager Modal */}
-                <RoleManagerModal
-                    isOpen={isRoleModalOpen}
-                    onClose={() => setIsRoleModalOpen(false)}
-                    users={users}
-                />
+                <AnimatePresence>
+                    {isRoleModalOpen && (
+                        <RoleManagerModal
+                            isOpen={isRoleModalOpen}
+                            onClose={() => setIsRoleModalOpen(false)}
+                            users={users}
+                        />
+                    )}
+                </AnimatePresence>
 
                 {/* Customer Details Modal */}
-                <CustomerDetailsModal
-                    isOpen={isCustomerModalVisible}
-                    onClose={() => setIsCustomerModalVisible(false)}
-                    customerId={viewCustomerId}
-                    onUpdate={fetchUsers}
-                />
+                <AnimatePresence>
+                    {isCustomerModalVisible && (
+                        <CustomerDetailsModal
+                            isOpen={isCustomerModalVisible}
+                            onClose={() => setIsCustomerModalVisible(false)}
+                            customerId={viewCustomerId}
+                            onUpdate={fetchUsers}
+                        />
+                    )}
+                </AnimatePresence>
             </Stack>
         </div>
     );

@@ -52,9 +52,9 @@ interface Invoice {
     status: string;
     dueDate: string;
     createdAt: string;
-    customerId: string;
+    customerId?: string;
     customer: {
-        id: string;
+        id?: string;
         name: string;
     };
     appointment?: any;
@@ -144,7 +144,7 @@ export default function FinancialReports() {
             render: (inv) => (
                 <div className="flex flex-col">
                     <span className="font-bold text-gray-400 text-xs">#{inv.id.slice(0, 8)}</span>
-                    {inv.isPOS && <span className="text-[8px] font-black text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-full w-fit mt-1">PDV</span>}
+                    {inv.isPOS && <span className="text-[8px] font-bold text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-full w-fit mt-1">PDV</span>}
                 </div>
             )
         },
@@ -153,7 +153,7 @@ export default function FinancialReports() {
             key: 'customer',
             render: (inv) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-secondary text-sm">{inv.customer.name}</span>
+                    <span className="font-bold text-secondary text-sm">{inv.customer.name}</span>
                     <span className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[200px]">
                         {inv.appointment?.services?.map((s: any) => s.name).join(', ') || 'Sem serviços vinculados'}
                     </span>
@@ -170,7 +170,7 @@ export default function FinancialReports() {
             header: 'Valor',
             key: 'amount',
             sortable: true,
-            render: (inv) => <span className="text-sm font-black text-secondary">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            render: (inv) => <span className="text-sm font-bold text-secondary">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         },
         {
             header: 'Status',
@@ -341,18 +341,18 @@ export default function FinancialReports() {
                     className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10"
                 >
                     <motion.div variants={itemVariants} className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Faturamento Filtrado (Pago)</p>
-                        <h3 className="text-3xl font-black text-secondary">R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Faturamento Filtrado (Pago)</p>
+                        <h3 className="text-3xl font-bold text-secondary">R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
                     </motion.div>
                     <motion.div variants={itemVariants} className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cobranças Pendentes</p>
-                        <h3 className="text-3xl font-black text-orange-500">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cobranças Pendentes</p>
+                        <h3 className="text-3xl font-bold text-orange-500">
                             {filteredInvoices.filter(i => i.status === 'PENDENTE').length} faturas
                         </h3>
                     </motion.div>
                     <motion.div variants={itemVariants} className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Média por Serviço</p>
-                        <h3 className="text-3xl font-black text-primary">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Média por Serviço</p>
+                        <h3 className="text-3xl font-bold text-primary">
                             R$ {(totalRevenue / (filteredInvoices.length || 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                         </h3>
                     </motion.div>
@@ -391,8 +391,8 @@ export default function FinancialReports() {
 
                     {filteredInvoices.length > 0 && (
                         <div className="p-8 bg-secondary text-white flex items-center justify-between rounded-b-[40px]">
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Total Selecionado em Tela</span>
-                            <span className="text-xl font-black">R$ {currentTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Total Selecionado em Tela</span>
+                            <span className="text-xl font-bold">R$ {currentTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                         </div>
                     )}
                 </div>

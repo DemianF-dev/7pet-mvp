@@ -159,16 +159,16 @@ export default function ServiceManager() {
         }
     }, [formData.type, formData.bathCategory, formData.groomingType, formData.species, formData.sizeLabel, formData.coatType, autoGenerateName, isModalOpen, editingService, isCopying]);
 
-    const fetchUsers = async () => {
+    async function fetchUsers() {
         try {
             const response = await api.get('/management/users');
             setUsers(response.data.filter((u: any) => ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'MASTER'].includes(u.role)));
         } catch (error) {
             console.error('Erro ao buscar usuários:', error);
         }
-    };
+    }
 
-    const fetchServices = async () => {
+    async function fetchServices() {
         setIsLoading(true);
         try {
             const endpoint = tab === 'trash' ? '/services/trash' : '/services';
@@ -180,9 +180,9 @@ export default function ServiceManager() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }
 
-    const handleOpenModal = (service?: Service) => {
+    function handleOpenModal(service?: Service) {
         setIsCopying(false);
         if (service) {
             setEditingService(service);
@@ -220,7 +220,7 @@ export default function ServiceManager() {
             });
         }
         setIsModalOpen(true);
-    };
+    }
 
     const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
         if (e) e.preventDefault();
@@ -258,7 +258,7 @@ export default function ServiceManager() {
         });
     };
 
-    const handleDelete = async (id: string) => {
+    async function handleDelete(id: string) {
         const msg = tab === 'trash'
             ? 'ATENÇÃO: Esta ação não pode ser desfeita. Deseja excluir PERMANENTEMENTE este serviço?'
             : 'ATENÇÃO: Deseja mover este serviço para a lixeira?';
@@ -277,9 +277,9 @@ export default function ServiceManager() {
             console.error('Erro ao excluir:', error);
             toast.error(error.response?.data?.error || 'Erro ao excluir serviço');
         }
-    };
+    }
 
-    const handleRestore = async (id: string) => {
+    async function handleRestore(id: string) {
         if (!window.confirm('Deseja restaurar este serviço?')) return;
         try {
             await api.patch(`/services/${id}/restore`);
@@ -288,7 +288,7 @@ export default function ServiceManager() {
         } catch (error) {
             toast.error('Erro ao restaurar serviço');
         }
-    };
+    }
 
     const toggleSelect = (id: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
@@ -359,7 +359,7 @@ export default function ServiceManager() {
         }
     };
 
-    const handleDuplicate = (service: Service) => {
+    function handleDuplicate(service: Service) {
         // Removed blocking confirm to allow editing first
         setEditingService(null);
         setIsCopying(true);
@@ -379,7 +379,7 @@ export default function ServiceManager() {
             responsibleId: service.responsibleId || ''
         });
         setIsModalOpen(true);
-    };
+    }
 
     const handleBulkImport = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -490,8 +490,8 @@ export default function ServiceManager() {
                     </div>
                     <div className="min-w-0">
                         <div className="flex flex-col md:flex-row md:items-center gap-1">
-                            <h3 className="font-black text-secondary uppercase text-[11px] md:text-sm truncate">{service.name}</h3>
-                            <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded-md uppercase tracking-widest w-fit">
+                            <h3 className="font-bold text-secondary uppercase text-[11px] md:text-sm truncate">{service.name}</h3>
+                            <span className="text-[9px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded-md uppercase tracking-widest w-fit">
                                 SR-{String((service.seqId || 0) + 999).padStart(4, '0')}
                             </span>
                         </div>
@@ -506,7 +506,7 @@ export default function ServiceManager() {
             header: 'Categoria',
             key: 'category',
             render: (service) => (
-                <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
                     {service.category}
                 </span>
             )
@@ -518,15 +518,15 @@ export default function ServiceManager() {
             render: (service) => (
                 <div className="flex justify-center">
                     {service.species === 'Canino' ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black">
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold">
                             <Dog size={10} /> <span className="hidden md:inline">Canino</span>
                         </span>
                     ) : service.species === 'Felino' ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-[10px] font-black">
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-[10px] font-bold">
                             <Cat size={10} /> <span className="hidden md:inline">Felino</span>
                         </span>
                     ) : (
-                        <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-[10px] font-black">
+                        <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-[10px] font-bold">
                             <span className="hidden md:inline">Ambos</span><span className="md:hidden">A</span>
                         </span>
                     )}
@@ -549,7 +549,7 @@ export default function ServiceManager() {
             key: 'basePrice',
             className: 'text-right',
             render: (service) => (
-                <span className="text-lg font-black text-primary whitespace-nowrap">
+                <span className="text-lg font-bold text-primary whitespace-nowrap">
                     R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
             )
@@ -585,20 +585,20 @@ export default function ServiceManager() {
                     <BackButton className="mb-4 ml-[-1rem]" />
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                         <div>
-                            <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
+                            <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.3em] mb-4">
                                 <div className="h-[2px] w-6 bg-primary"></div>
                                 CONFIGURAÇÕES DE SERVIÇOS
                             </div>
                             <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 w-fit">
                                 <button
                                     onClick={() => { setSpeciesFilter('Canino'); setSelectedIds([]); }}
-                                    className={`px-6 py-3 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                    className={`px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Canino' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
                                 >
                                     <Dog size={16} /> Cães
                                 </button>
                                 <button
                                     onClick={() => { setSpeciesFilter('Felino'); setSelectedIds([]); }}
-                                    className={`px-6 py-3 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${speciesFilter === 'Felino' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                    className={`px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${speciesFilter === 'Felino' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
                                 >
                                     <Cat size={16} /> Gatos
                                 </button>
@@ -608,7 +608,7 @@ export default function ServiceManager() {
                         <div className="flex flex-wrap items-center gap-4">
                             <button
                                 onClick={() => setIsBulkMode(!isBulkMode)}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-bold transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
                             >
                                 <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
                                 <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
@@ -628,12 +628,12 @@ export default function ServiceManager() {
                             {/* Advanced Filters Toggle */}
                             <button
                                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all relative ${showAdvancedFilters ? 'bg-primary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-primary shadow-sm'}`}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-bold transition-all relative ${showAdvancedFilters ? 'bg-primary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-primary shadow-sm'}`}
                             >
                                 <Filter size={14} strokeWidth={showAdvancedFilters ? 3 : 2} />
                                 <span className="uppercase tracking-[0.15em]">Filtros Avançados</span>
                                 {activeFiltersCount > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">
+                                    <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg">
                                         {activeFiltersCount}
                                     </span>
                                 )}
@@ -657,7 +657,7 @@ export default function ServiceManager() {
                                     title={tab === 'active' ? 'Ver Lixeira' : 'Voltar aos Serviços Ativos'}
                                 >
                                     <Trash2 size={18} />
-                                    {tab === 'trash' && <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">Lixeira</span>}
+                                    {tab === 'trash' && <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Lixeira</span>}
                                 </button>
 
                                 {/* View Toggle */}
@@ -678,10 +678,10 @@ export default function ServiceManager() {
                                     </button>
                                 </div>
 
-                                <button onClick={() => setIsImportModalOpen(true)} className="bg-white hover:bg-gray-50 text-secondary px-6 py-3 rounded-2xl font-black border border-gray-100 flex items-center gap-2 text-xs tracking-widest transition-all">
+                                <button onClick={() => setIsImportModalOpen(true)} className="bg-white hover:bg-gray-50 text-secondary px-6 py-3 rounded-2xl font-bold border border-gray-100 flex items-center gap-2 text-xs tracking-widest transition-all">
                                     <Upload size={18} /> Importar
                                 </button>
-                                <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all">
+                                <button onClick={() => handleOpenModal()} className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all">
                                     <Plus size={20} /> Novo Serviço
                                 </button>
                             </div>
@@ -700,12 +700,12 @@ export default function ServiceManager() {
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={handleSelectAll}
-                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                                    className="bg-white/10 hover:bg-white/20 text-[10px] font-bold px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
                                 >
                                     {selectedIds.length === filteredServices.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
                                 </button>
-                                <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                    <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
+                                <p className="text-sm font-bold flex items-center gap-3 border-l border-white/10 pl-4">
+                                    <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-primary/20">{selectedIds.length}</span>
                                     itens no total
                                 </p>
                             </div>
@@ -713,7 +713,7 @@ export default function ServiceManager() {
                             <div className="flex items-center gap-6">
                                 <button
                                     onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
-                                    className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
+                                    className="text-[10px] font-bold hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
                                 >
                                     Cancelar
                                 </button>
@@ -722,14 +722,14 @@ export default function ServiceManager() {
                                         <button
                                             onClick={handleBulkRestore}
                                             disabled={selectedIds.length === 0}
-                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 active:scale-95 transition-all"
+                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 active:scale-95 transition-all"
                                         >
                                             <RotateCcw size={18} /> Restaurar
                                         </button>
                                         <button
                                             onClick={handleBulkDelete}
                                             disabled={selectedIds.length === 0}
-                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl bg-red-600 hover:bg-red-700 text-white shadow-red-600/20 active:scale-95 transition-all"
+                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl bg-red-600 hover:bg-red-700 text-white shadow-red-600/20 active:scale-95 transition-all"
                                         >
                                             <Trash2 size={18} /> Excluir Definitivamente
                                         </button>
@@ -739,14 +739,14 @@ export default function ServiceManager() {
                                         <button
                                             onClick={() => setIsBulkEditModalOpen(true)}
                                             disabled={selectedIds.length === 0}
-                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl bg-primary hover:bg-primary-dark text-white shadow-primary/20 active:scale-95 transition-all"
+                                            className="flex items-center gap-3 px-6 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl bg-primary hover:bg-primary-dark text-white shadow-primary/20 active:scale-95 transition-all"
                                         >
                                             <Settings size={18} /> Editar em Massa
                                         </button>
                                         <button
                                             onClick={handleBulkDelete}
                                             disabled={selectedIds.length === 0}
-                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                                         >
                                             <Trash2 size={18} /> Apagar Agora
                                         </button>
@@ -774,7 +774,7 @@ export default function ServiceManager() {
                                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                                 className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
                             >
-                                <h2 className="text-2xl font-black text-secondary mb-2 uppercase tracking-tighter">Edição em Massa</h2>
+                                <h2 className="text-2xl font-bold text-secondary mb-2 uppercase tracking-tighter">Edição em Massa</h2>
                                 <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">
                                     Alterando <span className="text-primary">{selectedIds.length}</span> serviços selecionados. <br />
                                     <span className="text-[10px] italic">Preencha apenas o que deseja alterar.</span>
@@ -782,7 +782,7 @@ export default function ServiceManager() {
 
                                 <form onSubmit={handleBulkUpdate} className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Novo Preço (R$)</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Novo Preço (R$)</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -793,7 +793,7 @@ export default function ServiceManager() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nova Duração (min)</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nova Duração (min)</label>
                                         <input
                                             type="number"
                                             value={bulkEditData.duration}
@@ -803,7 +803,7 @@ export default function ServiceManager() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nova Categoria</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nova Categoria</label>
                                         <input
                                             value={bulkEditData.category}
                                             onChange={(e) => setBulkEditData({ ...bulkEditData, category: e.target.value })}
@@ -813,8 +813,8 @@ export default function ServiceManager() {
                                     </div>
 
                                     <div className="flex gap-4 pt-6 border-t border-gray-100">
-                                        <button type="button" onClick={() => setIsBulkEditModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
-                                        <button type="submit" className="flex-1 px-8 py-4 rounded-2xl font-black text-white bg-primary uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all">Salvar Alterações</button>
+                                        <button type="button" onClick={() => setIsBulkEditModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-bold text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                        <button type="submit" className="flex-1 px-8 py-4 rounded-2xl font-bold text-white bg-primary uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all">Salvar Alterações</button>
                                     </div>
                                 </form>
                             </motion.div>
@@ -833,7 +833,7 @@ export default function ServiceManager() {
                         >
                             <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-8">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
                                         <Filter size={14} />
                                         Filtros Avançados
                                     </h3>
@@ -846,7 +846,7 @@ export default function ServiceManager() {
                                                 setSizeFilter('ALL');
                                                 setCoatFilter('ALL');
                                             }}
-                                            className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest flex items-center gap-2 transition-colors"
+                                            className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase tracking-widest flex items-center gap-2 transition-colors"
                                         >
                                             <RotateCcw size={12} />
                                             Limpar Filtros
@@ -857,7 +857,7 @@ export default function ServiceManager() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                                     {/* Category Filter */}
                                     <div>
-                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
                                             Categoria
                                         </label>
                                         <select
@@ -874,7 +874,7 @@ export default function ServiceManager() {
 
                                     {/* Subcategory Filter */}
                                     <div>
-                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
                                             Subcategoria
                                         </label>
                                         <select
@@ -891,7 +891,7 @@ export default function ServiceManager() {
 
                                     {/* Type Filter */}
                                     <div>
-                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
                                             Tipo
                                         </label>
                                         <select
@@ -908,7 +908,7 @@ export default function ServiceManager() {
 
                                     {/* Size Filter */}
                                     <div>
-                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
                                             Porte
                                         </label>
                                         <select
@@ -925,7 +925,7 @@ export default function ServiceManager() {
 
                                     {/* Coat Type Filter */}
                                     <div>
-                                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 ml-1">
                                             Pelo
                                         </label>
                                         <select
@@ -947,7 +947,7 @@ export default function ServiceManager() {
                                         <p className="text-xs font-bold text-gray-500 mb-3">Filtros Ativos:</p>
                                         <div className="flex flex-wrap gap-2">
                                             {categoryFilter !== 'ALL' && (
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
                                                     Categoria: {categoryFilter}
                                                     <button onClick={() => setCategoryFilter('ALL')} className="hover:text-red-500 transition-colors">
                                                         <X size={12} />
@@ -955,7 +955,7 @@ export default function ServiceManager() {
                                                 </span>
                                             )}
                                             {subcategoryFilter !== 'ALL' && (
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
                                                     Subcategoria: {subcategoryFilter}
                                                     <button onClick={() => setSubcategoryFilter('ALL')} className="hover:text-red-500 transition-colors">
                                                         <X size={12} />
@@ -963,7 +963,7 @@ export default function ServiceManager() {
                                                 </span>
                                             )}
                                             {typeFilter !== 'ALL' && (
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
                                                     Tipo: {typeFilter}
                                                     <button onClick={() => setTypeFilter('ALL')} className="hover:text-red-500 transition-colors">
                                                         <X size={12} />
@@ -971,7 +971,7 @@ export default function ServiceManager() {
                                                 </span>
                                             )}
                                             {sizeFilter !== 'ALL' && (
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
                                                     Porte: {sizeFilter}
                                                     <button onClick={() => setSizeFilter('ALL')} className="hover:text-red-500 transition-colors">
                                                         <X size={12} />
@@ -979,7 +979,7 @@ export default function ServiceManager() {
                                                 </span>
                                             )}
                                             {coatFilter !== 'ALL' && (
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
                                                     Pelo: {coatFilter}
                                                     <button onClick={() => setCoatFilter('ALL')} className="hover:text-red-500 transition-colors">
                                                         <X size={12} />
@@ -1034,23 +1034,23 @@ export default function ServiceManager() {
                                         </div>
                                     </div>
 
-                                    <h3 className="text-sm md:text-lg font-black text-secondary mb-1 uppercase truncate">{service.name}</h3>
-                                    <p className="text-[10px] font-black text-primary mb-1">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
+                                    <h3 className="text-sm md:text-lg font-bold text-secondary mb-1 uppercase truncate">{service.name}</h3>
+                                    <p className="text-[10px] font-bold text-primary mb-1">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
 
                                     <div className="flex items-center gap-2 mt-4 mb-4">
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${service.species === 'Canino' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
+                                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${service.species === 'Canino' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
                                             {service.species === 'Canino' ? '🐶 Cão' : '🐱 Gato'}
                                         </span>
-                                        {service.sizeLabel && <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-gray-50 text-gray-500">📏 {service.sizeLabel}</span>}
+                                        {service.sizeLabel && <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-gray-50 text-gray-500">📏 {service.sizeLabel}</span>}
                                     </div>
 
                                     <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                        <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-black uppercase">
+                                        <div className="flex items-center gap-1.5 text-gray-400 text-[10px] font-bold uppercase">
                                             <Clock size={12} />
                                             <span>{service.duration} min</span>
                                         </div>
                                         <div className="text-right">
-                                            <span className="text-lg font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                            <span className="text-lg font-bold text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                         </div>
                                     </div>
                                 </Card>
@@ -1089,8 +1089,8 @@ export default function ServiceManager() {
                                         </div>
                                     </div>
                                 </div>
-                                <h3 className="text-xl font-black text-secondary leading-tight mb-1 uppercase">{service.name}</h3>
-                                <p className="text-[10px] font-black text-primary mb-4 tracking-widest">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
+                                <h3 className="text-xl font-bold text-secondary leading-tight mb-1 uppercase">{service.name}</h3>
+                                <p className="text-[10px] font-bold text-primary mb-4 tracking-widest">SR-{String((service.seqId || 0) + 999).padStart(4, '0')}</p>
 
                                 <div className="flex items-center gap-2 mb-6">
                                     <Badge variant={service.species === 'Canino' ? 'info' : 'warning'} size="sm">
@@ -1100,11 +1100,11 @@ export default function ServiceManager() {
                                 </div>
 
                                 <div className="flex items-center justify-between pt-6 border-t border-[var(--color-border-subtle)]">
-                                    <div className="flex items-center gap-2 text-gray-400 font-black text-[10px] uppercase">
+                                    <div className="flex items-center gap-2 text-gray-400 font-bold text-[10px] uppercase">
                                         <Clock size={14} />
                                         <span>{service.duration} min</span>
                                     </div>
-                                    <span className="text-2xl font-black text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-2xl font-bold text-primary">R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </Card>
                         ))}
@@ -1121,11 +1121,11 @@ export default function ServiceManager() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
                             >
-                                <h2 className="text-3xl font-black text-secondary mb-8">{editingService ? 'Editar Serviço' : (isCopying ? 'Duplicar Serviço' : 'Novo Serviço')}</h2>
+                                <h2 className="text-3xl font-bold text-secondary mb-8">{editingService ? 'Editar Serviço' : (isCopying ? 'Duplicar Serviço' : 'Novo Serviço')}</h2>
                                 <form onSubmit={(e) => e.preventDefault()} className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Espécie</label>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Espécie</label>
                                             <div className="flex gap-2 p-1.5 bg-gray-50 rounded-2xl">
                                                 <button
                                                     type="button"
@@ -1133,7 +1133,7 @@ export default function ServiceManager() {
                                                     className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl transition-all ${formData.species === 'Canino' ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-400 opacity-50'}`}
                                                 >
                                                     <Dog size={16} className={formData.species === 'Canino' ? 'text-blue-500' : ''} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Cão</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Cão</span>
                                                 </button>
                                                 <button
                                                     type="button"
@@ -1141,12 +1141,12 @@ export default function ServiceManager() {
                                                     className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl transition-all ${formData.species === 'Felino' ? 'bg-white shadow-sm ring-1 ring-black/5' : 'text-gray-400 opacity-50'}`}
                                                 >
                                                     <Cat size={16} className={formData.species === 'Felino' ? 'text-purple-500' : ''} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Gato</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Gato</span>
                                                 </button>
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Serviço</label>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Tipo de Serviço</label>
                                             <select
                                                 value={formData.type}
                                                 onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
@@ -1162,7 +1162,7 @@ export default function ServiceManager() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Porte</label>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Porte</label>
                                             <select
                                                 value={formData.sizeLabel}
                                                 onChange={(e) => setFormData({ ...formData, sizeLabel: e.target.value })}
@@ -1184,7 +1184,7 @@ export default function ServiceManager() {
                                         {formData.type === 'Banho' && (
                                             <>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria do Banho</label>
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Categoria do Banho</label>
                                                     <select
                                                         value={formData.bathCategory}
                                                         onChange={(e) => setFormData({ ...formData, bathCategory: e.target.value as any })}
@@ -1195,7 +1195,7 @@ export default function ServiceManager() {
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pelagem</label>
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Pelagem</label>
                                                     <select
                                                         value={formData.coatType}
                                                         onChange={(e) => setFormData({ ...formData, coatType: e.target.value })}
@@ -1214,7 +1214,7 @@ export default function ServiceManager() {
 
                                         {formData.type === 'Tosa' && (
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Tosa</label>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Tipo de Tosa</label>
                                                 <select
                                                     value={formData.groomingType}
                                                     onChange={(e) => setFormData({ ...formData, groomingType: e.target.value })}
@@ -1230,7 +1230,7 @@ export default function ServiceManager() {
 
                                         {formData.type === 'Outros' && (
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria Personalizada</label>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Categoria Personalizada</label>
                                                 <input
                                                     value={formData.category}
                                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -1243,11 +1243,11 @@ export default function ServiceManager() {
 
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center ml-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome de Exibição / Sugestão</label>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome de Exibição / Sugestão</label>
                                             <button
                                                 type="button"
                                                 onClick={() => setAutoGenerateName(!autoGenerateName)}
-                                                className={`text-[9px] font-black uppercase px-2 py-1 rounded-md transition-all ${autoGenerateName ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}
+                                                className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md transition-all ${autoGenerateName ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}
                                             >
                                                 {autoGenerateName ? 'Auto-Gerar ON' : 'Manual'}
                                             </button>
@@ -1266,7 +1266,7 @@ export default function ServiceManager() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor</label>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Valor</label>
                                             <div className="relative">
                                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                                 <input
@@ -1282,7 +1282,7 @@ export default function ServiceManager() {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Duração (min)</label>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Duração (min)</label>
                                             <input
                                                 type="number"
                                                 value={formData.duration ?? ''}
@@ -1296,7 +1296,7 @@ export default function ServiceManager() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição Comercial</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Descrição Comercial</label>
                                         <textarea
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1306,7 +1306,7 @@ export default function ServiceManager() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Observações Internas</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Observações Internas</label>
                                         <textarea
                                             value={formData.notes}
                                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -1316,7 +1316,7 @@ export default function ServiceManager() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Profissional Responsável (Padrão)</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Profissional Responsável (Padrão)</label>
                                         <select
                                             value={formData.responsibleId}
                                             onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
@@ -1330,8 +1330,8 @@ export default function ServiceManager() {
                                     </div>
 
                                     <div className="flex gap-3 pt-4 sticky bottom-0 bg-white pb-2">
-                                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all border border-gray-100">Cancelar</button>
-                                        <button type="button" onClick={() => handleSubmit()} className="flex-[2] bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Serviço</button>
+                                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-bold text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all border border-gray-100">Cancelar</button>
+                                        <button type="button" onClick={() => handleSubmit()} className="flex-[2] bg-primary text-white px-8 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Serviço</button>
                                     </div>
                                 </form>
                             </motion.div>
@@ -1349,10 +1349,10 @@ export default function ServiceManager() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 className="bg-white rounded-[40px] p-8 w-full max-w-2xl relative z-10 shadow-2xl"
                             >
-                                <h2 className="text-3xl font-black text-secondary mb-2">Importação em Massa</h2>
+                                <h2 className="text-3xl font-bold text-secondary mb-2">Importação em Massa</h2>
                                 <p className="text-gray-400 text-[10px] font-bold mb-8 uppercase tracking-[0.1em] leading-relaxed">
                                     Cole os serviços abaixo, um por linha. Os campos devem ser separados por ponto e vírgula (;). <br />
-                                    <span className="text-primary font-black">FORMATO: Nome; Preço; Duração; Tipo (Banho/Tosa/Outros); Porte; Detalhe (Pelagem ou Tosa); Categoria Banho (Tradicional/Hidratante); Categoria Geral; Descrição</span> <br />
+                                    <span className="text-primary font-bold">FORMATO: Nome; Preço; Duração; Tipo (Banho/Tosa/Outros); Porte; Detalhe (Pelagem ou Tosa); Categoria Banho (Tradicional/Hidratante); Categoria Geral; Descrição</span> <br />
                                     <span className="text-secondary opacity-60">DICA: Use "-" no Nome para gerar o nome automaticamente seguindo o padrão do sistema.</span>
                                 </p>
 
@@ -1364,8 +1364,8 @@ export default function ServiceManager() {
                                         placeholder={`Banho Simples; 55.00; 45; Banho; Médio; Curto; Tradicional; Estética; Banho relaxante\nBanho Spa; 95.00; 60; Banho; Grande; Longo; Hidratante; Estética; Banho com máscara\nTosa Bob; 80.00; 90; Tosa; Pequeno; Bebê; -; Estética; Tosa completa`}
                                     />
                                     <div className="flex gap-4 pt-6 border-t border-gray-100">
-                                        <button type="button" onClick={() => setIsImportModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
-                                        <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Processar Importação</button>
+                                        <button type="button" onClick={() => setIsImportModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-bold text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                        <button type="submit" className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Processar Importação</button>
                                     </div>
                                 </form>
                             </motion.div>

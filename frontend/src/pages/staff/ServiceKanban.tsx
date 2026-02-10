@@ -35,6 +35,9 @@ interface Appointment {
     services?: { id: string; name: string; basePrice: number; duration: number }[];
     service?: { name: string; basePrice: number; duration: number }; // Legacy
     transport?: any;
+    transportLegs?: any[];
+    transportSnapshot?: any;
+    category?: string;
     deletedAt?: string;
 }
 
@@ -198,13 +201,13 @@ export default function ServiceKanban() {
     };
 
     const filteredAppointments = appointments.filter(a => {
-        const matchesGlobal = a.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesGlobal = (a.customer?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (a.pet?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (a.services && a.services.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
             (a.service && a.service.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const matchesPet = !columnFilters.pet || a.pet.name.toLowerCase().includes(columnFilters.pet.toLowerCase());
-        const matchesCustomer = !columnFilters.customer || a.customer.name.toLowerCase().includes(columnFilters.customer.toLowerCase());
+        const matchesPet = !columnFilters.pet || (a.pet?.name || '').toLowerCase().includes(columnFilters.pet.toLowerCase());
+        const matchesCustomer = !columnFilters.customer || (a.customer?.name || '').toLowerCase().includes(columnFilters.customer.toLowerCase());
         const matchesService = !columnFilters.service ||
             (a.services && a.services.some(s => s.name.toLowerCase().includes(columnFilters.service.toLowerCase()))) ||
             (a.service && a.service.name.toLowerCase().includes(columnFilters.service.toLowerCase()));
@@ -237,30 +240,30 @@ export default function ServiceKanban() {
     const dayAppointments = appointments.filter(a => isSameDay(new Date(a.startAt), selectedDate));
 
     const renderDayView = () => (
-        <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-280px)]">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                <div className="flex items-center gap-4">
-                    <button onClick={prevDay} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
-                        <ChevronLeft size={20} className="text-gray-400" />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-280px)]">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-zinc-50/50">
+                <div className="flex items-center gap-3">
+                    <button onClick={prevDay} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm border border-transparent hover:border-gray-200">
+                        <ChevronLeft size={18} className="text-gray-400" />
                     </button>
-                    <h2 className="text-xl font-black text-secondary uppercase tracking-tight">
+                    <h2 className="text-lg font-bold text-secondary uppercase tracking-tight">
                         {selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
                     </h2>
-                    <button onClick={nextDay} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
-                        <ChevronRight size={20} className="text-gray-400" />
+                    <button onClick={nextDay} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm border border-transparent hover:border-gray-200">
+                        <ChevronRight size={18} className="text-gray-400" />
                     </button>
-                    <button onClick={setToday} className="text-xs font-bold text-primary hover:underline ml-2">Hoje</button>
+                    <button onClick={setToday} className="text-[11px] font-bold text-primary hover:underline ml-2 uppercase tracking-wide">Hoje</button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                 <div className="flex flex-col min-h-full">
                     {timeSlots.map((slot) => (
-                        <div key={slot} className="flex border-b border-gray-50 group min-h-[80px]">
-                            <div className="w-20 py-4 px-4 text-[10px] font-black text-gray-400 border-r border-gray-50 bg-gray-50/30 flex items-start justify-center">
+                        <div key={slot} className="flex border-b border-gray-50 group min-h-[70px]">
+                            <div className="w-16 py-4 px-2 text-[10px] font-bold text-gray-400 border-r border-gray-100 bg-gray-50/30 flex items-start justify-center">
                                 {slot}
                             </div>
-                            <div className="flex-1 relative p-2 bg-white group-hover:bg-gray-50/50 transition-colors">
+                            <div className="flex-1 relative p-2 bg-white group-hover:bg-zinc-50/30 transition-colors">
                                 {dayAppointments
                                     .filter(a => {
                                         const date = new Date(a.startAt);
@@ -269,34 +272,66 @@ export default function ServiceKanban() {
                                         return `${hour}:${min}` === slot;
                                     })
                                     .map(appt => {
-                                        const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                        const isCat = appt.pet?.species?.toUpperCase().includes('GATO');
                                         const isRecurring = appt.customer?.type === 'RECORRENTE';
 
                                         return (
                                             <div
                                                 key={appt.id}
                                                 onClick={() => handleOpenDetails(appt)}
-                                                className={`mb-3 p-3 rounded-xl cursor-pointer transition-all shadow-sm border-l-4 ${isCat
-                                                    ? 'bg-pink-50 border-pink-400 text-pink-900 hover:bg-pink-100'
-                                                    : 'bg-blue-50 border-blue-400 text-blue-900 hover:bg-blue-100'
+                                                className={`mb-3 p-4 rounded-xl cursor-pointer transition-all shadow-sm border border-black/5 hover:border-current/30 hover:shadow-md active:scale-[0.99] border-l-[6px] ${isCat
+                                                    ? 'bg-rose-50/50 border-l-rose-500 text-rose-900 hover:bg-rose-50'
+                                                    : 'bg-indigo-50/50 border-l-indigo-500 text-indigo-900 hover:bg-indigo-50'
                                                     }`}
                                             >
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className={`text-[10px] font-black uppercase ${isCat ? 'text-pink-500' : 'text-blue-500'}`}>
-                                                        {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                    <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${appt.status === 'FINALIZADO' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex flex-col">
+                                                        <span className={`text-[10px] font-bold uppercase tracking-tight opacity-50`}>
+                                                            {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        <h4 className="font-bold text-base leading-tight tracking-tight mt-0.5">
+                                                            {appt.pet?.name || 'Pet'} {isRecurring ? '(R)' : '(A)'}
+                                                        </h4>
+                                                    </div>
+                                                    <span className={`text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider bg-white/60 border border-black/5`}>
                                                         {appt.status}
                                                     </span>
                                                 </div>
-                                                <p className="font-bold text-xs truncate">
-                                                    {appt.services && appt.services.length > 0
-                                                        ? appt.services.map(s => s.name).join(', ')
-                                                        : appt.service?.name}
-                                                </p>
-                                                <p className="text-[10px] opacity-60 font-bold uppercase truncate">
-                                                    {appt.pet.name} {isRecurring ? '(R)' : '(A)'} • {appt.customer.name}
-                                                </p>
+
+                                                <div className="mt-2 space-y-2">
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {(appt.services || (appt.service ? [appt.service] : [])).map((s: any, idx: number) => (
+                                                            <div key={idx} className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-white/40 rounded-lg border border-current/5 uppercase whitespace-nowrap">
+                                                                <span>{s.name}</span>
+                                                                <span className="opacity-40 text-[9px]">R$ {Number(s.basePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            </div>
+                                                        ))}
+                                                        {appt.transportLegs?.map((l: any, idx: number) => (
+                                                            <div key={`leg-${idx}`} className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-white/40 rounded-lg border border-current/5 uppercase whitespace-nowrap">
+                                                                <span>{l.legType}</span>
+                                                                <span className="opacity-40 text-[9px]">R$ {Number(l.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            </div>
+                                                        ))}
+                                                        {(!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) && (
+                                                            <div className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-white/40 rounded-lg border border-current/5 uppercase whitespace-nowrap">
+                                                                <span>Transporte</span>
+                                                                <span className="opacity-40 text-[9px]">R$ {Number(appt.transportSnapshot.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex justify-between items-center bg-white/20 px-3 py-1.5 rounded-xl">
+                                                        <p className="text-[12px] opacity-60 font-bold uppercase tracking-widest truncate">
+                                                            {appt.customer?.name}
+                                                        </p>
+                                                        <span className="text-[13px] font-bold tabular-nums">
+                                                            R$ {(
+                                                                (appt.services || (appt.service ? [appt.service] : [])).reduce((acc: number, s: any) => acc + Number(s.basePrice || 0), 0) +
+                                                                (appt.transportLegs || []).reduce((acc: number, l: any) => acc + Number(l.price || 0), 0) +
+                                                                ((!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) ? Number(appt.transportSnapshot.totalAmount || 0) : 0)
+                                                            ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -333,7 +368,7 @@ export default function ServiceKanban() {
                         <button onClick={() => setSelectedDate(new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000))} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
                             <ChevronLeft size={20} className="text-gray-400" />
                         </button>
-                        <h2 className="text-xl font-black text-secondary uppercase tracking-tight">
+                        <h2 className="text-xl font-bold text-secondary uppercase tracking-tight">
                             Semana de {weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                         </h2>
                         <button onClick={() => setSelectedDate(new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000))} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
@@ -348,15 +383,15 @@ export default function ServiceKanban() {
                             <div className="w-20 border-r border-gray-100"></div>
                             {weekDays.map(d => (
                                 <div key={d.toString()} className={`flex-1 p-3 text-center border-r border-gray-100 last:border-none ${isSameDay(d, new Date()) ? 'bg-primary/10 ring-1 ring-inset ring-primary/20' : ''}`}>
-                                    <p className={`text-[10px] font-black uppercase ${isSameDay(d, new Date()) ? 'text-primary' : 'text-gray-400'}`}>{d.toLocaleDateString('pt-BR', { weekday: 'short' })}</p>
-                                    <p className={`text-lg font-black ${isSameDay(d, new Date()) ? 'text-primary' : 'text-secondary'}`}>{d.getDate()}</p>
+                                    <p className={`text-[10px] font-bold uppercase ${isSameDay(d, new Date()) ? 'text-primary' : 'text-gray-400'}`}>{d.toLocaleDateString('pt-BR', { weekday: 'short' })}</p>
+                                    <p className={`text-lg font-bold ${isSameDay(d, new Date()) ? 'text-primary' : 'text-secondary'}`}>{d.getDate()}</p>
                                 </div>
                             ))}
                         </div>
 
                         {timeSlots.map(slot => (
                             <div key={slot} className={`flex border-b border-gray-50 group ${slot.endsWith(':00') ? 'min-h-[70px]' : 'min-h-[60px]'}`}>
-                                <div className={`w-20 p-3 text-[10px] font-black border-r border-gray-100 flex items-start justify-center ${slot.endsWith(':00') ? 'text-gray-400 bg-gray-50/30' : 'text-gray-300 bg-gray-50/10'}`}>
+                                <div className={`w-20 p-3 text-[10px] font-bold border-r border-gray-100 flex items-start justify-center ${slot.endsWith(':00') ? 'text-gray-400 bg-gray-50/30' : 'text-gray-300 bg-gray-50/10'}`}>
                                     {slot}
                                 </div>
                                 {weekDays.map(day => (
@@ -369,27 +404,46 @@ export default function ServiceKanban() {
                                                 return isSameDay(d, day) && `${hour}:${min}` === slot;
                                             })
                                             .map(appt => {
-                                                const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                                const isCat = appt.pet?.species?.toUpperCase().includes('GATO');
                                                 const isRecurring = appt.customer?.type === 'RECORRENTE';
 
                                                 return (
                                                     <div
                                                         key={appt.id}
                                                         onClick={() => handleOpenDetails(appt)}
-                                                        className={`p-1 px-2 rounded-lg cursor-pointer transition-all text-left mb-1 shadow-sm border-l-2 ${isCat
-                                                            ? "bg-pink-50 border-pink-400 text-pink-700 hover:bg-pink-100"
-                                                            : "bg-blue-50 border-blue-400 text-blue-700 hover:bg-blue-100"
+                                                        className={`p-2.5 rounded-xl cursor-pointer transition-all text-left mb-2 shadow-sm border border-black/5 hover:border-current/30 hover:z-20 active:scale-[0.99] border-l-[4px] ${isCat
+                                                            ? "bg-rose-50/50 border-l-rose-500 text-rose-900 hover:bg-rose-50"
+                                                            : "bg-indigo-50/50 border-l-indigo-500 text-indigo-900 hover:bg-indigo-50"
                                                             }`}
                                                     >
-                                                        <div className="flex justify-between items-center mb-0.5">
-                                                            <p className={`text-[8px] font-black ${isCat ? 'text-pink-500' : 'text-blue-500'}`}>
+                                                        <div className="flex justify-between items-center mb-1.5">
+                                                            <p className={`text-[10px] font-bold tracking-widest uppercase opacity-60`}>
                                                                 {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                             </p>
-                                                            <span className="text-[7px] font-black text-gray-400 capitalize">{appt.status.toLowerCase()}</span>
+                                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-white/50 border border-current/10 uppercase tracking-tighter shadow-sm">{appt.status.substring(0, 3)}</span>
                                                         </div>
-                                                        <p className="text-[9px] font-bold leading-tight line-clamp-1">
-                                                            AG-{String(appt.seqId || 0).padStart(4, '0')} • {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                        <p className="text-[13px] font-bold leading-none truncate uppercase tracking-tight mb-1">
+                                                            {appt.pet?.name || 'Pet'}
                                                         </p>
+                                                        <div className="space-y-0.5">
+                                                            {(appt.services || (appt.service ? [appt.service] : [])).slice(0, 1).map((s: any, idx: number) => (
+                                                                <p key={idx} className="text-[9px] font-bold opacity-70 uppercase truncate">
+                                                                    {s.name} (R$ {Number(s.basePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })})
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                        <div className="flex justify-between items-center mt-1 border-t border-current/5 pt-1">
+                                                            <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
+                                                                AG-{String(appt.seqId || 0).padStart(4, '0')}
+                                                            </p>
+                                                            <p className="text-[11px] font-bold tabular-nums">
+                                                                R$ {(
+                                                                    (appt.services || (appt.service ? [appt.service] : [])).reduce((acc: number, s: any) => acc + Number(s.basePrice || 0), 0) +
+                                                                    (appt.transportLegs || []).reduce((acc: number, l: any) => acc + Number(l.price || 0), 0) +
+                                                                    ((!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) ? Number(appt.transportSnapshot.totalAmount || 0) : 0)
+                                                                ).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -420,25 +474,25 @@ export default function ServiceKanban() {
 
         return (
             <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-280px)]">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
-                            <ChevronLeft size={20} className="text-gray-400" />
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-zinc-50/50">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm border border-transparent hover:border-gray-200">
+                            <ChevronLeft size={18} className="text-gray-400" />
                         </button>
-                        <h2 className="text-xl font-black text-secondary uppercase tracking-tight">
+                        <h2 className="text-lg font-bold text-secondary uppercase tracking-tight">
                             {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                         </h2>
-                        <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-gray-100">
-                            <ChevronRight size={20} className="text-gray-400" />
+                        <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm border border-transparent hover:border-gray-200">
+                            <ChevronRight size={18} className="text-gray-400" />
                         </button>
-                        <button onClick={setToday} className="text-xs font-bold text-primary hover:underline ml-2">Hoje</button>
+                        <button onClick={setToday} className="text-[11px] font-bold text-primary uppercase tracking-wide hover:underline ml-2">Hoje</button>
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-auto custom-scrollbar">
                     <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
                         {weekDays.map(wd => (
-                            <div key={wd} className="p-4 text-center text-[10px] font-black text-gray-400 uppercase border-r border-gray-100 last:border-none">
+                            <div key={wd} className="p-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest border-r border-gray-100 last:border-none">
                                 {wd}
                             </div>
                         ))}
@@ -452,45 +506,54 @@ export default function ServiceKanban() {
                             return (
                                 <div
                                     key={idx}
-                                    className={`min-h-[120px] p-2 border-r border-b border-gray-50 group hover:bg-gray-50/50 transition-colors ${!isCurrentMonth ? 'bg-gray-50/20 opacity-40' : ''} ${isSameDay(day, new Date()) ? 'bg-primary/[0.02]' : ''}`}
+                                    className={`min-h-[140px] p-2 border-r border-b border-gray-50 group hover:bg-gray-50/50 transition-colors ${!isCurrentMonth ? 'bg-gray-50/20 opacity-40' : ''} ${isSameDay(day, new Date()) ? 'bg-primary/[0.05]' : 'bg-white'}`}
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className={`text-[11px] font-black rounded-full w-6 h-6 flex items-center justify-center ${isSameDay(day, new Date()) ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-secondary opacity-60'}`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <span className={`text-[12px] font-bold rounded-full w-7 h-7 flex items-center justify-center transition-all ${isSameDay(day, new Date()) ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-110' : 'text-secondary/60'}`}>
                                             {day.getDate()}
                                         </span>
                                         {dayAppts.length > 0 && (
-                                            <span className="bg-gray-100 text-[8px] font-black text-gray-400 px-1.5 py-0.5 rounded-full">
+                                            <span className="bg-secondary text-[9px] font-bold text-white px-2 py-0.5 rounded-lg shadow-sm">
                                                 {dayAppts.length}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="space-y-1">
-                                        {dayAppts.slice(0, 3).map(appt => {
+                                    <div className="space-y-1.5">
+                                        {dayAppts.slice(0, 4).map(appt => {
                                             const isCat = appt.pet.species?.toUpperCase().includes('GATO');
-                                            const isRecurring = appt.customer?.type === 'RECORRENTE';
 
                                             return (
                                                 <div
                                                     key={appt.id}
                                                     onClick={() => handleOpenDetails(appt)}
-                                                    className={`p-1 px-2 rounded text-[9px] font-bold truncate cursor-pointer transition-all border-l-2 ${isCat
-                                                        ? "bg-pink-50 border-pink-400 text-pink-700 hover:bg-pink-100"
-                                                        : "bg-blue-50 border-blue-400 text-blue-700 hover:bg-blue-100"
+                                                    className={`p-1.5 px-2.5 rounded-xl text-[10px] font-bold truncate cursor-pointer transition-all border-l-[4px] shadow-sm uppercase tracking-tight ${isCat
+                                                        ? "bg-pink-50 border-pink-400 text-pink-700 hover:bg-pink-100 hover:scale-[1.02]"
+                                                        : "bg-blue-50 border-blue-400 text-blue-700 hover:bg-blue-100 hover:scale-[1.02]"
                                                         }`}
                                                 >
-                                                    {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • AG-{String(appt.seqId || 0).padStart(4, '0')} • {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                    <span className="opacity-50 mr-1">{new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                                                        <span className="truncate">{appt.pet?.name || 'Pet'}</span>
+                                                        <span className="text-[9px] font-bold opacity-50 shrink-0">
+                                                            R${(
+                                                                (appt.services || (appt.service ? [appt.service] : [])).reduce((acc: number, s: any) => acc + Number(s.basePrice || 0), 0) +
+                                                                (appt.transportLegs || []).reduce((acc: number, l: any) => acc + Number(l.price || 0), 0) +
+                                                                ((!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) ? Number(appt.transportSnapshot.totalAmount || 0) : 0)
+                                                            ).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
-                                        {dayAppts.length > 3 && (
+                                        {dayAppts.length > 4 && (
                                             <button
                                                 onClick={() => {
                                                     setSelectedDate(day);
                                                     setView('DAY');
                                                 }}
-                                                className="w-full text-[8px] font-black text-primary uppercase hover:underline text-left pl-2"
+                                                className="w-full text-[9px] font-bold text-primary uppercase tracking-widest hover:underline text-left pl-2 pt-1"
                                             >
-                                                + {dayAppts.length - 3} mais
+                                                + {dayAppts.length - 4} atendimentos
                                             </button>
                                         )}
                                     </div>
@@ -507,125 +570,126 @@ export default function ServiceKanban() {
     return (
         <>
             <main className="p-4 md:p-8">
-                <header className="mb-6">
-                    <Breadcrumbs />
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <BackButton className="ml-[-0.5rem]" />
+                <header className="mb-10">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 bg-primary/10 rounded-[28px] flex items-center justify-center text-primary shadow-sm border border-primary/10">
+                                <CalendarIcon size={32} strokeWidth={2.5} />
+                            </div>
                             <div>
-                                <h1 className="text-2xl font-extrabold text-secondary flex items-center gap-2">
+                                <h1 className="text-4xl font-bold text-secondary tracking-tighter uppercase leading-none mb-1">
                                     Agenda de <span className="text-primary">Serviços</span>
                                 </h1>
-                                <p className="text-gray-400 text-xs font-medium">Fluxo operacional e atendimentos.</p>
+                                <p className="text-gray-400 text-[11px] font-bold uppercase tracking-[0.2em] opacity-70">Fluxo Operacional • Gestão de Atendimentos</p>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
-                            <div className="flex-1 min-w-[150px]">
-                                <input
-                                    type="text"
-                                    placeholder="Filtrar por Pet..."
-                                    value={columnFilters.pet}
-                                    onChange={(e) => setColumnFilters({ ...columnFilters, pet: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <div className="flex-1 min-w-[150px]">
-                                <input
-                                    type="text"
-                                    placeholder="Filtrar por Tutor..."
-                                    value={columnFilters.customer}
-                                    onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <div className="flex-1 min-w-[150px]">
-                                <input
-                                    type="text"
-                                    placeholder="Filtrar por Serviço..."
-                                    value={columnFilters.service}
-                                    onChange={(e) => setColumnFilters({ ...columnFilters, service: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <div className="flex-1 min-w-[100px]">
-                                <input
-                                    type="text"
-                                    placeholder="Filtrar por Hora (HH:MM)..."
-                                    value={columnFilters.time}
-                                    onChange={(e) => setColumnFilters({ ...columnFilters, time: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <button
-                                onClick={() => setColumnFilters({ pet: '', customer: '', service: '', time: '' })}
-                                className="text-[10px] font-black text-primary hover:text-secondary uppercase px-2"
-                            >
-                                Limpar
-                            </button>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-3">
                             {/* Search in Agenda */}
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Filtrar agenda..."
+                                    placeholder="Buscar pet, tutor..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="bg-white border-none rounded-2xl pl-12 pr-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64"
+                                    className="bg-white border-2 border-gray-100 rounded-[24px] pl-12 pr-6 py-3.5 text-sm font-bold shadow-sm focus:ring-4 focus:ring-primary/10 focus:border-primary/20 w-72 transition-all outline-none"
                                 />
                             </div>
 
-                            <div className="flex bg-gray-100 p-1.5 rounded-2xl">
+                            <div className="flex bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-[24px] border border-gray-100">
                                 <button
                                     onClick={() => setIsTrashView(false)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isTrashView ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[11px] font-bold uppercase tracking-widest transition-all ${!isTrashView ? 'bg-white text-primary shadow-md' : 'text-gray-400 hover:text-secondary'}`}
                                 >
-                                    <Layout size={16} /> Agenda
+                                    <Layout size={16} /> Fluxo
                                 </button>
                                 <button
                                     onClick={() => setIsTrashView(true)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isTrashView ? 'bg-red-50 text-red-500 shadow-sm' : 'text-gray-400 hover:text-red-400'}`}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[11px] font-bold uppercase tracking-widest transition-all ${isTrashView ? 'bg-red-50 text-red-500 shadow-md' : 'text-gray-400 hover:text-red-400'}`}
                                 >
                                     <Trash2 size={16} /> Lixeira
                                 </button>
                             </div>
+                        </div>
+                    </div>
 
-                            {/* View Selector (only in active view) */}
-                            {!isTrashView && (
-                                <div className="bg-gray-100 p-1.5 rounded-2xl flex items-center gap-1">
+                    {!isTrashView && (
+                        <div className="mt-8 flex flex-col md:flex-row md:items-center gap-4 bg-gray-50/50 p-6 rounded-[40px] border border-gray-100 shadow-inner">
+                            <div className="grid grid-cols-1 md:grid-cols-4 flex-1 gap-4">
+                                <div className="relative">
+                                    <span className="absolute -top-2.5 left-4 px-2 bg-gray-50 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Pet</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Nome do Pet"
+                                        value={columnFilters.pet}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, pet: e.target.value })}
+                                        className="w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-3 text-xs font-bold uppercase focus:ring-4 focus:ring-primary/10 focus:border-primary/20 transition-all outline-none"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <span className="absolute -top-2.5 left-4 px-2 bg-gray-50 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Tutor</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Nome do Cliente"
+                                        value={columnFilters.customer}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, customer: e.target.value })}
+                                        className="w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-3 text-xs font-bold uppercase focus:ring-4 focus:ring-primary/10 focus:border-primary/20 transition-all outline-none"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <span className="absolute -top-2.5 left-4 px-2 bg-gray-50 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Serviço</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Tipo de Atendimento"
+                                        value={columnFilters.service}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, service: e.target.value })}
+                                        className="w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-3 text-xs font-bold uppercase focus:ring-4 focus:ring-primary/10 focus:border-primary/20 transition-all outline-none"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <span className="absolute -top-2.5 left-4 px-2 bg-gray-50 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Horário</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Horário"
+                                        value={columnFilters.time}
+                                        onChange={(e) => setColumnFilters({ ...columnFilters, time: e.target.value })}
+                                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary/20 transition-all outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 border-l border-gray-200 pl-4 h-12">
+                                <button
+                                    onClick={() => setColumnFilters({ pet: '', customer: '', service: '', time: '' })}
+                                    className="p-3 bg-white text-gray-400 hover:text-primary rounded-2xl border-2 border-gray-100 transition-all shadow-sm active:scale-95"
+                                    title="Limpar Filtros"
+                                >
+                                    <RefreshCcw size={18} />
+                                </button>
+
+                                <div className="flex bg-white border-2 border-gray-100 p-1 rounded-2xl shadow-sm">
                                     {['KANBAN', 'DAY', 'WEEK', 'MONTH'].map((v) => (
                                         <button
                                             key={v}
                                             onClick={() => setView(v as ViewType)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === v ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-secondary'}`}
+                                            className={`p-2.5 rounded-xl transition-all ${view === v ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-primary'}`}
+                                            title={v}
                                         >
-                                            {v === 'KANBAN' ? <Layout size={16} /> : v === 'DAY' ? <List size={16} /> : <CalendarIcon size={16} />}
-                                            <span className="hidden sm:inline">{v.charAt(0) + v.slice(1).toLowerCase()}</span>
+                                            {v === 'KANBAN' ? <Layout size={18} /> : v === 'DAY' ? <List size={18} /> : <CalendarIcon size={18} />}
                                         </button>
                                     ))}
                                 </div>
-                            )}
 
-                            <button
-                                onClick={fetchAppointments}
-                                disabled={isLoading}
-                                className="p-3 bg-white text-gray-400 rounded-2xl border border-gray-100 shadow-sm hover:text-primary hover:border-primary/20 transition-all active:scale-95 disabled:opacity-50"
-                                title="Atualizar Agenda"
-                            >
-                                <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
-                            </button>
-
-                            <button
-                                onClick={handleCreateNew}
-                                className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center gap-2"
-                            >
-                                <Plus size={16} /> Novo Agendamento
-                            </button>
+                                <button
+                                    onClick={handleCreateNew}
+                                    className="bg-primary text-white px-8 h-[48px] rounded-xl font-bold uppercase tracking-tight shadow-lg shadow-primary/25 hover:brightness-105 active:scale-95 transition-all text-sm flex items-center gap-3"
+                                >
+                                    <Plus size={18} strokeWidth={2.5} /> <span className="hidden lg:inline">Novo Agendamento</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </header>
 
                 {view === 'KANBAN' ? (
@@ -646,9 +710,9 @@ export default function ServiceKanban() {
                                 <div className="flex items-center justify-between mb-4 px-2">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-2.5 h-2.5 rounded-full ${col.color} shadow-sm`}></div>
-                                        <h3 className="font-black text-secondary uppercase tracking-widest text-[11px]">{col.label}</h3>
+                                        <h3 className="font-bold text-secondary uppercase tracking-widest text-[11px]">{col.label}</h3>
                                     </div>
-                                    <span className="bg-gray-200 text-gray-500 text-[10px] font-black px-3 py-1 rounded-full">
+                                    <span className="bg-gray-200 text-gray-500 text-[10px] font-bold px-3 py-1 rounded-full">
                                         {getColumnItems(col.key).length}
                                     </span>
                                 </div>
@@ -656,7 +720,7 @@ export default function ServiceKanban() {
                                 <div className="flex-1 bg-gray-100/50 rounded-[32px] p-4 overflow-y-auto space-y-3 custom-scrollbar border border-dashed border-gray-200">
                                     <AnimatePresence mode="popLayout">
                                         {getColumnItems(col.key).map((appt) => {
-                                            const isCat = appt.pet.species?.toUpperCase().includes('GATO');
+                                            const isCat = appt.pet?.species?.toUpperCase().includes('GATO');
                                             const isRecurring = appt.customer?.type === 'RECORRENTE';
 
                                             return (
@@ -672,53 +736,70 @@ export default function ServiceKanban() {
                                                         // @ts-ignore
                                                         e.dataTransfer.setData('apptId', appt.id);
                                                     }}
-                                                    className={`p-4 rounded-[24px] shadow-sm group hover:shadow-lg transition-all cursor-pointer relative overflow-hidden border-2 ${isCat
-                                                        ? 'bg-pink-50 border-pink-100 border-l-[10px] border-l-pink-500 text-pink-900'
-                                                        : 'bg-blue-50 border-blue-100 border-l-[10px] border-l-blue-500 text-blue-900'
+                                                    className={`p-4 rounded-xl shadow-sm group hover:shadow-md transition-all cursor-pointer relative overflow-hidden border border-gray-100 active:scale-[0.99] border-l-[6px] ${isCat
+                                                        ? 'bg-rose-50/50 border-l-rose-500 text-rose-900 hover:bg-rose-50'
+                                                        : 'bg-indigo-50/50 border-l-indigo-500 text-indigo-900 hover:bg-indigo-50'
                                                         }`}
                                                 >
                                                     <div className="flex justify-between items-center mb-3">
-                                                        <div className={`px-2 py-1.5 rounded-xl flex items-center gap-1.5 text-[10px] font-black bg-white shadow-sm border ${isCat ? 'text-pink-500 border-pink-100' : 'text-blue-500 border-blue-100'}`}>
+                                                        <div className={`px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-[10px] font-bold bg-white shadow-sm border ${isCat ? 'text-pink-500 border-pink-100' : 'text-blue-500 border-blue-100'}`}>
                                                             <Clock size={12} />
                                                             {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                         </div>
-                                                        <span className="text-[9px] font-black opacity-30 uppercase tracking-widest">
+                                                        <span className="text-[9px] font-bold opacity-30 uppercase tracking-widest bg-white/50 px-2 py-0.5 rounded-lg border border-current/5">
                                                             AG-{String(appt.seqId || 0).padStart(4, '0')}
                                                         </span>
                                                     </div>
 
-                                                    <div className="space-y-0.5 mb-4">
-                                                        <h4 className="font-black text-secondary text-base group-hover:text-primary transition-colors truncate uppercase leading-tight">
-                                                            {appt.pet.name} {isRecurring ? '(R)' : '(A)'}
+                                                    <div className="space-y-1 mb-4">
+                                                        <h4 className="font-bold text-secondary text-lg group-hover:text-primary transition-colors truncate tracking-tight">
+                                                            {appt.pet?.name || 'Pet'} {isRecurring ? '(R)' : '(A)'}
                                                         </h4>
-                                                        <p className="text-[11px] opacity-70 font-bold truncate">
-                                                            {appt.customer.name}
-                                                        </p>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {(appt.services || (appt.service ? [appt.service] : [])).map((s: any, idx: number) => (
+                                                                <div key={idx} className="flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 bg-white/60 rounded-md border border-black/5 uppercase whitespace-nowrap">
+                                                                    <span>{s.name}</span>
+                                                                    <span className="opacity-40">R$ {Number(s.basePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="flex justify-between items-center bg-black/5 px-2.5 py-1 rounded-lg mt-2">
+                                                            <p className="text-[11px] opacity-60 font-medium uppercase tracking-tighter truncate">
+                                                                {appt.customer?.name}
+                                                            </p>
+                                                            <span className="text-[13px] font-bold tabular-nums">
+                                                                R$ {(
+                                                                    (appt.services || (appt.service ? [appt.service] : [])).reduce((acc: number, s: any) => acc + Number(s.basePrice || 0), 0) +
+                                                                    (appt.transportLegs || []).reduce((acc: number, l: any) => acc + Number(l.price || 0), 0) +
+                                                                    ((!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) ? Number(appt.transportSnapshot.totalAmount || 0) : 0)
+                                                                ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
                                                     </div>
 
                                                     <div className="flex gap-2">
                                                         {col.key === 'PENDENTE' && (
                                                             <button
                                                                 onClick={(e) => updateStatus(appt.id, 'CONFIRMADO', e)}
-                                                                className="flex-1 py-2 bg-purple-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-purple-600 transition-all shadow-md shadow-purple-500/10"
+                                                                className="flex-1 py-3 bg-purple-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-md shadow-purple-500/20 active:scale-95"
                                                             >
-                                                                <CheckCircle size={12} /> OK
+                                                                <CheckCircle size={14} /> CONFIRMAR
                                                             </button>
                                                         )}
                                                         {col.key === 'CONFIRMADO' && (
                                                             <button
                                                                 onClick={(e) => updateStatus(appt.id, 'EM_ATENDIMENTO', e)}
-                                                                className="flex-1 py-2 bg-secondary text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-primary transition-all shadow-md shadow-secondary/10"
+                                                                className="flex-1 py-3 bg-secondary text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-md shadow-secondary/20 active:scale-95"
                                                             >
-                                                                <PlayCircle size={12} /> INICIAR
+                                                                <PlayCircle size={14} /> INICIAR
                                                             </button>
                                                         )}
                                                         {col.key === 'EM_ATENDIMENTO' && (
                                                             <button
                                                                 onClick={(e) => updateStatus(appt.id, 'FINALIZADO', e)}
-                                                                className="flex-1 py-2 bg-green-500 text-white rounded-xl text-[9px] font-bold flex items-center justify-center gap-1.5 hover:bg-green-600 transition-all shadow-md shadow-green-500/10"
+                                                                className="flex-1 py-3 bg-green-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-md shadow-green-500/20 active:scale-95"
                                                             >
-                                                                <CheckCircle size={12} /> FIM
+                                                                <CheckCircle size={14} /> FINALIZAR
                                                             </button>
                                                         )}
                                                     </div>
@@ -731,7 +812,7 @@ export default function ServiceKanban() {
                                             <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
                                                 <List size={20} className="text-gray-400" />
                                             </div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 italic">Lista Vazia</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 italic">Lista Vazia</span>
                                         </div>
                                     )}
                                 </div>
@@ -784,7 +865,7 @@ export default function ServiceKanban() {
                                                 ? appt.services.map(s => s.name).join(', ')
                                                 : appt.service?.name}
                                         </h4>
-                                        <p className="text-xs text-gray-500 mb-4">{appt.customer.name} - {appt.pet.name}</p>
+                                        <p className="text-xs text-gray-500 mb-4">{appt.customer?.name || 'Cliente'} - {appt.pet?.name || 'Pet'}</p>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
                                             <CalendarIcon size={14} />

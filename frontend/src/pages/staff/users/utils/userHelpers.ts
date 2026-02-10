@@ -39,16 +39,16 @@ export const getLastSeenText = (user: UserData): string => {
     if (user.isOnline) {
         return 'Online agora';
     }
-    
+
     if (user.lastSeenAt) {
-        return `Último acesso em ${new Date(user.lastSeenAt).toLocaleString('pt-BR', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+        return `Último acesso em ${new Date(user.lastSeenAt).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
         })}`;
     }
-    
+
     return 'Offline';
 };
 
@@ -66,17 +66,17 @@ export const getUserStatusDisplay = (user: UserData): { text: string; color: str
     if (user.division === 'CLIENTE') {
         return { text: '-', color: 'text-gray-300' };
     }
-    
+
     if (user.isEligible !== false) {
-        return { 
-            text: 'Disponível', 
-            color: 'bg-green-100 text-green-600' 
+        return {
+            text: 'Disponível',
+            color: 'bg-green-100 text-green-600'
         };
     }
-    
-    return { 
-        text: 'Bloqueado', 
-        color: 'bg-red-100 text-red-600' 
+
+    return {
+        text: 'Bloqueado',
+        color: 'bg-red-100 text-red-600'
     };
 };
 
@@ -93,7 +93,7 @@ export const getDivisionDisplay = (user: UserData): string => {
  */
 export const parsePermissions = (permissions?: string | string[]): string[] => {
     if (!permissions) return [];
-    
+
     if (typeof permissions === 'string') {
         try {
             return JSON.parse(permissions);
@@ -102,7 +102,7 @@ export const parsePermissions = (permissions?: string | string[]): string[] => {
             return [];
         }
     }
-    
+
     return permissions;
 };
 
@@ -128,7 +128,7 @@ export const getUserAvatarStyle = (user: UserData): React.CSSProperties => {
     if (user.color) {
         return { backgroundColor: user.color, color: 'white' };
     }
-    
+
     return {};
 };
 
@@ -145,10 +145,10 @@ export const getUserAvatarClasses = (user: UserData): string => {
  */
 export const prepareFormDataFromUser = (user: UserData): UserFormData => {
     const permissions = parsePermissions(user.permissions);
-    
+
     // Check if role is standard or custom
     const isStandardRole = user.role === 'MASTER' || user.role === 'CLIENTE';
-    
+
     return {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -168,6 +168,7 @@ export const prepareFormDataFromUser = (user: UserData): UserFormData => {
         isEligible: user.isEligible !== undefined ? user.isEligible : false,
         isSupportAgent: user.isSupportAgent !== undefined ? user.isSupportAgent : false,
         active: user.active !== undefined ? user.active : true,
+        allowCustomerProfile: user.allowCustomerProfile !== undefined ? user.allowCustomerProfile : false,
         isCustomRole: user.role ? !isStandardRole : false,
         pauseMenuEnabled: user.pauseMenuEnabled || false,
         allowedGames: Array.isArray(user.allowedGames) ? user.allowedGames : []
@@ -179,47 +180,47 @@ export const prepareFormDataFromUser = (user: UserData): UserFormData => {
  */
 export const validateUserFormData = (formData: UserFormData): ValidationResult => {
     const errors: string[] = [];
-    
+
     // Basic validation
     if (!formData.firstName.trim() && !formData.lastName.trim() && !formData.name.trim()) {
         errors.push('Nome é obrigatório');
     }
-    
+
     if (!formData.email.trim()) {
         errors.push('E-mail é obrigatório');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         errors.push('E-mail inválido');
     }
-    
+
     if (!formData.division) {
         errors.push('Divisão é obrigatória');
     }
-    
+
     if (!formData.role) {
         errors.push('Cargo é obrigatório');
     }
-    
+
     // Client-specific validation
     if (formData.division === 'CLIENTE') {
         if (!formData.customer?.id && !formData.name) {
             errors.push('Nome do cliente é obrigatório');
         }
     }
-    
+
     // Staff-specific validation
     if (formData.division !== 'CLIENTE') {
         if (!formData.document?.trim()) {
             errors.push('Documento é obrigatório para colaboradores');
         }
     }
-    
+
     // Password validation for new users (no ID means new user)
     if (!formData.password) {
         errors.push('Senha é obrigatória para novos usuários');
     } else if (formData.password.length < 6) {
         errors.push('Senha deve ter pelo menos 6 caracteres');
     }
-    
+
     return {
         isValid: errors.length === 0,
         errors
@@ -231,9 +232,9 @@ export const validateUserFormData = (formData: UserFormData): ValidationResult =
  */
 export const filterUsersBySearchTerm = (users: UserData[], searchTerm: string): UserData[] => {
     if (!searchTerm.trim()) return users;
-    
+
     const term = searchTerm.toLowerCase();
-    
+
     return users.filter(u => {
         return u.email.toLowerCase().includes(term) ||
             u.firstName?.toLowerCase().includes(term) ||
@@ -250,7 +251,7 @@ export const filterUsersBySearchTerm = (users: UserData[], searchTerm: string): 
 export const sortUsers = (users: UserData[], sortBy: 'name' | 'date' | 'id', sortOrder: 'asc' | 'desc'): UserData[] => {
     return [...users].sort((a, b) => {
         let comparison = 0;
-        
+
         if (sortBy === 'name') {
             const nameA = formatUserDisplayName(a);
             const nameB = formatUserDisplayName(b);
@@ -262,7 +263,7 @@ export const sortUsers = (users: UserData[], sortBy: 'name' | 'date' | 'id', sor
             const idB = b.staffId || b.seqId || 0;
             comparison = idA - idB;
         }
-        
+
         return sortOrder === 'desc' ? -comparison : comparison;
     });
 };
@@ -270,15 +271,21 @@ export const sortUsers = (users: UserData[], sortBy: 'name' | 'date' | 'id', sor
 /**
  * Check if user can be edited by current user
  */
-export const canEditUser = (targetUser: UserData, _currentUser: any, isMaster: boolean): boolean => {
+export const canEditUser = (targetUser: UserData, currentUser: any, isMaster: boolean): boolean => {
     // Master can edit everyone
     if (isMaster) return true;
-    
-    // Cannot edit ADMIN or MASTER users if not Master
+
+    // Admins can edit everyone EXCEPT Masters
+    const isAdmin = currentUser?.role?.toUpperCase() === 'ADMIN';
+    if (isAdmin) {
+        return targetUser.role?.toUpperCase() !== 'MASTER';
+    }
+
+    // Others cannot edit ADMIN or MASTER users
     if (targetUser.role?.toUpperCase() === 'ADMIN' || targetUser.role?.toUpperCase() === 'MASTER') {
         return false;
     }
-    
+
     return true;
 };
 
@@ -288,17 +295,17 @@ export const canEditUser = (targetUser: UserData, _currentUser: any, isMaster: b
 export const canDeleteUser = (targetUser: UserData, currentUser: any, isMaster: boolean): boolean => {
     // Master can delete everyone
     if (isMaster) return true;
-    
+
     // Cannot delete ADMIN or MASTER users if not Master
     if (targetUser.role?.toUpperCase() === 'ADMIN' || targetUser.role?.toUpperCase() === 'MASTER') {
         return false;
     }
-    
+
     // Cannot delete self
     if (targetUser.id === currentUser?.id) {
         return false;
     }
-    
+
     return true;
 };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle, Layout, CalendarDays, PlusCircle, Truck } from 'lucide-react';
+import { X, Search, User, Dog, Calendar, Clock, MapPin, Save, Copy, CheckCircle, Layout, CalendarDays, PlusCircle, Truck, Lock, AlertTriangle } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
@@ -57,8 +58,15 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
         },
         pickupProviderId: '',
         dropoffProviderId: '',
-        transportSamePerformer: true // Novo estado para toggle
+        transportSamePerformer: true,
+        adminOverrideReason: ''
     });
+
+    const isBilled = appointment && ['INVOICED', 'PAID'].includes(appointment.billingStatus);
+    const { user: currentUser } = useAuthStore();
+    const isAdmin = currentUser && ['ADMIN', 'MASTER'].includes(currentUser.role || '');
+    const isLocked = isBilled && !isAdmin;
+    const isOverrideMode = isBilled && isAdmin;
 
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -118,6 +126,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     destination: appointment.transport.destination || '7Pet',
                     requestedPeriod: appointment.transport.requestedPeriod || 'MANHA'
                 } : { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
+                adminOverrideReason: ''
             });
             // We set selectedCustomer in effect #4 based on customerId
         } else if (preFill) {
@@ -158,7 +167,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                     origin: preFill.transportOrigin || '',
                     destination: preFill.transportDestination || '7Pet',
                     requestedPeriod: preFill.transportPeriod || 'MANHA'
-                }
+                },
+                adminOverrideReason: ''
             });
 
             // FIX: Fetch and set selectedCustomer immediately to avoid empty UI
@@ -200,7 +210,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                 transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
                 pickupProviderId: '',
                 dropoffProviderId: '',
-                transportSamePerformer: true
+                transportSamePerformer: true,
+                adminOverrideReason: ''
             });
             setSelectedCustomer(null);
             setPets([]);
@@ -371,7 +382,12 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
             return;
         }
 
-        const msg = isCopy ? 'Deseja criar este novo agendamento por cópia?' : appointment ? 'Deseja salvar as alterações neste agendamento?' : 'Confirmar novo agendamento?';
+        if (isOverrideMode && !formData.adminOverrideReason?.trim()) {
+            alert('Por favor, informe a justificativa para alterar este agendamento faturado.');
+            return;
+        }
+
+        const msg = isOverrideMode ? 'Você está editando um agendamento faturado. Confirmar alteração com justificativa?' : isCopy ? 'Deseja criar este novo agendamento por cópia?' : appointment ? 'Deseja salvar as alterações neste agendamento?' : 'Confirmar novo agendamento?';
         if (!window.confirm(msg)) return;
         setIsLoading(true);
         try {
@@ -512,7 +528,7 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
     };
 
     const filteredCustomers = searchQuery.length > 2
-        ? customers.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+        ? customers.filter(c => (c?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (c?.user?.email || '').toLowerCase().includes(searchQuery.toLowerCase()))
         : [];
 
     if (!isOpen) return null;
@@ -551,8 +567,8 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                             <CheckCircle size={56} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h3 className="text-3xl font-black text-secondary">Agendamento Realizado!</h3>
-                            <p className="text-gray-400 font-medium mt-2">O compromisso foi registrado com sucesso na agenda.</p>
+                            <h3 className="text-2xl font-bold text-secondary">Agendamento Realizado!</h3>
+                            <p className="text-zinc-400 font-medium mt-2">O compromisso foi registrado com sucesso na agenda.</p>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full pt-4">
@@ -563,9 +579,9 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                     const path = formData.agendaLogistica ? '/staff/transport' : '/staff/kanban';
                                     navigate(path);
                                 }}
-                                className="flex items-center justify-center gap-3 p-5 bg-secondary text-white rounded-[24px] font-black uppercase tracking-widest text-[11px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-secondary/20"
+                                className="flex items-center justify-center gap-3 p-5 bg-secondary text-white rounded-[24px] font-bold uppercase tracking-widest text-[11px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-secondary/20"
                             >
-                                <CalendarDays size={20} /> Ver Agenda
+                                <CalendarDays size={18} /> Ver Agenda
                             </button>
                             <button
                                 onClick={() => {
@@ -582,13 +598,14 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                         pickupProviderId: '',
                                         dropoffProviderId: '',
                                         transportSamePerformer: true,
-                                        transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' }
+                                        transport: { origin: '', destination: '7Pet', requestedPeriod: 'MANHA' },
+                                        adminOverrideReason: ''
                                     });
                                     setSelectedCustomer(null);
                                 }}
-                                className="flex items-center justify-center gap-3 p-5 bg-primary text-white rounded-[24px] font-black uppercase tracking-widest text-[11px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
+                                className="flex items-center justify-center gap-3 p-4 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-[11px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
                             >
-                                <PlusCircle size={20} /> Novo Agendamento
+                                <PlusCircle size={18} /> Novo Agendamento
                             </button>
                         </div>
 
@@ -597,419 +614,455 @@ export default function AppointmentFormModal({ isOpen, onClose, onSuccess, appoi
                                 onClose();
                                 setShowSuccessState(false);
                             }}
-                            className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] hover:text-secondary transition-colors pt-4"
+                            className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] hover:text-secondary transition-colors pt-4"
                         >
                             Fechar Janela
                         </button>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                        {/* Customer Selection */}
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                                <User size={16} /> Cliente
-                            </label>
-                            {!selectedCustomer ? (
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar cliente por nome ou email..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="input-field pl-12"
-                                    />
-                                    <AnimatePresence>
-                                        {filteredCustomers.length > 0 && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-2xl mt-2 shadow-xl z-20 overflow-hidden"
-                                            >
-                                                {(filteredCustomers || []).map(c => c && (
-                                                    <button
-                                                        key={c.id}
-                                                        type="button"
-                                                        onClick={() => handleSelectCustomer(c)}
-                                                        className="w-full p-4 text-left hover:bg-primary/5 flex items-center justify-between transition-colors border-b border-gray-50 last:border-none"
-                                                    >
-                                                        <div>
-                                                            <p className="font-bold text-secondary text-sm">{c.name}</p>
-                                                            <p className="text-xs text-gray-400">{c.user.email}</p>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                        {isBilled && (
+                            <div className={`p-4 rounded-xl border flex items-start gap-4 animate-in slide-in-from-top-4 duration-500 ${isLocked ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${isLocked ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                    <Lock size={18} />
                                 </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold">
-                                            {selectedCustomer?.name ? selectedCustomer.name[0] : 'C'}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-secondary text-sm">{selectedCustomer.name || 'Cliente sem nome'}</p>
-                                            <p className="text-xs text-gray-400">{selectedCustomer.user?.email}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => { setSelectedCustomer(null); setFormData({ ...formData, customerId: '', petId: '' }) }}
-                                        className="text-xs font-bold text-primary hover:underline"
-                                    >
-                                        Alterar
-                                    </button>
+                                <div>
+                                    <h4 className={`text-sm font-bold uppercase tracking-tight ${isLocked ? 'text-red-900' : 'text-amber-900'}`}>
+                                        {isLocked ? 'Agendamento Bloqueado' : 'Atenção: Edição Sensível'}
+                                    </h4>
+                                    <p className={`text-xs font-medium leading-relaxed mt-0.5 ${isLocked ? 'text-red-700/70' : 'text-amber-700/70'}`}>
+                                        {isLocked
+                                            ? 'Este agendamento já foi faturado ou pago e não pode ser editado.'
+                                            : 'Este agendamento já possui vínculo financeiro. Alterações serão registradas na trilha de auditoria.'}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Pet Selection */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                                    <Dog size={16} /> Pet
-                                </label>
-                                <select
+                        {isOverrideMode && (
+                            <div className="space-y-2 animate-in fade-in duration-300">
+                                <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest ml-1">Justificativa da Edição (Obrigatório)</label>
+                                <textarea
                                     required
-                                    disabled={!selectedCustomer}
-                                    value={formData.petId}
-                                    onChange={(e) => setFormData({ ...formData, petId: e.target.value })}
-                                    className="input-field"
-                                >
-                                    <option value="">Selecione um pet</option>
-                                    {(pets || []).map(p => p && (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
+                                    value={formData.adminOverrideReason}
+                                    onChange={e => setFormData({ ...formData, adminOverrideReason: e.target.value })}
+                                    placeholder="Explique por que esta alteração é necessária..."
+                                    className="w-full bg-amber-50/50 border border-amber-100 rounded-xl p-4 text-sm font-medium focus:ring-4 focus:ring-amber-500/10 outline-none transition-all min-h-[80px] text-amber-900 placeholder:text-amber-300"
+                                />
                             </div>
+                        )}
 
+                        <fieldset disabled={isLocked} className="space-y-6 contents">
+                            {/* Customer Selection */}
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                                    <Calendar size={16} /> Serviços
+                                    <User size={16} /> Cliente
                                 </label>
-                                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-100 rounded-2xl bg-gray-50/50">
-                                    {isLoading && services.length === 0 ? (
-                                        <div className="p-8 flex flex-col items-center justify-center space-y-2">
-                                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Carregando...</span>
-                                        </div>
-                                    ) : (
-                                        // Filter services logic: If preFill exists, only show matched services. Else show all.
-                                        (services || [])
-                                            .filter(s => !preFill?.quoteId || formData.serviceIds.includes(s.id))
-                                            .length === 0 ? (
-                                            <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200">
-                                                <p className="text-xs font-medium text-gray-400">
-                                                    Este agendamento está restrito aos itens do orçamento.
-                                                </p>
-                                                <p className="text-[10px] text-gray-300 mt-1">
-                                                    Para adicionar outros serviços, edite o orçamento primeiro.
-                                                </p>
+                                {!selectedCustomer ? (
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar cliente por nome ou email..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="input-field pl-12"
+                                        />
+                                        <AnimatePresence>
+                                            {filteredCustomers.length > 0 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-2xl mt-2 shadow-xl z-20 overflow-hidden"
+                                                >
+                                                    {(filteredCustomers || []).map(c => c && (
+                                                        <button
+                                                            key={c.id}
+                                                            type="button"
+                                                            onClick={() => handleSelectCustomer(c)}
+                                                            className="w-full p-4 text-left hover:bg-primary/5 flex items-center justify-between transition-colors border-b border-gray-50 last:border-none"
+                                                        >
+                                                            <div>
+                                                                <p className="font-bold text-secondary text-sm">{c.name}</p>
+                                                                <p className="text-xs text-gray-400">{c.user.email}</p>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold">
+                                                {selectedCustomer?.name ? selectedCustomer.name[0] : 'C'}
                                             </div>
-                                        ) : (services || [])
-                                            .filter(s => !preFill?.quoteId || formData.serviceIds.includes(s.id))
-                                            .map(s => s && (
-                                                <label key={s.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${formData.serviceIds.includes(s.id) ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent hover:bg-white/80'}`}>
-                                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${formData.serviceIds.includes(s.id) ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
-                                                        {formData.serviceIds.includes(s.id) && <CheckCircle size={14} className="text-white" />}
-                                                    </div>
-                                                    <input
-                                                        type="checkbox"
-                                                        className="hidden"
-                                                        value={s.id}
-                                                        checked={formData.serviceIds.includes(s.id)}
-                                                        onChange={(e) => {
-                                                            // Only allow unchecked if not forced by quote (though UI hides others, unchecking is allowed but maybe we should warn?)
-                                                            // For now, allow unchecking existing ones but since we hide others, they can't add new ones.
-                                                            // This matches the user request "only pull services from quote".
-                                                            const current = formData.serviceIds;
-                                                            if (e.target.checked) {
-                                                                // logic...
-                                                                const newServiceIds = [...current, s.id];
-                                                                const updates: any = { serviceIds: newServiceIds };
-                                                                if (!formData.performerId && s.responsibleId) {
-                                                                    updates.performerId = s.responsibleId;
-                                                                }
-                                                                setFormData({ ...formData, ...updates });
-                                                            } else {
-                                                                setFormData({ ...formData, serviceIds: current.filter((id: string) => id !== s.id) });
-                                                            }
-                                                        }}
-                                                    />
-                                                    <div className="flex-1 flex justify-between items-center text-sm">
-                                                        <span className={`font-medium ${formData.serviceIds.includes(s.id) ? 'text-primary' : 'text-gray-600'}`}>{s.name}</span>
-                                                        <span className="font-bold text-gray-400 text-xs">R$ {s.basePrice}</span>
-                                                    </div>
-                                                </label>
-                                            ))
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Professional Selection - SPA */}
-                            {formData.agendaSPA && (
-                                <div className="space-y-3 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
-                                    <label className="text-sm font-bold text-primary uppercase flex items-center gap-2">
-                                        <User size={16} /> Responsável SPA
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                            <div>
+                                                <p className="font-bold text-secondary text-sm">{selectedCustomer.name || 'Cliente sem nome'}</p>
+                                                <p className="text-xs text-gray-400">{selectedCustomer.user?.email}</p>
+                                            </div>
+                                        </div>
                                         <button
                                             type="button"
-                                            onClick={() => setFormData({ ...formData, performerId: '' })}
-                                            className={`p-3 rounded-2xl border text-left transition-all ${!formData.performerId ? 'bg-primary/5 border-primary/30 shadow-md ring-2 ring-primary/10' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
+                                            onClick={() => { setSelectedCustomer(null); setFormData({ ...formData, customerId: '', petId: '' }) }}
+                                            className="text-xs font-bold text-primary hover:underline"
                                         >
-                                            <div className="text-xs font-black text-gray-400 uppercase mb-1">Rotativo</div>
-                                            <div className={`font-bold text-sm ${!formData.performerId ? 'text-primary' : 'text-gray-400'}`}>Ninguém fixo</div>
+                                            Alterar
                                         </button>
-                                        {(staffUsers || [])
-                                            .filter(u => u.isEligible !== false && u.division === 'SPA')
-                                            .map(u => u && (
-                                                <button
-                                                    key={u.id}
-                                                    type="button"
-                                                    onClick={() => setFormData({ ...formData, performerId: u.id })}
-                                                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${formData.performerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-primary/20' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}
-                                                    style={formData.performerId === u.id ? { borderLeft: `6px solid ${u.color || '#3B82F6'}` } : {}}
-                                                >
-                                                    <div className="text-[10px] font-black text-gray-400 uppercase mb-0.5">{u.role}</div>
-                                                    <div className={`font-bold text-sm truncate ${formData.performerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
-                                                    {formData.performerId === u.id && (
-                                                        <div className="absolute top-2 right-2 text-primary">
-                                                            <CheckCircle size={14} />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Pet Selection */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                                        <Dog size={16} /> Pet
+                                    </label>
+                                    <select
+                                        required
+                                        disabled={!selectedCustomer}
+                                        value={formData.petId}
+                                        onChange={(e) => setFormData({ ...formData, petId: e.target.value })}
+                                        className="input-field"
+                                    >
+                                        <option value="">Selecione um pet</option>
+                                        {(pets || []).map(p => p && (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                                        <Calendar size={16} /> Serviços
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-100 rounded-2xl bg-gray-50/50">
+                                        {isLoading && services.length === 0 ? (
+                                            <div className="p-8 flex flex-col items-center justify-center space-y-2">
+                                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Carregando...</span>
+                                            </div>
+                                        ) : (
+                                            // Filter services logic: If preFill exists, only show matched services. Else show all.
+                                            (services || [])
+                                                .filter(s => !preFill?.quoteId || formData.serviceIds.includes(s.id))
+                                                .length === 0 ? (
+                                                <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+                                                    <p className="text-xs font-medium text-gray-400">
+                                                        Este agendamento está restrito aos itens do orçamento.
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-300 mt-1">
+                                                        Para adicionar outros serviços, edite o orçamento primeiro.
+                                                    </p>
+                                                </div>
+                                            ) : (services || [])
+                                                .filter(s => !preFill?.quoteId || formData.serviceIds.includes(s.id))
+                                                .map(s => s && (
+                                                    <label key={s.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${formData.serviceIds.includes(s.id) ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent hover:bg-white/80'}`}>
+                                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${formData.serviceIds.includes(s.id) ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
+                                                            {formData.serviceIds.includes(s.id) && <CheckCircle size={14} className="text-white" />}
                                                         </div>
-                                                    )}
-                                                </button>
-                                            ))}
+                                                        <input
+                                                            type="checkbox"
+                                                            className="hidden"
+                                                            value={s.id}
+                                                            checked={formData.serviceIds.includes(s.id)}
+                                                            onChange={(e) => {
+                                                                // Only allow unchecked if not forced by quote (though UI hides others, unchecking is allowed but maybe we should warn?)
+                                                                // For now, allow unchecking existing ones but since we hide others, they can't add new ones.
+                                                                // This matches the user request "only pull services from quote".
+                                                                const current = formData.serviceIds;
+                                                                if (e.target.checked) {
+                                                                    // logic...
+                                                                    const newServiceIds = [...current, s.id];
+                                                                    const updates: any = { serviceIds: newServiceIds };
+                                                                    if (!formData.performerId && s.responsibleId) {
+                                                                        updates.performerId = s.responsibleId;
+                                                                    }
+                                                                    setFormData({ ...formData, ...updates });
+                                                                } else {
+                                                                    setFormData({ ...formData, serviceIds: current.filter((id: string) => id !== s.id) });
+                                                                }
+                                                            }}
+                                                        />
+                                                        <div className="flex-1 flex justify-between items-center text-sm">
+                                                            <span className={`font-medium ${formData.serviceIds.includes(s.id) ? 'text-primary' : 'text-gray-600'}`}>{s.name}</span>
+                                                            <span className="font-bold text-gray-400 text-xs">R$ {s.basePrice}</span>
+                                                        </div>
+                                                    </label>
+                                                ))
+                                        )}
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Professional Selection - Logística */}
-                            {formData.agendaLogistica && (
-                                <div className="space-y-6 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
-
-                                    {/* Header logic */}
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-sm font-bold text-orange-500 uppercase flex items-center gap-2">
-                                            <Truck size={16} /> Responsáveis Logística (Leva & Traz)
+                                {/* Professional Selection - SPA */}
+                                {formData.agendaSPA && (
+                                    <div className="space-y-3 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
+                                        <label className="text-sm font-bold text-primary uppercase flex items-center gap-2">
+                                            <User size={16} /> Responsável SPA
                                         </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded text-orange-500 focus:ring-orange-500"
-                                                checked={formData.transportSamePerformer}
-                                                onChange={(e) => {
-                                                    const isSame = e.target.checked;
-                                                    setFormData({
-                                                        ...formData,
-                                                        transportSamePerformer: isSame,
-                                                        dropoffProviderId: isSame ? formData.pickupProviderId : formData.dropoffProviderId
-                                                    });
-                                                }}
-                                            />
-                                            <span className="text-xs font-bold text-orange-700">Mesmo Motorista</span>
-                                        </label>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50/30 rounded-[32px] border border-orange-100">
-                                        {/* LEVA */}
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-orange-500" /> Motorista LEVA (Coleta)
-                                            </label>
-                                            <select
-                                                required
-                                                value={formData.pickupProviderId}
-                                                onChange={(e) => {
-                                                    const newVal = e.target.value;
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        pickupProviderId: newVal,
-                                                        // Sync if toggle is ON
-                                                        dropoffProviderId: prev.transportSamePerformer ? newVal : prev.dropoffProviderId
-                                                    }));
-                                                }}
-                                                className="w-full bg-white border-white rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, performerId: '' })}
+                                                className={`p-3 rounded-xl border text-left transition-all ${!formData.performerId ? 'bg-primary/5 border-primary/30 shadow-md ring-2 ring-primary/10' : 'bg-zinc-50 border-transparent hover:bg-zinc-100'}`}
                                             >
-                                                <option value="">Selecione o Motorista...</option>
-                                                {(staffUsers || [])
-                                                    .filter(u => u.isEligible !== false && (u.division === 'LOGISTICA' || u.division === 'OPERACIONAL'))
-                                                    .map(u => (
-                                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                                    ))
-                                                }
-                                            </select>
-                                        </div>
-
-                                        {/* TRAZ */}
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-blue-500" /> Motorista TRAZ (Entrega)
-                                            </label>
-                                            <select
-                                                required
-                                                disabled={formData.transportSamePerformer}
-                                                value={formData.dropoffProviderId}
-                                                onChange={(e) => setFormData({ ...formData, dropoffProviderId: e.target.value })}
-                                                className={`w-full border-white rounded-xl px-4 py-3 text-sm font-bold shadow-sm transition-all
-                                                    ${formData.transportSamePerformer
-                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-100'
-                                                        : 'bg-white text-secondary focus:ring-2 focus:ring-orange-500/20'}`}
-                                            >
-                                                <option value="">{formData.transportSamePerformer ? '(Mesmo do Leva)' : 'Selecione o Motorista...'}</option>
-                                                {(staffUsers || [])
-                                                    .filter(u => u.isEligible !== false && (u.division === 'LOGISTICA' || u.division === 'OPERACIONAL'))
-                                                    .map(u => (
-                                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                                    ))
-                                                }
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Removed the single "Data e Horário" input */}
-
-                        {/* Data e Hora SPA */}
-                        {formData.agendaSPA && (
-                            <div>
-                                <label className="block text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2 px-1">
-                                    Data/Hora SPA (Início do Serviço)
-                                </label>
-                                <div className="relative">
-                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                                    <input
-                                        type="datetime-local"
-                                        required
-                                        step="900"
-                                        value={formData.startAt}
-                                        onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Data e Hora Logística */}
-                        {formData.agendaLogistica && (
-                            <div>
-                                <label className="block text-[10px] font-black text-secondary/40 uppercase tracking-[0.2em] mb-2 px-1">
-                                    Data/Hora Logística (Coleta na Casa)
-                                </label>
-                                <div className="relative">
-                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                                    <input
-                                        type="datetime-local"
-                                        required
-                                        step="900"
-                                        value={formData.logisticStartAt || formData.startAt}
-                                        onChange={(e) => setFormData({ ...formData, logisticStartAt: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
-                                <Layout size={16} /> Agendas de Destino
-                            </label>
-                            <div className="space-y-3">
-                                <label className="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-gray-50 bg-white">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.agendaSPA}
-                                        onChange={(e) => setFormData({ ...formData, agendaSPA: e.target.checked })}
-                                        className="w-5 h-5 text-primary rounded focus:ring-primary accent-primary"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-bold text-secondary">Agenda SPA</div>
-                                        <div className="text-xs text-gray-400">Serviços de banho, tosa e estética</div>
-                                    </div>
-                                </label>
-
-                                <label className="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-gray-50 bg-white">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.agendaLogistica}
-                                        onChange={(e) => setFormData({ ...formData, agendaLogistica: e.target.checked })}
-                                        className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500 accent-orange-500"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-bold text-secondary">Agenda Logística</div>
-                                        <div className="text-xs text-gray-400">Transporte (Leva e Traz)</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Transport Fields - shown when Logística is selected */}
-                        <AnimatePresence>
-                            {formData.agendaLogistica && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="bg-gray-50 p-6 rounded-3xl space-y-4 border border-gray-100">
-                                        <h4 className="text-sm font-bold text-secondary flex items-center gap-2">
-                                            <MapPin size={16} className="text-orange-500" />
-                                            Detalhes do Transporte
-                                        </h4>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">
-                                                <MapPin size={12} /> Endereço de Busca
-                                            </label>
-                                            <input
-                                                type="text"
-                                                placeholder="Rua, número, bairro..."
-                                                value={formData.transport.origin}
-                                                onChange={(e) => setFormData({ ...formData, transport: { ...formData.transport, origin: e.target.value } })}
-                                                className="input-field text-sm bg-white"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase">Período Preferencial</label>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {['MANHA', 'TARDE', 'NOITE'].map(period => (
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase mb-1">Rotativo</div>
+                                                <div className={`font-bold text-sm ${!formData.performerId ? 'text-primary' : 'text-gray-400'}`}>Ninguém fixo</div>
+                                            </button>
+                                            {(staffUsers || [])
+                                                .filter(u => u.isEligible !== false && u.division === 'SPA')
+                                                .map(u => u && (
                                                     <button
-                                                        key={period}
+                                                        key={u.id}
                                                         type="button"
-                                                        onClick={() => setFormData({ ...formData, transport: { ...formData.transport, requestedPeriod: period as any } })}
-                                                        className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${formData.transport.requestedPeriod === period ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                                                        onClick={() => setFormData({ ...formData, performerId: u.id })}
+                                                        className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden ${formData.performerId === u.id ? 'bg-white border-transparent shadow-xl ring-2 ring-primary/10' : 'bg-zinc-50 border-transparent hover:bg-zinc-100'}`}
+                                                        style={formData.performerId === u.id ? { borderLeft: `4px solid ${u.color || '#3B82F6'}` } : {}}
                                                     >
-                                                        {period === 'MANHA' ? 'Manhã' : period === 'TARDE' ? 'Tarde' : 'Noite'}
+                                                        <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">{u.role}</div>
+                                                        <div className={`font-bold text-sm truncate ${formData.performerId === u.id ? 'text-secondary' : 'text-gray-400'}`}>{u.name}</div>
+                                                        {formData.performerId === u.id && (
+                                                            <div className="absolute top-2 right-2 text-primary">
+                                                                <CheckCircle size={14} />
+                                                            </div>
+                                                        )}
                                                     </button>
                                                 ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Professional Selection - Logística */}
+                                {formData.agendaLogistica && (
+                                    <div className="space-y-6 md:col-span-2 pt-2 animate-in slide-in-from-top-2 duration-300">
+
+                                        {/* Header logic */}
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-bold text-orange-500 uppercase flex items-center gap-2">
+                                                <Truck size={16} /> Responsáveis Logística (Leva & Traz)
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded text-orange-500 focus:ring-orange-500"
+                                                    checked={formData.transportSamePerformer}
+                                                    onChange={(e) => {
+                                                        const isSame = e.target.checked;
+                                                        setFormData({
+                                                            ...formData,
+                                                            transportSamePerformer: isSame,
+                                                            dropoffProviderId: isSame ? formData.pickupProviderId : formData.dropoffProviderId
+                                                        });
+                                                    }}
+                                                />
+                                                <span className="text-xs font-bold text-orange-700">Mesmo Motorista</span>
+                                            </label>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50/30 rounded-2xl border border-orange-100">
+                                            {/* LEVA */}
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-bold text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-orange-500" /> Motorista LEVA (Coleta)
+                                                </label>
+                                                <select
+                                                    required
+                                                    value={formData.pickupProviderId}
+                                                    onChange={(e) => {
+                                                        const newVal = e.target.value;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            pickupProviderId: newVal,
+                                                            // Sync if toggle is ON
+                                                            dropoffProviderId: prev.transportSamePerformer ? newVal : prev.dropoffProviderId
+                                                        }));
+                                                    }}
+                                                    className="w-full bg-white border-white rounded-xl px-4 py-3 text-sm font-bold text-secondary focus:ring-2 focus:ring-orange-500/20 shadow-sm"
+                                                >
+                                                    <option value="">Selecione o Motorista...</option>
+                                                    {(staffUsers || [])
+                                                        .filter(u => u.isEligible !== false && (u.division === 'LOGISTICA' || u.division === 'OPERACIONAL'))
+                                                        .map(u => (
+                                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+
+                                            {/* TRAZ */}
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-bold text-orange-600/60 uppercase tracking-widest flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500" /> Motorista TRAZ (Entrega)
+                                                </label>
+                                                <select
+                                                    required
+                                                    disabled={formData.transportSamePerformer}
+                                                    value={formData.dropoffProviderId}
+                                                    onChange={(e) => setFormData({ ...formData, dropoffProviderId: e.target.value })}
+                                                    className={`w-full border-white rounded-xl px-4 py-3 text-sm font-bold shadow-sm transition-all
+                                                    ${formData.transportSamePerformer
+                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-100'
+                                                            : 'bg-white text-secondary focus:ring-2 focus:ring-orange-500/20'}`}
+                                                >
+                                                    <option value="">{formData.transportSamePerformer ? '(Mesmo do Leva)' : 'Selecione o Motorista...'}</option>
+                                                    {(staffUsers || [])
+                                                        .filter(u => u.isEligible !== false && (u.division === 'LOGISTICA' || u.division === 'OPERACIONAL'))
+                                                        .map(u => (
+                                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                                        ))
+                                                    }
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                )}
+                            </div>
 
-                        <div className="flex gap-4 pt-6">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-[20px] font-bold hover:bg-gray-200 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className={`flex-1 py-4 bg-primary text-white rounded-[20px] font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                {isLoading ? 'Processando...' : isCopy ? <><Copy size={18} /> Duplicar</> : appointment ? <><Save size={18} /> Salvar Alterações</> : 'Confirmar Agendamento'}
-                            </button>
-                        </div>
+                            {/* Removed the single "Data e Horário" input */}
+
+                            {/* Data e Hora SPA */}
+                            {formData.agendaSPA && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-secondary/40 uppercase tracking-widest mb-2 px-1">
+                                        Data/Hora SPA (Início do Serviço)
+                                    </label>
+                                    <div className="relative">
+                                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                        <input
+                                            type="datetime-local"
+                                            required
+                                            step="900"
+                                            value={formData.startAt}
+                                            onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
+                                            className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Data e Hora Logística */}
+                            {formData.agendaLogistica && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-secondary/40 uppercase tracking-widest mb-2 px-1">
+                                        Data/Hora Logística (Coleta na Casa)
+                                    </label>
+                                    <div className="relative">
+                                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                        <input
+                                            type="datetime-local"
+                                            required
+                                            step="900"
+                                            value={formData.logisticStartAt || formData.startAt}
+                                            onChange={(e) => setFormData({ ...formData, logisticStartAt: e.target.value })}
+                                            className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-secondary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <label className="text-sm font-bold text-gray-400 uppercase flex items-center gap-2">
+                                    <Layout size={16} /> Agendas de Destino
+                                </label>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-gray-50 bg-white">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.agendaSPA}
+                                            onChange={(e) => setFormData({ ...formData, agendaSPA: e.target.checked })}
+                                            className="w-5 h-5 text-primary rounded focus:ring-primary accent-primary"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-bold text-secondary">Agenda SPA</div>
+                                            <div className="text-xs text-gray-400">Serviços de banho, tosa e estética</div>
+                                        </div>
+                                    </label>
+
+                                    <label className="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-gray-50 bg-white">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.agendaLogistica}
+                                            onChange={(e) => setFormData({ ...formData, agendaLogistica: e.target.checked })}
+                                            className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500 accent-orange-500"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-bold text-secondary">Agenda Logística</div>
+                                            <div className="text-xs text-gray-400">Transporte (Leva e Traz)</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Transport Fields - shown when Logística is selected */}
+                            <AnimatePresence>
+                                {formData.agendaLogistica && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="bg-zinc-50 p-6 rounded-2xl space-y-4 border border-zinc-200/50">
+                                            <h4 className="text-sm font-bold text-secondary flex items-center gap-2">
+                                                <MapPin size={16} className="text-orange-500" />
+                                                Detalhes do Transporte
+                                            </h4>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2">
+                                                    <MapPin size={12} /> Endereço de Busca
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Rua, número, bairro..."
+                                                    value={formData.transport.origin}
+                                                    onChange={(e) => setFormData({ ...formData, transport: { ...formData.transport, origin: e.target.value } })}
+                                                    className="input-field text-sm bg-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Período Preferencial</label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {['MANHA', 'TARDE', 'NOITE'].map(period => (
+                                                        <button
+                                                            key={period}
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, transport: { ...formData.transport, requestedPeriod: period as any } })}
+                                                            className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${formData.transport.requestedPeriod === period ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                                                        >
+                                                            {period === 'MANHA' ? 'Manhã' : period === 'TARDE' ? 'Tarde' : 'Noite'}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                        </fieldset>
+
+                        {!isLocked && (
+                            <div className="flex gap-4 pt-6">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 py-4 bg-zinc-100 text-zinc-500 rounded-xl font-bold hover:bg-zinc-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className={`flex-1 py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {isLoading ? 'Processando...' : isCopy ? <><Copy size={18} /> Duplicar</> : appointment ? <><Save size={18} /> Salvar Alterações</> : 'Confirmar Agendamento'}
+                                </button>
+                            </div>
+                        )}
                     </form>
                 )}
             </motion.div>

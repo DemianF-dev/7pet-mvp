@@ -100,8 +100,8 @@ export default function Card({
             }}
             onClick={handleClick}
             draggable={isDraggable && card.faceUp}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
+            onDragStartCapture={handleDragStart}
+            onDragEndCapture={handleDragEnd}
             whileHover={isClickable ? { y: -4, transition: { duration: 0.15 } } : {}}
             whileTap={isClickable ? { scale: 0.98 } : {}}
         >

@@ -14,8 +14,8 @@ interface MobileUsersProps {
     users: UserData[];
     isLoading: boolean;
     onEdit: (user: UserData) => void;
-    onDelete: (id: string) => void;
-    onRestore: (id: string) => void;
+    onDelete: (user: UserData) => void;
+    onRestore: (user: UserData) => void;
     onNew: () => void;
     onTogglePassword: (id: string) => void;
     visiblePasswordIds: string[];
@@ -101,7 +101,7 @@ export const MobileUsers = ({
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                             <button
                                 onClick={() => setFilterDivision(null)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all ${!filterDivision
+                                className={`px-4 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all ${!filterDivision
                                     ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
                                     : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
                                     }`}
@@ -112,7 +112,7 @@ export const MobileUsers = ({
                                 <button
                                     key={div}
                                     onClick={() => setFilterDivision(div)}
-                                    className={`px-4 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all ${filterDivision === div
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all ${filterDivision === div
                                         ? 'bg-blue-600 text-white shadow-md'
                                         : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
                                         }`}
@@ -129,7 +129,7 @@ export const MobileUsers = ({
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Sincronizando Segurança...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando Segurança...</p>
                         </div>
                     ) : filteredUsers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center px-10">
@@ -160,7 +160,7 @@ export const MobileUsers = ({
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate">
+                                                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase truncate">
                                                     {u.name}
                                                 </h3>
                                                 {u.role === 'MASTER' && (
@@ -173,11 +173,11 @@ export const MobileUsers = ({
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
-                                            <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${DIVISION_COLORS[u.division] || 'bg-zinc-100 text-zinc-400'}`}>
+                                            <span className={`px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider ${DIVISION_COLORS[u.division] || 'bg-zinc-100 text-zinc-400'}`}>
                                                 {u.division || 'Geral'}
                                             </span>
                                             {isDeleted && (
-                                                <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-lg text-[8px] font-black uppercase">Excluído</span>
+                                                <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-lg text-[8px] font-bold uppercase">Excluído</span>
                                             )}
                                         </div>
                                     </div>
@@ -187,14 +187,14 @@ export const MobileUsers = ({
                                         <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
                                             <div className="flex items-center gap-2">
                                                 <Lock size={12} className="text-zinc-400" />
-                                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Senha:</span>
+                                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Senha:</span>
                                                 <span className={`text-xs font-mono font-bold ${isPasswordVisible ? 'text-blue-600' : 'text-zinc-300'}`}>
                                                     {isPasswordVisible ? u.plainPassword : '••••••••'}
                                                 </span>
                                             </div>
                                             <button
                                                 onClick={() => onTogglePassword(u.id)}
-                                                className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-white dark:bg-zinc-800 px-2 py-1 rounded-md shadow-sm active:scale-95 transition-all"
+                                                className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-white dark:bg-zinc-800 px-2 py-1 rounded-md shadow-sm active:scale-95 transition-all"
                                             >
                                                 {isPasswordVisible ? 'Esconder' : 'Ver'}
                                             </button>
@@ -208,12 +208,12 @@ export const MobileUsers = ({
                                                 <>
                                                     <button
                                                         onClick={() => onEdit(u)}
-                                                        className="flex items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                                                        className="flex items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all"
                                                     >
                                                         <Edit2 size={14} /> Editar
                                                     </button>
                                                     <button
-                                                        onClick={() => onDelete(u.id)}
+                                                        onClick={() => onDelete(u)}
                                                         className="flex items-center justify-center p-2 bg-red-50 text-red-500 rounded-xl active:scale-95 transition-all"
                                                     >
                                                         <Trash2 size={16} />
@@ -221,8 +221,8 @@ export const MobileUsers = ({
                                                 </>
                                             ) : (
                                                 <button
-                                                    onClick={() => onRestore(u.id)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all w-full justify-center"
+                                                    onClick={() => onRestore(u)}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all w-full justify-center"
                                                 >
                                                     <RotateCcw size={14} /> Restaurar Conta
                                                 </button>
@@ -245,7 +245,7 @@ export const MobileUsers = ({
                         <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
                             <Shield size={16} />
                         </div>
-                        <h4 className="text-xs font-black uppercase tracking-widest">Controle de Acesso</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-widest">Controle de Acesso</h4>
                     </div>
                     <p className="text-[11px] opacity-70 leading-relaxed font-medium">
                         Como MASTER, você tem visibilidade total das senhas e permissões. Lembre-se que alterações de cargo ou divisão afetam imediatamente o que o usuário pode ver no sistema.

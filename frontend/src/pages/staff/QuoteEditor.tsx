@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Calculator,
     Calendar,
-    X
+    X,
+    RefreshCcw,
+    Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,6 +24,9 @@ import QuotePricingVariables from '../../components/staff/quote-editor/QuotePric
 import QuoteItemsSection from '../../components/staff/quote-editor/QuoteItemsSection';
 import QuoteTransportCalculator from '../../components/staff/quote-editor/QuoteTransportCalculator';
 import QuoteWorkflowSidebar from '../../components/staff/quote-editor/QuoteWorkflowSidebar';
+import { ScheduleWizard } from '../../components/staff/quote-editor/ScheduleWizard';
+import TransportOnlyEditor from '../../components/staff/quote-editor/TransportOnlyEditor';
+import { cn } from '../../lib/utils';
 
 interface QuoteItem {
     id?: string;
@@ -29,6 +34,7 @@ interface QuoteItem {
     quantity: number;
     price: number;
     serviceId?: string;
+    productId?: string;
     performerId?: string;
     discount?: number; // Desconto em porcentagem (0-100)
 }
@@ -57,6 +63,8 @@ interface Quote {
         hasKnots?: boolean;
         hasMattedFur?: boolean;
     };
+    isRecurring?: boolean;
+    recurrenceFrequency?: string;
     desiredAt?: string;
     scheduledAt?: string;
     transportAt?: string;
@@ -74,6 +82,10 @@ interface Quote {
         startAt: string;
         status: string;
         category: string;
+        services?: {
+            id: string;
+            name: string;
+        }[];
     }[];
 }
 
@@ -112,6 +124,17 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const { user } = useAuthStore();
     const approveAndScheduleMutation = useApproveAndSchedule();
 
+    // Additional Pricing/Pet Variables
+    const [hairLength, setHairLength] = useState('');
+    const [hasKnots, setHasKnots] = useState(false);
+    const [knotRegions, setKnotRegions] = useState('');
+    const [hasParasites, setHasParasites] = useState(false);
+    const [petQuantity, setPetQuantity] = useState(1);
+
+    // Granular Recurrence State
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [recurrenceFrequency, setRecurrenceFrequency] = useState('MENSAL');
+
     // Appointment View/Selection State
     const [appointmentSelectionQuote, setAppointmentSelectionQuote] = useState<Quote | null>(null);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
@@ -128,6 +151,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [levaDriverId, setLevaDriverId] = useState('');
     const [trazDriverId, setTrazDriverId] = useState('');
 
+    // Schedule Wizard State
+    const [showScheduleWizard, setShowScheduleWizard] = useState(false);
+    const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
+    const [undoReason, setUndoReason] = useState('');
+    const [isUndoing, setIsUndoing] = useState(false);
+
     const isModal = !!quoteId;
 
     useEffect(() => {
@@ -137,18 +166,36 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
     const fetchServices = async () => {
         try {
-            console.log('[AUTOCOMPLETE] Buscando serviços...');
-            const [servicesRes, usersRes] = await Promise.all([
+            console.log('[AUTOCOMPLETE] Buscando serviços e produtos...');
+            const [servicesRes, productsRes, usersRes] = await Promise.all([
                 api.get('/services'),
+                api.get('/products'),
                 api.get('/management/users')
             ]);
-            console.log('[AUTOCOMPLETE] Serviços carregados:', servicesRes.data.length);
-            setAvailableServices(servicesRes.data);
+
+            // Normalize services and products to have a consistent price field
+            const normalizedServices = (servicesRes.data || []).map((s: any) => ({
+                ...s,
+                type: 'SERVICE',
+                price: s.basePrice // Alias for consistency with products
+            }));
+
+            const normalizedProducts = (productsRes.data || []).map((p: any) => ({
+                ...p,
+                type: 'PRODUCT',
+                species: 'Ambos', // Products are usually for any species
+                basePrice: p.price // Alias for consistency with services
+            }));
+
+            const allItems = [...normalizedServices, ...normalizedProducts];
+            console.log('[AUTOCOMPLETE] Itens carregados:', allItems.length);
+
+            setAvailableServices(allItems);
             setStaffUsers((usersRes.data || []).filter((u: any) =>
                 u && ['OPERACIONAL', 'GESTAO', 'ADMIN', 'SPA', 'LOGISTICA', 'MASTER', 'TTM'].includes(u.role) && u.isEligible !== false
             ));
         } catch (error) {
-            console.error('[AUTOCOMPLETE] Erro ao buscar serviços/usuários:', error);
+            console.error('[AUTOCOMPLETE] Erro ao buscar serviços/produtos/usuários:', error);
         }
     };
 
@@ -189,6 +236,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             setItems(q.items);
             setStatus(q.status);
             setNotes(q.notes || '');
+            setIsRecurring(!!q.isRecurring);
+            setRecurrenceFrequency(q.recurrenceFrequency || q.frequency || 'MENSAL');
 
             if (q.transportOrigin) {
                 setTransportAddress(q.transportOrigin);
@@ -200,6 +249,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             if (q.transportType) {
                 setTransportType(q.transportType);
             }
+
+            setHairLength(q.hairLength || '');
+            setHasKnots(!!q.hasKnots);
+            setKnotRegions(q.knotRegions || '');
+            setHasParasites(!!q.hasParasites);
+            setPetQuantity(q.petQuantity || 1);
 
             if (q.desiredAt) {
                 const date = new Date(q.desiredAt);
@@ -416,7 +471,25 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
         if (!validateDates()) return;
 
-        if (!window.confirm('Deseja Aprovar e Agendar este orçamento automaticamente? Isso criará agendamentos confirmados e notificará o cliente.')) return;
+        if (isRecurring) {
+            // NEW: Save first to ensure backend has latest data (especially items and type)
+            setIsSaving(true);
+            try {
+                await handleSave(true);
+                await fetchQuote(); // Refresh the quote object from DB
+            } catch (err) {
+                console.error("Error saving before schedule wizard:", err);
+            } finally {
+                setIsSaving(false);
+            }
+
+            // Open Schedule Wizard for recurring quotes
+            setShowScheduleWizard(true);
+            return;
+        }
+
+        // Non-recurring: proceed with one-click scheduling
+        if (!window.confirm('Deseja Aprovar e Agendar este orçamento automaticamente? Isso criará um agendamento confirmado e notificará o cliente.')) return;
 
         approveAndScheduleMutation.mutate({
             quoteId: id,
@@ -426,6 +499,59 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 navigate('/staff/quotes');
             }
         });
+    };
+
+    const handleScheduleConfirm = async (occurrences: any[]) => {
+        if (!id || isSaving) return;
+
+        // NEW: Pick primary performer if available
+        const performerId = items.find(it => it.performerId)?.performerId;
+
+        setIsSaving(true);
+        try {
+            // Increase timeout for scheduling operations as they may involve multiple database operations
+            await api.post(`/quotes/${id}/approve-and-schedule`, {
+                occurrences,
+                performerId
+            }, {
+                timeout: 60000 // 60 seconds for complex scheduling
+            });
+
+            toast.success('Orçamento aprovado e agendamentos criados com sucesso!');
+            navigate('/staff/quotes');
+        } catch (error: any) {
+            console.error('Erro ao agendar recorrências:', error);
+            toast.error(error.response?.data?.error || 'Erro ao criar agendamentos');
+            // Don't throw here to allow user to retry or fix issues
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleUndoSchedule = async () => {
+        if (!id) return;
+        if (!undoReason.trim()) {
+            toast.error('Informe uma justificativa para desfazer o agendamento.');
+            return;
+        }
+
+        setIsUndoing(true);
+        try {
+            await api.post(`/quotes/${id}/undo-schedule`, {
+                reason: undoReason
+            });
+
+            toast.success('Agendamentos removidos e status revertido para APROVADO');
+            setIsUndoModalOpen(false);
+            setUndoReason('');
+            fetchQuote(); // Refresh quote data
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            console.error('Erro ao desfazer agendamento:', error);
+            toast.error(error.response?.data?.error || 'Erro ao desfazer agendamento');
+        } finally {
+            setIsUndoing(false);
+        }
     };
 
     const handleRemoveItem = (index: number) => {
@@ -439,43 +565,48 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     };
 
     const totalAmount = items.reduce((sum, item) => {
-        const itemTotal = item.price * item.quantity;
-        const discountAmount = item.discount ? (itemTotal * (item.discount / 100)) : 0;
+        const p = Number(item.price || 0);
+        const q = Number(item.quantity || 0);
+        const d = Number(item.discount || 0);
+        const itemTotal = p * q;
+        const discountAmount = itemTotal * (d / 100);
         return sum + (itemTotal - discountAmount);
     }, 0);
 
-    const getFilteredServices = (searchTerm: string) => {
-        console.log('[AUTOCOMPLETE] getFilteredServices chamado:', {
-            searchTerm,
-            hasQuote: !!quote,
-            hasPet: !!quote?.pet,
-            petSpecies: quote?.pet?.species,
-            totalServices: availableServices.length
-        });
+    const normalizeSpecies = (s?: string) => {
+        if (!s) return '';
+        const lower = s.toLowerCase();
+        if (lower.includes('cacho') || lower.includes('canin') || lower.includes('cão')) return 'cachorro';
+        if (lower.includes('gato') || lower.includes('felin')) return 'gato';
+        return lower;
+    };
 
-        if (!searchTerm) {
-            console.log('[AUTOCOMPLETE] Sem termo de busca');
+    const getFilteredServices = (searchTerm: string) => {
+        if (!searchTerm || !availableServices) {
             return [];
         }
 
+        const normalizedSearch = searchTerm.toLowerCase();
+
         // Permitir busca mesmo sem pet associado
-        if (!quote?.pet) {
-            console.log('[AUTOCOMPLETE] Sem pet, mostrando todos');
-            const results = availableServices.filter(service =>
-                service.name.toLowerCase().includes(searchTerm.toLowerCase())
-            ).slice(0, 8);
-            console.log('[AUTOCOMPLETE] Resultados sem filtro de espécie:', results.length);
-            return results;
+        if (!quote?.pet?.species) {
+            return availableServices.filter(service =>
+                service.name.toLowerCase().includes(normalizedSearch)
+            ).slice(0, 15); // Increased limit as it's less specific
         }
 
-        const petSpecies = quote.pet.species;
+        const petSpecies = normalizeSpecies(quote.pet.species);
         const results = availableServices.filter(service => {
-            const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesSpecies = service.species === petSpecies || service.species === 'Ambos';
-            return matchesSearch && matchesSpecies;
-        }).slice(0, 8);
+            const matchesSearch = service.name.toLowerCase().includes(normalizedSearch);
+            const serviceSpecies = normalizeSpecies(service.species);
 
-        console.log('[AUTOCOMPLETE] Resultados filtrados para', petSpecies, ':', results.length);
+            // Matches if species match, or service is for "Ambos" (normalized to 'ambos' or literal 'Ambos')
+            const isAmbos = serviceSpecies === 'ambos' || service.species === 'Ambos';
+            const matchesSpecies = serviceSpecies === petSpecies || isAmbos;
+
+            return matchesSearch && matchesSpecies;
+        }).slice(0, 10);
+
         return results;
     };
 
@@ -561,14 +692,12 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     }
                 }
 
-                // Remove discount property before sending to backend to avoid schema validation errors
-                const { discount, ...cleanItem } = currentItem;
-                return cleanItem;
+                return currentItem;
             });
 
             await api.patch(`/quotes/${id}`, {
                 items: linkedItems,
-                totalAmount: linkedItems.reduce((acc, it) => acc + (it.price * it.quantity), 0),
+                totalAmount: linkedItems.reduce((acc, it) => acc + (it.price * it.quantity * (1 - (it.discount || 0) / 100)), 0),
                 status,
                 notes,
                 desiredAt: safeDateToISO(desiredAt),
@@ -580,6 +709,13 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 transportOrigin: transportAddress,
                 transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined,
                 petId,
+                isRecurring,
+                recurrenceFrequency,
+                hairLength,
+                hasKnots,
+                knotRegions,
+                hasParasites,
+                petQuantity,
                 transportLegs: transportCalculation?.breakdown ? Object.entries(transportCalculation.breakdown).map(([key, value]: [string, any]) => ({
                     legType: key.toUpperCase(),
                     origin: value.originAddress || '',
@@ -631,10 +767,14 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         transportType,
         hasDifferentReturnAddress,
         petId,
-        isSaving // Added to dependencies so it re-evaluates if isSaving changes (though the guard catches it)
-        // We exclude 'status' from auto-save triggers because status changes usually
-        // happen via specific buttons that might already trigger save or need confirmation.
-        // Also 'items' change is deep, so this effect runs on array reference change.
+        isRecurring,
+        recurrenceFrequency,
+        isSaving,
+        hairLength,
+        hasKnots,
+        knotRegions,
+        hasParasites,
+        petQuantity
     ]);
 
     const handleSendToClient = async () => {
@@ -649,17 +789,6 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             // Sanitize items for NaN and ensure correct types
             const sanitizedItems = itemsWithTransport.map(it => {
                 let currentItem = { ...it };
-
-                // Apply discount to price and description if present
-                if (currentItem.discount && currentItem.discount > 0) {
-                    const discountFactor = (1 - currentItem.discount / 100);
-                    currentItem.price = currentItem.price * discountFactor;
-                    if (!currentItem.description.includes('% Desc.')) {
-                        currentItem.description = `${currentItem.description} (${currentItem.discount}% Desc.)`;
-                    }
-                    currentItem.discount = 0;
-                }
-
                 let serviceId = currentItem.serviceId;
                 let performerId = currentItem.performerId;
 
@@ -671,22 +800,19 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     }
                 }
 
-                // Remove discount property
-                const { discount, ...cleanItem } = currentItem;
-
                 return {
-                    ...cleanItem,
+                    ...currentItem,
                     serviceId,
                     performerId,
                     quantity: isNaN(currentItem.quantity) ? 1 : Number(currentItem.quantity),
-                    price: isNaN(currentItem.price) ? 0 : Number(currentItem.price)
+                    price: isNaN(currentItem.price) ? 0 : Number(currentItem.price),
+                    discount: isNaN(currentItem.discount || 0) ? 0 : Number(currentItem.discount)
                 };
             });
 
-            // Primeiro salva as alterações
             await api.patch(`/quotes/${id}`, {
                 items: sanitizedItems,
-                totalAmount: sanitizedItems.reduce((acc, it) => acc + (it.price * it.quantity), 0),
+                totalAmount: sanitizedItems.reduce((acc, it) => acc + (it.price * it.quantity * (1 - (it.discount || 0) / 100)), 0),
                 status: 'ENVIADO',
                 notes,
                 desiredAt: safeDateToISO(desiredAt),
@@ -696,7 +822,9 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 transportTrazAt: safeDateToISO(transportTrazAt),
                 transportType,
                 transportOrigin: transportAddress,
-                transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined
+                transportReturnAddress: hasDifferentReturnAddress ? transportDestinationAddress : undefined,
+                isRecurring,
+                recurrenceFrequency,
             });
             toast.success('Orçamento enviado ao cliente!');
 
@@ -728,6 +856,36 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         );
     }
 
+    const handleTransportSchedule = async (occurrences?: any[]) => {
+        if (occurrences && occurrences.length > 0) {
+            await handleScheduleConfirm(occurrences);
+        } else {
+            // Single schedule - approve and let backend generate default appointment
+            if (window.confirm('Confirma o agendamento?')) {
+                approveAndScheduleMutation.mutate({ quoteId: id! });
+            }
+        }
+    };
+
+    // Strict Render for Transport Only - Enforces UI Isolation
+    if (quote.type === 'TRANSPORTE') {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-black p-6">
+                <TransportOnlyEditor
+                    quote={quote}
+                    onUpdate={fetchQuote}
+                    readOnly={quote.status === 'ENCERRADO'}
+                    onSchedule={handleTransportSchedule}
+                />
+                <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] font-mono text-white/50 bg-black/80 px-2 py-1 rounded border border-white/10 flex items-center gap-2">
+                        <Truck size={10} /> TRANSPORT_ONLY_MODE
+                    </span>
+                </div>
+            </div>
+        );
+    }
+
     const content = (
         <>
             <QuoteHeader
@@ -738,6 +896,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 customerName={quote.customer.name}
                 customerId={quote.customerId}
                 onClose={onClose}
+                onSave={() => handleSave(false)}
+                onSendToClient={handleSendToClient}
                 onViewAppointment={async () => {
                     if (quote.appointments && quote.appointments.length > 0) {
                         if (quote.appointments.length === 1) {
@@ -758,6 +918,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 onShowAuditLog={() => setShowAuditLog(true)}
                 onApproveAndSchedule={handleApproveAndSchedule}
                 isApprovePending={approveAndScheduleMutation.isPending}
+                isRecurring={isRecurring}
                 onSchedule={onSchedule ? () => onSchedule({
                     ...quote,
                     items,
@@ -768,11 +929,10 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     transportLevaAt,
                     transportTrazAt
                 }) : undefined}
-                onSave={handleSave}
-                onSendToClient={handleSendToClient}
                 isSaving={isSaving}
                 isAutoSaving={isAutoSaving}
                 lastSaved={lastSaved}
+                onUndoSchedule={() => setIsUndoModalOpen(true)}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -793,6 +953,20 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                             petId={petId}
                             customerPets={customerPets}
                             onPetChange={(id) => setPetId(id)}
+                            isRecurring={isRecurring}
+                            setIsRecurring={setIsRecurring}
+                            recurrenceFrequency={recurrenceFrequency}
+                            setRecurrenceFrequency={setRecurrenceFrequency}
+                            hairLength={hairLength}
+                            setHairLength={setHairLength}
+                            hasKnots={hasKnots}
+                            setHasKnots={setHasKnots}
+                            knotRegions={knotRegions}
+                            setKnotRegions={setKnotRegions}
+                            hasParasites={hasParasites}
+                            setHasParasites={setHasParasites}
+                            petQuantity={petQuantity}
+                            setPetQuantity={setPetQuantity}
                         />
                     </section>
 
@@ -811,7 +985,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                         totalAmount={totalAmount}
                     />
 
-                    {(quote?.type === 'SPA_TRANSPORTE' || quote?.type === 'TRANSPORTE') && (
+                    {(quote?.type === 'SPA_TRANSPORTE') && (
                         <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
                             <QuoteTransportCalculator
                                 transportType={transportType}
@@ -839,7 +1013,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                     )}
 
                     <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 className="text-xl font-black text-secondary dark:text-white mb-6">Observações Internas</h3>
+                        <h3 className="text-xl font-bold text-secondary dark:text-white mb-6">Observações Internas</h3>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
@@ -848,6 +1022,69 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                             placeholder="Notas que apenas a equipe pode ver..."
                         />
                     </section>
+
+                    {quote.appointments && quote.appointments.length > 0 && (
+                        <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-3 mb-6">
+                                <Calendar className="text-primary" size={24} />
+                                <h3 className="text-xl font-bold text-secondary dark:text-white">Agendamentos Relacionados</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                {quote.appointments.map((appt) => (
+                                    <div
+                                        key={appt.id}
+                                        onClick={() => {
+                                            setSelectedAppointmentId(appt.id);
+                                            // Trigger fetch for full details if summary is not enough
+                                            api.get(`/appointments/${appt.id}`).then(res => setViewAppointmentData(res.data));
+                                        }}
+                                        className="flex flex-col md:flex-row md:items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 hover:border-primary/50 cursor-pointer transition-all group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                                                <Calendar size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-secondary dark:text-white capitalize">
+                                                    {new Date(appt.startAt).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                                                </p>
+                                                <p className="text-xs font-bold text-gray-400">
+                                                    Horário: {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 md:mt-0 flex flex-wrap gap-2 max-w-md">
+                                            {appt.services?.map((svc: any) => (
+                                                <span
+                                                    key={svc.id}
+                                                    className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-tighter"
+                                                >
+                                                    {svc.name}
+                                                </span>
+                                            ))}
+                                            {(!appt.services || appt.services.length === 0) && (
+                                                <span className="text-[10px] font-bold text-gray-400 italic">Sem serviços vinculados</span>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-4 md:mt-0 flex items-center gap-4">
+                                            <span className={cn(
+                                                "px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest",
+                                                appt.status === 'CONFIRMADO' ? "bg-green-100 text-green-600" :
+                                                    appt.status === 'FINALIZADO' ? "bg-blue-100 text-blue-600" :
+                                                        appt.status === 'CANCELADO' ? "bg-red-100 text-red-600" :
+                                                            "bg-gray-100 text-gray-600"
+                                            )}>
+                                                {appt.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
                 </div>
 
                 <div className="space-y-8">
@@ -914,7 +1151,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                             <X size={24} />
                         </button>
 
-                        <h2 className="text-2xl font-black text-secondary dark:text-white mb-2">Selecionar Agendamento</h2>
+                        <h2 className="text-2xl font-bold text-secondary dark:text-white mb-2">Selecionar Agendamento</h2>
                         <p className="text-gray-400 font-medium mb-8">Esta solicitação gerou múltiplos agendamentos. Qual você deseja visualizar?</p>
 
                         <div className="grid grid-cols-1 gap-4">
@@ -958,11 +1195,11 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                                         <Calendar size={24} />
                                     </div>
                                     <div>
-                                        <h4 className="font-extrabold text-secondary dark:text-white text-lg group-hover:text-primary transition-colors font-black">
+                                        <h4 className="font-extrabold text-secondary dark:text-white text-lg group-hover:text-primary transition-colors font-bold">
                                             {appt.category === 'LOGISTICA' ? 'Transporte / Logística' : 'Banho & Tosa (SPA)'}
                                         </h4>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${getQuoteStatusColor(appt.status)}`}>
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${getQuoteStatusColor(appt.status)}`}>
                                                 {appt.status}
                                             </span>
                                             <span className="text-xs font-bold text-gray-400">
@@ -987,6 +1224,21 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 {customerModal}
                 {appointmentDetailsModal}
                 {appointmentSelectionModal}
+                <ScheduleWizard
+                    isOpen={showScheduleWizard}
+                    onClose={() => setShowScheduleWizard(false)}
+                    quote={{
+                        ...quote,
+                        isRecurring,
+                        frequency: recurrenceFrequency,
+                        recurrenceFrequency,
+                        items,
+                        desiredAt: safeDateToISO(desiredAt),
+                        transportLevaAt: safeDateToISO(transportLevaAt),
+                        transportTrazAt: safeDateToISO(transportTrazAt)
+                    }}
+                    onConfirm={handleScheduleConfirm}
+                />
             </div>
         );
     }
@@ -998,6 +1250,64 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             {customerModal}
             {appointmentDetailsModal}
             {appointmentSelectionModal}
+            <ScheduleWizard
+                isOpen={showScheduleWizard}
+                onClose={() => setShowScheduleWizard(false)}
+                quote={quote}
+                onConfirm={handleScheduleConfirm}
+            />
+
+            {/* Undo Schedule Modal */}
+            <AnimatePresence>
+                {isUndoModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-700"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-bold text-secondary dark:text-white uppercase tracking-tight">Desfazer Agendamentos</h3>
+                                <button onClick={() => setIsUndoModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                                    <X size={20} className="text-gray-400" />
+                                </button>
+                            </div>
+
+                            <p className="text-sm text-gray-500 mb-6 font-bold leading-relaxed">
+                                Esta ação irá <span className="text-red-500 font-bold">EXCLUIR TODOS</span> os agendamentos vinculados a este orçamento do calendário. O status do orçamento voltará para <span className="text-primary font-bold uppercase">APROVADO</span>.
+                            </p>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-2">Justificativa (Obrigatório)</label>
+                                <textarea
+                                    value={undoReason}
+                                    onChange={(e) => setUndoReason(e.target.value)}
+                                    rows={3}
+                                    placeholder="Ex: Cliente desistiu do pacote, Erro de agendamento..."
+                                    className="w-full bg-gray-50 dark:bg-gray-900 border-transparent rounded-3xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all text-secondary dark:text-white"
+                                />
+                            </div>
+
+                            <div className="flex gap-4 mt-8">
+                                <button
+                                    onClick={() => setIsUndoModalOpen(false)}
+                                    className="flex-1 py-4 bg-gray-100 dark:bg-gray-700 text-gray-400 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all text-xs uppercase tracking-widest"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleUndoSchedule}
+                                    disabled={isUndoing || !undoReason.trim()}
+                                    className="flex-1 py-4 bg-red-500 text-white font-bold rounded-2xl shadow-xl shadow-red-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-widest disabled:opacity-50"
+                                >
+                                    {isUndoing ? <RefreshCcw size={16} className="animate-spin mx-auto" /> : 'Confirmar e Excluir'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </main>
     );
 }

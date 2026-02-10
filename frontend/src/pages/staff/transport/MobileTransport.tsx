@@ -99,14 +99,14 @@ export const MobileTransport = () => {
                 <div className="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-2xl">
                     <button
                         onClick={() => setActiveTab('ativos')}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ativos' ? 'bg-white dark:bg-zinc-900 shadow-sm text-blue-600' : 'text-gray-400'
+                        className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'ativos' ? 'bg-white dark:bg-zinc-900 shadow-sm text-blue-600' : 'text-gray-400'
                             }`}
                     >
                         Rotas Ativas
                     </button>
                     <button
                         onClick={() => setActiveTab('historico')}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'historico' ? 'bg-white dark:bg-zinc-900 shadow-sm text-blue-600' : 'text-gray-400'
+                        className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'historico' ? 'bg-white dark:bg-zinc-900 shadow-sm text-blue-600' : 'text-gray-400'
                             }`}
                     >
                         Histórico
@@ -141,13 +141,13 @@ export const MobileTransport = () => {
                                                     <Truck size={24} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase leading-none mb-1">
+                                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase leading-none mb-1">
                                                         {item.appointment.pet.name}
                                                     </h3>
                                                     <p className="text-[10px] text-gray-400 font-bold uppercase">{item.appointment.customer.name}</p>
                                                 </div>
                                             </div>
-                                            <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${item.status === 'INICIADO' ? 'text-amber-600 bg-amber-50' : 'text-blue-600 bg-blue-50'
+                                            <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${item.status === 'INICIADO' ? 'text-amber-600 bg-amber-50' : 'text-blue-600 bg-blue-50'
                                                 }`}>
                                                 {item.status}
                                             </div>
@@ -160,7 +160,7 @@ export const MobileTransport = () => {
                                             >
                                                 <MapPin size={18} className="text-red-500 shrink-0" />
                                                 <div className="flex-1 min-w-0">
-                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Origem</span>
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Origem</span>
                                                     <p className="text-xs font-bold text-gray-900 dark:text-white truncate uppercase">{item.origin}</p>
                                                 </div>
                                                 <Navigation size={14} className="text-gray-300" />
@@ -171,7 +171,7 @@ export const MobileTransport = () => {
                                             >
                                                 <Navigation size={18} className="text-blue-500 shrink-0" />
                                                 <div className="flex-1 min-w-0">
-                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Destino</span>
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Destino</span>
                                                     <p className="text-xs font-bold text-gray-900 dark:text-white truncate uppercase">{item.destination}</p>
                                                 </div>
                                                 <ChevronRight size={14} className="text-gray-300" />
@@ -185,7 +185,7 @@ export const MobileTransport = () => {
                                             </div>
                                             <button
                                                 onClick={() => setSelectedTransport(item)}
-                                                className="uppercase text-blue-600 font-black tracking-widest"
+                                                className="uppercase text-blue-600 font-bold tracking-widest"
                                             >
                                                 Linha do Tempo
                                             </button>
@@ -197,21 +197,21 @@ export const MobileTransport = () => {
                                         <div className="flex border-t border-gray-100 dark:border-zinc-800">
                                             <button
                                                 onClick={() => setContactChoice({ phone: item.appointment.customer.phone, name: item.appointment.customer.name })}
-                                                className="flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-gray-600 tracking-widest border-r border-gray-100 dark:border-zinc-800"
+                                                className="flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase text-gray-600 tracking-widest border-r border-gray-100 dark:border-zinc-800"
                                             >
                                                 <MessageSquare size={14} /> Contato
                                             </button>
                                             {item.status !== 'INICIADO' ? (
                                                 <button
                                                     onClick={() => updateStatus(item.id, 'INICIADO', 'Motorista iniciou o deslocamento')}
-                                                    className="flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-blue-600 tracking-widest"
+                                                    className="flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase text-blue-600 tracking-widest"
                                                 >
                                                     <Navigation size={14} /> Iniciar Rota
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => updateStatus(item.id, 'CONCLUIDO')}
-                                                    className="flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-emerald-600 tracking-widest"
+                                                    className="flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase text-emerald-600 tracking-widest"
                                                 >
                                                     <CheckCircle2 size={14} /> Finalizar
                                                 </button>
@@ -231,19 +231,19 @@ export const MobileTransport = () => {
                     <div className="fixed inset-0 z-[100] flex items-end justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setNavigationChoice(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="bg-white dark:bg-zinc-900 w-full rounded-t-[32px] p-6 relative z-10 max-w-lg">
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Escolher GPS</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Escolher GPS</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button onClick={() => handleNavigation(navigationChoice.address, 'google')} className="flex flex-col items-center gap-3 p-6 bg-gray-50 dark:bg-zinc-800 rounded-2xl">
                                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
                                         <img src="https://www.google.com/images/branding/product/ico/maps15_64dp.ico" className="w-6 h-6" alt="Maps" />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase text-gray-600">Google Maps</span>
+                                    <span className="text-[10px] font-bold uppercase text-gray-600">Google Maps</span>
                                 </button>
                                 <button onClick={() => handleNavigation(navigationChoice.address, 'waze')} className="flex flex-col items-center gap-3 p-6 bg-gray-50 dark:bg-zinc-800 rounded-2xl">
                                     <div className="w-12 h-12 bg-[#33CCFF] rounded-xl flex items-center justify-center shadow-sm">
                                         <img src="https://static.waze.com/web/brand/dist/images/favicon.ico" className="w-6 h-6" alt="Waze" />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase text-gray-600">Waze</span>
+                                    <span className="text-[10px] font-bold uppercase text-gray-600">Waze</span>
                                 </button>
                             </div>
                         </motion.div>
@@ -254,15 +254,15 @@ export const MobileTransport = () => {
                     <div className="fixed inset-0 z-[100] flex items-end justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setContactChoice(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="bg-white dark:bg-zinc-900 w-full rounded-t-[32px] p-6 relative z-10 max-w-lg">
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Contatar Tutor</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Contatar Tutor</h3>
                             <div className="space-y-3">
-                                <button onClick={() => handleWhatsApp(contactChoice.phone, false)} className="w-full h-14 bg-[#25D366] text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-[#25D366]/20">
+                                <button onClick={() => handleWhatsApp(contactChoice.phone, false)} className="w-full h-14 bg-[#25D366] text-white rounded-2xl font-bold uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-[#25D366]/20">
                                     <MessageSquare size={18} /> WhatsApp Normal
                                 </button>
-                                <button onClick={() => handleWhatsApp(contactChoice.phone, true)} className="w-full h-14 bg-[#128C7E] text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-[#128C7E]/20">
+                                <button onClick={() => handleWhatsApp(contactChoice.phone, true)} className="w-full h-14 bg-[#128C7E] text-white rounded-2xl font-bold uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-[#128C7E]/20">
                                     <Truck size={18} /> WhatsApp Business
                                 </button>
-                                <button onClick={() => setContactChoice(null)} className="w-full h-14 bg-gray-100 dark:bg-zinc-800 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest">
+                                <button onClick={() => setContactChoice(null)} className="w-full h-14 bg-gray-100 dark:bg-zinc-800 text-gray-500 rounded-2xl font-bold uppercase text-xs tracking-widest">
                                     Cancelar
                                 </button>
                             </div>
@@ -274,8 +274,8 @@ export const MobileTransport = () => {
                     <div className="fixed inset-0 z-[100] bg-white dark:bg-zinc-900 flex flex-col p-6 animate-in slide-in-from-right duration-300">
                         <header className="flex justify-between items-center mb-10">
                             <div>
-                                <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Linha do Tempo</h3>
-                                <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Rota {selectedTransport.pet.name}</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-tighter">Linha do Tempo</h3>
+                                <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Rota {selectedTransport.appointment.pet.name}</p>
                             </div>
                             <button onClick={() => setSelectedTransport(null)} className="p-2 bg-gray-50 dark:bg-zinc-800 rounded-full">
                                 <X size={24} className="text-gray-400" />
@@ -286,10 +286,10 @@ export const MobileTransport = () => {
                             {selectedTransport.occurrences?.map((occ) => (
                                 <div key={occ.id} className="relative">
                                     <div className="absolute -left-[27px] top-1 w-3 h-3 bg-blue-600 rounded-full ring-4 ring-white dark:ring-zinc-900" />
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
                                         {new Date(occ.timestamp).toLocaleString('pt-BR')}
                                     </p>
-                                    <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase mb-1">{occ.occurrenceType}</h4>
+                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase mb-1">{occ.occurrenceType}</h4>
                                     <p className="text-xs text-gray-500 font-medium leading-relaxed">{occ.description}</p>
                                 </div>
                             ))}
