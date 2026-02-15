@@ -424,7 +424,7 @@ export default function AppointmentBooking() {
                         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-500 mx-auto mb-8 shadow-xl shadow-green-100/50 scale-125">
                             <CheckCircle2 size={48} />
                         </div>
-                        <h2 className="text-4xl font-black text-secondary mb-4">Sucesso!</h2>
+                        <h2 className="text-4xl font-bold text-secondary mb-4">Sucesso!</h2>
                         <p className="text-gray-500 max-w-md mx-auto mb-10 leading-relaxed font-medium">
                             Seu agendamento foi solicitado com sucesso. Agora é só aguardar a confirmação da nossa equipe!
                         </p>

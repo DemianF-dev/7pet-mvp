@@ -16,6 +16,7 @@ router.post('/bulk-restore', appointmentController.bulkRestore);
 router.post('/bulk-permanent', appointmentController.bulkPermanentRemove);
 
 // New Agenda Routes
+router.get('/day', appointmentController.getDay);
 router.get('/week', appointmentController.getWeek);
 router.get('/conflicts', appointmentController.getConflicts);
 router.get('/search', appointmentController.search);
@@ -25,6 +26,8 @@ router.get('/search', appointmentController.search);
 router.get('/:id', appointmentController.get);
 router.post('/:id/duplicate', appointmentController.duplicate);
 router.patch('/:id/status', appointmentController.updateStatus);
+router.patch('/:id/services/add', appointmentController.addService); // Novo
+router.patch('/:id/services/remove', appointmentController.removeService); // Novo
 router.patch('/:id/restore', appointmentController.restore);
 router.delete('/:id/permanent', appointmentController.permanentRemove);
 router.delete('/:id', appointmentController.remove);

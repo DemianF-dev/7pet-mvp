@@ -42,7 +42,7 @@ export default function AgendaSPA() {
         performerId: user?.division === 'MASTER' ? 'ALL' : user?.id,
     });
     const [searchTerm, setSearchTerm] = useState('');
-    const [view, setView] = useState<'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT'>('WEEK');
+    const [view, setView] = useState<'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT'>('MONTH');
     const [tab, setTab] = useState<'active' | 'trash'>('active');
 
     // React Query hooks
@@ -52,28 +52,39 @@ export default function AgendaSPA() {
         { enabled: true }
     );
 
-    const weekStart = useMemo(() => {
+    const fetchRange = useMemo(() => {
         const start = new Date(selectedDate);
-        start.setDate(start.getDate() - start.getDay());
-        return start.toISOString().split('T')[0];
-    }, [selectedDate]);
-
-    const weekEnd = useMemo(() => {
         const end = new Date(selectedDate);
-        end.setDate(end.getDate() + (6 - end.getDay()));
-        return end.toISOString().split('T')[0];
-    }, [selectedDate]);
+
+        if (view === 'MONTH') {
+            // Fetch the whole month plus surrounding days for the grid
+            start.setDate(1);
+            start.setDate(start.getDate() - 7);
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0);
+            end.setDate(end.getDate() + 7);
+        } else {
+            // Fetch standard week
+            start.setDate(start.getDate() - start.getDay());
+            end.setDate(end.getDate() + (6 - end.getDay()));
+        }
+
+        return {
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
+        };
+    }, [selectedDate, view]);
 
     const agendaWeekQuery = useAgendaWeek(
-        weekStart,
-        weekEnd,
-        'SPA',
+        fetchRange.start,
+        fetchRange.end,
+        filters.module,
         { enabled: !isMobile }
     );
 
     const dashboardQuery = useAgendaDashboard(
         selectedDate.toISOString().split('T')[0],
-        { start: weekStart, end: weekEnd },
+        fetchRange,
         filters
     );
 
@@ -215,35 +226,41 @@ export default function AgendaSPA() {
                 </div>
             </div>
 
-            <AnimatePresence>
-                <AppointmentFormModal
-                    isOpen={appointmentModalOpen}
-                    appointment={appointmentData}
-                    isCopy={isCopy}
-                    preFill={preFill}
-                    onClose={closeAppointmentModal}
-                    onSuccess={() => {
-                        handleRefresh();
-                        closeAppointmentModal();
-                    }}
-                />
-                <AppointmentDetailsModal
-                    isOpen={detailsModalOpen}
-                    appointment={(() => {
-                        const allAppointments = [
-                            ...(agendaWeekQuery.data?.days?.flatMap((d: any) => d.appointments) || []),
-                            ...(agendaDayQuery.data?.appointments || [])
-                        ];
-                        return allAppointments.find(a => a.id === appointmentId) || { id: appointmentId };
-                    })()}
-                    onClose={closeDetailsModal}
-                    onSuccess={() => {
-                        handleRefresh();
-                        closeDetailsModal();
-                    }}
-                    onModify={(apt) => openAppointmentModal({ appointment: apt })}
-                    onCopy={(apt) => openAppointmentModal({ appointment: apt, isCopy: true })}
-                />
+            <AnimatePresence mode="wait">
+                {appointmentModalOpen && (
+                    <AppointmentFormModal
+                        key="appointment-form-modal"
+                        isOpen={appointmentModalOpen}
+                        appointment={appointmentData}
+                        isCopy={isCopy}
+                        preFill={preFill}
+                        onClose={closeAppointmentModal}
+                        onSuccess={() => {
+                            handleRefresh();
+                            closeAppointmentModal();
+                        }}
+                    />
+                )}
+                {detailsModalOpen && (
+                    <AppointmentDetailsModal
+                        key="appointment-details-modal"
+                        isOpen={detailsModalOpen}
+                        appointment={(() => {
+                            const allAppointments = [
+                                ...(agendaWeekQuery.data?.days?.flatMap((d: any) => d.appointments) || []),
+                                ...(agendaDayQuery.data?.appointments || [])
+                            ];
+                            return allAppointments.find(a => a.id === appointmentId) || { id: appointmentId };
+                        })()}
+                        onClose={closeDetailsModal}
+                        onSuccess={() => {
+                            handleRefresh();
+                            closeDetailsModal();
+                        }}
+                        onModify={(apt) => openAppointmentModal({ appointment: apt })}
+                        onCopy={(apt) => openAppointmentModal({ appointment: apt, isCopy: true })}
+                    />
+                )}
             </AnimatePresence>
         </div>
     );

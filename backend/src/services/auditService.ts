@@ -180,8 +180,38 @@ export const logAppointmentEvent = async (context: AuditContext, appointment: an
         severity: action === 'APPOINTMENT_CANCELLED' || action === 'APPOINTMENT_NO_SHOW' ? 'WARNING' : 'INFO',
         summary,
         meta,
-        revertible: action === 'APPOINTMENT_RESCHEDULED',
-        revertStrategy: action === 'APPOINTMENT_RESCHEDULED' ? 'PATCH' : undefined
+        revertible: ['APPOINTMENT_RESCHEDULED', 'APPOINTMENT_UPDATED'].includes(action),
+        revertStrategy: 'PATCH'
+    }, tx);
+};
+
+/**
+ * Helper for Invoice events
+ */
+export const logInvoiceEvent = async (context: AuditContext, invoice: any, action: AuditAction, summary: string, meta?: any, tx?: any) => {
+    return logEvent(context, {
+        targetType: 'INVOICE',
+        targetId: invoice.id,
+        clientId: invoice.customerId,
+        appointmentId: invoice.appointmentId,
+        action,
+        severity: action === 'INVOICE_VOIDED' ? 'WARNING' : 'INFO',
+        summary,
+        meta
+    }, tx);
+};
+
+/**
+ * Helper for Ledger/Adjustment events
+ */
+export const logLedgerEvent = async (context: AuditContext, entry: any, action: AuditAction, summary: string, meta?: any, tx?: any) => {
+    return logEvent(context, {
+        targetType: 'LEDGER_ENTRY',
+        targetId: entry.id,
+        clientId: entry.customerId,
+        action,
+        summary,
+        meta
     }, tx);
 };
 

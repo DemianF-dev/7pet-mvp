@@ -223,13 +223,13 @@ export default function PackageSchedulerModal({
                         {/* Header */}
                         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-purple-500/10 to-blue-500/10">
                             <div>
-                                <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight flex items-center gap-3">
+                                <h2 className="text-xl font-bold text-gray-800 dark:text-white uppercase tracking-tight flex items-center gap-3">
                                     <Calendar size={24} className="text-purple-500" />
                                     Agendar Pacote
                                 </h2>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
                                     {packageData?.customer?.name} • {packageData?.pet?.name} •
-                                    <span className="text-purple-500 font-black ml-1">{config.label}</span>
+                                    <span className="text-purple-500 font-bold ml-1">{config.label}</span>
                                 </p>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
@@ -248,7 +248,7 @@ export default function PackageSchedulerModal({
                                     >
                                         <ChevronLeft size={18} />
                                     </button>
-                                    <span className="font-black text-sm uppercase tracking-wide">
+                                    <span className="font-bold text-sm uppercase tracking-wide">
                                         {currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                                     </span>
                                     <button
@@ -262,7 +262,7 @@ export default function PackageSchedulerModal({
                                 {/* Calendar Grid */}
                                 <div className="grid grid-cols-7 gap-1 text-center mb-4">
                                     {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
-                                        <div key={i} className="text-[10px] font-black text-gray-400 uppercase py-2">
+                                        <div key={i} className="text-[10px] font-bold text-gray-400 uppercase py-2">
                                             {d}
                                         </div>
                                     ))}
@@ -300,7 +300,7 @@ export default function PackageSchedulerModal({
                                 {/* Selected Date Actions */}
                                 {selectedDate && (
                                     <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl">
-                                        <p className="text-xs font-black text-purple-600 mb-2">
+                                        <p className="text-xs font-bold text-purple-600 mb-2">
                                             {selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                                         </p>
                                         <button
@@ -317,7 +317,7 @@ export default function PackageSchedulerModal({
                             {/* Appointments List */}
                             <div className="flex-1 overflow-y-auto p-4">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-black text-sm uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                                    <h3 className="font-bold text-sm uppercase tracking-wide text-gray-600 dark:text-gray-400">
                                         Agendamentos ({appointments.length})
                                     </h3>
                                     <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
@@ -350,7 +350,7 @@ export default function PackageSchedulerModal({
                                                             {appt.serviceDescription}
                                                         </p>
                                                         {appt.transportType && (
-                                                            <span className="text-[10px] font-black uppercase text-orange-600">
+                                                            <span className="text-[10px] font-bold uppercase text-orange-600">
                                                                 {appt.transportType === 'LEVA' ? '📦 Coleta' : '🏠 Entrega'}
                                                             </span>
                                                         )}
@@ -366,7 +366,7 @@ export default function PackageSchedulerModal({
 
                                             <div className="mt-3 grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Data</label>
+                                                    <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Data</label>
                                                     <input
                                                         type="date"
                                                         value={appt.startAt.toISOString().split('T')[0]}
@@ -375,7 +375,7 @@ export default function PackageSchedulerModal({
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Horário</label>
+                                                    <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Horário</label>
                                                     <input
                                                         type="time"
                                                         value={appt.startAt.toTimeString().slice(0, 5)}
@@ -392,7 +392,7 @@ export default function PackageSchedulerModal({
 
                                             {performers.length > 0 && (
                                                 <div className="mt-3">
-                                                    <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Responsável</label>
+                                                    <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Responsável</label>
                                                     <select
                                                         value={appt.performerId || ''}
                                                         onChange={(e) => updateAppointment(appt.id, 'performerId', e.target.value || undefined)}
@@ -440,7 +440,7 @@ export default function PackageSchedulerModal({
                                     onClick={handleSubmit}
                                     disabled={isLoading || appointments.length === 0}
                                     className={`
-                                        px-8 py-3 rounded-2xl font-black text-white uppercase tracking-wide transition-all
+                                        px-8 py-3 rounded-2xl font-bold text-white uppercase tracking-wide transition-all
                                         ${appointments.length > 0
                                             ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:shadow-lg hover:scale-105'
                                             : 'bg-gray-300 cursor-not-allowed'

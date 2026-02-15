@@ -6,22 +6,66 @@
 /* Theme tokens are loaded via main.tsx imports */
 
 /* =========================================
-   GLOBAL BASE STYLES
+   GLOBAL BASE STYLES - LUXURY ERP STANDARD
    ========================================= */
 body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-family: var(--font-family-base);
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Prevent horizontal scroll on mobile */
+  line-height: 1.5;
+  letter-spacing: -0.011em;
   overflow-x: hidden;
-  /* Dynamic viewport height for mobile */
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+/* Typography Hierarchy Refinement */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-family-heading);
+  letter-spacing: -0.022em;
+  color: var(--color-text-primary);
+}
+
+h1 {
+  font-weight: 700;
+  font-size: 2.25rem;
+}
+
+h2 {
+  font-weight: 600;
+  font-size: 1.75rem;
+}
+
+h3 {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+/* Global Button & Input Refinement */
+button {
+  transition: all var(--transition-fast) var(--ease-spring);
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  padding: 0.625rem 0.875rem;
+  font-size: var(--font-size-md);
+  transition: all var(--transition-fast);
+}
+
+input:focus {
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.08);
 }
 
 /* =========================================
@@ -329,6 +373,57 @@ body {
 
 .glass-card:hover {
   box-shadow: var(--shadow-md);
+}
+
+/* Base Glass Panel - for GlassCard component */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.dark .glass-panel {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.1) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Animation Utilities */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
 }
 
 /* Subtle Surface (no blur, just transparency) */

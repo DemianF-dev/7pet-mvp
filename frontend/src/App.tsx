@@ -41,6 +41,8 @@ const CustomerManager = lazy(() => import('./pages/staff/CustomerManager'));
 const CustomerDetail = lazy(() => import('./pages/staff/CustomerDetail'));
 const ServiceManager = lazy(() => import('./pages/staff/ServiceManager'));
 const BillingManager = lazy(() => import('./pages/staff/BillingManager'));
+const BillingManagerV2 = lazy(() => import('./pages/staff/billing/BillingManagerV2'));
+const SchedulingWizard = lazy(() => import('./pages/staff/scheduling/SchedulingWizard'));
 const ManagementDashboard = lazy(() => import('./pages/staff/ManagementDashboard'));
 const FinancialReports = lazy(() => import('./pages/staff/FinancialReports'));
 const UserManager = lazy(() => import('./pages/staff/users/index'));
@@ -187,7 +189,7 @@ function App() {
 
                             {/* Colaborador Routes */}
                             <Route path="/staff/login" element={<PageTransition><StaffLogin /></PageTransition>} />
-                            <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA']} redirectTo="/staff/login" />}>
+                            <Route element={<ProtectedRoute allowedRoles={['OPERACIONAL', 'GESTAO', 'GERENCIA', 'DIRETORIA', 'ADMIN', 'MASTER', 'SPA', 'COMERCIAL', 'LOGISTICA', 'ATENDIMENTO']} redirectTo="/staff/login" />}>
                                 <Route element={<AppShell />}>
                                     <Route path="/staff/dashboard" element={<StaffDashboard />} />
                                     <Route path="/staff/pos" element={<LazyPage><POS /></LazyPage>} />
@@ -197,6 +199,7 @@ function App() {
                                     <Route path="/staff/agenda-log" element={<LazyPage><AgendaLOG /></LazyPage>} />
                                     <Route path="/staff/transport" element={<LazyPage><TransportManager /></LazyPage>} />
                                     <Route path="/staff/quotes" element={<LazyPage><QuoteManager /></LazyPage>} />
+                                    <Route path="/staff/scheduling-wizard/:quoteId?" element={<LazyPage><SchedulingWizard /></LazyPage>} />
                                     <Route path="/staff/quotes/:id" element={<LazyPage><QuoteEditor /></LazyPage>} />
                                     <Route path="/staff/customers" element={<LazyPage><CustomerManager /></LazyPage>} />
                                     <Route path="/staff/customers/:id" element={<LazyPage><CustomerDetail /></LazyPage>} />
@@ -204,6 +207,7 @@ function App() {
                                     <Route path="/staff/services" element={<LazyPage><ServiceManager /></LazyPage>} />
                                     <Route path="/staff/products" element={<LazyPage><ProductManager /></LazyPage>} />
                                     <Route path="/staff/billing" element={<LazyPage><BillingManager /></LazyPage>} />
+                                    <Route path="/staff/billing-v2" element={<LazyPage><BillingManagerV2 /></LazyPage>} />
                                     <Route path="/staff/management" element={<LazyPage><ManagementDashboard /></LazyPage>} />
                                     <Route path="/staff/hr" element={<LazyPage><MyHR /></LazyPage>} />
                                     <Route path="/staff/strategy" element={<LazyPage><StrategyManager /></LazyPage>} />

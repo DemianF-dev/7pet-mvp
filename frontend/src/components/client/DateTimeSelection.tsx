@@ -17,7 +17,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 pb-10 border-b border-gray-100">
             <div className="space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                     <Calendar size={12} className="text-primary" /> Data Pretendida
                 </label>
                 <input
@@ -29,7 +29,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
                 />
             </div>
             <div className="space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                     <Clock size={12} className="text-primary" /> Horário Desejado
                 </label>
                 <input

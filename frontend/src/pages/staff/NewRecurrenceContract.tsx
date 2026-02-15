@@ -58,7 +58,7 @@ export default function NewRecurrenceContract() {
                 >
                     <ChevronLeft size={20} /> Voltar
                 </button>
-                <h1 className="text-3xl font-black text-heading uppercase tracking-tight">Novo Contrato de Recorrência</h1>
+                <h1 className="text-3xl font-bold text-heading uppercase tracking-tight">Novo Contrato de Recorrência</h1>
                 <p className="text-body-secondary mt-1">Configurar novo pacote recorrente para cliente</p>
             </header>
 

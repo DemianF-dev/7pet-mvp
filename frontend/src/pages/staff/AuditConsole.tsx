@@ -64,11 +64,11 @@ const AuditConsole: React.FC = () => {
         <div className="w-full max-w-7xl">
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-secondary tracking-tight">Console de <span className="text-primary">Auditoria</span></h1>
+                    <h1 className="text-3xl font-bold text-secondary tracking-tight">Console de <span className="text-primary">Auditoria</span></h1>
                     <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Monitoramento de segurança e integridade</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-black text-secondary hover:bg-gray-50 transition-all uppercase tracking-widest shadow-sm">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-secondary hover:bg-gray-50 transition-all uppercase tracking-widest shadow-sm">
                         <Download size={16} /> Exportar CSV
                     </button>
                 </div>
@@ -112,7 +112,7 @@ const AuditConsole: React.FC = () => {
                 </select>
                 <button
                     onClick={() => { setFilters({ severity: '', targetType: '', action: '', search: '' }); setPage(1); }}
-                    className="bg-secondary text-white rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90"
+                    className="bg-secondary text-white rounded-2xl px-6 py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90"
                 >
                     <Filter size={16} /> Limpar Filtros
                 </button>
@@ -123,11 +123,11 @@ const AuditConsole: React.FC = () => {
                 <table className="w-full text-left">
                     <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
-                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Data / Hora</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Ator</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Ação / Resumo</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Severidade</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data / Hora</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ator</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ação / Resumo</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Severidade</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -149,23 +149,23 @@ const AuditConsole: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-[10px]">
+                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
                                             {event.actorNameSnapshot?.substring(0, 2).toUpperCase() || 'SYS'}
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-xs font-bold text-secondary">{event.actorNameSnapshot || 'Sistema'}</span>
-                                            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{event.actorRoleSnapshot || 'AGENT'}</span>
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">{event.actorRoleSnapshot || 'AGENT'}</span>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col max-w-md">
-                                        <span className="text-xs font-black text-secondary uppercase tracking-tight" style={{ fontSize: '10px' }}>{event.action}</span>
+                                        <span className="text-xs font-bold text-secondary uppercase tracking-tight" style={{ fontSize: '10px' }}>{event.action}</span>
                                         <span className="text-xs text-gray-500 font-medium truncate" title={event.summary}>{event.summary}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase ${getSeverityBadge(event.severity)}`}>
+                                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase ${getSeverityBadge(event.severity)}`}>
                                         {event.severity}
                                     </span>
                                 </td>
@@ -181,7 +181,7 @@ const AuditConsole: React.FC = () => {
                                             </button>
                                         )}
                                         {event.revertedAt && (
-                                            <div className="flex items-center gap-1 text-[9px] font-black text-red-500 uppercase bg-red-50 px-2 py-1 rounded-lg" title={`Revertido por ID: ${event.revertedByUserId}`}>
+                                            <div className="flex items-center gap-1 text-[9px] font-bold text-red-500 uppercase bg-red-50 px-2 py-1 rounded-lg" title={`Revertido por ID: ${event.revertedByUserId}`}>
                                                 <CheckCircle size={10} /> Revertido
                                             </div>
                                         )}

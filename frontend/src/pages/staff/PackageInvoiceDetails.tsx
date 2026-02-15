@@ -77,7 +77,7 @@ export default function PackageInvoiceDetails() {
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-2 py-0.5 rounded-lg font-black text-[10px] uppercase tracking-wider ${invoice.status === 'RASCUNHO' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
+                        <span className={`px-2 py-0.5 rounded-lg font-bold text-[10px] uppercase tracking-wider ${invoice.status === 'RASCUNHO' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
                             }`}>
                             {invoice.status}
                         </span>
@@ -86,7 +86,7 @@ export default function PackageInvoiceDetails() {
                             Ref: {months[invoice.periodMonth - 1]} / {invoice.periodYear}
                         </span>
                     </div>
-                    <h1 className="text-3xl font-black text-heading uppercase tracking-tighter">
+                    <h1 className="text-3xl font-bold text-heading uppercase tracking-tighter">
                         Pacote {invoice.type}
                     </h1>
                     <div className="flex items-center gap-2 mt-1 text-body-secondary">
@@ -119,7 +119,7 @@ export default function PackageInvoiceDetails() {
                         </h2>
                         <div className="bg-bg-surface border border-border rounded-2xl overflow-hidden">
                             <table className="w-full text-left">
-                                <thead className="bg-bg-subtle/50 text-[10px] font-black uppercase tracking-widest text-body-secondary border-b border-border">
+                                <thead className="bg-bg-subtle/50 text-[10px] font-bold uppercase tracking-widest text-body-secondary border-b border-border">
                                     <tr>
                                         <th className="px-6 py-3">Descrição</th>
                                         <th className="px-6 py-3 text-right">Valor</th>
@@ -141,7 +141,7 @@ export default function PackageInvoiceDetails() {
                                 <tfoot className="bg-bg-subtle/50 border-t border-border">
                                     <tr>
                                         <td className="px-6 py-4 font-bold text-heading">Subtotal</td>
-                                        <td className="px-6 py-4 text-right font-mono font-black text-heading text-lg">
+                                        <td className="px-6 py-4 text-right font-mono font-bold text-heading text-lg">
                                             R$ {invoice.subtotal.toFixed(2)}
                                         </td>
                                     </tr>
@@ -186,15 +186,15 @@ export default function PackageInvoiceDetails() {
                         <h3 className="font-bold text-heading mb-4">Informações Financeiras</h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[10px] font-black uppercase text-body-secondary mb-1 block">Data de Vencimento</label>
+                                <label className="text-[10px] font-bold uppercase text-body-secondary mb-1 block">Data de Vencimento</label>
                                 <div className="flex items-center gap-2 text-heading font-bold">
                                     <Calendar size={16} className="text-accent" />
                                     {format(new Date(invoice.dueDate), 'dd/MM/yyyy')}
                                 </div>
                             </div>
                             <div>
-                                <label className="text-[10px] font-black uppercase text-body-secondary mb-1 block">Total da Fatura</label>
-                                <div className="text-2xl font-black text-accent tracking-tighter">
+                                <label className="text-[10px] font-bold uppercase text-body-secondary mb-1 block">Total da Fatura</label>
+                                <div className="text-2xl font-bold text-accent tracking-tighter">
                                     R$ {invoice.total.toFixed(2)}
                                 </div>
                             </div>

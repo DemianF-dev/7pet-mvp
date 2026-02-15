@@ -50,7 +50,7 @@ export function useServiceWorkerUpdate() {
                                 <Download size={20} />
                             </div>
                             <div>
-                                <h4 className="font-black text-secondary text-sm">Nova versão pronta!</h4>
+                                <h4 className="font-bold text-secondary text-sm">Nova versão pronta!</h4>
                                 <p className="text-xs text-gray-400">Clique para atualizar o 7Pet.</p>
                             </div>
                         </div>
@@ -60,7 +60,7 @@ export function useServiceWorkerUpdate() {
                                     updateServiceWorker(true);
                                     toast.dismiss(t.id);
                                 }}
-                                className="flex-1 bg-primary text-white text-[10px] uppercase tracking-widest font-black rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
+                                className="flex-1 bg-primary text-white text-[10px] uppercase tracking-widest font-bold rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
                             >
                                 Atualizar
                             </button>
@@ -69,7 +69,7 @@ export function useServiceWorkerUpdate() {
                                     toast.dismiss(t.id);
                                     setNeedRefresh(false);
                                 }}
-                                className="px-4 bg-gray-50 text-gray-400 text-[10px] uppercase tracking-widest font-black rounded-xl"
+                                className="px-4 bg-gray-50 text-gray-400 text-[10px] uppercase tracking-widest font-bold rounded-xl"
                             >
                                 Depois
                             </button>

@@ -40,7 +40,7 @@ export const MobileStrategy = ({
                         <button
                             key={s}
                             onClick={() => onFilterChange(s)}
-                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === s ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm' : 'text-gray-400'}`}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${filterStatus === s ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm' : 'text-gray-400'}`}
                         >
                             {s === 'ALL' ? 'Todas' : s === 'ACTIVE' ? 'Ativas' : 'OK'}
                         </button>
@@ -64,7 +64,7 @@ export const MobileStrategy = ({
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Calculando indicadores...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Calculando indicadores...</p>
                         </div>
                     ) : goals.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 px-10 text-center">

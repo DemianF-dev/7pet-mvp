@@ -95,7 +95,7 @@ export default function AuditLogModal({ entityType, entityId, onClose, isAdmin, 
                             <History size={20} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-gray-800">Histórico de Alterações</h3>
+                            <h3 className="text-xl font-bold text-gray-800">Histórico de Alterações</h3>
                             <p className="text-sm text-gray-500 font-medium">Log de auditoria completo</p>
                         </div>
                     </div>
@@ -117,7 +117,7 @@ export default function AuditLogModal({ entityType, entityId, onClose, isAdmin, 
                                 <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 hover:border-purple-200 transition-colors">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <span className="inline-block px-2 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">
+                                            <span className="inline-block px-2 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
                                                 {log.action}
                                             </span>
                                             <p className="text-sm font-bold text-gray-800">
@@ -145,7 +145,7 @@ export default function AuditLogModal({ entityType, entityId, onClose, isAdmin, 
                                     )}
 
                                     <div className="bg-white rounded-xl p-3 border border-gray-100">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Alterações</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Alterações</p>
                                         {formatDiff(log.previousData, log.newData)}
                                     </div>
                                 </div>

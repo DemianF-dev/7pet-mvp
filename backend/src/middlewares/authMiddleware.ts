@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
 import logger from '../utils/logger';
+import crypto from 'crypto';
 
 // CRITICAL SECURITY: No fallback! Force JWT_SECRET to be defined
 const JWT_SECRET = process.env.JWT_SECRET;

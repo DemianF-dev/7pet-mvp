@@ -102,7 +102,7 @@ export default function FeedbackWidget() {
                                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
                                     <AlertTriangle size={32} />
                                 </div>
-                                <h2 className="text-xl font-black uppercase tracking-wide">Solicitar Ajuste</h2>
+                                <h2 className="text-xl font-bold uppercase tracking-wide">Solicitar Ajuste</h2>
                                 <p className="text-purple-100 text-sm font-medium mt-1">Encontrou um erro ou tem uma ideia?</p>
                             </div>
 
@@ -113,7 +113,7 @@ export default function FeedbackWidget() {
                                         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
                                             <CheckCircle2 size={40} />
                                         </div>
-                                        <h3 className="text-2xl font-black text-secondary">Recebido!</h3>
+                                        <h3 className="text-2xl font-bold text-secondary">Recebido!</h3>
                                         <p className="text-gray-400 mt-2 font-medium">Sua solicitação foi enviada para o desenvolvedor.</p>
                                     </div>
                                 ) : (
@@ -124,7 +124,7 @@ export default function FeedbackWidget() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 pl-2">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 pl-2">
                                                 Descrição do Problema / Sugestão
                                             </label>
                                             <textarea
@@ -137,7 +137,7 @@ export default function FeedbackWidget() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 pl-2">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 pl-2">
                                                 Anexo (Opcional)
                                             </label>
                                             <input
@@ -176,7 +176,7 @@ export default function FeedbackWidget() {
                                         <button
                                             type="submit"
                                             disabled={isSending || !description.trim()}
-                                            className="w-full py-4 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-secondary/20 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 mt-4"
+                                            className="w-full py-4 bg-secondary text-white rounded-2xl font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-secondary/20 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 mt-4"
                                         >
                                             {isSending ? <Loader2 className="animate-spin" /> : <Send size={18} />}
                                             {isSending ? 'Enviando...' : 'Enviar Solicitação'}

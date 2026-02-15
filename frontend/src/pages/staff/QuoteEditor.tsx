@@ -129,6 +129,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
     const [hasKnots, setHasKnots] = useState(false);
     const [knotRegions, setKnotRegions] = useState('');
     const [hasParasites, setHasParasites] = useState(false);
+    const [wantsMedicatedBath, setWantsMedicatedBath] = useState(false);
     const [petQuantity, setPetQuantity] = useState(1);
 
     // Granular Recurrence State
@@ -254,6 +255,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
             setHasKnots(!!q.hasKnots);
             setKnotRegions(q.knotRegions || '');
             setHasParasites(!!q.hasParasites);
+            setWantsMedicatedBath(!!q.wantsMedicatedBath);
             setPetQuantity(q.petQuantity || 1);
 
             if (q.desiredAt) {
@@ -528,7 +530,48 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
         }
     };
 
+    const handleUndoQuote = async () => {
+        if (!id) return;
+        if (!window.confirm('Deseja desfazer este orçamento? O status voltará para CALCULADO.')) return;
+
+        setIsSaving(true);
+        try {
+            await api.patch(`/quotes/${id}`, {
+                status: 'CALCULADO'
+            });
+            toast.success('Orçamento revertido para CALCULADO');
+            fetchQuote();
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            console.error('Erro ao desfazer orçamento:', error);
+            toast.error('Erro ao desfazer orçamento');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCancelQuote = async () => {
+        if (!id) return;
+        if (!window.confirm('Tem certeza que deseja CANCELAR este orçamento?')) return;
+
+        setIsSaving(true);
+        try {
+            await api.patch(`/quotes/${id}`, {
+                status: 'REJEITADO'
+            });
+            toast.success('Orçamento cancelado (REJEITADO)');
+            fetchQuote();
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            console.error('Erro ao cancelar orçamento:', error);
+            toast.error('Erro ao cancelar orçamento');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleUndoSchedule = async () => {
+
         if (!id) return;
         if (!undoReason.trim()) {
             toast.error('Informe uma justificativa para desfazer o agendamento.');
@@ -588,23 +631,40 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
 
         const normalizedSearch = searchTerm.toLowerCase();
 
-        // Permitir busca mesmo sem pet associado
+        // Permitir busca básica se não houver pet ou espécies selecionadas
         if (!quote?.pet?.species) {
             return availableServices.filter(service =>
                 service.name.toLowerCase().includes(normalizedSearch)
-            ).slice(0, 15); // Increased limit as it's less specific
+            ).slice(0, 15);
         }
 
         const petSpecies = normalizeSpecies(quote.pet.species);
-        const results = availableServices.filter(service => {
-            const matchesSearch = service.name.toLowerCase().includes(normalizedSearch);
-            const serviceSpecies = normalizeSpecies(service.species);
+        const petWeight = quote.pet.weight || 0;
+        const petCoatType = quote.pet.coatType?.toLowerCase() || '';
 
-            // Matches if species match, or service is for "Ambos" (normalized to 'ambos' or literal 'Ambos')
+        const results = availableServices.filter(service => {
+            // 1. Search term match
+            const matchesSearch = service.name.toLowerCase().includes(normalizedSearch);
+            if (!matchesSearch) return false;
+
+            // 2. Species match (or 'Ambos')
+            const serviceSpecies = normalizeSpecies(service.species);
             const isAmbos = serviceSpecies === 'ambos' || service.species === 'Ambos';
             const matchesSpecies = serviceSpecies === petSpecies || isAmbos;
+            if (!matchesSpecies) return false;
 
-            return matchesSearch && matchesSpecies;
+            // 3. Weight match (if service has weight constraints)
+            if (service.minWeight !== null && service.minWeight !== undefined && petWeight < service.minWeight) return false;
+            if (service.maxWeight !== null && service.maxWeight !== undefined && petWeight > service.maxWeight) return false;
+
+            // 4. Coat Type match (if service has coat type constraint)
+            if (service.coatType && petCoatType) {
+                const sCoat = service.coatType.toLowerCase();
+                // If service specifying a coat, it must be included in pet's coat or match exactly
+                if (!sCoat.includes(petCoatType) && !petCoatType.includes(sCoat)) return false;
+            }
+
+            return true;
         }).slice(0, 10);
 
         return results;
@@ -715,6 +775,7 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 hasKnots,
                 knotRegions,
                 hasParasites,
+                wantsMedicatedBath,
                 petQuantity,
                 transportLegs: transportCalculation?.breakdown ? Object.entries(transportCalculation.breakdown).map(([key, value]: [string, any]) => ({
                     legType: key.toUpperCase(),
@@ -933,6 +994,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                 isAutoSaving={isAutoSaving}
                 lastSaved={lastSaved}
                 onUndoSchedule={() => setIsUndoModalOpen(true)}
+                onUndoQuote={handleUndoQuote}
+                onCancelQuote={handleCancelQuote}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -965,6 +1028,8 @@ export default function QuoteEditor({ quoteId, onClose, onUpdate, onSchedule }: 
                             setKnotRegions={setKnotRegions}
                             hasParasites={hasParasites}
                             setHasParasites={setHasParasites}
+                            wantsMedicatedBath={wantsMedicatedBath}
+                            setWantsMedicatedBath={setWantsMedicatedBath}
                             petQuantity={petQuantity}
                             setPetQuantity={setPetQuantity}
                         />

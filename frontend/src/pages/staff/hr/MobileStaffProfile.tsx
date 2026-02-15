@@ -63,14 +63,14 @@ export const MobileStaffProfile = () => {
                 {/* 1. Profile Header Widget */}
                 <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center gap-4">
                     <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black"
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold"
                         style={{ backgroundColor: formData.color }}
                     >
                         {user?.name?.charAt(0)}
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase leading-tight">{user?.name}</h2>
-                        <div className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${getDivisionBgClass(user?.division || 'CLIENTE')} ${getDivisionTextClass(user?.division || 'CLIENTE')}`}>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white uppercase leading-tight">{user?.name}</h2>
+                        <div className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getDivisionBgClass(user?.division || 'CLIENTE')} ${getDivisionTextClass(user?.division || 'CLIENTE')}`}>
                             <ShieldCheck size={10} className="mr-1" />
                             {DIVISION_LABELS[user?.division as keyof typeof DIVISION_LABELS] || user?.division}
                         </div>
@@ -91,7 +91,7 @@ export const MobileStaffProfile = () => {
                             <InputField label="CPF/Documento" name="document" value={formData.document} onChange={handleChange} />
                             <InputField label="Nascimento" name="birthday" type="date" value={formData.birthday} onChange={handleChange} />
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Cor na Agenda</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Cor na Agenda</label>
                                 <input type="color" name="color" value={formData.color} onChange={handleChange as any} className="w-full h-12 rounded-xl cursor-pointer border-none p-0" />
                             </div>
                         </div>
@@ -123,11 +123,11 @@ export const MobileStaffProfile = () => {
                                 <div className="flex items-center gap-3">
                                     <Fingerprint className="text-emerald-600" size={20} />
                                     <div>
-                                        <p className="text-xs font-black text-emerald-900 dark:text-emerald-400 uppercase leading-none mb-0.5">Biometria</p>
+                                        <p className="text-xs font-bold text-emerald-900 dark:text-emerald-400 uppercase leading-none mb-0.5">Biometria</p>
                                         <p className="text-[9px] text-emerald-600 font-bold uppercase">Windows Hello / FaceID</p>
                                     </div>
                                 </div>
-                                <button type="button" className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase">Ativar</button>
+                                <button type="button" className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase">Ativar</button>
                             </div>
                         </div>
                     </ProfileSection>
@@ -142,7 +142,7 @@ export const MobileStaffProfile = () => {
                             <button type="button" className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700">
                                 <div className="flex items-center gap-3">
                                     <Download size={18} className="text-blue-600" />
-                                    <span className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Instalar Mobile App</span>
+                                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">Instalar Mobile App</span>
                                 </div>
                                 <Smartphone size={16} className="text-gray-400" />
                             </button>
@@ -154,7 +154,7 @@ export const MobileStaffProfile = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-16 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                        className="w-full h-16 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
                         {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={20} /> Salvar Alterações</>}
                     </button>
@@ -175,7 +175,7 @@ const ProfileSection = ({ title, icon: Icon, children, isOpen, onToggle }: any) 
                 <div className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
                     <Icon size={16} />
                 </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest">{title}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-widest">{title}</span>
             </div>
             <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
                 <Smartphone size={14} className="text-gray-300" />
@@ -199,7 +199,7 @@ const ProfileSection = ({ title, icon: Icon, children, isOpen, onToggle }: any) 
 
 const InputField = ({ label, icon: Icon, ...props }: any) => (
     <div className="space-y-1.5">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{label}</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{label}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />}
             <input

@@ -112,3 +112,12 @@ export const getAppointmentCheckout = async (req: Request, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const listRecentOrders = async (req: Request, res: Response) => {
+    try {
+        const orders = await posService.listRecentOrders();
+        res.json(orders);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};

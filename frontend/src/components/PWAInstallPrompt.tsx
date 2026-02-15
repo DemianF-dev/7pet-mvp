@@ -127,7 +127,7 @@ const PWAInstallPrompt: React.FC = () => {
                                 </div>
 
                                 <div className="flex-1">
-                                    <h3 className="font-black text-secondary text-lg leading-tight mb-1">
+                                    <h3 className="font-bold text-secondary text-lg leading-tight mb-1">
                                         {isIOS() ? '7Pet no seu iPhone' : '7Pet no seu Celular'}
                                     </h3>
                                     <p className="text-gray-500 text-sm leading-relaxed mb-4">
@@ -137,7 +137,7 @@ const PWAInstallPrompt: React.FC = () => {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={handleInstallClick}
-                                            className="flex-1 py-3 bg-primary text-white font-black rounded-xl text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20"
+                                            className="flex-1 py-3 bg-primary text-white font-bold rounded-xl text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20"
                                         >
                                             <Download size={16} /> Instalar agora
                                         </button>
@@ -160,7 +160,7 @@ const PWAInstallPrompt: React.FC = () => {
                         ) : (
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-black text-secondary text-lg">Instalar no iOS</h3>
+                                    <h3 className="font-bold text-secondary text-lg">Instalar no iOS</h3>
                                     <button onClick={() => setShowIOSInstructions(false)} className="text-gray-400">
                                         <X size={20} />
                                     </button>
@@ -184,7 +184,7 @@ const PWAInstallPrompt: React.FC = () => {
 
                                 <button
                                     onClick={handleDismiss}
-                                    className="w-full py-4 bg-secondary text-white font-black rounded-2xl text-[10px] uppercase tracking-widest"
+                                    className="w-full py-4 bg-secondary text-white font-bold rounded-2xl text-[10px] uppercase tracking-widest"
                                 >
                                     Entendi, valeu!
                                 </button>

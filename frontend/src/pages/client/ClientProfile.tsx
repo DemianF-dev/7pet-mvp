@@ -159,11 +159,11 @@ export default function ClientProfile() {
             {/* Tutorial Status Card */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ID Cliente</span>
-                    <span className="text-lg md:text-xl font-black text-secondary">CL-{String(user?.seqId || 0).padStart(4, '0')}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">ID Cliente</span>
+                    <span className="text-lg md:text-xl font-bold text-secondary">CL-{String(user?.seqId || 0).padStart(4, '0')}</span>
                 </div>
                 <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Guia Interativo</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Guia Interativo</span>
                     <button
                         type="button"
                         onClick={async () => {
@@ -182,18 +182,18 @@ export default function ClientProfile() {
                                 }
                             }
                         }}
-                        className={`text-[10px] md:text-xs font-black uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full transition-all border ${showTutorial ? 'bg-primary/5 text-primary border-primary/20' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                        className={`text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 md:px-4 py-1.5 rounded-full transition-all border ${showTutorial ? 'bg-primary/5 text-primary border-primary/20' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
                     >
                         {showTutorial ? 'Ativado' : 'Desativado'}
                     </button>
                 </div>
                 <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Membro Desde</span>
-                    <span className="text-lg md:text-xl font-black text-secondary">{user?.createdAt ? new Date(user.createdAt).getFullYear() : '2025'}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Membro Desde</span>
+                    <span className="text-lg md:text-xl font-bold text-secondary">{user?.createdAt ? new Date(user.createdAt).getFullYear() : '2025'}</span>
                 </div>
                 <div className="bg-white p-4 md:p-6 rounded-[32px] border border-gray-100 flex flex-col justify-center items-center text-center shadow-sm">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</span>
-                    <span className="bg-green-100 text-green-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Ativo</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</span>
+                    <span className="bg-green-100 text-green-600 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Ativo</span>
                 </div>
             </div>
 
@@ -306,7 +306,7 @@ export default function ClientProfile() {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Telefones</label>
-                                        <button type="button" onClick={() => setExtraPhones([...extraPhones, ''])} className="text-[10px] font-black text-primary hover:underline">+ Adicionar Telefone</button>
+                                        <button type="button" onClick={() => setExtraPhones([...extraPhones, ''])} className="text-[10px] font-bold text-primary hover:underline">+ Adicionar Telefone</button>
                                     </div>
                                     <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field text-sm" placeholder="Telefone Principal" />
                                     {extraPhones.map((p, i) => (
@@ -320,7 +320,7 @@ export default function ClientProfile() {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">E-mails Adicionais</label>
-                                        <button type="button" onClick={() => setExtraEmails([...extraEmails, ''])} className="text-[10px] font-black text-primary hover:underline">+ Adicionar E-mail</button>
+                                        <button type="button" onClick={() => setExtraEmails([...extraEmails, ''])} className="text-[10px] font-bold text-primary hover:underline">+ Adicionar E-mail</button>
                                     </div>
                                     {extraEmails.map((em, i) => (
                                         <div key={i} className="flex gap-2">
@@ -333,7 +333,7 @@ export default function ClientProfile() {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Endereços</label>
-                                        <button type="button" onClick={() => setExtraAddresses([...extraAddresses, ''])} className="text-[10px] font-black text-primary hover:underline">+ Adicionar Endereço</button>
+                                        <button type="button" onClick={() => setExtraAddresses([...extraAddresses, ''])} className="text-[10px] font-bold text-primary hover:underline">+ Adicionar Endereço</button>
                                     </div>
                                     <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="input-field text-sm" placeholder="Endereço Principal" />
                                     {extraAddresses.map((ad, i) => (
@@ -402,7 +402,7 @@ export default function ClientProfile() {
                                         <User size={20} className="text-primary" />
                                         Tutores Adicionais
                                     </h3>
-                                    <button type="button" onClick={addGuardian} className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-xs font-black hover:bg-primary/20 transition-all">
+                                    <button type="button" onClick={addGuardian} className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary/20 transition-all">
                                         + Adicionar Tutor
                                     </button>
                                 </div>
@@ -463,7 +463,7 @@ export default function ClientProfile() {
                             <Star size={100} />
                         </div>
 
-                        <h3 className="text-lg font-black text-secondary mb-6 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-secondary mb-6 flex items-center gap-2">
                             <CreditCard size={20} className="text-primary" />
                             Meu Plano
                         </h3>
@@ -471,7 +471,7 @@ export default function ClientProfile() {
                         {customerData ? (
                             <div className="space-y-4">
                                 <div className="p-4 bg-gray-50 rounded-2xl">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status da Conta</p>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status da Conta</p>
                                     <div className="flex items-center gap-2">
                                         <div className={`w-2 h-2 rounded-full ${customerData.type === 'RECORRENTE' ? 'bg-purple-500 animate-pulse' : 'bg-green-500'}`}></div>
                                         <span className="font-bold text-secondary">{customerData.type === 'RECORRENTE' ? 'Cliente VIP / Recorrente' : 'Cliente Avulso'}</span>
@@ -480,7 +480,7 @@ export default function ClientProfile() {
 
                                 {customerData.type === 'RECORRENTE' && (
                                     <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Frequência</p>
+                                        <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Frequência</p>
                                         <div className="flex items-center gap-2 text-purple-700 font-bold">
                                             <Calendar size={16} />
                                             <span>{customerData.recurringFrequency || 'Não definida'}</span>
@@ -490,8 +490,8 @@ export default function ClientProfile() {
 
                                 {customerData.discountPercentage > 0 && (
                                     <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Benefício Ativo</p>
-                                        <div className="flex items-center gap-2 text-blue-700 font-black text-xl">
+                                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Benefício Ativo</p>
+                                        <div className="flex items-center gap-2 text-blue-700 font-bold text-xl">
                                             <TrendingDown size={20} />
                                             <span>{customerData.discountPercentage}% OFF</span>
                                         </div>
@@ -506,14 +506,14 @@ export default function ClientProfile() {
                                                 <Star size={24} className="fill-current" />
                                             </div>
                                             <div className="flex-1">
-                                                <h4 className="text-sm font-black text-secondary mb-1">Quer ser um cliente VIP?</h4>
+                                                <h4 className="text-sm font-bold text-secondary mb-1">Quer ser um cliente VIP?</h4>
                                                 <p className="text-xs text-gray-600 mb-4">
                                                     Clientes recorrentes ganham descontos especiais e prioridade no atendimento!
                                                 </p>
                                                 <button
                                                     onClick={handleRequestRecurrence}
                                                     disabled={isRequestingRecurrence}
-                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs py-3 px-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xs py-3 px-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {isRequestingRecurrence ? 'Enviando...' : 'Solicitar Mudança para Recorrente'}
                                                 </button>
@@ -546,7 +546,7 @@ export default function ClientProfile() {
                     transition={{ delay: 0.2 }}
                     className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 overflow-hidden"
                 >
-                    <h3 className="text-lg font-black text-secondary mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-secondary mb-4 flex items-center gap-2">
                         <Fingerprint size={20} className="text-emerald-500" />
                         Acesso Biométrico
                     </h3>
@@ -563,7 +563,7 @@ export default function ClientProfile() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xs font-bold text-secondary">Este Dispositivo</span>
-                                    <span className="text-[8px] text-emerald-600 font-black uppercase tracking-tighter">Ativado via WebAuthn</span>
+                                    <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-tighter">Ativado via WebAuthn</span>
                                 </div>
                             </div>
                             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white">
@@ -583,7 +583,7 @@ export default function ClientProfile() {
                                     }
                                 );
                             }}
-                            className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-2xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
                         >
                             <Fingerprint size={18} />
                             Registrar Biometria / FaceID

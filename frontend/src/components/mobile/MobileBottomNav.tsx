@@ -81,7 +81,7 @@ export default function MobileBottomNav({ badges = {}, onMoreClick }: MobileBott
                                             initial={{ scale: 0, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             exit={{ scale: 0, opacity: 0 }}
-                                            className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1.5 flex items-center justify-center bg-[var(--color-error)] text-white text-[10px] font-black rounded-full border-2 border-[var(--color-bg-surface)] shadow-sm"
+                                            className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1.5 flex items-center justify-center bg-[var(--color-error)] text-white text-[10px] font-bold rounded-full border-2 border-[var(--color-bg-surface)] shadow-sm"
                                         >
                                             {badge > 99 ? '99' : badge}
                                         </motion.span>

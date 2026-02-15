@@ -185,9 +185,9 @@ export default function MobileMenuHub() {
                     <UserCircle size={36} className="text-white" />
                 </div>
                 <div className="flex-1 text-left min-w-0">
-                    <p className="text-white font-black text-xl leading-tight truncate">{user?.name || 'Usuário'}</p>
+                    <p className="text-white font-bold text-xl leading-tight truncate">{user?.name || 'Usuário'}</p>
                     <p className="text-white/80 text-xs font-bold uppercase tracking-wider truncate mb-0.5">{officialRole}</p>
-                    <div className="inline-flex px-2 py-0.5 bg-white/20 rounded-lg text-[8px] font-black text-white uppercase tracking-tighter">
+                    <div className="inline-flex px-2 py-0.5 bg-white/20 rounded-lg text-[8px] font-bold text-white uppercase tracking-tighter">
                         Logado via 7Pet Cloud
                     </div>
                 </div>
@@ -236,7 +236,7 @@ export default function MobileMenuHub() {
 
                     return (
                         <div key={section.title}>
-                            <h3 className="px-2 mb-3 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">
+                            <h3 className="px-2 mb-3 text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">
                                 {section.title}
                             </h3>
                             <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[32px] overflow-hidden shadow-sm divide-y divide-[var(--color-border)]">
@@ -255,7 +255,7 @@ export default function MobileMenuHub() {
                                                 {item.label}
                                             </span>
                                             {item.badge !== undefined && item.badge > 0 && (
-                                                <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-[var(--color-error)] text-white text-[10px] font-black rounded-full">
+                                                <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-[var(--color-error)] text-white text-[10px] font-bold rounded-full">
                                                     {item.badge > 99 ? '99+' : item.badge}
                                                 </span>
                                             )}

@@ -106,7 +106,7 @@ export default function PaymentList() {
             <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <BackButton className="mb-4 ml-[-1rem]" />
-                    <h1 className="text-4xl font-black text-secondary tracking-tight">
+                    <h1 className="text-4xl font-bold text-secondary tracking-tight">
                         Gestão <span className="text-primary underline decoration-wavy decoration-2 underline-offset-8">Financeira</span>
                     </h1>
                     <p className="text-gray-500 mt-3 font-medium">Controle suas faturas, pagamentos e créditos.</p>
@@ -119,7 +119,7 @@ export default function PaymentList() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Saldo em Conta</p>
-                            <p className={`text-xl font-black ${customer?.balance && customer.balance > 0 ? 'text-green-600' : 'text-secondary'}`}>
+                            <p className={`text-xl font-bold ${customer?.balance && customer.balance > 0 ? 'text-green-600' : 'text-secondary'}`}>
                                 R$ {customer?.balance?.toFixed(2) || '0,00'}
                             </p>
                         </div>
@@ -131,7 +131,7 @@ export default function PaymentList() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Pendente</p>
-                            <p className="text-xl font-black text-secondary">
+                            <p className="text-xl font-bold text-secondary">
                                 R$ {totalPending.toFixed(2)}
                             </p>
                         </div>
@@ -202,7 +202,7 @@ export default function PaymentList() {
 
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-1">
-                                            <h3 className="font-black text-secondary">Fatura #{invoice.id.substring(0, 8).toUpperCase()}</h3>
+                                            <h3 className="font-bold text-secondary">Fatura #{invoice.id.substring(0, 8).toUpperCase()}</h3>
                                             <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${statusConfig[invoice.status]?.color}`}>
                                                 {statusConfig[invoice.status]?.icon}
                                                 {statusConfig[invoice.status]?.label}
@@ -218,7 +218,7 @@ export default function PaymentList() {
 
                                     <div className="text-center md:text-right min-w-[120px]">
                                         <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">Total</p>
-                                        <p className="text-2xl font-black text-secondary">R$ {invoice.amount.toFixed(2)}</p>
+                                        <p className="text-2xl font-bold text-secondary">R$ {invoice.amount.toFixed(2)}</p>
                                         {isPartiallyPaid && (
                                             <p className="text-[10px] font-bold text-orange-500">Pago R$ {totalPaid.toFixed(2)}</p>
                                         )}
@@ -257,7 +257,7 @@ export default function PaymentList() {
                             <div className="p-8">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-black text-secondary">Detalhes do Pagamento</h2>
+                                        <h2 className="text-2xl font-bold text-secondary">Detalhes do Pagamento</h2>
                                         <p className="text-gray-400 font-medium text-sm">Fatura #{selectedInvoice.id.substring(0, 8).toUpperCase()}</p>
                                     </div>
                                     <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-gray-100 rounded-full text-gray-400 hover:text-secondary hover:bg-gray-200 transition-all">
@@ -269,7 +269,7 @@ export default function PaymentList() {
                                     <div className="bg-gray-50 rounded-3xl p-6">
                                         <div className="flex justify-between items-center mb-4">
                                             <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Valor da Fatura</span>
-                                            <span className="text-xl font-black text-secondary">R$ {selectedInvoice.amount.toFixed(2)}</span>
+                                            <span className="text-xl font-bold text-secondary">R$ {selectedInvoice.amount.toFixed(2)}</span>
                                         </div>
 
                                         <hr className="border-gray-200 border-dashed my-4" />
@@ -303,7 +303,7 @@ export default function PaymentList() {
 
                                     <div className="flex justify-between items-center px-4">
                                         <span className="text-sm font-bold text-gray-500">Saldo Restante</span>
-                                        <span className="text-2xl font-black text-primary">
+                                        <span className="text-2xl font-bold text-primary">
                                             R$ {(selectedInvoice.amount - (Array.isArray(selectedInvoice.paymentRecords) ? selectedInvoice.paymentRecords.reduce((a, b) => a + b.amount, 0) : 0)).toFixed(2)}
                                         </span>
                                     </div>
@@ -331,7 +331,7 @@ export default function PaymentList() {
                                                         navigator.clipboard.writeText('thepet@7pet.com.br');
                                                         toast.success('Chave Pix copiada para a área de transferência!', { icon: '🔑', duration: 3000 });
                                                     }}
-                                                    className="w-full py-3 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                                                    className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2"
                                                 >
                                                     <Copy size={16} />
                                                     Copiar Chave Pix

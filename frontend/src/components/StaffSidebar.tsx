@@ -31,7 +31,8 @@ import {
     History,
     Target,
     Shield,
-    ShoppingCart
+    ShoppingCart,
+    Wand2
 } from 'lucide-react';
 
 import { DEFAULT_PERMISSIONS_BY_ROLE } from '../constants/permissions';
@@ -158,6 +159,14 @@ export default function StaffSidebar() {
                             active={location.pathname === '/staff/quotes'}
                             onClick={() => { navigate('/staff/quotes'); setIsOpen(false); }}
                             routeKey="quotes"
+                        />
+                    )}
+                    {checkPermission('quotes') && import.meta.env.VITE_SCHEDULING_WIZARD_V2_ENABLED === 'true' && (
+                        <SidebarItem
+                            icon={<Wand2 size={18} />}
+                            label="Wizard de Agenda"
+                            active={location.pathname.startsWith('/staff/scheduling-wizard')}
+                            onClick={() => { navigate('/staff/scheduling-wizard'); setIsOpen(false); }}
                         />
                     )}
                     {checkPermission('agenda-spa') && (
@@ -454,8 +463,19 @@ export default function StaffSidebar() {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex items-center gap-3 px-3 py-2 bg-white/5 border border-white/5 rounded-2xl shadow-sm cursor-pointer hover:bg-white/10 transition-colors"
-                            onClick={() => navigate('/staff/dashboard')}
+                            className="flex items-center gap-3 px-3 py-2 bg-white/5 border border-white/5 rounded-2xl shadow-sm cursor-pointer hover:bg-white/10 transition-colors select-none"
+                            onClick={(e) => {
+                                if (e.detail === 3) {
+                                    import('react-hot-toast').then(({ toast }) => {
+                                        toast.success(`Build: ${import.meta.env.VITE_COMMIT_HASH || 'DEV'} (${import.meta.env.MODE})`, {
+                                            icon: '🔒',
+                                            duration: 5000
+                                        });
+                                    });
+                                } else {
+                                    navigate('/staff/dashboard');
+                                }
+                            }}
                         >
                             <img src="/logo.png" className="w-8 h-8 rounded-xl shadow-inner" alt="Logo" />
                             <div className="flex flex-col">
@@ -494,10 +514,10 @@ export default function StaffSidebar() {
                     {!isCollapsed && (
                         <div className="grid grid-cols-2 items-center px-1">
                             <div className="flex flex-col">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-heading/90 leading-none">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-heading/90 leading-none">
                                     {format(currentTime, "EEE, dd MMM", { locale: ptBR })}
                                 </p>
-                                <p className="text-[14px] font-black text-accent font-mono leading-none mt-1">
+                                <p className="text-[14px] font-bold text-accent font-mono leading-none mt-1">
                                     {format(currentTime, "HH:mm")}
                                 </p>
                             </div>
@@ -515,7 +535,7 @@ export default function StaffSidebar() {
 
                     {/* Block 2: ThemeDock (Switch) */}
                     <div className={isCollapsed ? "flex justify-center" : ""}>
-                        <ThemeToggle />
+                        <ThemeToggle variant={isCollapsed ? 'compact' : 'default'} />
                     </div>
 
                     {/* Block 3: UserCard */}
@@ -587,7 +607,7 @@ function SidebarGroup({ label, children, isCollapsed }: { label: string, childre
     return (
         <div className="mb-6 last:mb-2 relative z-10">
             {!isCollapsed && (
-                <h3 className="px-4 mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--sidebar-group-label)] opacity-70">
+                <h3 className="px-4 mb-2 text-[11px] font-bold uppercase tracking-widest text-[var(--sidebar-group-label)] opacity-70">
                     {label}
                 </h3>
             )}

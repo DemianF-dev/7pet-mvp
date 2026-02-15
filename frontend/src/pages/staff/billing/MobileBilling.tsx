@@ -63,17 +63,17 @@ export const MobileBilling = () => {
                 <div className="grid grid-cols-2 gap-3">
                     <div className="bg-emerald-600 p-4 rounded-2xl text-white shadow-lg shadow-emerald-900/10">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-black uppercase opacity-70">Recebido</span>
+                            <span className="text-[10px] font-bold uppercase opacity-70">Recebido</span>
                             <ArrowUpRight size={16} />
                         </div>
-                        <p className="text-lg font-black leading-none">R$ {metrics.received.toLocaleString('pt-BR')}</p>
+                        <p className="text-lg font-bold leading-none">R$ {metrics.received.toLocaleString('pt-BR')}</p>
                     </div>
                     <div className="bg-blue-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-900/10">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-black uppercase opacity-70">Pendente</span>
+                            <span className="text-[10px] font-bold uppercase opacity-70">Pendente</span>
                             <Clock size={16} />
                         </div>
-                        <p className="text-lg font-black leading-none">R$ {metrics.pending.toLocaleString('pt-BR')}</p>
+                        <p className="text-lg font-bold leading-none">R$ {metrics.pending.toLocaleString('pt-BR')}</p>
                     </div>
                 </div>
 
@@ -94,7 +94,7 @@ export const MobileBilling = () => {
                             <button
                                 key={s}
                                 onClick={() => setStatusFilter(s)}
-                                className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${statusFilter === s
+                                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${statusFilter === s
                                     ? 'bg-gray-900 dark:bg-zinc-100 text-white dark:text-gray-900 shadow-sm'
                                     : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
                                     }`}
@@ -131,7 +131,7 @@ export const MobileBilling = () => {
                                     >
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex flex-col">
-                                                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate max-w-[200px]">
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase truncate max-w-[200px]">
                                                     {inv.customer.name}
                                                 </h3>
                                                 <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase mt-0.5">
@@ -139,7 +139,7 @@ export const MobileBilling = () => {
                                                     Vence {new Date(inv.dueDate).toLocaleDateString('pt-BR')}
                                                 </div>
                                             </div>
-                                            <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${status.color}`}>
+                                            <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${status.color}`}>
                                                 <status.icon size={12} />
                                                 {status.label}
                                             </div>
@@ -147,8 +147,8 @@ export const MobileBilling = () => {
 
                                         <div className="flex justify-between items-end">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Valor</span>
-                                                <span className="text-xl font-black text-gray-900 dark:text-white">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Valor</span>
+                                                <span className="text-xl font-bold text-gray-900 dark:text-white">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                             </div>
                                             <button className="p-2 bg-gray-50 dark:bg-zinc-800 rounded-xl text-gray-400">
                                                 <ChevronRight size={18} />

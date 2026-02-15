@@ -230,12 +230,12 @@ export default function StaffNotificationList() {
                                     <div className="flex items-start gap-2 mb-1">
                                         <h3 className="font-bold text-secondary flex-1">{notification.title}</h3>
                                         {notification.resolved && (
-                                            <span className="text-[9px] font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase">
+                                            <span className="text-[9px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase">
                                                 Resolvida
                                             </span>
                                         )}
                                         {notification.priority === 'HIGH' && !notification.resolved && (
-                                            <span className="text-[9px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase">
+                                            <span className="text-[9px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase">
                                                 Urgente
                                             </span>
                                         )}

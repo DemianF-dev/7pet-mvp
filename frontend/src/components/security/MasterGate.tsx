@@ -57,7 +57,7 @@ export const MasterGate: React.FC<MasterGateProps> = ({ children, fallback }) =>
                             <Lock className="text-red-500" size={44} />
                         </motion.div>
 
-                        <h2 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">
+                        <h2 className="text-3xl font-bold text-white mb-3 uppercase tracking-tighter">
                             Shield L4 Protocol <span className="text-red-500">Locked</span>
                         </h2>
                         <p className="text-slate-400 text-sm mb-12 max-w-sm mx-auto leading-relaxed font-medium">
@@ -65,7 +65,7 @@ export const MasterGate: React.FC<MasterGateProps> = ({ children, fallback }) =>
                         </p>
 
                         <div className="max-w-sm mx-auto bg-black/40 p-8 rounded-[32px] border border-white/5 shadow-2xl">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-4">
                                 Security Challenge: Type <span className="text-red-500">MASTER</span>
                             </label>
                             <input
@@ -88,7 +88,7 @@ export const MasterGate: React.FC<MasterGateProps> = ({ children, fallback }) =>
                                     }
                                 }}
                                 disabled={challengeText !== 'MASTER'}
-                                className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 transition-all ${challengeText === 'MASTER'
+                                className={`w-full py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 transition-all ${challengeText === 'MASTER'
                                     ? 'bg-red-600 text-white shadow-xl shadow-red-600/30 hover:scale-[1.02] active:scale-95'
                                     : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
                                     }`}

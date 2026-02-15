@@ -187,7 +187,7 @@ export const MobileQuotes = ({
                             onClick={toggleSelectAll}
                             variant="ghost"
                             size="sm"
-                            className="flex-1 h-10 px-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-gray-100 dark:bg-zinc-800"
+                            className="flex-1 h-10 px-3 text-[10px] font-bold uppercase tracking-widest rounded-xl bg-gray-100 dark:bg-zinc-800"
                             icon={selectedIds.length === quotes.length ? Square : CheckSquare}
                         >
                             {selectedIds.length === quotes.length ? 'DESMARCAR' : 'MARCAR TODOS'}
@@ -199,7 +199,7 @@ export const MobileQuotes = ({
                             }}
                             variant="ghost"
                             size="sm"
-                            className="h-10 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl bg-gray-100 dark:bg-zinc-800"
+                            className="h-10 px-4 text-[10px] font-bold uppercase tracking-widest rounded-xl bg-gray-100 dark:bg-zinc-800"
                             icon={X}
                         >
                             VOLTAR
@@ -211,7 +211,7 @@ export const MobileQuotes = ({
                             onClick={() => setIsBulkMode(true)}
                             variant="ghost"
                             size="sm"
-                            className="flex-1 h-10 px-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-gray-100 dark:bg-zinc-800"
+                            className="flex-1 h-10 px-3 text-[10px] font-bold uppercase tracking-widest rounded-xl bg-gray-100 dark:bg-zinc-800"
                             icon={CheckSquare}
                         >
                             SELECIONAR
@@ -220,7 +220,7 @@ export const MobileQuotes = ({
                             onClick={onNewQuote}
                             variant="primary"
                             size="sm"
-                            className="flex-1 h-10 px-3 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20"
+                            className="flex-1 h-10 px-3 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20"
                             icon={Plus}
                         >
                             NOVO ORÇAMENTO
@@ -244,7 +244,7 @@ export const MobileQuotes = ({
                                 variant="destructive"
                                 size="sm"
                                 icon={Trash2}
-                                className="text-[10px] font-black uppercase tracking-widest"
+                                className="text-[10px] font-bold uppercase tracking-widest"
                             >
                                 EXCLUIR
                             </Button>
@@ -254,7 +254,7 @@ export const MobileQuotes = ({
                                 onClick={handleBulkRestore}
                                 variant="primary"
                                 size="sm"
-                                className="text-[10px] font-black uppercase tracking-widest"
+                                className="text-[10px] font-bold uppercase tracking-widest"
                             >
                                 RESTAURAR
                             </Button>
@@ -265,7 +265,7 @@ export const MobileQuotes = ({
                                 variant="secondary"
                                 size="sm"
                                 icon={DollarSign}
-                                className="text-[10px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-600 hover:bg-orange-500/20"
+                                className="text-[10px] font-bold uppercase tracking-widest bg-orange-500/10 text-orange-600 hover:bg-orange-500/20"
                             >
                                 FATURAR
                             </Button>
@@ -275,7 +275,7 @@ export const MobileQuotes = ({
                             variant="secondary"
                             size="sm"
                             icon={Copy}
-                            className="text-[10px] font-black uppercase tracking-widest"
+                            className="text-[10px] font-bold uppercase tracking-widest"
                         >
                             DUPLICAR
                         </Button>
@@ -288,19 +288,19 @@ export const MobileQuotes = ({
                 <div className="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-2xl">
                     <button
                         onClick={() => onViewChange('active')}
-                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'active' ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm' : 'text-gray-400'}`}
+                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'active' ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm' : 'text-gray-400'}`}
                     >
                         Ativos
                     </button>
                     <button
                         onClick={() => onViewChange('history')}
-                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'history' ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm' : 'text-gray-400'}`}
+                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'history' ? 'bg-white dark:bg-zinc-700 text-primary shadow-sm' : 'text-gray-400'}`}
                     >
                         Histórico
                     </button>
                     <button
                         onClick={() => onViewChange('trash')}
-                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'trash' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-400'}`}
+                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'trash' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-400'}`}
                     >
                         Lixeira
                     </button>
@@ -357,7 +357,7 @@ export const MobileQuotes = ({
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Sincronizando orçamentos...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando orçamentos...</p>
                         </div>
                     ) : quotes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center px-10">
@@ -392,25 +392,30 @@ export const MobileQuotes = ({
                                                 </button>
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                                                        OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
+                                                <div className="flex flex-col gap-1 mb-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                                                            OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
+                                                        </span>
+                                                        <Badge
+                                                            variant="neutral"
+                                                            className={`text-[8px] px-1.5 py-0 font-bold uppercase h-auto ${getQuoteStatusColor(quote.status)}`}
+                                                        >
+                                                            {quote.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                        {quote.isRecurring ? 'RECORRENTE' : 'AVULSO'}
                                                     </span>
-                                                    <Badge
-                                                        variant="neutral"
-                                                        className={`text-[8px] px-1.5 py-0 font-black uppercase h-auto ${getQuoteStatusColor(quote.status)}`}
-                                                    >
-                                                        {quote.status}
-                                                    </Badge>
                                                 </div>
-                                                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase truncate">
                                                     {quote.customer?.name || 'Cliente s/ nome'}
                                                 </h3>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase truncate mt-0.5">{quote.title}</p>
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="text-sm font-black text-primary">
+                                            <div className="text-sm font-bold text-primary">
                                                 R$ {quote.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </div>
                                         </div>
@@ -430,32 +435,32 @@ export const MobileQuotes = ({
                                     <div className="flex items-center justify-between pt-4">
                                         {!isBulkMode && (
                                             <div className="flex gap-2">
-                                                <button 
+                                                <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleShare(quote);
                                                     }}
-                                                    className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 dark:bg-zinc-800 text-gray-500 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-gray-100 dark:hover:bg-zinc-700"
+                                                    className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 dark:bg-zinc-800 text-gray-500 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-gray-100 dark:hover:bg-zinc-700"
                                                 >
                                                     <Share2 size={12} />
                                                 </button>
                                                 {onDuplicate && (
-                                                    <button 
+                                                    <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleDuplicate(quote);
                                                         }}
-                                                        className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                                                        className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50"
                                                     >
                                                         <Copy size={12} />
                                                     </button>
                                                 )}
-                                                <button 
+                                                <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleExport(quote);
                                                     }}
-                                                    className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-green-100 dark:hover:bg-green-900/50"
+                                                    className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-green-100 dark:hover:bg-green-900/50"
                                                 >
                                                     <Download size={12} />
                                                 </button>

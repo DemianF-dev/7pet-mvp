@@ -90,7 +90,7 @@ export default function AppointmentList() {
                                                     <span className="text-[10px] font-bold uppercase leading-none mb-1">
                                                         {date ? date.toLocaleDateString('pt-BR', { month: 'short' }) : '---'}
                                                     </span>
-                                                    <span className="text-xl font-black leading-none">
+                                                    <span className="text-xl font-bold leading-none">
                                                         {date ? date.getDate() : '--'}
                                                     </span>
                                                 </div>

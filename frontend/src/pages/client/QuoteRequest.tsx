@@ -422,7 +422,7 @@ export default function QuoteRequest() {
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
                         <CheckCircle2 size={40} />
                     </div>
-                    <h2 className="text-3xl font-black text-secondary mb-4">
+                    <h2 className="text-3xl font-bold text-secondary mb-4">
                         {savedAsDraft ? '💾 Rascunho Salvo!' : 'Solicitação Enviada!'}
                     </h2>
                     <p className="text-gray-500 mb-8">
@@ -488,10 +488,10 @@ export default function QuoteRequest() {
                             {/* Summary header for chosen pet/hair */}
                             <div className="mb-10 bg-gray-50 p-6 rounded-[32px] flex items-center justify-between border border-gray-100">
                                 <div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Escolha Personalizada p/</p>
-                                    <h3 className="text-lg font-black text-secondary uppercase">{selectedPet?.name} <span className="text-primary italic opacity-50">• {spaDetails.hairLength}</span></h3>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Escolha Personalizada p/</p>
+                                    <h3 className="text-lg font-bold text-secondary uppercase">{selectedPet?.name} <span className="text-primary italic opacity-50">• {spaDetails.hairLength}</span></h3>
                                 </div>
-                                <button type="button" onClick={() => setStep(2)} className="text-[10px] font-black uppercase text-primary hover:underline">Trocar Pet</button>
+                                <button type="button" onClick={() => setStep(2)} className="text-[10px] font-bold uppercase text-primary hover:underline">Trocar Pet</button>
                             </div>
 
                             <DateTimeSelection
@@ -538,13 +538,13 @@ export default function QuoteRequest() {
                         {error && (
                             <div className="p-6 bg-red-50 text-red-600 rounded-[32px] border border-red-100 flex items-center gap-4">
                                 <AlertCircle size={28} />
-                                <span className="font-black text-sm uppercase tracking-tight">{error}</span>
+                                <span className="font-bold text-sm uppercase tracking-tight">{error}</span>
                             </div>
                         )}
 
                         <div id="tour-communication" className="bg-white p-8 rounded-[40px] shadow-lg border border-gray-50 mb-6 flex flex-col md:flex-row items-center justify-between gap-6">
                             <div>
-                                <h3 className="text-lg font-black text-secondary uppercase tracking-tight">Como prefere receber o orçamento?</h3>
+                                <h3 className="text-lg font-bold text-secondary uppercase tracking-tight">Como prefere receber o orçamento?</h3>
                                 <p className="text-xs text-gray-400 font-medium">Sua resposta nos ajuda a agilizar o atendimento.</p>
                             </div>
                             <div className="flex gap-3">
@@ -558,7 +558,7 @@ export default function QuoteRequest() {
                                         onClick={() => setCommunicationPrefs(prev =>
                                             prev.includes(pref.id) ? prev.filter(p => p !== pref.id) : [...prev, pref.id]
                                         )}
-                                        className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all border-2 ${communicationPrefs.includes(pref.id) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                                        className={`px-6 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all border-2 ${communicationPrefs.includes(pref.id) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
                                     >
                                         {pref.label}
                                     </button>
@@ -567,7 +567,7 @@ export default function QuoteRequest() {
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-8 rounded-[40px] shadow-lg border border-gray-50">
-                            <button type="button" onClick={() => setStep(2)} className="font-black text-gray-400 hover:text-secondary uppercase tracking-widest text-xs">Voltar</button>
+                            <button type="button" onClick={() => setStep(2)} className="font-bold text-gray-400 hover:text-secondary uppercase tracking-widest text-xs">Voltar</button>
                             <div className="flex gap-4">
                                 <LoadingButton
                                     type="button"

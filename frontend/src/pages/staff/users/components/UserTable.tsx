@@ -34,24 +34,24 @@ export default function UserTable({
             render: (u: UserData) => (
                 <div className="flex items-center gap-4">
                     <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
                         style={u.color ? { backgroundColor: u.color, color: 'white' } : undefined}
                     >
                         {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                            <span className="font-black text-secondary text-sm">
+                            <span className="font-bold text-secondary text-sm">
                                 {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
                             </span>
-                            <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
+                            <span className="bg-indigo-50 text-indigo-500 text-[9px] font-bold px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
                                 {u.division === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
                             </span>
                         </div>
                         <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className={`w-2 h-2 rounded-full ${u.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-gray-300'}`}></div>
-                            <span className={`text-[10px] font-black uppercase tracking-tight ${u.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-tight ${u.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
                                 {u.isOnline ? 'Online agora' : (u.lastSeenAt ? `Último acesso em ${new Date(u.lastSeenAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
                             </span>
                         </div>
@@ -65,7 +65,7 @@ export default function UserTable({
             className: 'text-center',
             render: (u: UserData) => (
                 u.division !== 'CLIENTE' ? (
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${u.isEligible !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         {u.isEligible !== false ? 'Disponível' : 'Bloqueado'}
                     </div>
@@ -79,7 +79,7 @@ export default function UserTable({
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${getDivisionBgClass(u.division || u.role || 'CLIENTE')}`} />
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
                             {DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role || 'N/A'}
                         </span>
                     </div>
@@ -98,7 +98,7 @@ export default function UserTable({
                     >
                         {visiblePasswordIds.includes(u.id) ? <Unlock size={14} /> : <Lock size={14} />}
                     </button>
-                    <span className={`text-[11px] font-black tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
+                    <span className={`text-[11px] font-bold tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
                         {visiblePasswordIds.includes(u.id) ? (u.plainPassword || 'SEM SENHA') : '•••••••'}
                     </span>
                 </div>

@@ -63,3 +63,5 @@ const prisma = globalForPrisma.prisma ?? createSafeClient();
 export default prisma;
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// Force reload after schema update
+

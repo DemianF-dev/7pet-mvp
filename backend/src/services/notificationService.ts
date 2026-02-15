@@ -37,7 +37,7 @@ export const notificationService = {
         });
 
         for (const appt of appointments) {
-            if (!appt.customer.user) continue;
+            if (!appt.customer.user || !appt.startAt) continue;
 
             const timeStr = appt.startAt.toLocaleTimeString('pt-BR', {
                 hour: '2-digit',

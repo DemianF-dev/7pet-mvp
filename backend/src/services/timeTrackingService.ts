@@ -408,7 +408,7 @@ export async function getHourBankTransactions(staffId: string, limit: number = 5
         take: limit,
         include: {
             createdBy: { select: { name: true } },
-            payPeriod: { select: { startDate: true, endDate: true } },
+            staffPayPeriod: { select: { startDate: true, endDate: true } },
             attendance: { select: { date: true } }
         }
     });
@@ -423,7 +423,7 @@ async function updateHourBank(
     type: string,
     reason: string,
     createdById: string,
-    payPeriodId?: string,
+    staffPayPeriodId?: string,
     attendanceId?: string
 ) {
     const hourBank = await getOrCreateHourBank(staffId);
@@ -448,7 +448,7 @@ async function updateHourBank(
             balanceBefore,
             balanceAfter,
             reason,
-            payPeriodId,
+            staffPayPeriodId,
             attendanceId,
             createdById
         },
@@ -492,7 +492,7 @@ export async function adminAdjustHourBank(
  */
 export async function processHourBankInPeriod(
     staffId: string,
-    payPeriodId: string,
+    staffPayPeriodId: string,
     action: 'pay' | 'discount' | 'bonus' | 'accumulate',
     adminUserId: string,
     bonusMultiplier: number = 1.5
@@ -512,7 +512,7 @@ export async function processHourBankInPeriod(
             'CARRY_FORWARD',
             `Saldo acumulado para próximo período (${Math.floor(balance / 60)}h ${balance % 60}min)`,
             adminUserId,
-            payPeriodId
+            staffPayPeriodId
         );
     }
 
@@ -575,9 +575,9 @@ export async function processHourBankInPeriod(
     }
 
     // Create pay adjustment
-    const payAdjustment = await prisma.payAdjustment.create({
+    const staffPayAdjustment = await prisma.staffPayAdjustment.create({
         data: {
-            payPeriodId,
+            staffPayPeriodId,
             staffId,
             type: payAdjustmentType,
             amount: Math.abs(amount),
@@ -592,16 +592,16 @@ export async function processHourBankInPeriod(
         staffId,
         -balance, // Invert to zero the balance
         transactionType,
-        `Processado no período ${payPeriodId} - ${action}`,
+        `Processado no período ${staffPayPeriodId} - ${action}`,
         adminUserId,
-        payPeriodId
+        staffPayPeriodId
     );
 
     const updatedBank = await getOrCreateHourBank(staffId);
 
     return {
         transaction,
-        payAdjustment,
+        staffPayAdjustment,
         hourBank: updatedBank,
         processedAmount: amount
     };
@@ -610,11 +610,11 @@ export async function processHourBankInPeriod(
 /**
  * Revert hour bank processing for a pay period (used when reopening)
  */
-export async function revertHourBankProcessing(payPeriodId: string, adminUserId: string) {
+export async function revertHourBankProcessing(staffPayPeriodId: string, adminUserId: string) {
     // 1. Find transactions linked to this period
     if (!(prisma as any).hourBankTransaction) return { count: 0 };
     const transactions = await (prisma as any).hourBankTransaction.findMany({
-        where: { payPeriodId }
+        where: { staffPayPeriodId }
     });
 
     if (transactions.length === 0) return { count: 0 };
@@ -632,13 +632,13 @@ export async function revertHourBankProcessing(payPeriodId: string, adminUserId:
 
     // 3. Delete the transactions
     await (prisma as any).hourBankTransaction.deleteMany({
-        where: { payPeriodId }
+        where: { staffPayPeriodId }
     });
 
     // 4. Delete associated PayAdjustments
-    await prisma.payAdjustment.deleteMany({
+    await prisma.staffPayAdjustment.deleteMany({
         where: {
-            payPeriodId,
+            staffPayPeriodId,
             reason: { contains: 'banco de horas', mode: Prisma.QueryMode.insensitive }
         }
     });

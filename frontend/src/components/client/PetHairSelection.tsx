@@ -39,7 +39,7 @@ const PetHairSelection: React.FC<PetHairSelectionProps> = ({
                     {/* Pet Selection */}
                     <div className="space-y-6">
                         <div className="text-center">
-                            <h2 className="text-2xl font-black text-secondary">Para qual <span className="text-primary italic">Pet</span>?</h2>
+                            <h2 className="text-2xl font-bold text-secondary">Para qual <span className="text-primary italic">Pet</span>?</h2>
                             <p className="text-gray-400 text-sm mt-2">Selecione o pet que receberá o atendimento</p>
                         </div>
 
@@ -55,7 +55,7 @@ const PetHairSelection: React.FC<PetHairSelectionProps> = ({
                                         {pet.species.toLowerCase().includes('gato') ? <Cat size={24} /> : <Dog size={24} />}
                                     </div>
                                     <div className="text-center">
-                                        <p className="font-black text-sm uppercase tracking-tight">{pet.name}</p>
+                                        <p className="font-bold text-sm uppercase tracking-tight">{pet.name}</p>
                                         <p className={`text-[10px] font-bold uppercase tracking-widest ${selectedPetId === pet.id ? 'text-white/70' : 'text-gray-400'}`}>
                                             {pet.breed || 'SRD'} • {pet.weight ? `${pet.weight}kg` : 'Peso N/I'}
                                         </p>
@@ -70,7 +70,7 @@ const PetHairSelection: React.FC<PetHairSelectionProps> = ({
                                 <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-primary/10">
                                     <Star size={20} />
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest">Novo Pet</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest">Novo Pet</span>
                             </button>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ const PetHairSelection: React.FC<PetHairSelectionProps> = ({
                             className="space-y-6 pt-10 border-t border-gray-50"
                         >
                             <div className="text-center">
-                                <h2 className="text-2xl font-black text-secondary">E o <span className="text-primary italic">Pelo</span> dele?</h2>
+                                <h2 className="text-2xl font-bold text-secondary">E o <span className="text-primary italic">Pelo</span> dele?</h2>
                                 <p className="text-gray-400 text-sm mt-2">Isso define quais serviços e preços são ideais para ele</p>
                             </div>
 
@@ -93,7 +93,7 @@ const PetHairSelection: React.FC<PetHairSelectionProps> = ({
                                         key={length}
                                         type="button"
                                         onClick={() => onHairLengthChange(length)}
-                                        className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${hairLength === length ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                                        className={`flex-1 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all ${hairLength === length ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' : 'text-gray-400 hover:text-secondary'}`}
                                     >
                                         {length === 'curto' ? 'Curto' : length === 'medio' ? 'Médio' : 'Longo'}
                                     </button>

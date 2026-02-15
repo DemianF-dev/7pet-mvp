@@ -36,7 +36,7 @@ export default function CalendarCompactHeader({
                 <div className="flex bg-[var(--color-bg-secondary)] p-1 rounded-2xl border border-[var(--color-border)] shadow-inner">
                     <button
                         onClick={() => navigate('/staff/agenda-spa')}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isLog
+                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all ${!isLog
                             ? 'bg-[var(--color-accent-primary)] text-white shadow-lg'
                             : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
                             }`}
@@ -46,7 +46,7 @@ export default function CalendarCompactHeader({
                     </button>
                     <button
                         onClick={() => navigate('/staff/agenda-log')}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isLog
+                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all ${isLog
                             ? 'bg-[var(--color-warning)] text-white shadow-lg'
                             : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
                             }`}
@@ -84,7 +84,7 @@ export default function CalendarCompactHeader({
             {/* Bottom Row: Month Year & Nav */}
             <div className="flex items-center justify-between px-5 pb-4">
                 <div className="flex items-center">
-                    <span className="text-[var(--color-text-primary)] text-3xl font-black tracking-tight">{month}</span>
+                    <span className="text-[var(--color-text-primary)] text-3xl font-bold tracking-tight">{month}</span>
                     <span className="text-[var(--color-text-tertiary)] text-3xl font-light ml-2 opacity-50">{year}</span>
                 </div>
                 <div className="flex items-center gap-2">

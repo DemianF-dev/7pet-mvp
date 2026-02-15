@@ -38,8 +38,8 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
                             <DollarSign size={18} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Receita</p>
-                            <h3 className="text-lg font-black text-gray-900 leading-none">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Receita</p>
+                            <h3 className="text-lg font-bold text-gray-900 leading-none">
                                 R$ {(kpis?.revenue?.current || 0).toLocaleString('pt-BR')}
                             </h3>
                         </div>
@@ -50,8 +50,8 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
                             <Activity size={18} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Ticket Médio</p>
-                            <h3 className="text-lg font-black text-gray-900 leading-none">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Ticket Médio</p>
+                            <h3 className="text-lg font-bold text-gray-900 leading-none">
                                 R$ {(kpis?.ticketMedio || 0).toLocaleString('pt-BR')}
                             </h3>
                         </div>
@@ -62,8 +62,8 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
                             <AlertCircle size={18} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">No-Show</p>
-                            <h3 className="text-lg font-black text-gray-900 leading-none">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">No-Show</p>
+                            <h3 className="text-lg font-bold text-gray-900 leading-none">
                                 {(kpis?.noShowRate || 0)}%
                             </h3>
                         </div>
@@ -74,8 +74,8 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
                             <Clock size={18} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Pendente</p>
-                            <h3 className="text-lg font-black text-gray-900 leading-none">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Pendente</p>
+                            <h3 className="text-lg font-bold text-gray-900 leading-none">
                                 R$ {(kpis?.pendingBalance || 0).toLocaleString('pt-BR')}
                             </h3>
                         </div>
@@ -87,10 +87,10 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
                     <div className="relative z-10">
                         <div className="flex items-center gap-2 mb-4">
                             <TrendingUp size={20} className="text-blue-500" />
-                            <h4 className="text-xs font-black uppercase tracking-widest">Crescimento Mensal</h4>
+                            <h4 className="text-xs font-bold uppercase tracking-widest">Crescimento Mensal</h4>
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-black">{kpis?.revenue?.growth?.toFixed(1) || '0.0'}%</span>
+                            <span className="text-4xl font-bold">{kpis?.revenue?.growth?.toFixed(1) || '0.0'}%</span>
                             <span className="text-xs font-bold text-gray-400 uppercase">vs mês ant.</span>
                         </div>
                         <p className="text-[11px] text-gray-400 mt-4 leading-relaxed font-medium">
@@ -102,17 +102,17 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
 
                 {/* Popular Services - Simplified List */}
                 <div className="space-y-3">
-                    <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest px-1">Serviços Populares</h3>
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1">Serviços Populares</h3>
                     <Card className="p-2">
                         {(kpis?.services || []).slice(0, 5).map((s: any, idx: number) => (
                             <div key={idx} className={`flex items-center justify-between p-3 ${idx !== 4 ? 'border-b border-gray-100 dark:border-zinc-800' : ''}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-gray-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-[10px] font-black text-gray-400">
+                                    <div className="w-8 h-8 bg-gray-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-[10px] font-bold text-gray-400">
                                         #{idx + 1}
                                     </div>
                                     <span className="text-xs font-bold text-gray-900 dark:text-white truncate uppercase">{s.name}</span>
                                 </div>
-                                <Badge variant="neutral" className="font-black">{s.count}</Badge>
+                                <Badge variant="neutral" className="font-bold">{s.count}</Badge>
                             </div>
                         ))}
                     </Card>
@@ -120,21 +120,21 @@ export const MobileManagement = ({ kpis, isLoading, onRefresh }: MobileManagemen
 
                 {/* Top Customers */}
                 <div className="space-y-3">
-                    <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest px-1">Top Clientes</h3>
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1">Top Clientes</h3>
                     <div className="space-y-2">
                         {(kpis?.topCustomers || []).map((c: any, idx: number) => (
                             <Card key={idx} className="p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl flex items-center justify-center font-black">
+                                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl flex items-center justify-center font-bold">
                                         {c.name.charAt(0)}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-black text-gray-900 dark:text-white uppercase truncate">{c.name}</span>
+                                        <span className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{c.name}</span>
                                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Cliente Premium</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-sm font-black text-blue-600">
+                                    <span className="text-sm font-bold text-blue-600">
                                         R$ {c.totalSpent.toLocaleString('pt-BR')}
                                     </span>
                                 </div>

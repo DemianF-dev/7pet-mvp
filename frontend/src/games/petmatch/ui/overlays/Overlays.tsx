@@ -8,7 +8,7 @@ export const WinOverlay = ({ score, onNext, onReplay }: OverlayProps) => (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6 animate-fade-in">
         <div className="bg-white rounded-3xl p-8 shadow-2xl items-center text-center max-w-sm w-full animate-scale-up">
             <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-black text-[var(--color-text-primary)] mb-2">
+            <h2 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">
                 Fase Completa!
             </h2>
             <p className="text-[var(--color-text-secondary)] mb-6">
@@ -17,7 +17,7 @@ export const WinOverlay = ({ score, onNext, onReplay }: OverlayProps) => (
 
             <div className="bg-[var(--color-surface-2)] rounded-2xl p-4 mb-6">
                 <span className="block text-sm text-[var(--color-text-secondary)]">Pontuação Final</span>
-                <span className="text-4xl font-black text-[var(--color-brand-primary)]">{score}</span>
+                <span className="text-4xl font-bold text-[var(--color-brand-primary)]">{score}</span>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -42,7 +42,7 @@ export const LoseOverlay = ({ score, onReplay, onBack }: { score: number, onRepl
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6 animate-fade-in">
         <div className="bg-white rounded-3xl p-8 shadow-2xl items-center text-center max-w-sm w-full animate-scale-up">
             <div className="text-6xl mb-4">😿</div>
-            <h2 className="text-3xl font-black text-[var(--color-text-primary)] mb-2">
+            <h2 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">
                 Sem Jogadas!
             </h2>
             <p className="text-[var(--color-text-secondary)] mb-6">
@@ -51,7 +51,7 @@ export const LoseOverlay = ({ score, onReplay, onBack }: { score: number, onRepl
 
             <div className="bg-[var(--color-surface-2)] rounded-2xl p-4 mb-6">
                 <span className="block text-sm text-[var(--color-text-secondary)]">Pontuação</span>
-                <span className="text-4xl font-black text-[var(--color-text-primary)]">{score}</span>
+                <span className="text-4xl font-bold text-[var(--color-text-primary)]">{score}</span>
             </div>
 
             <div className="flex flex-col gap-3">

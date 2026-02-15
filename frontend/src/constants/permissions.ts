@@ -49,6 +49,21 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<string, string[]> = {
         'transport', 'transport-config', 'hr-collaborators', 'hr-pay-periods', 'support',
         'notifications', 'profile', 'my-hr', 'settings', 'users', 'pos'
     ],
+    'GERENCIA': [
+        'dashboard', 'chat', 'feed', 'quotes', 'agenda-spa', 'agenda-log',
+        'customers', 'services', 'products', 'billing', 'reports', 'management',
+        'transport', 'transport-config', 'hr-collaborators', 'hr-pay-periods', 'support',
+        'notifications', 'profile', 'my-hr', 'settings', 'users', 'pos'
+    ],
+    'DIRETORIA': [...PERMISSION_MODULES.filter(m => !m.id.startsWith('client-')).map(m => m.id), 'strategy'],
+    'COMERCIAL': [
+        'dashboard', 'chat', 'feed', 'quotes', 'customers', 'services', 'products',
+        'notifications', 'profile', 'settings', 'pos'
+    ],
+    'ATENDIMENTO': [
+        'dashboard', 'chat', 'feed', 'quotes', 'customers', 'services', 'products',
+        'notifications', 'profile', 'settings', 'pos'
+    ],
     'OPERACIONAL': [
         'dashboard', 'chat', 'feed', 'agenda-spa', 'agenda-log',
         'transport', 'support', 'notifications', 'profile', 'my-hr', 'settings', 'pos'

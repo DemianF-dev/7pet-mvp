@@ -2,6 +2,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useDiagnosticsStore } from '../store/diagnosticsStore';
 import logger from '../utils/logger';
+import { Haptics } from '../utils/haptics';
 
 // Validate and sanitize API URL to prevent common configuration errors
 const getApiUrl = (): string => {
@@ -117,6 +118,7 @@ api.interceptors.response.use(
             if (data && typeof data === 'object') {
                 message = data.error || data.message || message;
             }
+            Haptics.error();
             toast.error(`${message} (${response.status})`, { id: 'server-error' });
         }
 

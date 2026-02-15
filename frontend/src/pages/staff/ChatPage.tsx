@@ -119,13 +119,13 @@ export default function ChatPage() {
                             <MessageSquare size={20} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="text-lg font-black text-gray-800 dark:text-white tracking-tight">Centro de Mensagens</h1>
+                            <h1 className="text-lg font-bold text-gray-800 dark:text-white tracking-tight">Centro de Mensagens</h1>
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Colaboração e Atendimento</p>
                         </div>
                     </div>
                     <button
                         onClick={() => setShowNewChatModal(true)}
-                        className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 uppercase tracking-widest"
+                        className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 uppercase tracking-widest"
                     >
                         <PlusCircle size={14} strokeWidth={3} /> Nova Conversa
                     </button>
@@ -148,9 +148,9 @@ export default function ChatPage() {
                                 />
                             </div>
                             <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                                <button className="px-4 py-2 bg-blue-600 text-white text-[9px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-blue-500/20 shrink-0">Recentes</button>
-                                <button className="px-4 py-2 text-gray-500 hover:bg-white dark:hover:bg-gray-700 text-[9px] font-black rounded-full uppercase tracking-widest transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600 shrink-0">Favoritos</button>
-                                <button className="px-4 py-2 text-gray-500 hover:bg-white dark:hover:bg-gray-700 text-[9px] font-black rounded-full uppercase tracking-widest transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600 shrink-0">Grupos</button>
+                                <button className="px-4 py-2 bg-blue-600 text-white text-[9px] font-bold rounded-full uppercase tracking-widest shadow-lg shadow-blue-500/20 shrink-0">Recentes</button>
+                                <button className="px-4 py-2 text-gray-500 hover:bg-white dark:hover:bg-gray-700 text-[9px] font-bold rounded-full uppercase tracking-widest transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600 shrink-0">Favoritos</button>
+                                <button className="px-4 py-2 text-gray-500 hover:bg-white dark:hover:bg-gray-700 text-[9px] font-bold rounded-full uppercase tracking-widest transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600 shrink-0">Grupos</button>
                             </div>
                         </div>
 
@@ -183,13 +183,13 @@ export default function ChatPage() {
                                     <div className="absolute inset-0 bg-blue-500/20 rounded-inherit blur-2xl group-hover:blur-3xl transition-all duration-1000 opacity-50" />
                                     <MessageSquare size={48} strokeWidth={1.2} className="relative transform group-hover:scale-110 transition-transform duration-500" />
                                 </div>
-                                <h3 className="text-2xl font-black text-gray-800 dark:text-gray-100 tracking-tight mb-4">Suas conversas aparecem aqui</h3>
+                                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 tracking-tight mb-4">Suas conversas aparecem aqui</h3>
                                 <p className="text-sm font-medium text-gray-400 leading-relaxed">
                                     Conecte-se com sua equipe em tempo real. Selecione uma conversa ao lado ou inicie uma nova para começar.
                                 </p>
                                 <button
                                     onClick={() => setShowNewChatModal(true)}
-                                    className="mt-8 px-8 py-3 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-blue-600 dark:text-blue-400 font-black text-xs uppercase tracking-widest rounded-2xl shadow-sm hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all active:scale-95"
+                                    className="mt-8 px-8 py-3 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-blue-600 dark:text-blue-400 font-bold text-xs uppercase tracking-widest rounded-2xl shadow-sm hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all active:scale-95"
                                 >
                                     Iniciar Novo Papo
                                 </button>

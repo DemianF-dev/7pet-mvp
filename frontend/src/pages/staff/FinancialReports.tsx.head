@@ -1,0 +1,36 @@
+import { useState, useEffect } from 'react';
+import {
+    FileText,
+    Download,
+    Filter,
+    Search,
+    ChevronRight,
+    Calendar as CalendarIcon,
+    CheckCircle,
+    Clock,
+    XCircle,
+    X,
+    RefreshCw
+} from 'lucide-react';
+import api from '../../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import BackButton from '../../components/BackButton';
+import Breadcrumbs from '../../components/staff/Breadcrumbs';
+import ResponsiveTable, { Column } from '../../components/system/ResponsiveTable';
+import { Stack } from '../../components/layout/LayoutHelpers';
+import Badge from '../../components/ui/Badge';
+import OrderDetailsModal from '../../components/staff/OrderDetailsModal';
+import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
+import QuoteEditor from './QuoteEditor';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileFinancial } from './MobileFinancial';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};

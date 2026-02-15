@@ -1,4 +1,5 @@
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma'; // Refreshed client reference
+
 import { QuoteDependencies, CascadeDeleteOptions } from '../types/QuoteDependencies';
 import { messagingService } from './messagingService';
 import { createAuditLog } from '../utils/auditLogger';
@@ -110,25 +111,36 @@ export const checkDependencies = async (id: string): Promise<QuoteDependencies> 
         throw new Error('Orçamento não encontrado');
     }
 
-    // Separar appointments por categoria
+    // Separar appointments por categoria e filtrar deletados
     const spaAppointments = quote.appointments.filter(a => a.category === 'SPA' && !a.deletedAt);
     const transportAppointments = quote.appointments.filter(a => a.category === 'LOGISTICA' && !a.deletedAt);
 
     const warnings: string[] = [];
+    const blockingReasons: string[] = [];
 
-    // Avisos baseados no status da invoice
+    // 1. Verificações de Invoice (Financeiro)
     if (quote.invoice && !quote.invoice.deletedAt) {
         if (quote.invoice.status === 'PAGO') {
-            warnings.push('⚠️ Fatura já foi paga. Deletar pode impactar o financeiro.');
+            blockingReasons.push('❌ Orçamento possui uma fatura PAGA. Não é permitido excluir registros com movimentação financeira confirmada. Estorne o pagamento primeiro no financeiro.');
         } else if (quote.invoice.status === 'PENDENTE') {
-            warnings.push('💰 Há uma fatura pendente vinculada a este orçamento.');
+            warnings.push('💰 Há uma fatura pendente vinculada. Ao excluir, você deve optar por remover a fatura também.');
         }
     }
 
-    // Avisos baseados no status dos appointments
+    // 2. Verificações de Agendamentos (Operacional)
+    const activeAppointments = quote.appointments.filter(a => !a.deletedAt);
+    const criticalStatuses = ['EM_ANDAMENTO', 'FINALIZADO', 'PRONTO'];
+
+    const blockByApts = activeAppointments.filter(a => criticalStatuses.includes(a.status));
+
+    if (blockByApts.length > 0) {
+        blockingReasons.push(`❌ Existem ${blockByApts.length} serviços já realizados ou em andamento. Não é permitido excluir o orçamento pai de um serviço executado.`);
+    }
+
+    // Alertas de notificações
     const confirmedSpa = spaAppointments.filter(a => a.status === 'CONFIRMADO');
     if (confirmedSpa.length > 0) {
-        warnings.push(`🔔 ${confirmedSpa.length} agendamento(s) SPA confirmado(s). Cliente pode ter sido notificado.`);
+        warnings.push(`🔔 ${confirmedSpa.length} agendamento(s) SPA confirmado(s). O cliente pode ter sido notificado.`);
     }
 
     const confirmedTransport = transportAppointments.filter(a => a.status === 'CONFIRMADO');
@@ -164,7 +176,9 @@ export const checkDependencies = async (id: string): Promise<QuoteDependencies> 
             status: quote.invoice.status,
             dueDate: quote.invoice.dueDate.toISOString()
         } : undefined,
-        canDelete: true,
+        canDelete: blockingReasons.length === 0,
+        isBlocked: blockingReasons.length > 0,
+        blockingReasons,
         warnings
     };
 };
@@ -188,6 +202,12 @@ export const cascadeDelete = async (
 
     if (quote.deletedAt) {
         throw new Error('Este orçamento já está na lixeira');
+    }
+
+    // Re-check dependencies for safety on execution
+    const deps = await checkDependencies(id);
+    if (deps.isBlocked) {
+        throw new Error(`Exclusão Bloqueada: ${deps.blockingReasons.join(' ')}`);
     }
 
     const now = new Date();
@@ -249,7 +269,6 @@ export const cascadeDelete = async (
         });
 
         // 5. Log de auditoria (se necessário)
-        // Pode ser implementado através do auditLogger se disponível
         console.log(`[CASCADE DELETE] Quote ${quote.seqId} deleted by ${performedBy || 'system'}`, {
             deletedSpaAppointments: deletedSpaCount,
             deletedTransportAppointments: deletedTransportCount,
@@ -263,7 +282,6 @@ export const cascadeDelete = async (
         message: 'Orçamento e itens selecionados movidos para a lixeira'
     };
 };
-
 /**
  * One-Click Approval & Scheduling
  * Supports both single and recurring appointments
@@ -370,21 +388,8 @@ export const approveAndSchedule = async (
             where: { quotes: { some: { id: quote.id } } }
         });
 
-        if (!existingInvoiceForThisQuote) {
-            await tx.invoice.create({
-                data: {
-                    id: randomUUID(),
-                    customer: { connect: { id: quote.customerId } },
-                    quotes: {
-                        connect: [{ id: quote.id }]
-                    },
-                    amount: quote.totalAmount,
-                    status: 'PENDENTE',
-                    dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-                    updatedAt: new Date()
-                }
-            });
-        }
+        // 4. Create Invoice if needed
+        await ensureInvoiceWithLines(quote.id, tx);
 
         const appointments = [];
 
@@ -926,21 +931,8 @@ export const scheduleQuote = async (id: string, data: { occurrences: any[]; idem
             where: { quotes: { some: { id: quote.id } } }
         });
 
-        if (!existingInvoiceForThisQuote) {
-            await tx.invoice.create({
-                data: {
-                    id: randomUUID(),
-                    customer: { connect: { id: quote.customerId } },
-                    quotes: {
-                        connect: [{ id: quote.id }]
-                    },
-                    amount: quote.totalAmount,
-                    status: 'PENDENTE',
-                    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-                    updatedAt: new Date()
-                }
-            });
-        }
+        // 4. Create Invoice if needed
+        await ensureInvoiceWithLines(quote.id, tx);
 
         const createdAppointments = [];
 
@@ -1179,3 +1171,108 @@ export const listRecurringQuotes = async (customerId: string) => {
     });
 };
 
+
+/**
+ * Auto-finalize quote if all appointments are done or cancelled
+ */
+export const autoFinalizeQuote = async (id: string, performedBy: string = 'SYSTEM') => {
+    return await prisma.$transaction(async (tx) => {
+        const quote = await tx.quote.findUnique({
+            where: { id },
+            include: { appointments: true }
+        });
+
+        if (!quote || quote.status === 'ENCERRADO') return;
+
+        // Check if there's at least one appointment and if all are terminal
+        const allFinished = quote.appointments.length > 0 && quote.appointments.every(a =>
+            a.status === 'FINALIZADO' || a.status === 'CANCELADO' || a.status === 'NO_SHOW'
+        );
+
+        if (allFinished) {
+            await tx.quote.update({
+                where: { id },
+                data: {
+                    status: 'ENCERRADO',
+                    statusHistory: {
+                        create: {
+                            id: randomUUID(),
+                            oldStatus: quote.status,
+                            newStatus: 'ENCERRADO',
+                            changedBy: performedBy,
+                            reason: 'Encerramento autom��tico: todos os agendamentos foram conclu��dos.'
+                        }
+                    }
+                }
+            });
+            logger.info(`[QuoteService] Quote ${id} auto-finalized.`);
+        }
+    });
+};
+
+/**
+ * Ensures an invoice exists for the quote and has itemized lines.
+ * This satisfies audit requirements for detailed billing.
+ */
+export const ensureInvoiceWithLines = async (quoteId: string, tx?: any) => {
+    const db = tx || prisma;
+
+    // 1. Fetch quote with items
+    const quote = await db.quote.findUnique({
+        where: { id: quoteId },
+        include: { items: true, customer: true }
+    });
+
+    if (!quote) return null;
+
+    // 2. Check for existing invoice
+    let invoice = await db.invoice.findFirst({
+        where: { quotes: { some: { id: quoteId } } },
+        include: { lines: true }
+    });
+
+    if (!invoice) {
+        // Create new
+        invoice = await db.invoice.create({
+            data: {
+                id: randomUUID(),
+                customer: { connect: { id: quote.customerId } },
+                quotes: { connect: [{ id: quote.id }] },
+                amount: quote.totalAmount,
+                status: 'PENDENTE',
+                dueDate: quote.desiredAt || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+                updatedAt: new Date(),
+                lines: {
+                    create: quote.items.map((item: any) => ({
+                        id: randomUUID(),
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.price,
+                        lineTotal: item.price * item.quantity,
+                        service: item.serviceId ? { connect: { id: item.serviceId } } : undefined,
+                        product: item.productId ? { connect: { id: item.productId } } : undefined
+                    }))
+                }
+            },
+            include: { lines: true }
+        });
+    } else if (invoice.lines.length === 0 && quote.items.length > 0) {
+        // Fix existing invoice without lines
+        for (const item of quote.items) {
+            await db.invoiceLine.create({
+                data: {
+                    id: randomUUID(),
+                    invoiceId: invoice.id,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.price,
+                    lineTotal: item.price * item.quantity,
+                    service: item.serviceId ? { connect: { id: item.serviceId } } : undefined,
+                    product: item.productId ? { connect: { id: item.productId } } : undefined
+                }
+            });
+        }
+    }
+
+    return invoice;
+};

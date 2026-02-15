@@ -27,7 +27,7 @@ const PetDateSelection = ({
     return (
         <div className="flex flex-col md:flex-row gap-4 mb-10 pb-10 border-b border-gray-100">
             <div className="flex-1 space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Sobre qual Pet?</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Sobre qual Pet?</label>
                 <select
                     required
                     value={selectedPetId}
@@ -41,7 +41,7 @@ const PetDateSelection = ({
                 </select>
             </div>
             <div className="flex-1 space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Data Pretendida</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Data Pretendida</label>
                 <input
                     type="date"
                     value={desiredDate}
@@ -50,7 +50,7 @@ const PetDateSelection = ({
                 />
             </div>
             <div className="flex-1 space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Horário</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Horário</label>
                 <input
                     type="time"
                     step="900"

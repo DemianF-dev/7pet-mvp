@@ -3,34 +3,39 @@
      BASE TOKENS (Shared & Fallbacks)
      ========================================= */
 
-    /* Typography */
-    --font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Typography - Professional SaaS Standard */
+    --font-family-base: 'Inter', -apple-system, system-ui, sans-serif;
     --font-family-heading: 'Outfit', 'Inter', sans-serif;
-    /* More premium heading */
 
     --font-size-xs: 0.75rem;
     /* 12px */
     --font-size-sm: 0.8125rem;
     /* 13px */
-    --font-size-md: 0.9375rem;
-    /* 15px */
+    --font-size-md: 0.875rem;
+    /* 14px - Standard ERP/CRM size */
     --font-size-base: 1rem;
     /* 16px */
-    --font-size-lg: 1.0625rem;
-    /* 17px */
+    --font-size-lg: 1.125rem;
+    /* 18px */
     --font-size-xl: 1.25rem;
     /* 20px */
     --font-size-2xl: 1.5rem;
     /* 24px */
-    --font-size-3xl: 2rem;
-    /* 32px */
+    --font-size-3xl: 1.875rem;
+    /* 30px */
 
     --font-weight-regular: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 600;
-    /* Modern bold is often 600 */
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-black: 700;
+    /* Re-mapped for SaaS Premium elegance */
 
-    /* Spacing & Layout - 8pt Grid */
+    /* Spacing & Layout - Precise 4px Scale */
+    --space-05: 0.125rem;
+    /* 2px */
+    --space-1: 0.125rem;
+    /* 2px - Correction */
     --space-1: 0.25rem;
     /* 4px */
     --space-2: 0.5rem;
@@ -47,58 +52,43 @@
     /* 32px */
     --space-10: 2.5rem;
     /* 40px */
-    --space-12: 3rem;
-    /* 48px */
-    --space-16: 4rem;
-    /* 64px */
-    --space-20: 5rem;
-    /* 80px */
-    --space-24: 6rem;
-    /* 96px */
+    --space-12: 3.5rem;
+    /* 56px */
 
-    /* Legacy Spacing Mapping */
-    --spacing-xs: var(--space-1);
-    --spacing-sm: var(--space-2);
-    --spacing-md: var(--space-4);
-    --spacing-lg: var(--space-6);
-    --spacing-xl: var(--space-8);
-
-    --radius-xs: 0.25rem;
-    /* 4px */
-    --radius-sm: 0.375rem;
-    /* 6px */
-    --radius-md: 0.5rem;
-    /* 8px */
-    --radius-lg: 0.75rem;
-    /* 12px */
-    --radius-xl: 1rem;
-    /* 16px */
-    --radius-2xl: 1.25rem;
-    /* 20px */
-    --radius-3xl: 1.5rem;
-    /* 24px */
+    /* Border Radius - Meticulous & Sophisticated (Less "bubbles", more "precise") */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-3xl: 24px;
+    /* Maximum - No more 32px bubbles */
     --radius-full: 9999px;
 
-    /* Shadows (Premium Layered - Apple-like) */
-    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.04);
-    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.2);
-    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.04);
-    /* Premium floating element shadow (FAB, modals) */
-    --shadow-float: 0 8px 32px -4px rgb(0 0 0 / 0.12), 0 4px 8px -2px rgb(0 0 0 / 0.06);
-    --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.02);
+    /* Shadows (High Fidelity - Ambient Occlusion Style) */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+    --shadow-md: 0 4px 6px -2px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.03);
+    --shadow-lg: 0 12px 16px -4px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.03);
+    --shadow-xl: 0 20px 24px -8px rgb(0 0 0 / 0.1), 0 8px 8px -4px rgb(0 0 0 / 0.04);
+    --shadow-2xl: 0 32px 64px -12px rgb(0 0 0 / 0.14);
 
-    /* Glass Alphas */
-    --glass-bg-opacity: 0.75;
-    --glass-border-opacity: 0.1;
+    /* Fine-tuned Card Shadow */
+    --shadow-card: 0 4px 20px -2px rgb(0 0 0 / 0.04), 0 2px 8px -1px rgb(0 0 0 / 0.02);
+    --shadow-float: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
 
-    /* Animation */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    /* Glass Effects */
+    --glass-bg-opacity: 0.7;
+    --glass-blur: 16px;
+    --glass-border-opacity: 0.08;
+
+    /* Animation Transitions */
+    --transition-fast: 150ms cubic-bezier(0.2, 0, 0, 1);
+    --transition-normal: 250ms cubic-bezier(0.2, 0, 0, 1);
+    --transition-slow: 400ms cubic-bezier(0.2, 0, 0, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
 
     /* Default Focus Ring (Accessibility) */
     --focus-ring: 0 0 0 3px rgba(66, 153, 225, 0.5);

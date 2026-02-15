@@ -746,24 +746,24 @@ export default function UserManager() {
             render: (u) => (
                 <div className="flex items-center gap-4">
                     <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-sm ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}
                         style={u.color ? { backgroundColor: u.color, color: 'white' } : undefined}
                     >
                         {(u.firstName?.[0] || u.name?.[0] || u.email[0]).toUpperCase()}
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                            <span className="font-black text-secondary text-sm">
+                            <span className="font-bold text-secondary text-sm">
                                 {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.name || u.email.split('@')[0]}
                             </span>
-                            <span className="bg-indigo-50 text-indigo-500 text-[9px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
+                            <span className="bg-indigo-50 text-indigo-500 text-[9px] font-bold px-1.5 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
                                 {u.division === 'CLIENTE' ? 'CL' : 'OP'}-{String(u.staffId ?? u.seqId).padStart(4, '0')}
                             </span>
                         </div>
                         <span className="text-[11px] text-gray-400 font-bold">{u.email}</span>
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className={`w-2 h-2 rounded-full ${u.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-gray-300'}`}></div>
-                            <span className={`text-[10px] font-black uppercase tracking-tight ${u.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-tight ${u.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
                                 {u.isOnline ? 'Online agora' : (u.lastSeenAt ? `Último acesso em ${new Date(u.lastSeenAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
                             </span>
                         </div>
@@ -777,7 +777,7 @@ export default function UserManager() {
             className: 'text-center',
             render: (u) => (
                 u.division !== 'CLIENTE' ? (
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${u.isEligible !== false ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${u.isEligible !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         {u.isEligible !== false ? 'Disponível' : 'Bloqueado'}
                     </div>
@@ -791,7 +791,7 @@ export default function UserManager() {
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${getDivisionBgClass(u.division || u.role || 'CLIENTE')}`} />
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full w-fit ${getDivisionBgClass(u.division || u.role || 'CLIENTE')} ${getDivisionTextClass(u.division || u.role || 'CLIENTE')}`}>
                             {DIVISION_LABELS[(u.division || u.role) as keyof typeof DIVISION_LABELS] || u.division || u.role || 'N/A'}
                         </span>
                     </div>
@@ -810,7 +810,7 @@ export default function UserManager() {
                     >
                         {visiblePasswordIds.includes(u.id) ? <Unlock size={14} /> : <Lock size={14} />}
                     </button>
-                    <span className={`text-[11px] font-black tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
+                    <span className={`text-[11px] font-bold tracking-tight select-all transition-all ${visiblePasswordIds.includes(u.id) ? 'text-secondary font-mono' : 'text-gray-300'}`}>
                         {visiblePasswordIds.includes(u.id) ? (u.plainPassword || 'SEM SENHA') : '••••••••'}
                     </span>
                 </div>
@@ -853,7 +853,7 @@ export default function UserManager() {
                     <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mb-8 mx-auto shadow-xl shadow-red-500/10">
                         <Lock size={40} />
                     </div>
-                    <h2 className="text-3xl font-black text-secondary mb-4 uppercase tracking-tight">Acesso Restrito</h2>
+                    <h2 className="text-3xl font-bold text-secondary mb-4 uppercase tracking-tight">Acesso Restrito</h2>
                     <p className="text-gray-400 font-bold mb-10 leading-relaxed">
                         Esta área é exclusiva para administradores. <br />
                         Seu nível atual de acesso não permite gerenciar usuários.
@@ -905,13 +905,13 @@ export default function UserManager() {
                     <div className="mt-8 flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 w-fit">
                         <button
                             onClick={() => { setTab('active'); setSelectedIds([]); }}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-secondary text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
                         >
                             Ativos
                         </button>
                         <button
                             onClick={() => { setTab('trash'); setSelectedIds([]); }}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-secondary'}`}
                         >
                             <Trash size={14} /> Lixeira
                         </button>
@@ -944,7 +944,7 @@ export default function UserManager() {
                                 <button
                                     key={filter.division}
                                     onClick={() => setFilterDivision(filter.division)}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
                                         ? filter.color + ' shadow-md'
                                         : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
                                         }`}
@@ -982,7 +982,7 @@ export default function UserManager() {
                                 className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm flex items-center gap-2"
                             >
                                 <ArrowUpDown size={16} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{sortBy === 'name' ? 'Nome' : sortBy === 'date' ? 'Data' : 'ID'}</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest">{sortBy === 'name' ? 'Nome' : sortBy === 'date' ? 'Data' : 'ID'}</span>
                             </button>
 
                             <button
@@ -1005,30 +1005,30 @@ export default function UserManager() {
                                     className="bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 min-w-[600px] max-w-full overflow-x-auto no-scrollbar"
                                 >
                                     <div className="flex items-center gap-4 border-r border-white/10 pr-6 mr-2">
-                                        <span className="bg-primary text-white text-xs font-black min-w-[32px] h-8 rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                                        <span className="bg-primary text-white text-xs font-bold min-w-[32px] h-8 rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
                                             {selectedIds.length}
                                         </span>
-                                        <p className="text-sm font-black uppercase tracking-widest whitespace-nowrap">Selecionados</p>
+                                        <p className="text-sm font-bold uppercase tracking-widest whitespace-nowrap">Selecionados</p>
                                     </div>
 
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={() => handleBulkStatusChange('available')}
-                                            className="bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-green-500/20 whitespace-nowrap"
+                                            className="bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-green-500/20 whitespace-nowrap"
                                         >
                                             <Check size={14} /> Disponível
                                         </button>
 
                                         <button
                                             onClick={() => handleBulkStatusChange('blockQuotes')}
-                                            className="bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-amber-500/20 whitespace-nowrap"
+                                            className="bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-amber-500/20 whitespace-nowrap"
                                         >
                                             <Lock size={14} /> Bloquear Orçamentos
                                         </button>
 
                                         <button
                                             onClick={() => handleBulkStatusChange('blockSystem')}
-                                            className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-red-500/20 whitespace-nowrap"
+                                            className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-red-500/20 whitespace-nowrap"
                                         >
                                             <Shield size={14} /> Bloquear Acesso
                                         </button>
@@ -1036,7 +1036,7 @@ export default function UserManager() {
                                         {tab === 'trash' && (
                                             <button
                                                 onClick={handleBulkRestore}
-                                                className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex items-center gap-2 whitespace-nowrap"
+                                                className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex items-center gap-2 whitespace-nowrap"
                                             >
                                                 <RotateCcw size={14} /> Restaurar
                                             </button>
@@ -1044,7 +1044,7 @@ export default function UserManager() {
 
                                         <button
                                             onClick={handleBulkDelete}
-                                            className="bg-white/10 hover:bg-red-600 text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-white/10 hover:border-red-600 whitespace-nowrap ml-2"
+                                            className="bg-white/10 hover:bg-red-600 text-white px-5 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border border-white/10 hover:border-red-600 whitespace-nowrap ml-2"
                                         >
                                             <Trash2 size={14} /> {tab === 'trash' ? 'Excluir Permanente' : 'Lixeira'}
                                         </button>
@@ -1053,7 +1053,7 @@ export default function UserManager() {
                                     <div className="ml-auto flex items-center border-l border-white/10 pl-6">
                                         <button
                                             onClick={() => setSelectedIds([])}
-                                            className="text-white/40 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                                            className="text-white/40 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors"
                                         >
                                             Cancelar
                                         </button>
@@ -1098,14 +1098,14 @@ export default function UserManager() {
                             <button
                                 onClick={() => setCurrentPage(1)}
                                 disabled={currentPage === 1}
-                                className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Primeira
                             </button>
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                 disabled={currentPage === 1}
-                                className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 ‹
                             </button>
@@ -1127,7 +1127,7 @@ export default function UserManager() {
                                         <button
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === pageNum
+                                            className={`w-10 h-10 rounded-xl text-xs font-bold transition-all ${currentPage === pageNum
                                                 ? 'bg-primary text-white shadow-lg scale-110'
                                                 : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'
                                                 }`}
@@ -1141,14 +1141,14 @@ export default function UserManager() {
                             <button
                                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                 disabled={currentPage === totalPages}
-                                className="px-4 py-2 rounded-xl text-xs font-black bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 ›
                             </button>
                             <button
                                 onClick={() => setCurrentPage(totalPages)}
                                 disabled={currentPage === totalPages}
-                                className="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Última
                             </button>
@@ -1174,7 +1174,7 @@ export default function UserManager() {
                             >
                                 {/* Protection Message */}
                                 {selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster && (
-                                    <div className="bg-red-500 text-white p-3 text-center text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                    <div className="bg-red-500 text-white p-3 text-center text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
                                         <Shield size={14} /> Somente o Master pode editar perfis Administrativos ou Master
                                     </div>
                                 )}
@@ -1182,9 +1182,9 @@ export default function UserManager() {
                                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                                     <div>
                                         <div className="flex items-center gap-3">
-                                            <h3 className="text-xl font-black text-secondary">{selectedUser ? 'Editar Perfil' : 'Novo Colaborador'}</h3>
+                                            <h3 className="text-xl font-bold text-secondary">{selectedUser ? 'Editar Perfil' : 'Novo Colaborador'}</h3>
                                             {selectedUser && (
-                                                <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase flex items-center gap-1 ${selectedUser.isOnline ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${selectedUser.isOnline ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
                                                     <div className={`w-1.5 h-1.5 rounded-full ${selectedUser.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
                                                     {selectedUser.isOnline ? 'Online' : 'Offline'}
                                                 </div>
@@ -1198,7 +1198,7 @@ export default function UserManager() {
                                 <div className="flex-1 overflow-y-auto p-8 space-y-8">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="col-span-1">
-                                            <label className="block text-xs font-black text-gray-400 uppercase mb-2">Primeiro Nome</label>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Primeiro Nome</label>
                                             <input
                                                 value={formData.firstName}
                                                 onChange={e => setFormData({ ...formData, firstName: e.target.value })}
@@ -1206,7 +1206,7 @@ export default function UserManager() {
                                             />
                                         </div>
                                         <div className="col-span-1">
-                                            <label className="block text-xs font-black text-gray-400 uppercase mb-2">Sobrenome</label>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Sobrenome</label>
                                             <input
                                                 value={formData.lastName}
                                                 onChange={e => setFormData({ ...formData, lastName: e.target.value })}
@@ -1214,7 +1214,7 @@ export default function UserManager() {
                                             />
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="block text-xs font-black text-gray-400 uppercase mb-2">E-mail</label>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail</label>
                                             <input
                                                 type="email"
                                                 value={formData.email}
@@ -1223,7 +1223,7 @@ export default function UserManager() {
                                             />
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="block text-xs font-black text-gray-400 uppercase mb-2">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
                                                 {selectedUser ? 'Redefinir Senha' : 'Senha Provisória'}
                                             </label>
                                             <input
@@ -1238,7 +1238,7 @@ export default function UserManager() {
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
                                                             <Shield size={14} className="text-primary" />
-                                                            <span className="text-[10px] font-black text-secondary uppercase tracking-tight">Senha Atual Registrada</span>
+                                                            <span className="text-[10px] font-bold text-secondary uppercase tracking-tight">Senha Atual Registrada</span>
                                                         </div>
                                                         <button
                                                             onClick={() => setShowModalPassword(!showModalPassword)}
@@ -1248,7 +1248,7 @@ export default function UserManager() {
                                                         </button>
                                                     </div>
                                                     <div className="mt-2 flex items-center justify-center p-3 bg-white rounded-xl border border-gray-100 shadow-inner">
-                                                        <span className={`text-sm font-black tracking-widest ${showModalPassword ? 'text-secondary font-mono select-all' : 'text-gray-200'}`}>
+                                                        <span className={`text-sm font-bold tracking-widest ${showModalPassword ? 'text-secondary font-mono select-all' : 'text-gray-200'}`}>
                                                             {showModalPassword ? selectedUser.plainPassword : '••••••••'}
                                                         </span>
                                                     </div>
@@ -1258,10 +1258,10 @@ export default function UserManager() {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase"><Briefcase size={14} /> Divisão & Cargo</h4>
+                                        <h4 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase"><Briefcase size={14} /> Divisão & Cargo</h4>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="col-span-2">
-                                                <label className="block text-[10px] font-black text-gray-400 mb-1">Divisão / Departamento</label>
+                                                <label className="block text-[10px] font-bold text-gray-400 mb-1">Divisão / Departamento</label>
                                                 <select
                                                     value={formData.division}
                                                     onChange={e => {
@@ -1285,7 +1285,7 @@ export default function UserManager() {
                                             </div>
 
                                             <div className="col-span-2">
-                                                <label className="block text-[10px] font-black text-gray-400 mb-1">Cargo / Função</label>
+                                                <label className="block text-[10px] font-bold text-gray-400 mb-1">Cargo / Função</label>
                                                 <div className="flex gap-2">
                                                     <select
                                                         value={(formData as any).isCustomRole ? 'CUSTOM' : formData.role || 'OPERACIONAL'}
@@ -1352,10 +1352,10 @@ export default function UserManager() {
                                                     className="w-5 h-5 rounded-lg text-primary focus:ring-primary transition-all"
                                                 />
                                                 <div className="flex-1">
-                                                    <div className="text-sm font-black text-secondary uppercase tracking-tight">Elegível para Execução</div>
+                                                    <div className="text-sm font-bold text-secondary uppercase tracking-tight">Elegível para Execução</div>
                                                     <div className="text-[10px] font-bold text-gray-400">Define se este profissional aparece nas listas de seleção para serviços e logística.</div>
                                                 </div>
-                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.isEligible ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${formData.isEligible ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                                                     {formData.isEligible ? 'ATIVO' : 'INATIVO'}
                                                 </div>
                                             </label>
@@ -1368,10 +1368,10 @@ export default function UserManager() {
                                                     className="w-5 h-5 rounded-lg text-blue-500 focus:ring-blue-500 transition-all"
                                                 />
                                                 <div className="flex-1">
-                                                    <div className="text-sm font-black text-secondary uppercase tracking-tight">Agente de Suporte</div>
+                                                    <div className="text-sm font-bold text-secondary uppercase tracking-tight">Agente de Suporte</div>
                                                     <div className="text-[10px] font-bold text-gray-400">Permite que clientes iniciem conversas de suporte com este colaborador.</div>
                                                 </div>
-                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.isSupportAgent ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${formData.isSupportAgent ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
                                                     {formData.isSupportAgent ? 'HABILITADO' : 'DESABILITADO'}
                                                 </div>
                                             </label>
@@ -1381,15 +1381,15 @@ export default function UserManager() {
                                     {/* STATUS E ACESSO DO CLIENTE */}
                                     {formData.division === 'CLIENTE' && (
                                         <div className="pt-4 border-t border-gray-50 mt-4 space-y-3">
-                                            <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
+                                            <h4 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase">
                                                 <Shield size={14} /> Status e Acesso do Cliente
                                             </h4>
 
                                             {/* Classificação de Nível (Discreto) */}
                                             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-tight">Nível de Classificação</div>
-                                                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shadow-sm ${(formData as any).customer?.riskLevel === 'Nivel 3' ? 'bg-red-500 text-white shadow-red-100' :
+                                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Nível de Classificação</div>
+                                                    <div className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase shadow-sm ${(formData as any).customer?.riskLevel === 'Nivel 3' ? 'bg-red-500 text-white shadow-red-100' :
                                                         (formData as any).customer?.riskLevel === 'Nivel 2' ? 'bg-amber-500 text-white shadow-amber-100' :
                                                             'bg-green-500 text-white shadow-green-100'
                                                         }`}>
@@ -1407,7 +1407,7 @@ export default function UserManager() {
                                                                     riskLevel: lvl
                                                                 }
                                                             } as any)}
-                                                            className={`py-2 rounded-xl text-[10px] font-black transition-all border ${((formData as any).customer?.riskLevel || 'Nivel 1') === lvl
+                                                            className={`py-2 rounded-xl text-[10px] font-bold transition-all border ${((formData as any).customer?.riskLevel || 'Nivel 1') === lvl
                                                                 ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
                                                                     lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
                                                                         'bg-green-600 border-green-600 text-white shadow-md')
@@ -1432,7 +1432,7 @@ export default function UserManager() {
                                                         <Check size={20} />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="text-sm font-black text-green-700 uppercase tracking-tight">Disponível (Tudo OK)</div>
+                                                        <div className="text-sm font-bold text-green-700 uppercase tracking-tight">Disponível (Tudo OK)</div>
                                                         <div className="text-[10px] font-bold text-green-600/70">O cliente possui acesso total ao sistema e orçamentos.</div>
                                                     </div>
                                                 </div>
@@ -1453,10 +1453,10 @@ export default function UserManager() {
                                                     className="w-5 h-5 rounded-lg text-amber-500 focus:ring-amber-500 transition-all transition-all"
                                                 />
                                                 <div className="flex-1">
-                                                    <div className="text-sm font-black text-amber-700 uppercase tracking-tight">Bloquear Orçamentos</div>
+                                                    <div className="text-sm font-bold text-amber-700 uppercase tracking-tight">Bloquear Orçamentos</div>
                                                     <div className="text-[10px] font-bold text-amber-600/70">Inadimplência ou restrição. Impede novos pedidos.</div>
                                                 </div>
-                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${!((formData as any).customer?.canRequestQuotes ?? true) ? 'bg-amber-200 text-amber-700' : 'bg-green-100 text-green-600'}`}>
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${!((formData as any).customer?.canRequestQuotes ?? true) ? 'bg-amber-200 text-amber-700' : 'bg-green-100 text-green-600'}`}>
                                                     {!((formData as any).customer?.canRequestQuotes ?? true) ? 'BLOQUEADO' : 'LIBERADO'}
                                                 </div>
                                             </label>
@@ -1476,10 +1476,10 @@ export default function UserManager() {
                                                     className="w-5 h-5 rounded-lg text-red-500 focus:ring-red-500 transition-all transition-all"
                                                 />
                                                 <div className="flex-1">
-                                                    <div className="text-sm font-black text-red-700 uppercase tracking-tight">Bloquear Acesso ao Sistema</div>
+                                                    <div className="text-sm font-bold text-red-700 uppercase tracking-tight">Bloquear Acesso ao Sistema</div>
                                                     <div className="text-[10px] font-bold text-red-600/70">Impede login e recuperação de senha. Histórico mantido.</div>
                                                 </div>
-                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${(formData as any).customer?.isBlocked ? 'bg-red-200 text-red-700' : 'bg-green-100 text-green-600'}`}>
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${(formData as any).customer?.isBlocked ? 'bg-red-200 text-red-700' : 'bg-green-100 text-green-600'}`}>
                                                     {(formData as any).customer?.isBlocked ? 'BLOQUEADO' : 'ATIVO'}
                                                 </div>
                                             </label>
@@ -1494,7 +1494,7 @@ export default function UserManager() {
                                                         <Briefcase size={16} />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="text-xs font-black text-blue-700 uppercase">Ver Perfil Completo do Cliente</div>
+                                                        <div className="text-xs font-bold text-blue-700 uppercase">Ver Perfil Completo do Cliente</div>
                                                         <div className="text-[9px] font-bold text-blue-400 italic">Ver pets, histórico de orçamentos e faturamento.</div>
                                                     </div>
                                                     <ChevronRight size={16} className="text-blue-300 group-hover:translate-x-1 transition-transform" />
@@ -1504,7 +1504,7 @@ export default function UserManager() {
                                     )}
 
                                     <div className="space-y-4">
-                                        <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase"><Lock size={14} /> Permissões Específicas</h4>
+                                        <h4 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase"><Lock size={14} /> Permissões Específicas</h4>
                                         <div className="grid grid-cols-2 gap-3">
                                             {PERMISSION_MODULES.map(m => (
                                                 <label key={m.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
@@ -1523,7 +1523,7 @@ export default function UserManager() {
                                     {/* GAMIFICATION / PAUSE MENU (DEV ONLY) */}
                                     {currentUser?.email === 'oidemianf@gmail.com' && (
                                         <div className="pt-4 border-t border-gray-50 mt-4 space-y-3">
-                                            <h4 className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
+                                            <h4 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase">
                                                 <Shield size={14} /> Gamification & Privilégios (Dev Only)
                                             </h4>
                                             <label className="flex items-center gap-3 p-4 bg-purple-50 rounded-2xl cursor-pointer hover:bg-purple-100 transition-colors border border-purple-200">
@@ -1534,10 +1534,10 @@ export default function UserManager() {
                                                     className="w-5 h-5 rounded-lg text-purple-600 focus:ring-purple-600 transition-all"
                                                 />
                                                 <div className="flex-1">
-                                                    <div className="text-sm font-black text-purple-700 uppercase tracking-tight">Habilitar Menu PAUSA</div>
+                                                    <div className="text-sm font-bold text-purple-700 uppercase tracking-tight">Habilitar Menu PAUSA</div>
                                                     <div className="text-[10px] font-bold text-purple-600/70">Libera acesso aos mini-games e atividades de pausa.</div>
                                                 </div>
-                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${formData.pauseMenuEnabled ? 'bg-purple-200 text-purple-800' : 'bg-gray-100 text-gray-400'}`}>
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${formData.pauseMenuEnabled ? 'bg-purple-200 text-purple-800' : 'bg-gray-100 text-gray-400'}`}>
                                                     {formData.pauseMenuEnabled ? 'LIBERADO' : 'BLOQUEADO'}
                                                 </div>
                                             </label>
@@ -1605,7 +1605,7 @@ export default function UserManager() {
                                                 <button
                                                     onClick={() => handleDeleteUser(selectedUser)}
                                                     disabled={selectedUser && (selectedUser.role?.toUpperCase() === 'ADMIN' || selectedUser.role?.toUpperCase() === 'MASTER') && !isMaster}
-                                                    className="flex items-center gap-2 text-red-500 font-black text-xs hover:underline disabled:opacity-30 disabled:no-underline"
+                                                    className="flex items-center gap-2 text-red-500 font-bold text-xs hover:underline disabled:opacity-30 disabled:no-underline"
                                                 >
                                                     <Trash2 size={16} /> Excluir Conta
                                                 </button>
@@ -1645,7 +1645,7 @@ export default function UserManager() {
                                 >
                                     <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-primary/5">
                                         <div>
-                                            <h3 className="text-2xl font-black text-secondary flex items-center gap-3"><Lock size={22} className="text-primary" /> Configurar Cargos</h3>
+                                            <h3 className="text-2xl font-bold text-secondary flex items-center gap-3"><Lock size={22} className="text-primary" /> Configurar Cargos</h3>
                                             <p className="text-sm font-bold text-gray-400">Personalize o nome e permissões padrão de cada função</p>
                                         </div>
                                         <X size={24} className="cursor-pointer text-gray-400" onClick={() => setIsRoleModalOpen(false)} />
@@ -1657,7 +1657,7 @@ export default function UserManager() {
                                                 <div key={rp.role} className="relative group">
                                                     <button
                                                         onClick={() => setSelectedConfigRole(rp.role)}
-                                                        className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedConfigRole === rp.role ? 'bg-secondary text-white shadow-xl scale-105' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                                        className={`px-6 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedConfigRole === rp.role ? 'bg-secondary text-white shadow-xl scale-105' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
                                                     >
                                                         {rp.label || rp.role}
                                                     </button>
@@ -1666,7 +1666,7 @@ export default function UserManager() {
                                                     )}
                                                 </div>
                                             ))}
-                                            <button onClick={() => setIsAddingRole(!isAddingRole)} className="px-4 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-[10px] font-black uppercase hover:border-primary hover:text-primary transition-all flex items-center gap-2">
+                                            <button onClick={() => setIsAddingRole(!isAddingRole)} className="px-4 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-[10px] font-bold uppercase hover:border-primary hover:text-primary transition-all flex items-center gap-2">
                                                 <Plus size={14} /> Novo Cargo
                                             </button>
                                         </div>
@@ -1675,22 +1675,22 @@ export default function UserManager() {
                                             <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10 grid grid-cols-2 gap-4">
                                                 <input placeholder="CÓDIGO (EX: VENDEDOR)" value={newRoleData.slug} onChange={e => setNewRoleData({ ...newRoleData, slug: e.target.value.toUpperCase() })} className="bg-white px-5 py-3 rounded-2xl font-bold text-xs" />
                                                 <input placeholder="NOME (EX: Vendedor)" value={newRoleData.label} onChange={e => setNewRoleData({ ...newRoleData, label: e.target.value })} className="bg-white px-5 py-3 rounded-2xl font-bold text-xs" />
-                                                <button onClick={handleCreateRole} className="col-span-2 bg-primary text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg">Criar Cargo</button>
+                                                <button onClick={handleCreateRole} className="col-span-2 bg-primary text-white py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg">Criar Cargo</button>
                                             </div>
                                         )}
 
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Editar Nome de Exibição</label>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Editar Nome de Exibição</label>
                                                 <input
                                                     value={editingRoleLabel}
                                                     onChange={e => { setEditingRoleLabel(e.target.value); setHasRoleChanges(true); }}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-secondary text-lg"
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-secondary text-lg"
                                                 />
                                             </div>
 
                                             <div>
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4">Módulos Liberados por Padrão</h4>
+                                                <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-4">Módulos Liberados por Padrão</h4>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     {PERMISSION_MODULES.map(m => {
                                                         const active = editingRolePerms.includes(m.id);
@@ -1703,7 +1703,7 @@ export default function UserManager() {
                                                                 }}
                                                                 className={`p-5 rounded-3xl border-2 cursor-pointer transition-all flex items-center justify-between ${active ? 'bg-white border-primary shadow-xl shadow-primary/5' : 'bg-white/50 border-transparent opacity-60'}`}
                                                             >
-                                                                <span className={`text-xs font-black ${active ? 'text-secondary' : 'text-gray-400'}`}>{m.label}</span>
+                                                                <span className={`text-xs font-bold ${active ? 'text-secondary' : 'text-gray-400'}`}>{m.label}</span>
                                                                 <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${active ? 'bg-primary text-white' : 'bg-gray-100'}`}>
                                                                     {active && <Check size={14} />}
                                                                 </div>
@@ -1713,7 +1713,7 @@ export default function UserManager() {
                                                 </div>
                                                 <div className="pt-8 border-t border-gray-100">
                                                     <div className="flex items-center justify-between mb-6">
-                                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Usuários Vinculados ({users.filter(u => u.role?.toUpperCase() === selectedConfigRole?.toUpperCase()).length})</h4>
+                                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Usuários Vinculados ({users.filter(u => u.role?.toUpperCase() === selectedConfigRole?.toUpperCase()).length})</h4>
                                                     </div>
 
                                                     <div className="space-y-3">
@@ -1721,7 +1721,7 @@ export default function UserManager() {
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                                 {users.filter(u => u.role?.toUpperCase() === selectedConfigRole?.toUpperCase()).map(user => (
                                                                     <div key={user.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-100/50 group hover:bg-white hover:shadow-lg transition-all">
-                                                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-lg" style={{ backgroundColor: user.color || '#3B82F6' }}>
+                                                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs text-white shadow-lg" style={{ backgroundColor: user.color || '#3B82F6' }}>
                                                                             {user.name?.substring(0, 2).toUpperCase()}
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
@@ -1751,7 +1751,7 @@ export default function UserManager() {
                                             {selectedConfigRole?.toUpperCase() !== 'MASTER' && (
                                                 <button
                                                     onClick={() => handleDeleteRole(selectedConfigRole)}
-                                                    className="px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 transition-all flex items-center gap-2"
+                                                    className="px-6 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 transition-all flex items-center gap-2"
                                                 >
                                                     <Trash2 size={14} /> Excluir Cargo
                                                 </button>
@@ -1760,7 +1760,7 @@ export default function UserManager() {
                                             <button
                                                 onClick={handleSaveRoleConfig}
                                                 disabled={!hasRoleChanges}
-                                                className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${hasRoleChanges ? 'bg-primary text-white shadow-xl hover:scale-105' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                                className={`px-8 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all ${hasRoleChanges ? 'bg-primary text-white shadow-xl hover:scale-105' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                                             >
                                                 Salvar Alterações
                                             </button>

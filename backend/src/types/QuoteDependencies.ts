@@ -27,6 +27,8 @@ export interface QuoteDependencies {
     };
     invoice?: QuoteInvoiceDependency;
     canDelete: boolean;
+    isBlocked: boolean;
+    blockingReasons: string[];
     warnings: string[];
 }
 

@@ -66,7 +66,7 @@ export default function ConfirmModal({
 
                             <h3
                                 id="confirm-modal-title"
-                                className="text-2xl font-black mb-3 leading-tight"
+                                className="text-2xl font-bold mb-3 leading-tight"
                                 style={{ color: 'var(--color-text-primary)' }}
                             >
                                 {title}
@@ -87,14 +87,14 @@ export default function ConfirmModal({
                                         onConfirm();
                                         onClose();
                                     }}
-                                    className={`w-full py-4 ${confirmColor} text-white font-black rounded-2xl shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-[10px]`}
+                                    className={`w-full py-4 ${confirmColor} text-white font-bold rounded-2xl shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-[10px]`}
                                     aria-label={`${confirmText} - ${title}`}
                                 >
                                     {confirmText}
                                 </button>
                                 <button
                                     onClick={onClose}
-                                    className="w-full py-4 font-black rounded-2xl hover:opacity-80 transition-all uppercase tracking-widest text-[10px]"
+                                    className="w-full py-4 font-bold rounded-2xl hover:opacity-80 transition-all uppercase tracking-widest text-[10px]"
                                     style={{
                                         backgroundColor: 'var(--color-fill-secondary)',
                                         color: 'var(--color-text-secondary)'

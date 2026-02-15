@@ -57,7 +57,7 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
                     <button
                         key={filter.division}
                         onClick={() => onFilterChange(filter.division)}
-                        className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
+                        className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${filterDivision === filter.division
                             ? filter.color + ' shadow-md'
                             : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
                             }`}
@@ -94,7 +94,7 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
                     className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-secondary transition-colors shadow-sm flex items-center gap-2"
                 >
                     <ArrowUpDown size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{sortBy === 'name' ? 'Nome' : sortBy === 'date' ? 'Data' : 'ID'}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{sortBy === 'name' ? 'Nome' : sortBy === 'date' ? 'Data' : 'ID'}</span>
                 </button>
 
                 <button

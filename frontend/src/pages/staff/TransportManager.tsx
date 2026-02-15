@@ -151,8 +151,8 @@ export default function TransportManager() {
                         <Truck size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest">Total Hoje</p>
-                        <h4 className="text-2xl font-black text-[var(--color-text-primary)]">{transports.length}</h4>
+                        <p className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest">Total Hoje</p>
+                        <h4 className="text-2xl font-bold text-[var(--color-text-primary)]">{transports.length}</h4>
                     </div>
                 </GlassSurface>
                 <GlassSurface className="p-6 flex items-center gap-4 border-l-4 border-amber-500">
@@ -160,8 +160,8 @@ export default function TransportManager() {
                         <Clock size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest">Em Andamento</p>
-                        <h4 className="text-2xl font-black text-[var(--color-text-primary)]">
+                        <p className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest">Em Andamento</p>
+                        <h4 className="text-2xl font-bold text-[var(--color-text-primary)]">
                             {transports.filter(t => t.status === 'INICIADO').length}
                         </h4>
                     </div>
@@ -171,8 +171,8 @@ export default function TransportManager() {
                         <CheckCircle2 size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest">Finalizados</p>
-                        <h4 className="text-2xl font-black text-[var(--color-text-primary)]">
+                        <p className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest">Finalizados</p>
+                        <h4 className="text-2xl font-bold text-[var(--color-text-primary)]">
                             {activeTab === 'historico' ? transports.length : '...'}
                         </h4>
                     </div>
@@ -182,8 +182,8 @@ export default function TransportManager() {
                         <User size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest">Motoristas</p>
-                        <h4 className="text-2xl font-black text-[var(--color-text-primary)]">Ativos</h4>
+                        <p className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest">Motoristas</p>
+                        <h4 className="text-2xl font-bold text-[var(--color-text-primary)]">Ativos</h4>
                     </div>
                 </GlassSurface>
             </div>
@@ -192,7 +192,7 @@ export default function TransportManager() {
             <div className="flex gap-2 mb-8 bg-[var(--color-fill-secondary)] p-1.5 rounded-2xl w-fit">
                 <button
                     onClick={() => setActiveTab('ativos')}
-                    className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ativos'
+                    className={`px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'ativos'
                         ? 'bg-[var(--color-bg-surface)] text-[var(--color-accent-primary)] shadow-sm'
                         : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
                         }`}
@@ -201,7 +201,7 @@ export default function TransportManager() {
                 </button>
                 <button
                     onClick={() => setActiveTab('historico')}
-                    className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'historico'
+                    className={`px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'historico'
                         ? 'bg-[var(--color-bg-surface)] text-[var(--color-accent-primary)] shadow-sm'
                         : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
                         }`}
@@ -232,15 +232,15 @@ export default function TransportManager() {
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-[var(--font-weight-black)] text-[var(--color-text-primary)] uppercase tracking-tight">
-                                                {item.appointment.pet.name}
+                                                {item.appointment?.pet?.name || 'Pet'}
                                             </h3>
                                             <button
-                                                onClick={() => setContactChoice({ phone: item.appointment.customer.phone, name: item.appointment.customer.name })}
+                                                onClick={() => setContactChoice({ phone: item.appointment?.customer?.phone || '', name: item.appointment?.customer?.name || 'Cliente' })}
                                                 className="flex items-center gap-2 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-accent-primary)] font-[var(--font-weight-bold)] uppercase tracking-widest mt-0.5 transition-colors group"
                                             >
                                                 <User size={12} strokeWidth={2.5} />
                                                 <span className="border-b border-transparent group-hover:border-[var(--color-accent-primary)]">
-                                                    {item.appointment.customer.name}
+                                                    {item.appointment?.customer?.name || 'Cliente'}
                                                 </span>
                                             </button>
                                         </div>
@@ -273,7 +273,7 @@ export default function TransportManager() {
                                 <div className="md:w-80 bg-[var(--color-fill-tertiary)]/30 backdrop-blur-sm p-6 md:p-8 flex flex-col justify-between border-t md:border-t-0 md:border-l border-[var(--color-border-subtle)]">
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">Período</span>
+                                            <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">Período</span>
                                             <Badge variant="neutral" className="text-[var(--color-accent-primary)] font-[var(--font-weight-black)] uppercase px-4">
                                                 {item.requestedPeriod}
                                             </Badge>
@@ -284,16 +284,16 @@ export default function TransportManager() {
                                                 <div className="w-8 h-8 rounded-full bg-[var(--color-bg-surface)] flex items-center justify-center shadow-sm border border-[var(--color-border-subtle)]">
                                                     <Clock size={16} className="text-[var(--color-text-tertiary)]" />
                                                 </div>
-                                                <span className="text-lg">{new Date(item.appointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span className="text-lg">{item.appointment?.startAt ? new Date(item.appointment.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
                                             </div>
                                             <button
-                                                onClick={() => setContactChoice({ phone: item.appointment.customer.phone, name: item.appointment.customer.name })}
+                                                onClick={() => setContactChoice({ phone: item.appointment?.customer?.phone || '', name: item.appointment?.customer?.name || 'Cliente' })}
                                                 className="flex items-center gap-3 text-[var(--color-text-primary)] font-bold hover:text-[var(--color-accent-primary)] transition-colors group"
                                             >
                                                 <div className="w-8 h-8 rounded-full bg-[var(--color-bg-surface)] flex items-center justify-center shadow-sm border border-[var(--color-border-subtle)] group-hover:border-[var(--color-accent-primary)] transition-all">
                                                     <Phone size={16} className="text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent-primary)]" />
                                                 </div>
-                                                <span className="text-base">{item.appointment.customer.phone || 'N/A'}</span>
+                                                <span className="text-base">{item.appointment?.customer?.phone || 'N/A'}</span>
                                             </button>
                                         </div>
                                     </div>
@@ -315,7 +315,7 @@ export default function TransportManager() {
                                                     }
                                                 }}
                                                 variant="secondary"
-                                                className="w-full h-12 font-black tracking-widest text-[10px] uppercase"
+                                                className="w-full h-12 font-bold tracking-widest text-[10px] uppercase"
                                             >
                                                 INICIAR SERVIÇO
                                             </Button>
@@ -336,7 +336,7 @@ export default function TransportManager() {
                                                     }
                                                 }}
                                                 variant="primary"
-                                                className="w-full h-14 font-black tracking-widest text-xs uppercase"
+                                                className="w-full h-14 font-bold tracking-widest text-xs uppercase"
                                                 icon={CheckCircle2}
                                             >
                                                 FINALIZAR ROTA
@@ -345,7 +345,7 @@ export default function TransportManager() {
 
                                         <button
                                             onClick={() => setSelectedTransport(item)}
-                                            className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest hover:text-[var(--color-accent-primary)] transition-colors mt-2"
+                                            className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest hover:text-[var(--color-accent-primary)] transition-colors mt-2"
                                         >
                                             Ver Linha do Tempo
                                         </button>
@@ -374,25 +374,25 @@ export default function TransportManager() {
                                 <div className="w-16 h-16 bg-[var(--color-accent-primary-alpha)] text-[var(--color-accent-primary)] rounded-full flex items-center justify-center mx-auto mb-6">
                                     <MessageSquare size={32} />
                                 </div>
-                                <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-2">Contatar {contactChoice.name}</h3>
+                                <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Contatar {contactChoice.name}</h3>
                                 <p className="text-sm text-[var(--color-text-tertiary)] font-medium mb-8">Escolha como deseja abrir o WhatsApp:</p>
 
                                 <div className="space-y-3">
                                     <button
                                         onClick={() => handleWhatsApp(contactChoice.phone, false)}
-                                        className="w-full h-14 bg-[#25D366] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-[#25D366]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-14 bg-[#25D366] text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-[#25D366]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                                     >
                                         WhatsApp Normal
                                     </button>
                                     <button
                                         onClick={() => handleWhatsApp(contactChoice.phone, true)}
-                                        className="w-full h-14 bg-[#128C7E] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-[#128C7E]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-14 bg-[#128C7E] text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-[#128C7E]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                                     >
                                         WhatsApp Business
                                     </button>
                                     <button
                                         onClick={() => setContactChoice(null)}
-                                        className="w-full h-14 bg-[var(--color-fill-secondary)] text-[var(--color-text-primary)] rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[var(--color-fill-primary)] transition-all mt-4"
+                                        className="w-full h-14 bg-[var(--color-fill-secondary)] text-[var(--color-text-primary)] rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-[var(--color-fill-primary)] transition-all mt-4"
                                     >
                                         Cancelar
                                     </button>
@@ -417,33 +417,33 @@ export default function TransportManager() {
                                 <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Navigation size={32} />
                                 </div>
-                                <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-2">Iniciar Navegação</h3>
+                                <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Iniciar Navegação</h3>
                                 <p className="text-sm text-[var(--color-text-tertiary)] font-medium mb-8">Escolha seu aplicativo de GPS favorito:</p>
 
                                 <div className="space-y-3">
                                     <button
                                         onClick={() => handleNavigation(navigationChoice.address, 'google')}
-                                        className="w-full h-14 bg-white border border-gray-200 text-gray-700 rounded-2xl font-black uppercase text-xs tracking-widest shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-14 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                                     >
                                         <img src="https://www.google.com/images/branding/product/ico/maps15_64dp.ico" alt="" className="w-5 h-5 rounded-md" />
                                         Google Maps
                                     </button>
                                     <button
                                         onClick={() => handleNavigation(navigationChoice.address, 'waze')}
-                                        className="w-full h-14 bg-[#33CCFF] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-[#33CCFF]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-14 bg-[#33CCFF] text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-[#33CCFF]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                                     >
                                         <img src="https://static.waze.com/web/brand/dist/images/favicon.ico" alt="" className="w-5 h-5" />
                                         Waze
                                     </button>
                                     <button
                                         onClick={() => handleNavigation(navigationChoice.address, 'apple')}
-                                        className="w-full h-14 bg-black text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-black/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-14 bg-black text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-black/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                                     >
                                         Apple Maps
                                     </button>
                                     <button
                                         onClick={() => setNavigationChoice(null)}
-                                        className="w-full h-14 bg-[var(--color-fill-secondary)] text-[var(--color-text-primary)] rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[var(--color-fill-primary)] transition-all mt-4"
+                                        className="w-full h-14 bg-[var(--color-fill-secondary)] text-[var(--color-text-primary)] rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-[var(--color-fill-primary)] transition-all mt-4"
                                     >
                                         Cancelar
                                     </button>
@@ -465,7 +465,7 @@ export default function TransportManager() {
                         >
                             <header className="p-8 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-xl font-black text-[var(--color-text-primary)]">Linha do Tempo</h3>
+                                    <h3 className="text-xl font-bold text-[var(--color-text-primary)]">Linha do Tempo</h3>
                                     <p className="text-xs text-[var(--color-text-tertiary)] font-bold uppercase tracking-widest mt-1">
                                         Transporte #{selectedTransport.id.slice(0, 8)}
                                     </p>
@@ -484,10 +484,10 @@ export default function TransportManager() {
                                                     }`}
                                             />
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">
+                                                <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-[0.2em]">
                                                     {new Date(occ.timestamp).toLocaleString('pt-BR')}
                                                 </span>
-                                                <h4 className="text-sm font-black text-[var(--color-text-primary)] uppercase tracking-tight">
+                                                <h4 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-tight">
                                                     {occ.occurrenceType}
                                                 </h4>
                                                 <p className="text-sm text-[var(--color-text-tertiary)] font-medium leading-relaxed">

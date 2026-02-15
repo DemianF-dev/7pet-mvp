@@ -149,7 +149,7 @@ export default function QuoteList() {
                                 </div>
                                 <div className="space-y-1 text-center">
                                     <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Valor Total</p>
-                                    <p className="text-lg font-black text-secondary">
+                                    <p className="text-lg font-bold text-secondary">
                                         {(quote.totalAmount || 0) > 0 ? `R$ ${(quote.totalAmount || 0).toFixed(2)}` : '--'}
                                     </p>
                                 </div>
@@ -198,7 +198,7 @@ export default function QuoteList() {
                             <div className="p-10">
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
-                                        <h2 className="text-2xl font-black text-secondary">Detalhes do Orçamento</h2>
+                                        <h2 className="text-2xl font-bold text-secondary">Detalhes do Orçamento</h2>
                                         <p className="text-gray-400 font-medium">#{selectedQuote.id.toUpperCase()}</p>
                                     </div>
                                     <button onClick={() => setSelectedQuote(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -255,7 +255,7 @@ export default function QuoteList() {
 
                                     <div className="flex justify-between items-center p-6 border-t border-gray-100">
                                         <span className="text-lg font-bold text-secondary">Total do Orçamento</span>
-                                        <span className="text-3xl font-black text-primary">
+                                        <span className="text-3xl font-bold text-primary">
                                             {(selectedQuote.totalAmount || 0) > 0 ? `R$ ${(selectedQuote.totalAmount || 0).toFixed(2)}` : 'Sob análise'}
                                         </span>
                                     </div>
@@ -266,7 +266,7 @@ export default function QuoteList() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="bg-gray-50 p-3 rounded-2xl">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Sua Preferência</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sua Preferência</p>
                                                 <p className="font-bold text-secondary text-sm">
                                                     {selectedQuote.desiredAt ? new Date(selectedQuote.desiredAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'Não informada'}
                                                 </p>
@@ -274,11 +274,11 @@ export default function QuoteList() {
 
                                             {(selectedQuote.scheduledAt || selectedQuote.transportAt) && (
                                                 <div className="bg-primary/5 p-3 rounded-2xl border border-primary/10">
-                                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Sugestão da Equipe</p>
+                                                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Sugestão da Equipe</p>
                                                     {selectedQuote.scheduledAt && (
                                                         <div className="mb-2">
                                                             <span className="text-xs font-bold text-gray-500 block">Atendimento SPA:</span>
-                                                            <span className="text-sm font-black text-secondary">
+                                                            <span className="text-sm font-bold text-secondary">
                                                                 {new Date(selectedQuote.scheduledAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                                                             </span>
                                                         </div>
@@ -286,7 +286,7 @@ export default function QuoteList() {
                                                     {selectedQuote.transportAt && (
                                                         <div>
                                                             <span className="text-xs font-bold text-gray-500 block">Transporte (Leva e Traz):</span>
-                                                            <span className="text-sm font-black text-purple-600">
+                                                            <span className="text-sm font-bold text-purple-600">
                                                                 {new Date(selectedQuote.transportAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                                                             </span>
                                                         </div>
@@ -355,7 +355,7 @@ export default function QuoteList() {
                                                 <CheckCircle2 size={24} />
                                             </div>
                                             <div>
-                                                <h4 className={`font-black ${selectedQuote.status === 'AGENDAR'
+                                                <h4 className={`font-bold ${selectedQuote.status === 'AGENDAR'
                                                     ? 'text-emerald-800'
                                                     : 'text-green-800'
                                                     }`}>

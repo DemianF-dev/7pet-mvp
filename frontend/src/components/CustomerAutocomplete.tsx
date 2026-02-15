@@ -117,7 +117,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
                 <div className="flex-1 truncate flex items-center gap-2">
                     <User size={16} className="text-gray-400" />
                     {selectedCustomer ? (
-                        <span className="text-secondary font-medium">{selectedCustomer.name}</span>
+                        <span className="text-secondary font-medium">{selectedCustomer.name || 'Sem nome'}</span>
                     ) : (
                         <span className="text-gray-400">{placeholder}</span>
                     )}

@@ -22,6 +22,7 @@ interface QuoteTransportCalculatorProps {
     setLevaDriverId: (val: string) => void;
     trazDriverId: string;
     setTrazDriverId: (val: string) => void;
+    readOnly?: boolean;
 }
 
 const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
@@ -44,13 +45,14 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
     levaDriverId,
     setLevaDriverId,
     trazDriverId,
-    setTrazDriverId
+    setTrazDriverId,
+    readOnly = false
 }) => {
     const drivers = staffUsers.filter(u => u.division === 'LOGISTICA' || u.role === 'OPERACIONAL');
 
     return (
         <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-black text-secondary dark:text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-secondary dark:text-white mb-4 flex items-center gap-2">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-xl text-purple-600 dark:text-purple-400">
                     <Calculator size={20} />
                 </div>
@@ -73,7 +75,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                 <div className="flex flex-col gap-4 mb-6">
                     <div className="flex gap-4">
                         <div className="flex-1">
-                            <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Busca (Origem)</label>
+                            <label className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Busca (Origem)</label>
                             <input
                                 type="text"
                                 value={transportAddress}
@@ -97,13 +99,14 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
 
                     {hasDifferentReturnAddress && (
                         <div className="flex-1 animate-in fade-in slide-in-from-top-2">
-                            <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Entrega (Destino)</label>
+                            <label className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-2 px-2">Endereço de Entrega (Destino)</label>
                             <input
                                 type="text"
                                 value={transportDestinationAddress}
                                 onChange={(e) => setTransportDestinationAddress(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-800 border-transparent rounded-2xl px-4 py-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-200 transition-all text-purple-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600"
                                 placeholder="Endereço para onde o pet vai..."
+                                disabled={readOnly}
                             />
                         </div>
                     )}
@@ -111,11 +114,15 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                     <div className="flex justify-end mt-2 text-right">
                         <button
                             onClick={onCalculate}
-                            disabled={isCalculating}
-                            className="px-8 py-3 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-600/20 active:scale-95"
+                            disabled={isCalculating || readOnly}
+                            className="w-full flex items-center justify-center gap-2 py-4 bg-purple-600 dark:bg-purple-500 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-purple-600/20"
                         >
-                            {isCalculating ? <RefreshCcw size={18} className="animate-spin" /> : <Calculator size={18} />}
-                            {isCalculating ? 'Calculando...' : 'Calcular Transporte'}
+                            {isCalculating ? (
+                                <RefreshCcw className="animate-spin" size={18} />
+                            ) : (
+                                <Calculator size={18} />
+                            )}
+                            {calculation ? 'Recalcular Previsão' : 'Calcular Previsão'}
                         </button>
                     </div>
                 </div>
@@ -125,7 +132,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             {(transportType === 'ROUND_TRIP' || transportType === 'PICK_UP') && (
                                 <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl border border-purple-100 dark:border-purple-900/30">
-                                    <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Motorista (Busca/Leva)</label>
+                                    <label className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-2 px-2">Motorista (Busca/Leva)</label>
                                     <select
                                         value={levaDriverId}
                                         onChange={(e) => setLevaDriverId(e.target.value)}
@@ -141,7 +148,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
 
                             {(transportType === 'ROUND_TRIP' || transportType === 'DROP_OFF') && (
                                 <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl border border-purple-100 dark:border-purple-900/30">
-                                    <label className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2 px-2">Motorista (Entrega/Traz)</label>
+                                    <label className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-2 px-2">Motorista (Entrega/Traz)</label>
                                     <select
                                         value={trazDriverId}
                                         onChange={(e) => setTrazDriverId(e.target.value)}
@@ -158,7 +165,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
 
                         <div className="bg-white dark:bg-gray-800 rounded-3xl border border-purple-100 dark:border-purple-900/30 overflow-hidden shadow-sm">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-purple-50/50 dark:bg-purple-900/20 text-[10px] uppercase font-black text-purple-400 tracking-widest">
+                                <thead className="bg-purple-50/50 dark:bg-purple-900/20 text-[10px] uppercase font-bold text-purple-400 tracking-widest">
                                     <tr>
                                         <th className="px-6 py-4 border-b border-purple-100 dark:border-purple-900/30">Etapa</th>
                                         <th className="px-6 py-4 border-b border-purple-100 dark:border-purple-900/30">Distância</th>
@@ -203,14 +210,14 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={legData.price}
-                                                onChange={(e) => onLegChange(leg, 'price', e.target.value)}
-                                                className="w-28 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-black text-purple-600 dark:text-purple-400 focus:ring-2 focus:ring-purple-200 transition-all"
-                                            />
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={legData.price}
+                                                        onChange={(e) => onLegChange(leg, 'price', e.target.value)}
+                                                        className="w-28 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-bold text-purple-600 dark:text-purple-400 focus:ring-2 focus:ring-purple-200 transition-all"
+                                                    />
                                                 </td>
                                             </tr>
                                         );
@@ -228,21 +235,30 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex flex-col items-end">
                                                 <span className="font-bold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-widest mb-1">Desconto (%)</span>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    value={discount}
-                                                    onChange={(e) => setDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                                                    className="w-20 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50 transition-colors"
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setDiscount(20)}
+                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${discount === 20 ? 'bg-purple-600 text-white shadow-md' : 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 hover:bg-purple-200'}`}
+                                                        title="Aplicar desconto padrão de 20% para loja"
+                                                    >
+                                                        20% Loja
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="100"
+                                                        step="0.1"
+                                                        value={discount}
+                                                        onChange={(e) => setDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                                                        className="w-20 text-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-bold text-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50 transition-colors"
+                                                    />
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan={3} className="px-6 py-4 text-right font-bold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-widest">Total com Desconto</td>
-                                        <td className="px-6 py-4 text-right font-black text-xl text-purple-700 dark:text-purple-400">
+                                        <td className="px-6 py-4 text-right font-bold text-xl text-purple-700 dark:text-purple-400">
                                             R$ {(calculation.totalAfterDiscount || (calculation.total * (1 - discount / 100))).toFixed(2)}
                                         </td>
                                     </tr>
@@ -250,7 +266,7 @@ const QuoteTransportCalculator: React.FC<QuoteTransportCalculatorProps> = ({
                                         <td colSpan={4} className="px-6 pb-6 text-right">
                                             <button
                                                 onClick={onApply}
-                                                className="px-6 py-2 bg-green-500 text-white font-black rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ml-auto"
+                                                className="px-6 py-2 bg-green-500 text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ml-auto"
                                             >
                                                 <CheckCircle2 size={16} />
                                                 Aplicar Itens Separados

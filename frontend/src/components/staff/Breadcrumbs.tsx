@@ -33,7 +33,7 @@ const Breadcrumbs: React.FC = () => {
 
     return (
         <nav className="flex mb-3 overflow-x-auto pb-2 scrollbar-none">
-            <ol className="flex items-center space-x-2 text-xs font-black uppercase tracking-widest min-w-max">
+            <ol className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest min-w-max">
                 <li>
                     <Link
                         to="/staff/dashboard"

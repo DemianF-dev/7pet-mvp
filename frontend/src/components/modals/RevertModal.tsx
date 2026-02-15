@@ -74,8 +74,8 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
                             <RotateCcw size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-red-900 tracking-tight">Confirmar Reversão</h2>
-                            <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mt-0.5">Ação Crítica de Integridade</p>
+                            <h2 className="text-xl font-bold text-red-900 tracking-tight">Confirmar Reversão</h2>
+                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mt-0.5">Ação Crítica de Integridade</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/50 rounded-xl transition-colors">
@@ -87,24 +87,24 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
                     {/* Summary Info */}
                     <div className="p-5 rounded-[32px] bg-gray-50 border border-gray-100 grid grid-cols-2 gap-4">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight mb-1">Evento Original</span>
-                            <span className="text-sm font-black text-secondary uppercase">{event.action}</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mb-1">Evento Original</span>
+                            <span className="text-sm font-bold text-secondary uppercase">{event.action}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight mb-1">Data / Hora</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mb-1">Data / Hora</span>
                             <span className="text-sm font-bold text-secondary">
                                 {new Date(event.createdAt).toLocaleString()}
                             </span>
                         </div>
                         <div className="col-span-2 flex flex-col pt-2 border-t border-black/5">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight mb-1">Resumo do Evento</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mb-1">Resumo do Evento</span>
                             <span className="text-xs text-secondary italic font-medium">"{event.summary}"</span>
                         </div>
                     </div>
 
                     {/* Simulation Result */}
                     <div className="space-y-3">
-                        <h3 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-2">
+                        <h3 className="text-xs font-bold text-secondary uppercase tracking-widest flex items-center gap-2">
                             <ShieldAlert size={14} className="text-primary" /> Visualização da Restauração
                         </h3>
                         {loading ? (
@@ -124,7 +124,7 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-3 bg-white rounded-xl border border-indigo-50">
-                                        <span className="text-[10px] font-black text-gray-300 uppercase block mb-2">Estado Atual</span>
+                                        <span className="text-[10px] font-bold text-gray-300 uppercase block mb-2">Estado Atual</span>
                                         <div className="max-h-32 overflow-y-auto text-[10px] font-mono whitespace-pre opacity-60">
                                             {JSON.stringify(dryRunData.currentData, null, 2)}
                                         </div>
@@ -133,7 +133,7 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
                                         <div className="absolute top-0 right-0 p-1 bg-green-500 text-white rounded-bl-lg">
                                             <CheckCircle2 size={10} />
                                         </div>
-                                        <span className="text-[10px] font-black text-green-600 uppercase block mb-2">Estado Restaurado</span>
+                                        <span className="text-[10px] font-bold text-green-600 uppercase block mb-2">Estado Restaurado</span>
                                         <div className="max-h-32 overflow-y-auto text-[10px] font-mono whitespace-pre text-green-900 font-bold">
                                             {JSON.stringify(dryRunData.restorePayload, null, 2)}
                                         </div>
@@ -141,7 +141,7 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-[10px] font-black uppercase text-center">
+                            <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase text-center">
                                 Falha ao simular reversão. Entre em contato com o suporte.
                             </div>
                         )}
@@ -149,7 +149,7 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
 
                     {/* Reason Input */}
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-secondary uppercase tracking-wider ml-1">Motivo da Reversão (Obrigatório)</label>
+                        <label className="text-xs font-bold text-secondary uppercase tracking-wider ml-1">Motivo da Reversão (Obrigatório)</label>
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
@@ -163,14 +163,14 @@ const RevertModal: React.FC<RevertModalProps> = ({ isOpen, onClose, event, onSuc
                 <div className="p-8 bg-gray-50 flex items-center justify-end gap-4 border-t border-gray-100">
                     <button
                         onClick={onClose}
-                        className="px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-secondary hover:bg-gray-200 transition-all"
+                        className="px-8 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-secondary hover:bg-gray-200 transition-all"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleRevert}
                         disabled={isReverting || !reason.trim() || !dryRunData}
-                        className="bg-red-500 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-red-200 flex items-center gap-2 uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                        className="bg-red-500 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-red-200 flex items-center gap-2 uppercase text-[10px] tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                     >
                         {isReverting ? (
                             <div className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full"></div>

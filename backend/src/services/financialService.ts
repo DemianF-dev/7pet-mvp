@@ -13,6 +13,7 @@ interface CreateTransactionParams {
     category?: 'QUOTE' | 'PAYMENT' | 'ADJUSTMENT' | 'DISCOUNT' | 'PENALTY' | 'PDV';
     relatedQuoteId?: string;
     relatedInvoiceId?: string;
+    relatedOrderId?: string;
     createdBy: string;
     notes?: string;
 }
@@ -36,7 +37,8 @@ export const createTransaction = async (params: CreateTransactionParams, tx?: an
         include: {
             customer: true,
             quote: true,
-            invoice: true
+            invoice: true,
+            order: { select: { id: true, seqId: true, status: true } }
         }
     });
 
@@ -105,6 +107,9 @@ export const getTransactionHistory = async (
                 },
                 invoice: {
                     select: { id: true, amount: true, status: true }
+                },
+                order: {
+                    select: { id: true, seqId: true, status: true }
                 }
             }
         }),

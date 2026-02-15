@@ -24,7 +24,10 @@ export default function TransportConfig() {
         handlingTimeTraz: 0,
         handlingTimeRetorno: 0,
         // Acréscimo por pet adicional
-        additionalPetSurchargePercent: 20.0
+        additionalPetSurchargePercent: 20.0,
+        // Taxas extras
+        knotPrice: 0,
+        medicatedBathPrice: 0
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -53,7 +56,9 @@ export default function TransportConfig() {
                 handlingTimeLeva: res.data.handlingTimeLeva ?? 0,
                 handlingTimeTraz: res.data.handlingTimeTraz ?? 0,
                 handlingTimeRetorno: res.data.handlingTimeRetorno ?? 0,
-                additionalPetSurchargePercent: res.data.additionalPetSurchargePercent ?? 20.0
+                additionalPetSurchargePercent: res.data.additionalPetSurchargePercent ?? 20.0,
+                knotPrice: res.data.knotPrice ?? 0,
+                medicatedBathPrice: res.data.medicatedBathPrice ?? 0
             });
         } catch (err) {
             console.error('Erro ao carregar configurações:', err);
@@ -101,11 +106,11 @@ export default function TransportConfig() {
             <header className="mb-10">
                 <Breadcrumbs />
                 <BackButton className="mb-4 ml-[-1rem]" />
-                <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
+                <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.3em] mb-4">
                     <div className="h-[2px] w-6 bg-primary"></div>
                     CONFIGURAÇÕES DO SISTEMA
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black text-secondary flex items-center gap-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-secondary flex items-center gap-4">
                     <div className="p-4 bg-indigo-100 rounded-[24px] text-indigo-600">
                         <Calculator size={40} />
                     </div>
@@ -117,7 +122,7 @@ export default function TransportConfig() {
             <form onSubmit={handleSubmit} className="max-w-6xl space-y-8">
                 {/* KM Pricing Section */}
                 <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-black text-secondary mb-3 flex items-center gap-3">
+                    <h2 className="text-xl font-bold text-secondary mb-3 flex items-center gap-3">
                         <Gauge className="text-indigo-500" size={24} />
                         Valores por Quilômetro
                     </h2>
@@ -127,7 +132,7 @@ export default function TransportConfig() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">KM Largada</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">KM Largada</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -142,7 +147,7 @@ export default function TransportConfig() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">KM Leva</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">KM Leva</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -157,7 +162,7 @@ export default function TransportConfig() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">KM Traz</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">KM Traz</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -172,7 +177,7 @@ export default function TransportConfig() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">KM Retorno</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">KM Retorno</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -190,7 +195,7 @@ export default function TransportConfig() {
 
                 {/* Minute Pricing Section */}
                 <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-black text-secondary mb-3 flex items-center gap-3">
+                    <h2 className="text-xl font-bold text-secondary mb-3 flex items-center gap-3">
                         <Clock className="text-green-500" size={24} />
                         Valores por Minuto
                     </h2>
@@ -200,7 +205,7 @@ export default function TransportConfig() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Min. Largada</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min. Largada</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -215,7 +220,7 @@ export default function TransportConfig() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Min. Leva/Traz</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min. Leva/Traz</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -233,7 +238,7 @@ export default function TransportConfig() {
                         </div>
 
                         <div className="space-y-2 opacity-50">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Min. Traz (Auto)</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min. Traz (Auto)</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -248,7 +253,7 @@ export default function TransportConfig() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Min. Retorno</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min. Retorno</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                 <input
@@ -266,7 +271,7 @@ export default function TransportConfig() {
 
                 {/* Handling Time Section */}
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-[32px] border border-gray-200">
-                    <h2 className="text-xl font-black text-secondary mb-3 flex items-center gap-3">
+                    <h2 className="text-xl font-bold text-secondary mb-3 flex items-center gap-3">
                         <Clock className="text-orange-500" size={24} />
                         Tempos de Manuseio Adicionais
                     </h2>
@@ -276,48 +281,48 @@ export default function TransportConfig() {
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider text-center block">Largada</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center block">Largada</label>
                             <input
                                 type="number"
                                 value={settings.handlingTimeLargada}
                                 onChange={(e) => handleChange('handlingTimeLargada', e.target.value)}
-                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-black text-2xl text-center text-secondary transition-all"
+                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-bold text-2xl text-center text-secondary transition-all"
                                 placeholder="0"
                             />
                             <p className="text-[9px] text-gray-400 text-center">minutos</p>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider text-center block">Leva</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center block">Leva</label>
                             <input
                                 type="number"
                                 value={settings.handlingTimeLeva}
                                 onChange={(e) => handleChange('handlingTimeLeva', e.target.value)}
-                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-black text-2xl text-center text-secondary transition-all"
+                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-bold text-2xl text-center text-secondary transition-all"
                                 placeholder="0"
                             />
                             <p className="text-[9px] text-gray-400 text-center">minutos</p>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider text-center block">Traz</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center block">Traz</label>
                             <input
                                 type="number"
                                 value={settings.handlingTimeTraz}
                                 onChange={(e) => handleChange('handlingTimeTraz', e.target.value)}
-                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-black text-2xl text-center text-secondary transition-all"
+                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-bold text-2xl text-center text-secondary transition-all"
                                 placeholder="0"
                             />
                             <p className="text-[9px] text-gray-400 text-center">minutos</p>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider text-center block">Retorno</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center block">Retorno</label>
                             <input
                                 type="number"
                                 value={settings.handlingTimeRetorno}
                                 onChange={(e) => handleChange('handlingTimeRetorno', e.target.value)}
-                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-black text-2xl text-center text-secondary transition-all"
+                                className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-bold text-2xl text-center text-secondary transition-all"
                                 placeholder="0"
                             />
                             <p className="text-[9px] text-gray-400 text-center">minutos</p>
@@ -327,13 +332,13 @@ export default function TransportConfig() {
 
                 {/* Acréscimo por Pet Adicional */}
                 <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-8 rounded-[32px] border-2 border-yellow-100">
-                    <h3 className="text-lg font-black text-orange-900 mb-6 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-orange-900 mb-6 flex items-center gap-2">
                         <div className="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-lg">🐕</div>
                         Acréscimo por Pet Adicional
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                         <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
                                 Porcentagem de Acréscimo
                             </label>
                             <div className="relative">
@@ -344,31 +349,70 @@ export default function TransportConfig() {
                                     max="100"
                                     value={settings.additionalPetSurchargePercent}
                                     onChange={(e) => handleChange('additionalPetSurchargePercent', e.target.value)}
-                                    className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-black text-2xl text-center text-secondary transition-all"
+                                    className="w-full p-4 bg-white border-2 border-gray-200 focus:border-orange-500/30 rounded-2xl font-bold text-2xl text-center text-secondary transition-all"
                                     placeholder="20.0"
                                 />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-2xl font-black">%</div>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-2xl font-bold">%</div>
                             </div>
                             <p className="text-[9px] text-gray-400 text-center mt-2">Valor aplicado por cada pet adicional no orçamento</p>
                         </div>
                     </div>
                 </div>
 
+                {/* Taxas Extras */}
+                <div className="bg-gradient-to-br from-red-50 to-pink-50 p-8 rounded-[32px] border-2 border-red-100">
+                    <h3 className="text-lg font-bold text-red-900 mb-6 flex items-center gap-2">
+                        <AlertCircle className="text-red-500" size={24} />
+                        Taxas Extras de Orçamento
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Taxa por Nó (Pet possui nós)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={settings.knotPrice}
+                                    onChange={(e) => handleChange('knotPrice', e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-red-500/30 rounded-2xl font-bold text-xl text-secondary transition-all"
+                                />
+                            </div>
+                            <p className="text-[9px] text-gray-400">Valor cobrado por "unidade de nó" ou taxa fixa se selecionado.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Adicional Banho Medicamentoso</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={settings.medicatedBathPrice}
+                                    onChange={(e) => handleChange('medicatedBathPrice', e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white border-2 border-gray-200 focus:border-red-500/30 rounded-2xl font-bold text-xl text-secondary transition-all"
+                                />
+                            </div>
+                            <p className="text-[9px] text-gray-400">Valor adicional somado ao serviço quando o banho for medicamentoso.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Example Calculation */}
                 <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-8 rounded-[32px] border-2 border-indigo-100">
-                    <h3 className="text-lg font-black text-indigo-900 mb-4">💡 Exemplo de Cálculo</h3>
+                    <h3 className="text-lg font-bold text-indigo-900 mb-4">💡 Exemplo de Cálculo</h3>
                     <div className="space-y-2 text-sm">
                         <p className="text-indigo-700">
-                            <span className="font-black">Largada (10km, 15min):</span> (10 × R$ {Number(settings.kmPriceLargada).toFixed(2)}) + (15 × R$ {Number(settings.minPriceLargada).toFixed(2)}) = <span className="font-black text-indigo-900">R$ {((10 * Number(settings.kmPriceLargada)) + (15 * Number(settings.minPriceLargada))).toFixed(2)}</span>
+                            <span className="font-bold">Largada (10km, 15min):</span> (10 × R$ {Number(settings.kmPriceLargada).toFixed(2)}) + (15 × R$ {Number(settings.minPriceLargada).toFixed(2)}) = <span className="font-bold text-indigo-900">R$ {((10 * Number(settings.kmPriceLargada)) + (15 * Number(settings.minPriceLargada))).toFixed(2)}</span>
                         </p>
                         <p className="text-purple-700">
-                            <span className="font-black">Leva/Traz (5km, 8min cada):</span> 2 × [(5 × R$ {Number(settings.kmPriceLeva).toFixed(2)}) + (8 × R$ {Number(settings.minPriceLeva).toFixed(2)})] = <span className="font-black text-purple-900">R$ {(2 * ((5 * Number(settings.kmPriceLeva)) + (8 * Number(settings.minPriceLeva)))).toFixed(2)}</span>
+                            <span className="font-bold">Leva/Traz (5km, 8min cada):</span> 2 × [(5 × R$ {Number(settings.kmPriceLeva).toFixed(2)}) + (8 × R$ {Number(settings.minPriceLeva).toFixed(2)})] = <span className="font-bold text-purple-900">R$ {(2 * ((5 * Number(settings.kmPriceLeva)) + (8 * Number(settings.minPriceLeva)))).toFixed(2)}</span>
                         </p>
                         <p className="text-indigo-700">
-                            <span className="font-black">Retorno (10km, 15min):</span> (10 × R$ {Number(settings.kmPriceRetorno).toFixed(2)}) + (15 × R$ {Number(settings.minPriceRetorno).toFixed(2)}) = <span className="font-black text-indigo-900">R$ {((10 * Number(settings.kmPriceRetorno)) + (15 * Number(settings.minPriceRetorno))).toFixed(2)}</span>
+                            <span className="font-bold">Retorno (10km, 15min):</span> (10 × R$ {Number(settings.kmPriceRetorno).toFixed(2)}) + (15 × R$ {Number(settings.minPriceRetorno).toFixed(2)}) = <span className="font-bold text-indigo-900">R$ {((10 * Number(settings.kmPriceRetorno)) + (15 * Number(settings.minPriceRetorno))).toFixed(2)}</span>
                         </p>
                         <div className="pt-3 mt-3 border-t-2 border-indigo-200">
-                            <p className="text-indigo-900 font-black text-lg">
+                            <p className="text-indigo-900 font-bold text-lg">
                                 TOTAL: R$ {(
                                     ((10 * Number(settings.kmPriceLargada)) + (15 * Number(settings.minPriceLargada))) +
                                     (2 * ((5 * Number(settings.kmPriceLeva)) + (8 * Number(settings.minPriceLeva)))) +
@@ -398,7 +442,7 @@ export default function TransportConfig() {
                         type="submit"
                         isLoading={isSaving}
                         loadingText="Salvando..."
-                        className="px-10 py-5 rounded-[24px] text-lg font-black bg-secondary hover:bg-secondary/90 shadow-xl shadow-secondary/20 uppercase tracking-wider"
+                        className="px-10 py-5 rounded-[24px] text-lg font-bold bg-secondary hover:bg-secondary/90 shadow-xl shadow-secondary/20 uppercase tracking-wider"
                         rightIcon={<Save size={24} />}
                     >
                         Salvar Alterações

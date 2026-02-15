@@ -142,7 +142,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                 <div className="p-8 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-tertiary)]/30 flex justify-between items-center">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h2 className="text-2xl font-black text-[var(--color-text-primary)]">Detalhes da Venda</h2>
+                            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Detalhes da Venda</h2>
                             {order && (
                                 <Badge variant={order.status === 'PAID' ? 'success' : order.status === 'CANCELLED' ? 'error' : 'warning'}>
                                     {order.status === 'PAID' ? 'PAGO' : order.status === 'CANCELLED' ? 'CANCELADO' : 'ABERTO'}
@@ -166,7 +166,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                             <>
                                 {/* Items Section */}
                                 <div>
-                                    <h3 className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <h3 className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest mb-4 flex items-center gap-2">
                                         <Package size={14} className="text-[var(--color-accent-primary)]" />
                                         Itens Comprados
                                     </h3>
@@ -180,7 +180,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                                                         {item.discount > 0 && <span className="text-red-500 ml-2">- R$ {item.discount.toFixed(2)} Desc.</span>}
                                                     </p>
                                                 </div>
-                                                <span className="text-sm font-black text-[var(--color-text-primary)]">R$ {item.totalPrice.toFixed(2)}</span>
+                                                <span className="text-sm font-bold text-[var(--color-text-primary)]">R$ {item.totalPrice.toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -199,14 +199,14 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-lg font-black text-[var(--color-text-primary)] uppercase tracking-tighter">Total Final</span>
-                                        <span className="text-3xl font-black text-[var(--color-accent-primary)]">R$ {order.finalAmount.toFixed(2)}</span>
+                                        <span className="text-lg font-bold text-[var(--color-text-primary)] uppercase tracking-tighter">Total Final</span>
+                                        <span className="text-3xl font-bold text-[var(--color-accent-primary)]">R$ {order.finalAmount.toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 {/* Payments Side */}
                                 <div>
-                                    <h3 className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <h3 className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest mb-4 flex items-center gap-2">
                                         <CreditCard size={14} className="text-[var(--color-accent-primary)]" />
                                         Pagamentos Efetuados
                                     </h3>
@@ -225,7 +225,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
 
                     {/* Right Side: Actions */}
                     <div className="w-full md:w-64 bg-[var(--color-bg-tertiary)]/50 p-8 flex flex-col gap-4">
-                        <h3 className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest mb-2">Comprovante</h3>
+                        <h3 className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest mb-2">Comprovante</h3>
                         <Button variant="outline" className="justify-start gap-3 h-14 rounded-2xl border-[var(--color-border)] shadow-sm bg-white" onClick={() => window.print()}>
                             <Printer size={18} /> Imprimir
                         </Button>
@@ -246,13 +246,13 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                                 <div className="flex bg-green-50 rounded-2xl border border-green-100 overflow-hidden h-14 animate-in fade-in zoom-in duration-200">
                                     <button
                                         onClick={() => handleShareWhatsApp(false)}
-                                        className="flex-1 text-[10px] font-black uppercase text-green-700 hover:bg-green-100 transition-colors border-r border-green-100"
+                                        className="flex-1 text-[10px] font-bold uppercase text-green-700 hover:bg-green-100 transition-colors border-r border-green-100"
                                     >
                                         Pessoal
                                     </button>
                                     <button
                                         onClick={() => handleShareWhatsApp(true)}
-                                        className="flex-1 text-[10px] font-black uppercase text-green-700 hover:bg-green-200 transition-colors"
+                                        className="flex-1 text-[10px] font-bold uppercase text-green-700 hover:bg-green-200 transition-colors"
                                     >
                                         Business
                                     </button>
@@ -268,7 +268,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
 
                         <div className="h-px bg-[var(--color-border-subtle)] my-2" />
 
-                        <h3 className="text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-widest mb-2">Gestão</h3>
+                        <h3 className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest mb-2">Gestão</h3>
                         <Button
                             variant="outline"
                             className="justify-start gap-3 h-14 rounded-2xl border-[var(--color-border)] shadow-sm bg-white"
@@ -303,7 +303,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                                 <div className="p-3 bg-red-50 rounded-2xl">
                                     <AlertTriangle size={24} />
                                 </div>
-                                <h3 className="text-xl font-black">Confirmar Cancelamento</h3>
+                                <h3 className="text-xl font-bold">Confirmar Cancelamento</h3>
                             </div>
                             <p className="text-sm text-gray-500 font-medium mb-6 leading-relaxed">
                                 Esta ação irá estornar o financeiro do cliente e devolver os itens ao estoque.
@@ -311,7 +311,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onActionCo
                             </p>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 block">Motivo do Cancelamento</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-2 mb-2 block">Motivo do Cancelamento</label>
                                     <textarea
                                         className="w-full bg-gray-50 border-gray-100 rounded-3xl p-4 text-sm font-medium focus:ring-2 focus:ring-red-100 outline-none h-32"
                                         placeholder="Ex: Cliente desistiu da compra..."

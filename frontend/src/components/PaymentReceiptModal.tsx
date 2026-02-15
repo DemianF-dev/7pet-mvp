@@ -87,15 +87,15 @@ export default function PaymentReceiptModal({ isOpen, onClose, payment, customer
                         {/* Company Logo/Name */}
                         <div className="text-center mb-10">
                             <div className="inline-flex items-center gap-2 mb-2">
-                                <span className="text-2xl font-black text-secondary tracking-tighter">7Pet</span>
+                                <span className="text-2xl font-bold text-secondary tracking-tighter">7Pet</span>
                             </div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Centro de Estética & Saúde Animal</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Centro de Estética & Saúde Animal</p>
                         </div>
 
                         {/* Status Label */}
                         <div className="bg-green-50 text-green-700 py-3 rounded-2xl text-center mb-10 border border-green-100 print:bg-white print:border-gray-200">
-                            <p className="text-xs font-black uppercase tracking-widest">Pagamento Confirmado</p>
-                            <p className="text-3xl font-black mt-1">R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                            <p className="text-xs font-bold uppercase tracking-widest">Pagamento Confirmado</p>
+                            <p className="text-3xl font-bold mt-1">R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
 
                         {/* Details */}
@@ -158,7 +158,7 @@ export default function PaymentReceiptModal({ isOpen, onClose, payment, customer
                     <div className="p-8 bg-gray-50 border-t border-gray-100 flex gap-4 print:hidden">
                         <button
                             onClick={handlePrint}
-                            className="flex-1 py-4 bg-secondary text-white font-black rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-lg shadow-secondary/10"
+                            className="flex-1 py-4 bg-secondary text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-lg shadow-secondary/10"
                         >
                             <Printer size={18} /> Imprimir
                         </button>

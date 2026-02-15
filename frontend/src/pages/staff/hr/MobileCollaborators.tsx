@@ -83,7 +83,7 @@ export const MobileCollaborators = () => {
                     <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                         <button
                             onClick={() => setFilterDept(null)}
-                            className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${!filterDept
+                            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${!filterDept
                                 ? 'bg-gray-900 dark:bg-zinc-100 text-white dark:text-gray-900 shadow-md'
                                 : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
                                 }`}
@@ -96,7 +96,7 @@ export const MobileCollaborators = () => {
                                 <button
                                     key={dept.value}
                                     onClick={() => setFilterDept(dept.value)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap flex items-center gap-2 transition-all ${filterDept === dept.value
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all ${filterDept === dept.value
                                         ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                                         : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
                                         }`}
@@ -114,7 +114,7 @@ export const MobileCollaborators = () => {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Carregando RH...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Carregando RH...</p>
                         </div>
                     ) : filteredProfiles.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center px-10">
@@ -141,11 +141,11 @@ export const MobileCollaborators = () => {
                                     {/* Center: Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-0.5">
-                                            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">
+                                            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase truncate">
                                                 {profile.user.name}
                                             </h3>
                                             {!profile.isActive && (
-                                                <span className="text-[8px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-md font-black uppercase">Inativo</span>
+                                                <span className="text-[8px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-md font-bold uppercase">Inativo</span>
                                             )}
                                         </div>
 
@@ -154,7 +154,7 @@ export const MobileCollaborators = () => {
                                                 <Mail size={12} className="shrink-0" />
                                                 {profile.user.email}
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest mt-1">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest mt-1">
                                                 <span className={`px-2 py-0.5 rounded-lg ${dept.bgColor} ${dept.color}`}>
                                                     {dept.label}
                                                 </span>
@@ -185,7 +185,7 @@ export const MobileCollaborators = () => {
                         <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
                             <AlertTriangle size={16} />
                         </div>
-                        <h4 className="text-xs font-black text-blue-900 dark:text-blue-100 uppercase tracking-widest">Informação RH</h4>
+                        <h4 className="text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-widest">Informação RH</h4>
                     </div>
                     <p className="text-[11px] text-blue-800/70 dark:text-blue-200/50 leading-relaxed font-medium">
                         Esta visualização mobile é focada em consulta e acompanhamento. Para ajustes de taxas, comissões, modelos de pagamento ou histórico financeiro detalhado, utilize a versão desktop do 7Pet.

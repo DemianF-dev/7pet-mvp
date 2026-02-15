@@ -140,9 +140,9 @@ export default function MonthGridCompact({
                                         className={`
                                             w-[34px] h-[34px] flex items-center justify-center rounded-full text-[14px] transition-all
                                             ${isSelected
-                                                ? 'bg-[var(--color-accent-primary)] text-white font-black shadow-lg shadow-[var(--color-accent-primary)]/20'
+                                                ? 'bg-[var(--color-accent-primary)] text-white font-bold shadow-lg shadow-[var(--color-accent-primary)]/20'
                                                 : isToday
-                                                    ? 'text-[var(--color-accent-primary)] font-black border border-[var(--color-accent-primary)]/30'
+                                                    ? 'text-[var(--color-accent-primary)] font-bold border border-[var(--color-accent-primary)]/30'
                                                     : isCurrentMonth
                                                         ? 'text-[var(--color-text-primary)] font-medium'
                                                         : 'text-[var(--color-text-quaternary)] opacity-40'

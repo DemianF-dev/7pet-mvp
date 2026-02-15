@@ -53,6 +53,8 @@ import posRoutes from './routes/posRoutes';
 import recurrenceRoutes from './routes/recurrenceRoutes';
 import brainRoutes from './routes/brainRoutes';
 import gameRoutes from './routes/gameRoutes';
+import billingRoutes from './routes/billingRoutes';
+import schedulingRoutes from './routes/schedulingRoutes';
 
 import { startNotificationScheduler } from './services/notificationService'; // **NOVO**
 import { errorHandler } from './middlewares/errorMiddleware';
@@ -75,9 +77,11 @@ const PORT = process.env.PORT || 3001;
 // Initialize Socket.io
 socketService.initialize(httpServer);
 
-// 🚨 EMERGENCY ROUTES (Temporary for debugging) - Start
+// 🚨 EMERGENCY ROUTES (Temporary for debugging) - REMOVE BEFORE PRODUCTION
+// Uses EMERGENCY_SECRET env var instead of hardcoded value
+const EMERGENCY_SECRET = process.env.EMERGENCY_SECRET || '';
 app.get('/emergency/users', async (req, res) => {
-    if (req.query.secret !== '7pet-rescue') return res.status(403).json({ error: 'Forbiddem' });
+    if (!EMERGENCY_SECRET || req.query.secret !== EMERGENCY_SECRET) return res.status(403).json({ error: 'Forbidden' });
     const dbUrl = process.env.DATABASE_URL?.replace(/:[^:]*@/, ':***@');
     try {
         // ... (rest of logic)
@@ -131,7 +135,7 @@ app.get('/emergency/users', async (req, res) => {
 });
 
 app.post('/emergency/create-master', async (req, res) => {
-    if (req.query.secret !== '7pet-rescue') return res.status(403).json({ error: 'Forbiddem' });
+    if (!EMERGENCY_SECRET || req.query.secret !== EMERGENCY_SECRET) return res.status(403).json({ error: 'Forbidden' });
     try {
         const { email, password } = req.body;
         if (!email || !password) return res.status(400).json({ error: 'Missing email/password' });
@@ -304,7 +308,6 @@ app.use('/quotes', quoteRoutes);
 app.use('/pets', petRoutes);
 app.use('/services', serviceRoutes);
 app.use('/appointments', appointmentRoutes);
-app.use('/quotes', quoteRoutes);
 app.use('/audit', auditRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/staff', staffRoutes);
@@ -330,6 +333,8 @@ app.use('/recurrence', recurrenceRoutes);
 app.use('/dev', devRoutes); // MASTER-only developer tools
 app.use('/brain', brainRoutes);
 app.use('/games', gameRoutes);
+app.use('/billing', billingRoutes);
+app.use('/scheduling', schedulingRoutes);
 
 // Start notification scheduler (dev only, Vercel uses Cron Jobs)
 // TEMPORARILY DISABLED to prevent DB timeout errors

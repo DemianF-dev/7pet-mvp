@@ -15,8 +15,11 @@ interface Appointment {
     status: string;
     customer: { name: string; phone?: string };
     pet: { name: string; species: string; breed: string };
-    services?: { name: string }[];
-    service?: { name: string };
+    services?: { name: string; basePrice: number }[];
+    service?: { name: string; basePrice: number };
+    transportLegs?: any[];
+    transportSnapshot?: any;
+    category?: string;
 }
 
 const statusColumns = [
@@ -113,7 +116,7 @@ export const MobileKanban = () => {
                             >
                                 <div className={`w-2 h-2 rounded-full ${col.color}`} />
                                 {col.label}
-                                <span className="opacity-50 font-black">{count}</span>
+                                <span className="opacity-50 font-bold">{count}</span>
                             </button>
                         );
                     })}
@@ -145,7 +148,7 @@ export const MobileKanban = () => {
                                     <div className="p-4 flex flex-col gap-3">
                                         <div className="flex justify-between items-start">
                                             <div className="flex flex-col">
-                                                <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase leading-tight">
+                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase leading-tight">
                                                     {appt.pet.name}
                                                 </h3>
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
@@ -153,18 +156,41 @@ export const MobileKanban = () => {
                                                     {appt.customer.name}
                                                 </div>
                                             </div>
-                                            <div className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black flex items-center gap-1.5">
+                                            <div className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold flex items-center gap-1.5">
                                                 <Clock size={12} />
                                                 {new Date(appt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {(appt.services || [appt.service]).map((s, idx) => s && (
-                                                <span key={idx} className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded text-[10px] font-bold uppercase">
-                                                    {s.name}
-                                                </span>
+                                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-50 dark:border-zinc-800/50">
+                                            {(appt.services || [appt.service]).map((s: any, idx) => s && (
+                                                <div key={idx} className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded-lg text-[10px] font-bold uppercase border border-gray-100 dark:border-zinc-700">
+                                                    <span>{s.name}</span>
+                                                    <span className="opacity-40">R$ {Number(s.basePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                </div>
                                             ))}
+                                            {appt.transportLegs?.map((l: any, idx: number) => (
+                                                <div key={`leg-${idx}`} className="flex items-center gap-1.5 px-2 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-[10px] font-bold uppercase border border-orange-100 dark:border-orange-800/30">
+                                                    <span>{l.legType}</span>
+                                                    <span className="opacity-40">R$ {Number(l.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                </div>
+                                            ))}
+                                            {(!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) && (
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-[10px] font-bold uppercase border border-orange-100 dark:border-orange-800/30">
+                                                    <span>Transporte</span>
+                                                    <span className="opacity-40">R$ {Number(appt.transportSnapshot.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/30 p-2 rounded-xl">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
+                                            <span className="text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                                                R$ {(
+                                                    (appt.services || (appt.service ? [appt.service] : [])).reduce((acc: number, s: any) => acc + Number(s?.basePrice || 0), 0) +
+                                                    (appt.transportLegs || []).reduce((acc: number, l: any) => acc + Number(l.price || 0), 0) +
+                                                    ((!appt.transportLegs?.length && appt.category === 'LOGISTICA' && appt.transportSnapshot) ? Number(appt.transportSnapshot.totalAmount || 0) : 0)
+                                                ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
                                         </div>
                                     </div>
 
@@ -174,7 +200,7 @@ export const MobileKanban = () => {
                                             {activeTab === 'PENDENTE' && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'CONFIRMADO'); }}
-                                                    className="flex-1 py-3 text-xs font-black text-blue-600 bg-blue-50/30 flex items-center justify-center gap-2"
+                                                    className="flex-1 py-3 text-xs font-bold text-blue-600 bg-blue-50/30 flex items-center justify-center gap-2"
                                                 >
                                                     <CheckCircle size={14} /> CONFIRMAR
                                                 </button>
@@ -182,7 +208,7 @@ export const MobileKanban = () => {
                                             {activeTab === 'CONFIRMADO' && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'EM_ATENDIMENTO'); }}
-                                                    className="flex-1 py-3 text-xs font-black text-purple-600 bg-purple-50/30 flex items-center justify-center gap-2"
+                                                    className="flex-1 py-3 text-xs font-bold text-purple-600 bg-purple-50/30 flex items-center justify-center gap-2"
                                                 >
                                                     <PlayCircle size={14} /> INICIAR
                                                 </button>
@@ -190,7 +216,7 @@ export const MobileKanban = () => {
                                             {activeTab === 'EM_ATENDIMENTO' && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'FINALIZADO'); }}
-                                                    className="flex-1 py-3 text-xs font-black text-emerald-600 bg-emerald-50/30 flex items-center justify-center gap-2"
+                                                    className="flex-1 py-3 text-xs font-bold text-emerald-600 bg-emerald-50/30 flex items-center justify-center gap-2"
                                                 >
                                                     <CheckCircle size={14} /> FINALIZAR
                                                 </button>

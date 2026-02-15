@@ -100,7 +100,7 @@ const ServiceAutocomplete: React.FC<ServiceAutocompleteProps> = ({
                                         )}
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xs font-black text-primary">
+                                        <span className="text-xs font-bold text-primary">
                                             R$ {s.basePrice.toFixed(2)}
                                         </span>
                                         {value === s.id && <Check size={16} className="text-primary" />}

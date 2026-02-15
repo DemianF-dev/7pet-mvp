@@ -30,6 +30,8 @@ const customerSchema = z.object({
     additionalGuardians: z.array(z.any()).optional().nullable(),
     requiresPrepayment: z.boolean().optional().nullable(),
     isBlocked: z.boolean().optional().nullable(),
+    canRequestQuotes: z.boolean().optional().nullable(),
+    riskLevel: z.string().optional().nullable(),
     discountPercentage: z.number().optional().nullable(), // Legacy field
     secondaryGuardianName: z.string().optional().nullable(),
     secondaryGuardianPhone: z.string().optional().nullable(),
@@ -84,6 +86,8 @@ export const customerController = {
                             firstName: true,
                             lastName: true,
                             address: true,
+                            role: true,
+                            staffProfile: { select: { id: true } }
                         }
                     },
                     pets: true
@@ -492,9 +496,9 @@ export const customerController = {
                 return res.status(404).json({ error: 'Cliente não encontrado' });
             }
 
-            const fullName = data.firstName && data.lastName
-                ? `${data.firstName} ${data.lastName}`
-                : (data.name || customerBefore.name);
+            const firstName = data.firstName !== undefined ? data.firstName : customerBefore.user.firstName;
+            const lastName = data.lastName !== undefined ? data.lastName : customerBefore.user.lastName;
+            const fullName = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || customerBefore.name);
 
             const updatedCustomer = await prisma.$transaction(async (tx) => {
                 // Update User if user-related fields are provided
@@ -556,8 +560,11 @@ export const customerController = {
                 if (data.isBlocked !== undefined) {
                     customerUpdateData.isBlocked = data.isBlocked;
                 }
-                if (cleanedBody.riskLevel !== undefined) {
-                    customerUpdateData.riskLevel = cleanedBody.riskLevel;
+                if (data.canRequestQuotes !== undefined) {
+                    customerUpdateData.canRequestQuotes = data.canRequestQuotes;
+                }
+                if (data.riskLevel !== undefined) {
+                    customerUpdateData.riskLevel = data.riskLevel;
                 }
 
                 // Migration fields

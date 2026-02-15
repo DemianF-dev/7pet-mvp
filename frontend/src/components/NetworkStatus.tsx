@@ -71,17 +71,17 @@ const NetworkStatus: React.FC = () => {
                             {statusType === 'offline' ? (
                                 <>
                                     <WifiOff size={16} className="animate-pulse" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Sem Conexão</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">Sem Conexão</span>
                                 </>
                             ) : statusType === 'reconnecting' ? (
                                 <>
                                     <RefreshCw size={16} className="animate-spin" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Tentando Reconectar...</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">Tentando Reconectar...</span>
                                 </>
                             ) : (
                                 <>
                                     <Wifi size={16} />
-                                    <span className="text-xs font-black uppercase tracking-widest">Conexão Restabelecida</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">Conexão Restabelecida</span>
                                 </>
                             )}
                         </div>

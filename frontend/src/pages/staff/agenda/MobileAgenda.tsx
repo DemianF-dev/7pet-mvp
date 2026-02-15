@@ -20,11 +20,11 @@ interface Appointment {
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'PENDENTE': return 'bg-orange-100 text-orange-600 border-orange-200';
-        case 'CONFIRMADO': return 'bg-green-100 text-green-600 border-green-200';
-        case 'EM_ATENDIMENTO': return 'bg-purple-100 text-purple-600 border-purple-200';
-        case 'FINALIZADO': return 'bg-blue-100 text-blue-600 border-blue-200';
-        default: return 'bg-gray-100 text-gray-600 border-gray-200';
+        case 'PENDENTE': return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'CONFIRMADO': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'EM_ATENDIMENTO': return 'bg-purple-100 text-purple-700 border-purple-200';
+        case 'FINALIZADO': return 'bg-blue-100 text-blue-700 border-blue-200';
+        default: return 'bg-zinc-100 text-zinc-600 border-zinc-200';
     }
 };
 
@@ -115,7 +115,7 @@ export const MobileAgenda = () => {
                                     <span className="text-[10px] uppercase font-bold opacity-70">
                                         {format(date, 'EEE', { locale: ptBR }).replace('.', '')}
                                     </span>
-                                    <span className={`text-sm font-black ${isSelected ? 'text-white' : isToday ? 'text-blue-600' : 'text-gray-900 dark:text-gray-200'}`}>
+                                    <span className={`text-sm font-bold ${isSelected ? 'text-white' : isToday ? 'text-blue-600' : 'text-gray-900 dark:text-gray-200'}`}>
                                         {format(date, 'dd')}
                                     </span>
                                     {isToday && !isSelected && (
@@ -148,37 +148,58 @@ export const MobileAgenda = () => {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                             >
-                                <div className="flex gap-3">
-                                    <div className="flex flex-col items-center pt-2 w-12 shrink-0">
-                                        <span className="text-sm font-black text-gray-900 dark:text-white">
+                                <div className="flex gap-4">
+                                    <div className="flex flex-col items-center pt-3 w-14 shrink-0">
+                                        <span className="text-[13px] font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-zinc-800 px-2 py-1 rounded-lg border border-gray-100 dark:border-zinc-700">
                                             {format(new Date(apt.startAt), 'HH:mm')}
                                         </span>
-                                        <div className="h-full w-0.5 bg-gray-200 dark:bg-zinc-800 mt-2 relative">
-                                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gray-300 dark:bg-zinc-700" />
+                                        <div className="flex-1 w-0.5 bg-gradient-to-bottom from-gray-200 to-transparent dark:from-zinc-800 dark:to-transparent mt-3 relative">
+                                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-700" />
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 pb-4">
-                                        <div className={`p-4 rounded-2xl border-l-4 shadow-sm bg-white dark:bg-zinc-900 ${getStatusColor(apt.status)} !bg-opacity-5 !border-opacity-100`}>
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-bold text-gray-900 dark:text-white text-base">
-                                                    {apt.pet.name}
-                                                </h4>
-                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${getStatusColor(apt.status)} bg-opacity-20`}>
+                                    <div className="flex-1 pb-6">
+                                        <div className={`p-5 rounded-[24px] border border-gray-100 dark:border-zinc-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] bg-white dark:bg-zinc-900 transition-all active:scale-[0.98] border-l-[8px] ${getStatusColor(apt.status).split(' ')[2]}`}>
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight uppercase">
+                                                        {apt.pet.name}
+                                                    </h4>
+                                                    <p className="text-xs text-blue-500 font-bold uppercase tracking-widest opacity-80 mt-0.5">
+                                                        {apt.customer.name}
+                                                    </p>
+                                                </div>
+                                                <span className={`text-[10px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-widest ${getStatusColor(apt.status)} shadow-sm`}>
                                                     {apt.status}
                                                 </span>
                                             </div>
 
-                                            <p className="text-xs text-gray-500 font-medium mb-1">
-                                                {apt.customer.name}
-                                            </p>
+                                            <div className="space-y-3">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {apt.services.map((s: any, idx) => (
+                                                        <div key={idx} className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 rounded-lg border border-gray-100 dark:border-zinc-700/50 uppercase">
+                                                            <span>{s.name}</span>
+                                                            <span className="opacity-40 text-[9px]">R$ {Number(s.basePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
 
-                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                {apt.services.map((s, idx) => (
-                                                    <span key={idx} className="text-[10px] px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 rounded text-xs">
-                                                        {s.name}
-                                                    </span>
-                                                ))}
+                                                <div className="pt-3 border-t border-gray-50 dark:border-zinc-800/50 flex justify-between items-center">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-gray-300 dark:text-zinc-600 uppercase tracking-tighter">
+                                                            AG-{apt.id.substring(0, 5).toUpperCase()}
+                                                        </span>
+                                                        <span className="text-[13px] font-bold text-blue-600 dark:text-blue-400">
+                                                            Total: R$ {apt.services.reduce((acc: number, s: any) => acc + Number(s.basePrice || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex -space-x-2">
+                                                        {/* Placeholder for performer avatar or type icons */}
+                                                        <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-white dark:border-zinc-900 flex items-center justify-center">
+                                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

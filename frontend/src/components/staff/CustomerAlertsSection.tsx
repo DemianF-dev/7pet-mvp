@@ -116,7 +116,7 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
     return (
         <section className="mb-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-black text-muted uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-sm font-bold text-muted uppercase tracking-widest flex items-center gap-2">
                     <AlertTriangle size={16} /> Avisos Ativos ({alerts.length})
                 </h3>
                 <button
@@ -141,10 +141,10 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase ${config.badgeClass}`}>
+                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase ${config.badgeClass}`}>
                                             {alert.type}
                                         </span>
-                                        <p className="text-sm font-black text-heading">
+                                        <p className="text-sm font-bold text-heading">
                                             {alert.title}
                                         </p>
                                     </div>
@@ -178,7 +178,7 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="glass-elevated p-8 max-w-md w-full mx-4">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-black text-heading">Novo Aviso</h3>
+                            <h3 className="text-xl font-bold text-heading">Novo Aviso</h3>
                             <button onClick={() => setShowAddModal(false)} className="text-muted hover:text-heading transition-colors">
                                 <X size={24} />
                             </button>
@@ -186,7 +186,7 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                     Tipo de Aviso
                                 </label>
                                 <div className="flex gap-2">
@@ -212,7 +212,7 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
                             </div>
 
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                     Título
                                 </label>
                                 <input
@@ -225,7 +225,7 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
                             </div>
 
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                     Mensagem
                                 </label>
                                 <textarea
@@ -239,7 +239,7 @@ export default function CustomerAlertsSection({ customerId }: CustomerAlertsSect
 
                             <button
                                 onClick={handleAddAlert}
-                                className="w-full btn-primary py-4 font-black uppercase text-sm tracking-widest"
+                                className="w-full btn-primary py-4 font-bold uppercase text-sm tracking-widest"
                             >
                                 Criar Aviso
                             </button>

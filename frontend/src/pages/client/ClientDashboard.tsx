@@ -19,6 +19,9 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import Skeleton from '../../components/Skeleton';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
+import { PetTracker } from '../../components/client/PetTracker';
+import { isSameDay } from 'date-fns';
+
 import DashboardGreeting from '../../components/DashboardGreeting';
 
 // Lazy load ClientTutorial to improve initial load time
@@ -59,6 +62,7 @@ export default function ClientDashboard() {
     ];
 
     const nextAppt = data?.nextAppointment;
+    const isToday = nextAppt?.startAt && isSameDay(new Date(nextAppt.startAt), new Date());
 
     const handleReferral = () => {
         const message = encodeURIComponent("Olá! Estou indicando a 7Pet para você conhecer. O atendimento lá é sensacional! Agende um serviço e ganhe 10% de desconto na sua primeira visita. Confira em: https://7pet.com.br");
@@ -130,6 +134,11 @@ export default function ClientDashboard() {
                     </div>
                 </header>
 
+                {/* 🐶 Active Pet Tracker (Only shows if appointment is today) */}
+                {isToday && nextAppt && (
+                    <PetTracker appointment={nextAppt} />
+                )}
+
                 {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
@@ -194,14 +203,14 @@ export default function ClientDashboard() {
                             <div className="space-y-4">
                                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/20 rounded-full border border-primary/30">
                                     <MessageCircle size={14} className="text-primary" />
-                                    <span className="text-primary font-black text-[9px] uppercase tracking-widest">Indicação</span>
+                                    <span className="text-primary font-bold text-[9px] uppercase tracking-widest">Indicação</span>
                                 </span>
-                                <h2 className="text-2xl font-black text-white leading-tight">Ganhe 10% OFF a cada amigo indicado!</h2>
+                                <h2 className="text-2xl font-bold text-white leading-tight">Ganhe 10% OFF a cada amigo indicado!</h2>
                                 <p className="text-gray-400 max-w-sm text-xs font-medium">Envie um convite agora pelo WhatsApp. Quanto mais indicar, mais descontos acumulados você ganha.</p>
                             </div>
                             <button
                                 onClick={handleReferral}
-                                className="w-full bg-primary hover:bg-primary-dark text-white font-black py-4 px-6 rounded-xl transition-all shadow-xl shadow-primary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-[10px]"
+                                className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-xl transition-all shadow-xl shadow-primary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-[10px]"
                             >
                                 <MessageCircle size={20} />
                                 Indicar pelo WhatsApp
@@ -216,14 +225,14 @@ export default function ClientDashboard() {
                             <div className="space-y-4">
                                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-100 rounded-full border border-yellow-200">
                                     <Star size={14} className="text-yellow-600 fill-yellow-600" />
-                                    <span className="text-yellow-700 font-black text-[9px] uppercase tracking-widest">Avaliação Google</span>
+                                    <span className="text-yellow-700 font-bold text-[9px] uppercase tracking-widest">Avaliação Google</span>
                                 </span>
-                                <h2 className="text-2xl font-black text-secondary leading-tight">Ganhe 10% OFF ao nos avaliar!</h2>
+                                <h2 className="text-2xl font-bold text-secondary leading-tight">Ganhe 10% OFF ao nos avaliar!</h2>
                                 <p className="text-gray-500 max-w-sm text-xs font-medium">Sua opinião é fundamental. Avalie nossos serviços uma única vez e ganhe um desconto especial imediato.</p>
                             </div>
                             <button
                                 onClick={handleGoogleReview}
-                                className="w-full bg-secondary hover:bg-secondary/90 text-white font-black py-4 px-6 rounded-xl transition-all shadow-xl shadow-secondary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-[10px]"
+                                className="w-full bg-secondary hover:bg-secondary/90 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-xl shadow-secondary/20 active:scale-95 flex items-center justify-center gap-4 uppercase tracking-widest text-[10px]"
                             >
                                 <Star size={20} className="text-yellow-400 fill-yellow-400" />
                                 Avaliar no Google

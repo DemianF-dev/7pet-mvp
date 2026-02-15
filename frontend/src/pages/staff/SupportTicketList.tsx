@@ -74,7 +74,7 @@ export default function SupportTicketList() {
     return (
         <main className="p-6 md:p-10">
             <header className="mb-10">
-                <h1 className="text-4xl font-black text-secondary uppercase tracking-tight">Chamados Técnicos</h1>
+                <h1 className="text-4xl font-bold text-secondary uppercase tracking-tight">Chamados Técnicos</h1>
                 <p className="text-gray-400 mt-2 font-medium">Gerencie e acompanhe solicitações de ajuste e bugs.</p>
             </header>
 
@@ -84,7 +84,7 @@ export default function SupportTicketList() {
                     <button
                         key={st}
                         onClick={() => setFilterStatus(st)}
-                        className={`px-6 py-2 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${filterStatus === st ? 'bg-secondary text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-gray-100'}`}
+                        className={`px-6 py-2 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all ${filterStatus === st ? 'bg-secondary text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-gray-100'}`}
                     >
                         {st === 'ALL' ? 'Todos' : statusConfig[st as keyof typeof statusConfig]?.label || st}
                     </button>
@@ -105,7 +105,7 @@ export default function SupportTicketList() {
                                 className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
                             >
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${statusConfig[ticket.status].color}`}>
+                                    <div className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${statusConfig[ticket.status].color}`}>
                                         <StatusIcon size={12} />
                                         {statusConfig[ticket.status].label}
                                     </div>
@@ -151,10 +151,10 @@ export default function SupportTicketList() {
                             <div className="p-8 overflow-y-auto">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 ${statusConfig[selectedTicket.status].color}`}>
+                                        <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-2 ${statusConfig[selectedTicket.status].color}`}>
                                             {statusConfig[selectedTicket.status].label}
                                         </span>
-                                        <h2 className="text-2xl font-black text-secondary">Detalhes do Chamado</h2>
+                                        <h2 className="text-2xl font-bold text-secondary">Detalhes do Chamado</h2>
                                     </div>
                                     <button onClick={() => setSelectedTicket(null)} className="p-2 hover:bg-gray-100 rounded-full">
                                         <ArrowRight size={24} className="rotate-180" />
@@ -169,7 +169,7 @@ export default function SupportTicketList() {
 
                                 {selectedTicket.imageUrl && (
                                     <div className="mb-6">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Anexo</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Anexo</p>
                                         <img src={selectedTicket.imageUrl} alt="Anexo" className="w-full rounded-2xl border border-gray-100 shadow-sm" />
                                     </div>
                                 )}

@@ -264,7 +264,7 @@ export default function StaffProfiles() {
                         <ArrowLeft size={16} />
                         Voltar ao Menu
                     </button>
-                    <h1 className="text-2xl font-black text-heading flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-heading flex items-center gap-3">
                         <Users size={28} className="text-accent" />
                         Colaboradores
                     </h1>
@@ -312,7 +312,7 @@ export default function StaffProfiles() {
                                 <Icon size={20} />
                             </div>
                             <div>
-                                <p className="text-2xl font-black text-heading">{count}</p>
+                                <p className="text-2xl font-bold text-heading">{count}</p>
                                 <p className="text-xs text-muted">{dept.label}</p>
                             </div>
                             {isSelected && <Check size={16} className="ml-auto text-accent" />}
@@ -438,7 +438,7 @@ export default function StaffProfiles() {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="glass-elevated p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-black text-heading">
+                            <h2 className="text-xl font-bold text-heading">
                                 {editingProfile ? 'Editar Colaborador' : 'Novo Colaborador'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="text-muted hover:text-heading">
@@ -450,7 +450,7 @@ export default function StaffProfiles() {
                             {/* User Select */}
                             {!editingProfile && (
                                 <div>
-                                    <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                    <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                         Usuário
                                     </label>
                                     <select
@@ -468,7 +468,7 @@ export default function StaffProfiles() {
 
                             {/* Department */}
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                     Departamento
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -493,7 +493,7 @@ export default function StaffProfiles() {
 
                             {/* Pay Model */}
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                     Modelo de Pagamento
                                 </label>
                                 <div className="flex gap-2">
@@ -522,7 +522,7 @@ export default function StaffProfiles() {
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                    <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                         Valor Diária (R$)
                                     </label>
                                     <input
@@ -542,7 +542,7 @@ export default function StaffProfiles() {
                                 <>
                                     <div className="grid grid-cols-3 gap-4">
                                         <div>
-                                            <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                            <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                                 Auxílio (R$)
                                             </label>
                                             <input
@@ -555,7 +555,7 @@ export default function StaffProfiles() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                            <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                                 VT (R$)
                                             </label>
                                             <input
@@ -568,7 +568,7 @@ export default function StaffProfiles() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                            <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                                 VR (R$)
                                             </label>
                                             <input
@@ -611,7 +611,7 @@ export default function StaffProfiles() {
                             {/* Submit */}
                             <button
                                 onClick={handleSubmit}
-                                className="w-full btn-primary py-4 font-black uppercase tracking-wider"
+                                className="w-full btn-primary py-4 font-bold uppercase tracking-wider"
                             >
                                 {editingProfile ? 'Salvar Alterações' : 'Cadastrar Colaborador'}
                             </button>
@@ -630,7 +630,7 @@ export default function StaffProfiles() {
                             </div>
                         </div>
 
-                        <h2 className="text-2xl font-black text-heading text-center mb-3">
+                        <h2 className="text-2xl font-bold text-heading text-center mb-3">
                             Excluir Perfil de Colaborador
                         </h2>
 
@@ -663,7 +663,7 @@ export default function StaffProfiles() {
                         </div>
 
                         <div className="mb-6">
-                            <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                            <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                 Digite "EXCLUIR" para confirmar (em maiúsculas)
                             </label>
                             <input
@@ -695,7 +695,7 @@ export default function StaffProfiles() {
                             <button
                                 onClick={handleDeleteConfirm}
                                 disabled={deleteConfirmText !== 'EXCLUIR'}
-                                className="flex-1 px-6 py-3 rounded-xl font-black bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="flex-1 px-6 py-3 rounded-xl font-bold bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <Trash2 size={18} />
                                 Excluir Definitivamente

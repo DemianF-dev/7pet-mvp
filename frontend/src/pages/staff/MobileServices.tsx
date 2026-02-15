@@ -150,7 +150,7 @@ export const MobileServices = ({
                 <div className="flex bg-gray-100 dark:bg-zinc-800 p-1.5 rounded-[20px] shadow-inner">
                     <button
                         onClick={() => setSpeciesFilter('Canino')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all ${speciesFilter === 'Canino'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-bold uppercase tracking-widest transition-all ${speciesFilter === 'Canino'
                                 ? 'bg-white dark:bg-zinc-700 text-blue-600 shadow-sm'
                                 : 'text-gray-400'
                             }`}
@@ -159,7 +159,7 @@ export const MobileServices = ({
                     </button>
                     <button
                         onClick={() => setSpeciesFilter('Felino')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all ${speciesFilter === 'Felino'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-bold uppercase tracking-widest transition-all ${speciesFilter === 'Felino'
                                 ? 'bg-white dark:bg-zinc-700 text-purple-600 shadow-sm'
                                 : 'text-gray-400'
                             }`}
@@ -180,7 +180,7 @@ export const MobileServices = ({
                             {tab !== 'trash' && (
                                 <button
                                     onClick={handleBulkDelete}
-                                    className="px-4 py-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
+                                    className="px-4 py-3 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
                                 >
                                     <Trash2 size={16} />
                                     EXCLUIR
@@ -189,7 +189,7 @@ export const MobileServices = ({
                             {tab === 'trash' && (
                                 <button
                                     onClick={handleBulkRestore}
-                                    className="px-4 py-3 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
+                                    className="px-4 py-3 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
                                 >
                                     <RotateCcw size={16} />
                                     RESTAURAR
@@ -197,7 +197,7 @@ export const MobileServices = ({
                             )}
                             <button
                                 onClick={handleBulkDuplicate}
-                                className="px-4 py-3 bg-gray-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
+                                className="px-4 py-3 bg-gray-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2"
                             >
                                 <Copy size={16} />
                                 DUPLICAR
@@ -246,7 +246,7 @@ export const MobileServices = ({
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Atualizando Catálogo...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Atualizando Catálogo...</p>
                         </div>
                     ) : filteredServices.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center px-10">
@@ -284,20 +284,20 @@ export const MobileServices = ({
                                             )}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-400 rounded text-[8px] font-black uppercase tracking-tighter">
+                                                    <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-400 rounded text-[8px] font-bold uppercase tracking-tighter">
                                                         ID: {String((s.seqId || 0) + 999).padStart(4, '0')}
                                                     </span>
-                                                    <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[8px] font-black uppercase tracking-widest">
+                                                    <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[8px] font-bold uppercase tracking-widest">
                                                         {s.category || 'ESTÉTICA'}
                                                     </span>
                                                 </div>
-                                                <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate">
+                                                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase truncate">
                                                     {s.name}
                                                 </h3>
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="text-lg font-black text-blue-600 leading-none">
+                                            <div className="text-lg font-bold text-blue-600 leading-none">
                                                 <span className="text-[10px] font-bold mr-0.5">R$</span>
                                                 {s.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </div>
@@ -315,13 +315,13 @@ export const MobileServices = ({
                                                     <>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); onEdit(s); }}
-                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-gray-100 dark:hover:bg-zinc-700"
+                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-gray-100 dark:hover:bg-zinc-700"
                                                         >
                                                             <Edit2 size={12} />
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); onDuplicate(s); }}
-                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50"
                                                         >
                                                             <Copy size={12} />
                                                         </button>
@@ -363,13 +363,13 @@ export const MobileServices = ({
                                                                 link.click();
                                                                 document.body.removeChild(link);
                                                             }}
-                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-green-100 dark:hover:bg-green-900/50"
+                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-green-100 dark:hover:bg-green-900/50"
                                                         >
                                                             <Download size={12} />
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
-                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
+                                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
                                                         >
                                                             <Trash2 size={12} />
                                                         </button>
@@ -377,7 +377,7 @@ export const MobileServices = ({
                                                 ) : (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); onRestore(s.id); }}
-                                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all w-full justify-center"
+                                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all w-full justify-center"
                                                     >
                                                         <RotateCcw size={14} /> Restaurar Serviço
                                                     </button>
@@ -398,16 +398,16 @@ export const MobileServices = ({
                         <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
                             <Tag size={16} />
                         </div>
-                        <h4 className="text-xs font-black uppercase tracking-widest">Status do Catálogo</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-widest">Status do Catálogo</h4>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-tighter">Total Ativos</p>
-                            <p className="text-xl font-black">{services.length}</p>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">Total Ativos</p>
+                            <p className="text-xl font-bold">{services.length}</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-tighter">Espécie Focada</p>
-                            <p className="text-xl font-black">{speciesFilter === 'Canino' ? 'Cães' : 'Gatos'}</p>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">Espécie Focada</p>
+                            <p className="text-xl font-bold">{speciesFilter === 'Canino' ? 'Cães' : 'Gatos'}</p>
                         </div>
                     </div>
                 </div>

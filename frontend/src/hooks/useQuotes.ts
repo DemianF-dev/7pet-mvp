@@ -65,7 +65,7 @@ export function useUpdateQuoteStatus() {
             queryClient.invalidateQueries({ queryKey: ['staff-metrics'] });
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Erro ao atualizar status';
+            const message = error.response?.data?.message || error.response?.data?.error || 'Erro ao atualizar status';
             toast.error(message);
         }
     });
@@ -102,6 +102,10 @@ export function useDeleteQuote() {
             queryClient.invalidateQueries({ queryKey: ['quotes'] });
             queryClient.invalidateQueries({ queryKey: ['staff-metrics'] });
             toast.success('Orçamento movido para a lixeira');
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || error.response?.data?.error || 'Erro ao excluir orçamento';
+            toast.error(message, { duration: 5000 });
         }
     });
 }
@@ -128,6 +132,10 @@ export function useBulkDeleteQuotes() {
             queryClient.invalidateQueries({ queryKey: ['quotes'] });
             queryClient.invalidateQueries({ queryKey: ['staff-metrics'] });
             toast.success('Itens excluídos com sucesso');
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || error.response?.data?.error || 'Erro ao excluir em massa';
+            toast.error(message, { duration: 5000 });
         }
     });
 }

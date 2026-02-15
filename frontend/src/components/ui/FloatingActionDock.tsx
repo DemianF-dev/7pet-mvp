@@ -239,7 +239,7 @@ function FeedbackModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
                                 <AlertTriangle size={24} />
                             </div>
-                            <h2 className="text-lg font-black uppercase tracking-wide">Solicitar Ajuste</h2>
+                            <h2 className="text-lg font-bold uppercase tracking-wide">Solicitar Ajuste</h2>
                         </div>
 
                         <div className="p-6 overflow-y-auto">
@@ -248,7 +248,7 @@ function FeedbackModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                     <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <CheckCircle2 size={32} />
                                     </div>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white">Recebido!</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recebido!</h3>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -289,7 +289,7 @@ function FeedbackModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                     <button
                                         type="submit"
                                         disabled={isSending || !description.trim()}
-                                        className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                        className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                     >
                                         {isSending ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
                                         {isSending ? 'Enviando...' : 'Enviar'}

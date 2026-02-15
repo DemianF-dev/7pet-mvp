@@ -90,7 +90,7 @@ export const DevCockpitPanel: React.FC = () => {
                             <Activity size={32} />
                         </div>
                         <div>
-                            <h3 className="font-black text-3xl text-white tracking-tight">Developer Cockpit</h3>
+                            <h3 className="font-bold text-3xl text-white tracking-tight">Developer Cockpit</h3>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em] font-bold">
@@ -101,7 +101,7 @@ export const DevCockpitPanel: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <span className="px-5 py-2 bg-red-500/10 text-red-500 text-[10px] font-black uppercase rounded-full tracking-widest border border-red-500/20">
+                        <span className="px-5 py-2 bg-red-500/10 text-red-500 text-[10px] font-bold uppercase rounded-full tracking-widest border border-red-500/20">
                             System Unlocked
                         </span>
                         <div className="hidden lg:block h-10 w-px bg-white/10 mx-2" />
@@ -123,7 +123,7 @@ export const DevCockpitPanel: React.FC = () => {
                                 <div className="p-2 bg-slate-800 rounded-xl text-slate-400">
                                     <Terminal size={18} />
                                 </div>
-                                <h4 className="text-white font-black text-xs uppercase tracking-[0.3em]">Client Interface Tools</h4>
+                                <h4 className="text-white font-bold text-xs uppercase tracking-[0.3em]">Client Interface Tools</h4>
                             </div>
 
                             <div className="group relative bg-slate-800/20 hover:bg-slate-800/30 border border-white/5 rounded-[32px] p-8 md:p-10 transition-all duration-300">
@@ -154,7 +154,7 @@ export const DevCockpitPanel: React.FC = () => {
                                         >
                                             <span className={`inline-block h-9 w-9 transform rounded-full bg-white shadow-2xl transition-transform duration-300 ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'translate-x-10' : 'translate-x-1'}`} />
                                         </button>
-                                        <span className={`text-xs font-black uppercase tracking-[0.25em] ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'text-green-400' : 'text-slate-500'}`}>
+                                        <span className={`text-xs font-bold uppercase tracking-[0.25em] ${localStorage.getItem('agenda_debug_enabled') === '1' ? 'text-green-400' : 'text-slate-500'}`}>
                                             Agendas {localStorage.getItem('agenda_debug_enabled') === '1' ? 'ACTIVE' : 'INACTIVE'}
                                         </span>
                                     </div>
@@ -167,7 +167,7 @@ export const DevCockpitPanel: React.FC = () => {
                                         >
                                             <span className={`inline-block h-9 w-9 transform rounded-full bg-white shadow-2xl transition-transform duration-300 ${localStorage.getItem('debug_overflow_active') === '1' ? 'translate-x-10' : 'translate-x-1'}`} />
                                         </button>
-                                        <span className={`text-xs font-black uppercase tracking-[0.25em] ${localStorage.getItem('debug_overflow_active') === '1' ? 'text-orange-400' : 'text-slate-500'}`}>
+                                        <span className={`text-xs font-bold uppercase tracking-[0.25em] ${localStorage.getItem('debug_overflow_active') === '1' ? 'text-orange-400' : 'text-slate-500'}`}>
                                             Overflow {localStorage.getItem('debug_overflow_active') === '1' ? 'ACTIVE' : 'INACTIVE'}
                                         </span>
                                     </div>
@@ -181,7 +181,7 @@ export const DevCockpitPanel: React.FC = () => {
                                 <div className="p-2 bg-slate-800 rounded-xl text-slate-400">
                                     <Database size={18} />
                                 </div>
-                                <h4 className="text-white font-black text-xs uppercase tracking-[0.3em]">Diagnostics & Data</h4>
+                                <h4 className="text-white font-bold text-xs uppercase tracking-[0.3em]">Diagnostics & Data</h4>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -194,7 +194,7 @@ export const DevCockpitPanel: React.FC = () => {
                                         <Copy size={28} />
                                     </div>
                                     <div>
-                                        <p className="text-white font-black text-xl">System Report</p>
+                                        <p className="text-white font-bold text-xl">System Report</p>
                                         <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest mt-2 group-hover:text-slate-300 transition-colors">JSON Diagnostic</p>
                                     </div>
                                 </button>
@@ -209,7 +209,7 @@ export const DevCockpitPanel: React.FC = () => {
                                             <ExternalLink size={28} />
                                         </div>
                                         <div>
-                                            <p className="text-white font-black text-xl">Tech Hub</p>
+                                            <p className="text-white font-bold text-xl">Tech Hub</p>
                                             <p className="text-indigo-400/60 text-[11px] font-bold uppercase tracking-widest mt-2 group-hover:text-indigo-300 transition-colors">Real-time Debug</p>
                                         </div>
                                     </a>
@@ -229,7 +229,7 @@ export const DevCockpitPanel: React.FC = () => {
                             <div className="p-2 bg-red-950/20 rounded-xl text-red-500/60">
                                 <ShieldAlert size={18} />
                             </div>
-                            <h4 className="text-red-500 font-black text-xs uppercase tracking-[0.3em]">Critical Core Operations</h4>
+                            <h4 className="text-red-500 font-bold text-xs uppercase tracking-[0.3em]">Critical Core Operations</h4>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -256,12 +256,12 @@ export const DevCockpitPanel: React.FC = () => {
                                                 toast.error('Endpoint de manutenção não disponível no momento.');
                                             }
                                         })}
-                                        className="w-full py-5 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[11px] font-black uppercase rounded-[24px] border border-red-500/40 transition-all shadow-xl hover:shadow-red-600/50 tracking-[0.2em]"
+                                        className="w-full py-5 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[11px] font-bold uppercase rounded-[24px] border border-red-500/40 transition-all shadow-xl hover:shadow-red-600/50 tracking-[0.2em]"
                                     >
                                         Activate Global Lock
                                     </button>
 
-                                    <div className="flex items-center gap-3 text-[10px] text-red-500/70 font-black uppercase tracking-widest bg-red-500/10 w-fit px-4 py-2 rounded-xl border border-red-500/20 shadow-lg">
+                                    <div className="flex items-center gap-3 text-[10px] text-red-500/70 font-bold uppercase tracking-widest bg-red-500/10 w-fit px-4 py-2 rounded-xl border border-red-500/20 shadow-lg">
                                         <Lock size={14} />
                                         <span>Triple Confirmation Required</span>
                                     </div>
@@ -308,14 +308,14 @@ export const DevCockpitPanel: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-12">
                         <div className="flex items-center gap-4">
                             <div className="w-3 h-3 rounded-full bg-emerald-500 animate-[pulse_1.5s_infinite] shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
-                            <span className="text-xs font-mono text-slate-400 font-black uppercase tracking-[0.25em]">Cluster Operational</span>
+                            <span className="text-xs font-mono text-slate-400 font-bold uppercase tracking-[0.25em]">Cluster Operational</span>
                         </div>
                         <div className="text-xs font-mono text-slate-500 uppercase tracking-[0.3em] border-l border-white/10 pl-10 h-5 flex items-center hidden lg:flex font-bold">
                             Region: {isLocal ? 'DEV_SA_EAST' : 'EDGE_AZURE_BR'}
                         </div>
                     </div>
 
-                    <div className="text-[11px] font-mono text-slate-500 font-black uppercase tracking-[0.5em] opacity-40">
+                    <div className="text-[11px] font-mono text-slate-500 font-bold uppercase tracking-[0.5em] opacity-40">
                         Shield-L4-Active
                     </div>
                 </div>

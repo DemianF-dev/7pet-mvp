@@ -45,33 +45,33 @@ export default function PastDateConfirmModal({
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-3xl font-black text-center text-secondary mb-4">
+                    <h2 className="text-3xl font-bold text-center text-secondary mb-4">
                         ⚠️ Atenção!
                     </h2>
 
                     {/* Message */}
                     <div className="bg-amber-50 p-6 rounded-[32px] border border-amber-200 mb-6">
                         <p className="text-center text-gray-700 font-bold mb-4">
-                            Você está tentando agendar para uma <span className="text-amber-600 font-black">data/horário que já passou</span>:
+                            Você está tentando agendar para uma <span className="text-amber-600 font-bold">data/horário que já passou</span>:
                         </p>
 
                         <div className="flex flex-col gap-3 items-center">
                             <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-amber-200">
                                 <Calendar size={20} className="text-amber-600" />
-                                <span className="font-black text-secondary">{formattedDate}</span>
+                                <span className="font-bold text-secondary">{formattedDate}</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-amber-200">
                                 <Clock size={20} className="text-amber-600" />
-                                <span className="font-black text-secondary">{formattedTime}</span>
+                                <span className="font-bold text-secondary">{formattedTime}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="bg-gray-50 p-5 rounded-[24px] mb-8">
                         <p className="text-sm text-gray-600 text-center font-medium leading-relaxed">
-                            Normalmente, agendamentos devem ser feitos para <span className="font-black text-secondary">datas futuras</span>.
+                            Normalmente, agendamentos devem ser feitos para <span className="font-bold text-secondary">datas futuras</span>.
                             <br /><br />
-                            Se você está fazendo um <span className="font-black text-primary">ajuste retroativo</span> ou corrigindo um registro, confirme abaixo para continuar.
+                            Se você está fazendo um <span className="font-bold text-primary">ajuste retroativo</span> ou corrigindo um registro, confirme abaixo para continuar.
                         </p>
                     </div>
 
@@ -79,13 +79,13 @@ export default function PastDateConfirmModal({
                     <div className="flex flex-col md:flex-row gap-4">
                         <button
                             onClick={onCancel}
-                            className="flex-1 px-8 py-5 rounded-[28px] font-black text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all border-2 border-gray-200 uppercase tracking-wide text-sm"
+                            className="flex-1 px-8 py-5 rounded-[28px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all border-2 border-gray-200 uppercase tracking-wide text-sm"
                         >
                             ❌ Cancelar
                         </button>
                         <button
                             onClick={onConfirm}
-                            className="flex-1 px-8 py-5 rounded-[28px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/30 uppercase tracking-wide text-sm"
+                            className="flex-1 px-8 py-5 rounded-[28px] font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/30 uppercase tracking-wide text-sm"
                         >
                             ✅ Sim, Confirmar
                         </button>

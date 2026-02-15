@@ -37,18 +37,18 @@ export default function RevertConfirmationModal({
                     <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
                         <RefreshCcw size={32} className="text-white" />
                     </div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-2">Reverter Evento</h3>
+                    <h3 className="text-2xl font-bold uppercase tracking-tight leading-none mb-2">Reverter Evento</h3>
                     <p className="text-red-100 text-sm font-bold opacity-80 italic">Atenção: Esta ação modificará o banco de dados diretamente.</p>
                 </div>
 
                 <div className="p-8 space-y-6">
                     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Evento Alvo</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Evento Alvo</p>
                         <p className="text-sm font-bold text-gray-700">{eventSummary}</p>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Motivo da Reversão (Obrigatório)</label>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Motivo da Reversão (Obrigatório)</label>
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
@@ -62,7 +62,7 @@ export default function RevertConfirmationModal({
                         <button
                             onClick={() => onConfirm(reason)}
                             disabled={loading || !reason.trim()}
-                            className="w-full bg-red-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-red-200 flex items-center justify-center gap-2 uppercase text-xs tracking-widest transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
+                            className="w-full bg-red-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-200 flex items-center justify-center gap-2 uppercase text-xs tracking-widest transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
                         >
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -74,7 +74,7 @@ export default function RevertConfirmationModal({
                         <button
                             onClick={onClose}
                             disabled={loading}
-                            className="w-full py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors"
+                            className="w-full py-4 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors"
                         >
                             Cancelar Operação
                         </button>

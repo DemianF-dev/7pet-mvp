@@ -158,7 +158,7 @@ export default function PayPeriods() {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-black text-heading flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-heading flex items-center gap-3">
                         <Calendar size={28} className="text-accent" />
                         Fechamentos
                     </h1>
@@ -194,7 +194,7 @@ export default function PayPeriods() {
                                             <h3 className="text-lg font-bold text-heading">
                                                 {formatDate(period.startDate)} - {formatDate(period.endDate)}
                                             </h3>
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${period.status === 'closed'
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${period.status === 'closed'
                                                 ? 'status-success-badge'
                                                 : 'status-warning-surface'
                                                 }`}>
@@ -249,7 +249,7 @@ export default function PayPeriods() {
                                         ))}
                                         <div className="surface-input p-3 rounded-xl bg-accent/10 border-accent/20">
                                             <p className="text-xs text-accent uppercase font-bold">Total</p>
-                                            <p className="text-lg font-black text-accent">{formatCurrency(grandTotal)}</p>
+                                            <p className="text-lg font-bold text-accent">{formatCurrency(grandTotal)}</p>
                                         </div>
                                     </div>
                                 )}
@@ -295,7 +295,7 @@ export default function PayPeriods() {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="glass-elevated p-8 max-w-md w-full">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-black text-heading">Novo Período</h2>
+                            <h2 className="text-xl font-bold text-heading">Novo Período</h2>
                             <button onClick={() => setShowCreateModal(false)} className="text-muted hover:text-heading">
                                 <X size={24} />
                             </button>
@@ -303,7 +303,7 @@ export default function PayPeriods() {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                     Tipo
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -325,7 +325,7 @@ export default function PayPeriods() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                    <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                         Data Início
                                     </label>
                                     <input
@@ -336,7 +336,7 @@ export default function PayPeriods() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block">
+                                    <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block">
                                         Data Fim
                                     </label>
                                     <input
@@ -350,7 +350,7 @@ export default function PayPeriods() {
 
                             <button
                                 onClick={handleCreate}
-                                className="w-full btn-primary py-4 font-black uppercase tracking-wider"
+                                className="w-full btn-primary py-4 font-bold uppercase tracking-wider"
                             >
                                 Criar Período
                             </button>
@@ -367,7 +367,7 @@ export default function PayPeriods() {
                             <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
                                 <Unlock size={32} />
                             </div>
-                            <h2 className="text-xl font-black text-heading">Reabrir Período?</h2>
+                            <h2 className="text-xl font-bold text-heading">Reabrir Período?</h2>
                             <p className="text-body-secondary mt-2 text-sm">
                                 <AlertTriangle className="inline-block w-4 h-4 mr-1 text-warning" />
                                 <strong>Atenção Diretoria:</strong> Reabrir um período permite modificações que podem afetar pagamentos já processados.
@@ -376,7 +376,7 @@ export default function PayPeriods() {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-black text-muted uppercase tracking-wider mb-2 block text-left">
+                                <label className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block text-left">
                                     Confirmação de Segurança
                                 </label>
                                 <p className="text-xs text-muted mb-2 text-left">Digite <strong>REABRIR</strong> para confirmar.</p>

@@ -3,7 +3,7 @@ import {
     ShoppingCart, Search, Plus,
     Minus, CreditCard, DollarSign,
     QrCode, ChevronRight, CheckCircle2, Package,
-    ArrowLeft, Filter, User
+    ArrowLeft, User, Scissors
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MobileShell } from '../../../layouts/MobileShell';
@@ -124,7 +124,7 @@ export const MobilePOS = () => {
                     <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4">
                         <ArrowLeft size={32} />
                     </div>
-                    <h2 className="text-xl font-black text-gray-900 mb-2 uppercase">Caixa Fechado</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2 uppercase">Caixa Fechado</h2>
                     <p className="text-sm text-gray-500 mb-6">Você precisa abrir o caixa na versão desktop antes de realizar vendas pelo mobile.</p>
                 </div>
             </MobileShell>
@@ -167,10 +167,10 @@ export const MobilePOS = () => {
                                             className="w-full flex items-center justify-between p-4 border-b border-gray-50 dark:border-zinc-800 last:border-0 active:bg-gray-50 dark:active:bg-zinc-800"
                                         >
                                             <div className="text-left">
-                                                <p className="text-xs font-black text-gray-900 dark:text-white uppercase">{item.name}</p>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{item.name}</p>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase">{item.price ? 'Produto' : 'Serviço'}</p>
                                             </div>
-                                            <span className="text-sm font-black text-blue-600">
+                                            <span className="text-sm font-bold text-blue-600">
                                                 R$ {(item.price || item.basePrice).toFixed(2)}
                                             </span>
                                         </button>
@@ -181,7 +181,7 @@ export const MobilePOS = () => {
 
                         {/* Cart List */}
                         <div className="space-y-3">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Itens no Carrinho</h3>
+                            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Itens no Carrinho</h3>
                             {cart.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-10 text-gray-300">
                                     <ShoppingCart size={48} strokeWidth={1} className="mb-2 opacity-20" />
@@ -191,15 +191,15 @@ export const MobilePOS = () => {
                                 cart.map((item) => (
                                     <div key={item.id} className="mobile-card !p-3 flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gray-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-gray-400">
-                                            {item.productId ? <Package size={20} /> : <Filter size={20} />}
+                                            {item.productId ? <Package size={20} /> : <Scissors size={20} />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate">{item.description}</p>
+                                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{item.description}</p>
                                             <p className="text-[10px] text-gray-400 font-medium">R$ {item.unitPrice.toFixed(2)} un</p>
                                         </div>
                                         <div className="flex items-center gap-3 bg-gray-50 dark:bg-zinc-800 rounded-lg p-1">
                                             <button onClick={() => updateQty(item.id, -1)} className="p-1 text-gray-400"><Minus size={14} /></button>
-                                            <span className="text-xs font-black text-gray-900 dark:text-white w-4 text-center">{item.quantity}</span>
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white w-4 text-center">{item.quantity}</span>
                                             <button onClick={() => updateQty(item.id, 1)} className="p-1 text-gray-400"><Plus size={14} /></button>
                                         </div>
                                     </div>
@@ -216,10 +216,10 @@ export const MobilePOS = () => {
                             <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
                                 <User size={32} />
                             </div>
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase">Venda para:{selectedCustomer?.name || "Consumidor"}</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase">Venda para:{selectedCustomer?.name || "Consumidor"}</h3>
                             <button
                                 onClick={() => {/* Search Customers Flow */ }}
-                                className="mt-4 text-xs font-black text-blue-600 uppercase tracking-widest border-b-2 border-blue-600/20 pb-0.5"
+                                className="mt-4 text-xs font-bold text-blue-600 uppercase tracking-widest border-b-2 border-blue-600/20 pb-0.5"
                             >
                                 Selecionar Cliente Identificado
                             </button>
@@ -231,17 +231,17 @@ export const MobilePOS = () => {
                 {step === 3 && (
                     <div className="space-y-6">
                         <section>
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Resumo</h3>
+                            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Resumo</h3>
                             <div className="mobile-card !p-0 overflow-hidden">
                                 <div className="p-4 flex justify-between items-center bg-gray-50 dark:bg-zinc-800/50">
                                     <span className="text-xs font-bold text-gray-500 uppercase">Total a Pagar</span>
-                                    <span className="text-xl font-black text-gray-900 dark:text-white">R$ {totals.total.toFixed(2)}</span>
+                                    <span className="text-xl font-bold text-gray-900 dark:text-white">R$ {totals.total.toFixed(2)}</span>
                                 </div>
                             </div>
                         </section>
 
                         <section>
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Meio de Pagamento</h3>
+                            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Meio de Pagamento</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
                                     { id: 'PIX', label: 'PIX', icon: QrCode },
@@ -258,7 +258,7 @@ export const MobilePOS = () => {
                                             }`}
                                     >
                                         <method.icon size={24} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">{method.label}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">{method.label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -272,13 +272,13 @@ export const MobilePOS = () => {
                 <div className="fixed bottom-[80px] left-0 right-0 p-4 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-lg border-t border-gray-100 dark:border-zinc-800 z-40">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-gray-400 uppercase">Total</span>
-                            <span className="text-lg font-black text-gray-900 dark:text-white leading-none">R$ {totals.total.toFixed(2)}</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Total</span>
+                            <span className="text-lg font-bold text-gray-900 dark:text-white leading-none">R$ {totals.total.toFixed(2)}</span>
                         </div>
                         {step < 3 ? (
                             <button
                                 onClick={() => setStep(step + 1)}
-                                className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                                className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
                             >
                                 Continuar <ChevronRight size={16} />
                             </button>
@@ -286,7 +286,7 @@ export const MobilePOS = () => {
                             <button
                                 onClick={handleFinalize}
                                 disabled={isProcessing}
-                                className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                             >
                                 {isProcessing ? "Processando..." : (
                                     <>Finalizar Venda <CheckCircle2 size={16} /></>

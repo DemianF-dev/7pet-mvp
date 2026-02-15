@@ -122,10 +122,12 @@ router.get('/database', authenticate, authorize(['ADMIN', 'GESTAO', 'MASTER']), 
             'Quote', 'Invoice', 'Notification', 'AuditLog'
         ];
 
+        const tablesWithSoftDelete = ['User', 'Customer', 'Service', 'Appointment', 'Quote', 'Invoice'];
         const tableSizes = await Promise.all(
             tables.map(async (table) => {
                 try {
-                    const count = await (prisma as any)[table.toLowerCase()].count();
+                    const where = tablesWithSoftDelete.includes(table) ? { deletedAt: null } : {};
+                    const count = await (prisma as any)[table.toLowerCase()].count({ where });
                     return { table, count };
                 } catch {
                     return { table, count: 0 };

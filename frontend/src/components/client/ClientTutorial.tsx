@@ -274,14 +274,14 @@ export default function ClientTutorial() {
                         {currentStep.icon && (
                             <div className="mb-4 flex justify-center">{currentStep.icon}</div>
                         )}
-                        <h2 className="text-2xl font-black text-secondary mb-3 leading-tight">{currentStep.title}</h2>
+                        <h2 className="text-2xl font-bold text-secondary mb-3 leading-tight">{currentStep.title}</h2>
                         <p className="text-gray-500 font-medium mb-8 text-sm leading-relaxed">{currentStep.description}</p>
 
                         {currentStep.indicator && (
                             <motion.div
                                 initial={{ x: -10, opacity: 0 }}
                                 animate={{ x: 0, opacity: 1 }}
-                                className="mb-6 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest bg-primary/5 p-3 rounded-xl border border-primary/10"
+                                className="mb-6 flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest bg-primary/5 p-3 rounded-xl border border-primary/10"
                             >
                                 <ArrowRight size={14} className="animate-bounce-x" />
                                 {currentStep.indicator}
@@ -291,7 +291,7 @@ export default function ClientTutorial() {
                         <div className="flex items-center justify-between gap-4 mt-auto">
                             <button
                                 onClick={() => handleDismiss(true)}
-                                className="text-[10px] font-black text-gray-300 hover:text-red-400 uppercase tracking-widest transition-colors"
+                                className="text-[10px] font-bold text-gray-300 hover:text-red-400 uppercase tracking-widest transition-colors"
                             >
                                 Desativar Guia
                             </button>

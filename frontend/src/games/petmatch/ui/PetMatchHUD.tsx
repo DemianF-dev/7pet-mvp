@@ -53,7 +53,7 @@ export default function PetMatchHUD({ level, score, moves, levelConfig, onBack }
                         Pontos
                     </span>
                     <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-black" style={{ color: 'var(--pm-accent, var(--color-brand-primary))' }}>
+                        <span className="text-2xl font-bold" style={{ color: 'var(--pm-accent, var(--color-brand-primary))' }}>
                             {score}
                         </span>
                         <span className="text-sm font-medium" style={{ color: 'var(--color-text-tertiary)' }}>

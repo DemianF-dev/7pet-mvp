@@ -6,14 +6,14 @@ export const mapsController = {
     async calculate(req: Request, res: Response) {
         try {
             // Security: Removed sensitive request body logging
-            const { address } = req.body;
+            const { address, destinationAddress, type, stops } = req.body;
 
             if (!address) {
                 console.warn('[MapsController] Address missing in body');
                 return res.status(400).json({ error: 'Endereço é obrigatório' });
             }
 
-            const result = await mapsService.calculateTransportDetailed(address);
+            const result = await mapsService.calculateTransportDetailed(address, destinationAddress, type, stops);
             return res.json({
                 ...result,
                 estimatedPrice: result.total // Compatibilidade com frontend

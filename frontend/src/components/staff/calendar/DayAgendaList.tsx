@@ -1,6 +1,7 @@
 import AgendaItemCompact from './AgendaItemCompact';
 import VirtualList from '../../system/VirtualList';
 import QueryState from '../../system/QueryState';
+import { ListSkeleton } from '../../skeletons/ListSkeleton';
 import { EmptyState } from '../../ui';
 import { Calendar as CalendarIcon, Plus } from 'lucide-react';
 
@@ -71,6 +72,7 @@ export default function DayAgendaList({
         <div className="w-full h-full flex flex-col">
             <QueryState
                 isLoading={isLoading}
+                skeleton={<ListSkeleton rowCount={8} hasHeader={false} className="border-none shadow-none bg-transparent" />}
                 isEmpty={appointments.length === 0}
                 emptyState={<EmptyStateView />}
                 className="flex-1"
@@ -79,7 +81,7 @@ export default function DayAgendaList({
                     <DateHeader />
                     <VirtualList
                         items={appointments}
-                        estimateSize={80}
+                        estimateSize={95}
                         renderItem={(appt) => (
                             <div className="border-b border-[var(--color-border)]/50">
                                 <AgendaItemCompact

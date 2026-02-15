@@ -1,0 +1,17 @@
+
+model RoutePreset {
+  id          String         @id @default(uuid())
+  customerId  String
+  petId       String?
+  name        String
+  type        TransportType
+  origin      String?
+  destination String?
+  stops       Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  customer    Customer       @relation(fields: [customerId], references: [id])
+  pet         Pet?           @relation(fields: [petId], references: [id])
+
+  @@index([customerId])
+}

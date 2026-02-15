@@ -69,7 +69,10 @@ export const getKPIs = async (req: Request, res: Response) => {
             results = await Promise.all([
                 // Current month revenue (0)
                 prisma.paymentRecord.aggregate({
-                    where: { paidAt: { gte: firstDayOfMonth } },
+                    where: {
+                        paidAt: { gte: firstDayOfMonth },
+                        invoice: { deletedAt: null }
+                    },
                     _sum: { amount: true }
                 }),
                 // Last month revenue (1)
@@ -78,7 +81,8 @@ export const getKPIs = async (req: Request, res: Response) => {
                         paidAt: {
                             gte: lastMonth,
                             lt: firstDayOfMonth
-                        }
+                        },
+                        invoice: { deletedAt: null }
                     },
                     _sum: { amount: true }
                 }),
@@ -116,44 +120,57 @@ export const getKPIs = async (req: Request, res: Response) => {
                 prisma.quote.count({
                     where: {
                         status: 'SOLICITADO' as any,
-                        totalAmount: { gt: 500 }
+                        totalAmount: { gt: 500 },
+                        deletedAt: null
                     }
                 }),
                 // Completed appointments for ticket medio (7)
                 prisma.appointment.count({
                     where: {
                         status: 'FINALIZADO' as any,
-                        startAt: { gte: last30Days }
+                        startAt: { gte: last30Days },
+                        deletedAt: null
                     }
                 }),
                 // Revenue last 30 days for ticket medio (8)
                 prisma.paymentRecord.aggregate({
-                    where: { paidAt: { gte: last30Days } },
+                    where: {
+                        paidAt: { gte: last30Days },
+                        invoice: { deletedAt: null }
+                    },
                     _sum: { amount: true }
                 }),
                 // All relevant appointments for no-show rate (9)
                 prisma.appointment.count({
                     where: {
                         startAt: { gte: last30Days },
-                        status: { notIn: ['CANCELADO' as any] }
+                        status: { notIn: ['CANCELADO' as any] },
+                        deletedAt: null
                     }
                 }),
                 // No-shows count (10)
                 prisma.appointment.count({
                     where: {
                         startAt: { gte: last30Days },
-                        status: 'NO_SHOW' as any
+                        status: 'NO_SHOW' as any,
+                        deletedAt: null
                     }
                 }),
                 // Pending invoices balance (11)
                 prisma.invoice.aggregate({
-                    where: { status: 'PENDENTE' as any },
+                    where: {
+                        status: 'PENDENTE' as any,
+                        deletedAt: null
+                    },
                     _sum: { amount: true }
                 }),
                 // Top customers by invoice amount (12)
                 prisma.invoice.groupBy({
                     by: ['customerId'],
-                    where: { status: 'PAGO' as any },
+                    where: {
+                        status: 'PAGO' as any,
+                        deletedAt: null
+                    },
                     _sum: { amount: true },
                     orderBy: { _sum: { amount: 'desc' } },
                     take: 5
@@ -162,7 +179,8 @@ export const getKPIs = async (req: Request, res: Response) => {
                 prisma.paymentRecord.groupBy({
                     by: ['paidAt'],
                     where: {
-                        paidAt: { gte: last30Days }
+                        paidAt: { gte: last30Days },
+                        invoice: { deletedAt: null }
                     },
                     _sum: { amount: true },
                     orderBy: { paidAt: 'asc' }
@@ -487,9 +505,12 @@ export const createUser = async (req: Request, res: Response) => {
             isSupportAgent, active, allowCustomerProfile
         } = req.body;
 
-        // RULE: Only Master can create Admin or Master
-        if ((role === 'ADMIN' || role === 'MASTER') && !isMaster(currentUser)) {
-            return res.status(403).json({ error: 'Apenas o Master pode criar Administradores ou outros Masters.' });
+        // RULE: Only Master can create Master. Admin can create Admin.
+        if (role === 'MASTER' && !isMaster(currentUser)) {
+            return res.status(403).json({ error: 'Apenas o Master pode criar outros Masters.' });
+        }
+        if (role === 'ADMIN' && !isAdmin(currentUser)) {
+            return res.status(403).json({ error: 'Apenas Administradores ou Master podem criar perfis Administrativos.' });
         }
 
         if (!email || !password) {
@@ -563,10 +584,16 @@ export const updateUser = async (req: Request, res: Response) => {
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-        // PROTECT ADMIN/MASTER ACCOUNTS - Only Master can edit them
+        // PROTECT MASTER ACCOUNT - Only Master can edit
         const isMasterUser = isMaster(currentUser);
-        if ((targetUser.role === 'MASTER' || targetUser.role === 'ADMIN') && !isMasterUser) {
-            return res.status(403).json({ error: 'Apenas o Master pode alterar dados de usuários Administradores ou Master.' });
+        if (targetUser.role === 'MASTER' && !isMasterUser) {
+            return res.status(403).json({ error: 'Apenas o Master pode alterar dados do usuário Master.' });
+        }
+
+        // PROTECT ADMIN ACCOUNT - Only Admin/Master can edit
+        const isCurrentUserAdmin = isAdmin(currentUser);
+        if (targetUser.role === 'ADMIN' && !isCurrentUserAdmin) {
+            return res.status(403).json({ error: 'Apenas Administradores podem alterar dados de outros perfis Administrativos.' });
         }
 
         const {
@@ -616,9 +643,12 @@ export const updateUser = async (req: Request, res: Response) => {
         }
 
         if (role !== undefined) {
-            // RULE: Only Master can promote to Admin or Master
-            if ((role === 'ADMIN' || role === 'MASTER') && !isMaster(currentUser)) {
-                return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Administrador ou Master.' });
+            // RULE: Only Master can promote to Master. Admin can promote to Admin.
+            if (role === 'MASTER' && !isMaster(currentUser)) {
+                return res.status(403).json({ error: 'Apenas o Master pode promover usuários para Master.' });
+            }
+            if (role === 'ADMIN' && !isAdmin(currentUser)) {
+                return res.status(403).json({ error: 'Apenas Administradores podem promover usuários para Admin.' });
             }
 
             updateData.role = role;

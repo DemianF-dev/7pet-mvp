@@ -4,14 +4,15 @@ import {
     User, Mail, Phone, MapPin, Save, Calendar,
     Trash2, Plus, X, MessageSquare,
     Info, Users, CreditCard, PawPrint, Scissors, ChevronDown, ChevronUp, Check, Shield, DollarSign, FileText,
-    Star, Heart, Zap, Trophy, History
+    Star, Heart, Zap, Trophy, History, Package, Unlock, RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import RecurrenceCelebrationModal from '../../components/RecurrenceCelebrationModal';
 import CustomerFinancialSection from '../../components/staff/CustomerFinancialSection';
+import CustomerRecurrenceSection from '../../components/staff/CustomerRecurrenceSection';
 import CustomerAlertsSection from '../../components/staff/CustomerAlertsSection';
-import ClientAuditTimeline from '../../components/client/ClientAuditTimeline';
+import CustomerHistory from './customers/components/CustomerHistory';
 import QueryState from '../../components/system/QueryState';
 import RouteSkeleton from '../../components/system/RouteSkeleton';
 
@@ -99,6 +100,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     // Form State
     const [firstName, setFirstName] = useState('');
@@ -224,7 +226,9 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         }
     };
 
-    const fetchCustomer = async () => {
+    const fetchCustomer = async (isManualRefresh = false) => {
+        if (isManualRefresh) setRefreshing(true);
+        else setLoading(true);
         try {
             const response = await api.get(`/customers/${id}`);
             const data = response.data;
@@ -333,10 +337,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         } catch (error) {
             console.error('Erro ao buscar cliente:', error);
             toast.error('Erro ao carregar dados do cliente');
-            if (!isModal) navigate('/staff/customers');
-            else if (onClose) onClose();
+            if (!isManualRefresh) {
+                if (!isModal) navigate('/staff/customers');
+                else if (onClose) onClose();
+            }
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -422,6 +429,27 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
         }
     };
 
+    const handleQuickResolve = async () => {
+        if (!id || id === 'new') return;
+
+        setSaving(true);
+        try {
+            await api.patch(`/customers/${id}`, {
+                isBlocked: false,
+                canRequestQuotes: true
+            });
+
+            setIsBlocked(false);
+            setCanRequestQuotes(true);
+            toast.success('Cliente liberado com sucesso!');
+        } catch (error) {
+            console.error('Erro ao liberar cliente:', error);
+            toast.error('Erro ao liberar cliente');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleDelete = async () => {
         if (!window.confirm('Tem certeza que deseja excluir este cliente?')) return;
         try {
@@ -467,7 +495,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             <X size={24} className="text-gray-400" />
                         </button>
                     )}
-                    <h1 className="text-3xl font-black text-secondary tracking-tight">
+                    <h1 className="text-3xl font-bold text-secondary tracking-tight">
                         {id === 'new' ? 'Novo' : 'Editar'} <span className="text-primary">Cliente</span>
                     </h1>
                     {seqId && <p className="text-gray-400 font-bold mt-1 uppercase tracking-widest text-xs ml-1">Ficha CL-{String(seqId).padStart(4, '0')}</p>}
@@ -482,10 +510,23 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             <Trash2 size={20} />
                         </button>
                     )}
+                    {id !== 'new' && (
+                        <button
+                            onClick={() => {
+                                fetchCustomer(true);
+                                fetchAppreciations();
+                            }}
+                            disabled={loading || saving}
+                            className="p-4 bg-white rounded-2xl hover:bg-gray-50 text-secondary transition-all shadow-sm border border-gray-100 flex items-center justify-center"
+                            title="Atualizar Dados"
+                        >
+                            <RefreshCw size={18} className={(loading || refreshing) ? 'animate-spin' : ''} />
+                        </button>
+                    )}
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-primary text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                        className="bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2 uppercase text-xs tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                     >
                         {saving ? <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div> : <Save size={18} />}
                         Salvar Alterações
@@ -508,7 +549,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             {isBlocked ? <X size={24} /> : !canRequestQuotes ? <Info size={24} /> : <Check size={24} />}
                         </div>
                         <div className="flex-1">
-                            <div className="text-sm font-black uppercase tracking-tight leading-none mb-1">
+                            <div className="text-sm font-bold uppercase tracking-tight leading-none mb-1">
                                 {isBlocked ? 'Acesso ao Sistema Bloqueado' :
                                     !canRequestQuotes ? 'Bloqueio de Novos Orçamentos' :
                                         'Status do Cliente: Regular'}
@@ -519,6 +560,17 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         'Tudo em ordem com este cadastro.'}
                             </div>
                         </div>
+
+                        {(isBlocked || !canRequestQuotes) && (
+                            <button
+                                onClick={handleQuickResolve}
+                                disabled={saving}
+                                className="px-4 py-2 bg-white/40 hover:bg-white/60 text-inherit rounded-xl text-[10px] font-black uppercase tracking-widest border border-black/5 shadow-sm transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <Zap size={14} className="fill-current animate-pulse" />
+                                Resolver Agora
+                            </button>
+                        )}
                     </div>
 
                     {/* Nível de Risco - Ações Staff */}
@@ -526,7 +578,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                                 <Shield size={14} className="text-gray-400" />
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tight">Classificação Staff</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Classificação Staff</span>
                             </div>
                         </div>
                         <div className="flex gap-2">
@@ -534,7 +586,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                 <button
                                     key={lvl}
                                     onClick={() => setRiskLevel(lvl)}
-                                    className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all border ${riskLevel === lvl
+                                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all border ${riskLevel === lvl
                                         ? (lvl === 'Nivel 3' ? 'bg-red-500 border-red-500 text-white shadow-md' :
                                             lvl === 'Nivel 2' ? 'bg-amber-500 border-amber-500 text-white shadow-md' :
                                                 'bg-green-600 border-green-600 text-white shadow-md')
@@ -554,13 +606,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
             {/* NAVIGATION TABS - Move to prominent location */}
             <div className="flex items-center gap-1 mb-8 bg-white p-2 rounded-[32px] border border-gray-100 shadow-sm w-fit overflow-x-auto no-scrollbar mx-auto lg:mx-0">
-                {(['PERFIL', id !== 'new' && 'PETS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'ATIVIDADES', id !== 'new' && 'AUDITORIA']
+                {(['PERFIL', id !== 'new' && 'PETS', id !== 'new' && 'ASSINATURAS', id !== 'new' && 'FINANCEIRO', id !== 'new' && 'ATIVIDADES', id !== 'new' && 'AUDITORIA']
                     .filter((t): t is string => Boolean(t)))
                     .map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === tab
+                            className={`px-8 py-3 rounded-[24px] text-[10px] font-bold uppercase tracking-[0.2em] transition-all ${activeTab === tab
                                 ? 'bg-primary text-white shadow-lg shadow-primary/20'
                                 : 'text-gray-400 hover:text-secondary hover:bg-gray-50'
                                 }`}
@@ -578,22 +630,22 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     {/* Profile Card */}
                     <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center">
                         <div className="w-24 h-24 bg-primary/10 rounded-[32px] flex items-center justify-center mb-4 relative group overflow-hidden">
-                            {id === 'new' ? <User size={40} className="text-primary" /> : <span className="text-3xl font-black text-primary">{firstName[0]}{lastName[0]}</span>}
+                            {id === 'new' ? <User size={40} className="text-primary" /> : <span className="text-3xl font-bold text-primary">{firstName[0]}{lastName[0]}</span>}
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                                 <Plus size={20} className="text-white" />
                             </div>
                         </div>
-                        <h2 className="text-xl font-black text-secondary">{firstName} {lastName}</h2>
-                        {seqId && <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">CL-{String(seqId).padStart(4, '0')}</p>}
+                        <h2 className="text-xl font-bold text-secondary">{firstName} {lastName}</h2>
+                        {seqId && <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">CL-{String(seqId).padStart(4, '0')}</p>}
 
                         <div className="grid grid-cols-2 gap-2 w-full mt-6">
                             <button className="flex flex-col items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 rounded-2xl transition-all group">
                                 <MessageSquare size={18} className="text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
-                                <span className="text-[9px] font-black text-blue-600 uppercase">Chat</span>
+                                <span className="text-[9px] font-bold text-blue-600 uppercase">Chat</span>
                             </button>
                             <button className="flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 rounded-2xl transition-all group">
                                 <Phone size={18} className="text-indigo-500 mb-1 group-hover:scale-110 transition-transform" />
-                                <span className="text-[9px] font-black text-indigo-600 uppercase">Ligar</span>
+                                <span className="text-[9px] font-bold text-indigo-600 uppercase">Ligar</span>
                             </button>
                         </div>
                     </div>
@@ -601,7 +653,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                     {/* BADGES SECTION */}
                     <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Trophy size={14} /> Apreciações
                             </h3>
                             {id !== 'new' && (
@@ -631,19 +683,19 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                     {/* QUICK STATS */}
                     <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
-                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Resumo</h3>
+                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Resumo</h3>
                         <div className="space-y-4">
                             <div className="flex justify-between items-end">
                                 <span className="text-[10px] font-bold text-gray-400">Total Gastos</span>
-                                <span className="text-sm font-black text-secondary">R$ {totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="text-sm font-bold text-secondary">R$ {totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between items-end">
                                 <span className="text-[10px] font-bold text-gray-400">Pets Ativos</span>
-                                <span className="text-sm font-black text-secondary">{pets.length}</span>
+                                <span className="text-sm font-bold text-secondary">{pets.length}</span>
                             </div>
 
                             <div className="pt-4 border-t border-gray-50 flex flex-col gap-1.5">
-                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">ID Bitrix (Legado)</label>
+                                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">ID Bitrix (Legado)</label>
                                 <div className="relative group">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-primary transition-colors">
                                         <Info size={12} />
@@ -663,16 +715,20 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                 {/* MAIN CONTENT AREA */}
                 <div className="lg:col-span-9 space-y-6">
+                    {activeTab === 'ASSINATURAS' && id && (
+                        <CustomerRecurrenceSection customerId={id} />
+                    )}
+
                     {activeTab === 'PERFIL' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             {/* IDENTIFICATION */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <User size={16} /> Identificação Básica
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Nome</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nome</label>
                                         <input
                                             type="text"
                                             value={firstName}
@@ -682,7 +738,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Sobrenome</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Sobrenome</label>
                                         <input
                                             type="text"
                                             value={lastName}
@@ -692,7 +748,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF / Documento</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">CPF / Documento</label>
                                         <div className="relative">
                                             <CreditCard size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                                             <input
@@ -708,7 +764,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Data de Nascimento</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Data de Nascimento</label>
                                         <div className="relative">
                                             <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                                             <input
@@ -724,13 +780,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                             {/* CONTACTS */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <Phone size={16} /> Canais de Contato
                                 </h3>
                                 <div className="space-y-6">
                                     {/* Emails */}
                                     <div className="space-y-4">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">E-mails</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">E-mails</label>
                                         <div className="relative">
                                             <Mail size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
                                             <input
@@ -756,12 +812,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                 <button onClick={() => setExtraEmails(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
                                             </div>
                                         ))}
-                                        <button onClick={() => setExtraEmails([...extraEmails, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar E-mail</button>
+                                        <button onClick={() => setExtraEmails([...extraEmails, ''])} className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar E-mail</button>
                                     </div>
 
                                     {/* Phones */}
                                     <div className="space-y-4">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Telefones</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Telefones</label>
                                         <div className="relative">
                                             <Phone size={18} className="absolute left-4 top-[22px] -translate-y-1/2 text-gray-300" />
                                             <input
@@ -787,14 +843,14 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                 <button onClick={() => setExtraPhones(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
                                             </div>
                                         ))}
-                                        <button onClick={() => setExtraPhones([...extraPhones, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Telefone</button>
+                                        <button onClick={() => setExtraPhones([...extraPhones, ''])} className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Telefone</button>
                                     </div>
                                 </div>
                             </section>
 
                             {/* ADDRESSES */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <MapPin size={16} /> Localização
                                 </h3>
                                 <div className="space-y-4">
@@ -823,18 +879,18 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                             <button onClick={() => setExtraAddresses(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:bg-red-50 p-2 rounded-xl"><X size={18} /></button>
                                         </div>
                                     ))}
-                                    <button onClick={() => setExtraAddresses([...extraAddresses, ''])} className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Endereço</button>
+                                    <button onClick={() => setExtraAddresses([...extraAddresses, ''])} className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest hover:opacity-70 transition-opacity"><Plus size={14} /> Adicionar Endereço</button>
                                 </div>
                             </section>
 
                             {/* MIGRATION & BILLING INFO */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <Shield size={16} /> Faturamento & Histórico (Bitrix24)
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">ID Bitrix24</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">ID Bitrix24</label>
                                         <input
                                             type="text"
                                             value={legacyBitrixId}
@@ -844,7 +900,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">CPF (Bitrix)</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">CPF (Bitrix)</label>
                                         <input
                                             type="text"
                                             value={cpf}
@@ -857,7 +913,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Preferência de Faturamento</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Preferência de Faturamento</label>
                                         <input
                                             type="text"
                                             value={billingPreference}
@@ -867,7 +923,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Método de Pagamento</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Método de Pagamento</label>
                                         <input
                                             type="text"
                                             value={paymentMethod}
@@ -877,7 +933,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">% Desconto Negociação</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">% Desconto Negociação</label>
                                         <input
                                             type="number"
                                             value={negotiationDiscount}
@@ -887,7 +943,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Criado em (Migração)</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Criado em (Migração)</label>
                                         <input
                                             type="date"
                                             value={legacyCreatedAt}
@@ -897,7 +953,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                     </div>
                                 </div>
                                 <div className="mt-6 space-y-2">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Detalhes da Origem</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Detalhes da Origem</label>
                                     <input
                                         type="text"
                                         value={discoverySourceDetail}
@@ -910,7 +966,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                             {/* GUARDIANS */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <Users size={16} /> Tutores Adicionais
                                 </h3>
                                 <div className="space-y-6">
@@ -978,7 +1034,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                     ))}
                                     <button
                                         onClick={() => setAdditionalGuardians([...additionalGuardians, { name: '', phone: '', email: '', address: '', birthday: '' }])}
-                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-bold text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
                                     >
                                         <Plus size={16} /> Adicionar Novo Tutor
                                     </button>
@@ -988,12 +1044,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                 {/* PREFERENCES */}
                                 <section className="bg-secondary p-8 rounded-[40px] text-white shadow-xl flex flex-col h-full">
-                                    <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                                         <MessageSquare size={16} /> Preferências
                                     </h3>
                                     <div className="space-y-6 flex-1">
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Tipo de Cliente</label>
+                                            <label className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Tipo de Cliente</label>
                                             <div className="flex gap-2">
                                                 {['AVULSO', 'RECORRENTE'].map(t => (
                                                     <button
@@ -1009,7 +1065,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                                 setRecurrenceDiscount(0);
                                                             }
                                                         }}
-                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all border ${type === t ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-all border ${type === t ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
                                                     >
                                                         {t}
                                                     </button>
@@ -1018,7 +1074,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         </div>
 
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Canal de Preferência</label>
+                                            <label className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Canal de Preferência</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {['APP', 'WHATSAPP', 'TELEFONE', 'OUTROS'].map(pref => (
                                                     <label key={pref} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${communicationPrefs.includes(pref) ? 'bg-primary/20 border-primary/40 text-white' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}>
@@ -1031,7 +1087,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                             }}
                                                             className="rounded border-white/20 bg-white/10 text-primary"
                                                         />
-                                                        <span className="text-[10px] font-black">{pref}</span>
+                                                        <span className="text-[10px] font-bold">{pref}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -1046,7 +1102,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         </div>
 
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Como conheceu a 7Pet?</label>
+                                            <label className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Como conheceu a 7Pet?</label>
                                             <input
                                                 value={discoverySource}
                                                 onChange={e => setDiscoverySource(e.target.value)}
@@ -1059,7 +1115,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                                 {/* NOTES */}
                                 <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 flex flex-col h-full">
-                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                         <Info size={16} /> Observações Internas
                                     </h3>
                                     <textarea
@@ -1078,7 +1134,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                             {/* PETS */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <PawPrint size={16} /> Pets do Tutor
                                 </h3>
                                 <div className="space-y-4">
@@ -1166,10 +1222,10 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                                                     {/* Advanced Migration Pet Details */}
                                                     <div className="bg-gray-100/50 p-6 rounded-3xl border border-gray-200 space-y-4">
-                                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Info size={14} /> Ficha Completa (Migração)</h4>
+                                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Info size={14} /> Ficha Completa (Migração)</h4>
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Sexo</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Sexo</label>
                                                                 <select value={pet.sex} onChange={e => { const u = [...pets]; u[idx].sex = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
                                                                     <option value="">Selecione</option>
                                                                     <option value="MACHO">Macho</option>
@@ -1177,7 +1233,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                                 </select>
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Porte</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Porte</label>
                                                                 <select value={pet.size} onChange={e => { const u = [...pets]; u[idx].size = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold">
                                                                     <option value="">Selecione</option>
                                                                     <option value="Mini">Mini (Toy)</option>
@@ -1189,22 +1245,22 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                                 </select>
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Nascimento</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Nascimento</label>
                                                                 <input type="date" value={pet.birthDate} onChange={e => { const u = [...pets]; u[idx].birthDate = e.target.value; setPets(u); }} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Alimentação</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Alimentação</label>
                                                                 <input value={pet.feedingType} onChange={e => { const u = [...pets]; u[idx].feedingType = e.target.value; setPets(u); }} placeholder="Tipo" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
                                                             </div>
                                                         </div>
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos / Manias</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Hábitos / Manias</label>
                                                                 <textarea value={pet.habits} onChange={e => { const u = [...pets]; u[idx].habits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="O que ele faz?" />
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Hábitos Noturnos</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Hábitos Noturnos</label>
                                                                 <textarea value={pet.nightHabits} onChange={e => { const u = [...pets]; u[idx].nightHabits = e.target.value; setPets(u); }} rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium resize-none" placeholder="Como ele dorme?" />
                                                             </div>
                                                         </div>
@@ -1229,11 +1285,11 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Tratativa / Autoridade</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Tratativa / Autoridade</label>
                                                                 <input value={pet.authorityCommand} onChange={e => { const u = [...pets]; u[idx].authorityCommand = e.target.value; setPets(u); }} placeholder="Ex: Comando 'Não'" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase">Tempo com Pet / Origem</label>
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Tempo com Pet / Origem</label>
                                                                 <input value={pet.timeWithPet} onChange={e => { const u = [...pets]; u[idx].timeWithPet = e.target.value; setPets(u); }} placeholder="Ex: 5 anos" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold" />
                                                             </div>
                                                         </div>
@@ -1241,7 +1297,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                                                     {/* Grooming Details */}
                                                     <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200">
-                                                        <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2"><Scissors size={14} /> Detalhes da Tosa</h4>
+                                                        <h4 className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2"><Scissors size={14} /> Detalhes da Tosa</h4>
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                             <input value={pet.groomingMachine} onChange={e => { const u = [...pets]; u[idx].groomingMachine = e.target.value; setPets(u); }} placeholder="Máquina" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
                                                             <input value={pet.groomingHeight} onChange={e => { const u = [...pets]; u[idx].groomingHeight = e.target.value; setPets(u); }} placeholder="Altura (ex: 3mm)" className="bg-white border border-amber-200 rounded-xl px-3 py-2 text-sm" />
@@ -1281,7 +1337,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                     ))}
                                     <button
                                         onClick={() => setPets([...pets, { name: '', species: 'Canino', breed: '', weight: null, coatType: '', temperament: '', age: '', observations: '', healthIssues: '', allergies: '', hasKnots: false, hasMattedFur: false, usesPerfume: false, usesOrnaments: false, groomingMachine: '', groomingHeight: '', groomingAdapter: '', groomingScissors: '', groomingNotes: '', isNew: true, isExpanded: true }])}
-                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-black text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-3xl text-xs font-bold text-gray-400 uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
                                     >
                                         <Plus size={16} /> Adicionar Novo Pet
                                     </button>
@@ -1302,12 +1358,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             {/* APPOINTMENTS LIST */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
                                 <div className="flex items-center justify-between mb-8">
-                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <Calendar size={16} /> Últimos Agendamentos
                                     </h3>
                                     <button
                                         onClick={() => navigate('/staff/appointments/new', { state: { customerId: id } })}
-                                        className="text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-70 flex items-center gap-1"
+                                        className="text-[10px] font-bold text-primary uppercase tracking-widest hover:opacity-70 flex items-center gap-1"
                                     >
                                         <Plus size={14} /> Novo Agendamento
                                     </button>
@@ -1326,13 +1382,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                         <Calendar size={20} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                        <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                             {new Date(appt.startAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{appt.category}</span>
                                                             <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${appt.status === 'FINALIZADO' ? 'text-green-500' :
+                                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${appt.status === 'FINALIZADO' ? 'text-green-500' :
                                                                 appt.status === 'CANCELADO' ? 'text-red-500' :
                                                                     'text-primary'
                                                                 }`}>{appt.status}</span>
@@ -1346,7 +1402,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                     title="Copiar para novo agendamento"
                                                 >
                                                     <History size={16} />
-                                                    <span className="text-[10px] font-black uppercase tracking-tighter">Refazer</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-tighter">Refazer</span>
                                                 </button>
                                             </div>
                                         ))
@@ -1357,12 +1413,12 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             {/* QUOTES LIST */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
                                 <div className="flex items-center justify-between mb-8">
-                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <FileText size={16} /> Orçamentos Recentes
                                     </h3>
                                     <button
                                         onClick={() => navigate('/staff/quotes/new', { state: { customerId: id } })}
-                                        className="text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-70 flex items-center gap-1"
+                                        className="text-[10px] font-bold text-primary uppercase tracking-widest hover:opacity-70 flex items-center gap-1"
                                     >
                                         <Plus size={14} /> Novo Orçamento
                                     </button>
@@ -1378,13 +1434,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                         <FileText size={20} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                        <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                             Orçamento #{String(q.seqId).padStart(4, '0')}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">R$ {q.totalAmount?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                                             <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{q.status}</span>
+                                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{q.status}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1403,7 +1459,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                         title="Copiar para novo orçamento"
                                                     >
                                                         <Zap size={16} />
-                                                        <span className="text-[10px] font-black uppercase tracking-tighter">Copiar</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-tighter">Copiar</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1414,7 +1470,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                             {/* INVOICES LIST */}
                             <section className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-8 flex items-center gap-2">
                                     <CreditCard size={16} /> Faturas & Notas
                                 </h3>
                                 <div className="space-y-3">
@@ -1429,13 +1485,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                                         <DollarSign size={20} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                        <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                             Fatura #{String(inv.seqId).padStart(4, '0')}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <span className="text-[10px] font-bold text-gray-400">R$ {inv.amount?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                                             <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${inv.status === 'PAGO' ? 'text-emerald-500' : 'text-red-500'
+                                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${inv.status === 'PAGO' ? 'text-emerald-500' : 'text-red-500'
                                                                 }`}>{inv.status}</span>
                                                         </div>
                                                     </div>
@@ -1456,10 +1512,10 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
 
                     {activeTab === 'AUDITORIA' && id !== 'new' && (
                         <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <History size={16} /> Trilhas de Auditoria (Logs)
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <History size={16} /> Linha do Tempo & Auditoria
                             </h3>
-                            <ClientAuditTimeline clientId={id!} />
+                            <CustomerHistory clientId={id!} />
                         </div>
                     )}
                 </div>
@@ -1470,7 +1526,7 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                 isAssigningBadge && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                         <div className="bg-white rounded-[40px] w-full max-w-md p-8 shadow-2xl">
-                            <h3 className="text-2xl font-black text-secondary tracking-tight mb-6">Atribuir <span className="text-primary">Insígnia</span></h3>
+                            <h3 className="text-2xl font-bold text-secondary tracking-tight mb-6">Atribuir <span className="text-primary">Insígnia</span></h3>
 
                             <div className="grid grid-cols-3 gap-3 mb-8">
                                 {[
@@ -1486,13 +1542,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                                         className={`flex flex-col items-center gap-2 p-4 rounded-3xl border transition-all ${selectedBadge === b.id ? 'bg-primary/5 border-primary shadow-lg scale-105' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
                                     >
                                         <b.icon size={24} className={selectedBadge === b.id ? b.color : ''} />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">{b.label}</span>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest">{b.label}</span>
                                     </button>
                                 ))}
                             </div>
 
                             <div className="space-y-4 mb-8">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Comentário (Opcional)</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Comentário (Opcional)</label>
                                 <textarea
                                     value={badgeComment}
                                     onChange={e => setBadgeComment(e.target.value)}
@@ -1505,13 +1561,13 @@ export default function CustomerDetail({ customerId, onClose }: CustomerDetailPr
                             <div className="flex gap-4">
                                 <button
                                     onClick={() => setIsAssigningBadge(false)}
-                                    className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors"
+                                    className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={handleAssignBadge}
-                                    className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                    className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
                                 >
                                     Confirmar
                                 </button>

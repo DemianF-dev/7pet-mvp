@@ -57,4 +57,19 @@ export interface AgendaItem {
     isAllDay?: boolean;
     title?: string;
     address?: string;
+    transportMode?: string;
+    transportLegs?: {
+        id: string;
+        legType: string;
+        price?: number;
+        providerId?: string;
+        provider?: {
+            id: string;
+            name: string;
+            color?: string;
+        };
+    }[];
+    transportSnapshot?: {
+        totalAmount: number;
+    };
 }

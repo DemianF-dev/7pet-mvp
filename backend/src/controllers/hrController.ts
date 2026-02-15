@@ -363,15 +363,15 @@ export async function reopenPayPeriod(req: Request, res: Response) {
 
 export async function createPayAdjustment(req: Request, res: Response) {
     try {
-        const { payPeriodId, staffId, type, amount, direction, reason } = req.body;
+        const { staffPayPeriodId, staffId, type, amount, direction, reason } = req.body;
         const userId = (req as any).user?.id;
 
-        if (!payPeriodId || !staffId || !type || !amount || !direction || !reason) {
+        if (!staffPayPeriodId || !staffId || !type || !amount || !direction || !reason) {
             return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
         }
 
         const adjustment = await hrService.createPayAdjustment({
-            payPeriodId,
+            staffPayPeriodId,
             staffId,
             type,
             amount,
@@ -389,14 +389,14 @@ export async function createPayAdjustment(req: Request, res: Response) {
 
 export async function getPayAdjustments(req: Request, res: Response) {
     try {
-        const { payPeriodId, staffId } = req.query;
+        const { staffPayPeriodId, staffId } = req.query;
 
-        if (!payPeriodId) {
-            return res.status(400).json({ error: 'payPeriodId é obrigatório' });
+        if (!staffPayPeriodId) {
+            return res.status(400).json({ error: 'staffPayPeriodId é obrigatório' });
         }
 
         const adjustments = await hrService.getPayAdjustments(
-            payPeriodId as string,
+            staffPayPeriodId as string,
             staffId as string | undefined
         );
 
@@ -413,13 +413,13 @@ export async function getPayAdjustments(req: Request, res: Response) {
 
 export async function getPayStatements(req: Request, res: Response) {
     try {
-        const { payPeriodId } = req.query;
+        const { staffPayPeriodId } = req.query;
 
-        if (!payPeriodId) {
-            return res.status(400).json({ error: 'payPeriodId é obrigatório' });
+        if (!staffPayPeriodId) {
+            return res.status(400).json({ error: 'staffPayPeriodId é obrigatório' });
         }
 
-        const statements = await hrService.getPayStatements(payPeriodId as string);
+        const statements = await hrService.getPayStatements(staffPayPeriodId as string);
         res.json(statements);
     } catch (error: any) {
         console.error('Erro ao buscar recibos:', error);
@@ -471,7 +471,7 @@ export async function getReceiptHtml(req: Request, res: Response) {
 
         const details = statement.detailsJson as any || {};
         const user = statement.staff.user;
-        const period = statement.payPeriod;
+        const period = statement.staffPayPeriod;
 
         const formatDate = (d: Date) => new Date(d).toLocaleDateString('pt-BR');
         const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

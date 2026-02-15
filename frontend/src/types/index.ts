@@ -78,6 +78,7 @@ export interface Appointment {
   pet?: Pet;
   performer?: User;
   services?: Service[];
+  metadata?: any;
 }
 
 // Interfaces para orçamentos
@@ -111,6 +112,7 @@ export interface Quote {
   customer?: Customer;
   pet?: Pet;
   items?: QuoteItem[];
+  metadata?: any;
 }
 
 // Interfaces para itens de orçamento

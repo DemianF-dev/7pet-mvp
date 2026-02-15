@@ -101,7 +101,7 @@ export const MobileFilters: React.FC<MobileFiltersProps> = ({
                                     <button
                                         key={status}
                                         onClick={() => handleStatusChange(status)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
                                             localFilters.status === status
                                                 ? 'bg-blue-500 text-white'
                                                 : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400'
@@ -197,7 +197,7 @@ export const MobileFilters: React.FC<MobileFiltersProps> = ({
                                             }
                                         }));
                                     }}
-                                    className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                                    className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
                                 >
                                     {preset.label}
                                 </button>

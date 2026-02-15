@@ -216,11 +216,11 @@ export default function ProductManager() {
                 <BackButton className="mb-4 ml-[-1rem]" />
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-4">
+                        <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.3em] mb-4">
                             <div className="h-[2px] w-6 bg-primary"></div>
                             GESTÃO DE ESTOQUE
                         </div>
-                        <h1 className="text-4xl font-black text-secondary tracking-tight">Produtos</h1>
+                        <h1 className="text-4xl font-bold text-secondary tracking-tight">Produtos</h1>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
@@ -228,13 +228,13 @@ export default function ProductManager() {
                         <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
                             <button
                                 onClick={() => { setTab('active'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
                             >
                                 Ativos
                             </button>
                             <button
                                 onClick={() => { setTab('trash'); setSelectedIds([]); }}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
+                                className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${tab === 'trash' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-secondary'}`}
                             >
                                 <Trash2 size={14} /> Lixeira
                             </button>
@@ -242,27 +242,37 @@ export default function ProductManager() {
 
                         <button
                             onClick={() => setIsBulkMode(!isBulkMode)}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-bold transition-all ${isBulkMode ? 'bg-secondary text-white shadow-xl' : 'bg-white text-gray-400 hover:text-secondary shadow-sm'}`}
                         >
                             <CheckSquare size={14} strokeWidth={isBulkMode ? 3 : 2} />
                             <span className="uppercase tracking-[0.15em]">{isBulkMode ? 'Sair da Seleção' : 'Ações em Massa'}</span>
                         </button>
 
-                        <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Buscar produto..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-bold"
-                            />
+                        <div className="relative flex items-center gap-3">
+                            <button
+                                onClick={() => fetchProducts()}
+                                className="p-3 bg-white rounded-2xl hover:bg-gray-50 text-secondary transition-all shadow-sm border border-gray-100"
+                                title="Atualizar Lista"
+                            >
+                                <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+                            </button>
+
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar produto..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all font-bold"
+                                />
+                            </div>
                         </div>
 
                         {tab === 'active' && (
                             <button
                                 onClick={() => handleOpenModal()}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-green-600/20 hover:shadow-2xl hover:shadow-green-600/30 transition-all active:scale-95"
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] shadow-lg shadow-green-600/20 hover:shadow-2xl hover:shadow-green-600/30 transition-all active:scale-95"
                             >
                                 <Plus size={14} strokeWidth={3} />
                                 Novo Produto
@@ -283,12 +293,12 @@ export default function ProductManager() {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleSelectAll}
-                                className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                                className="bg-white/10 hover:bg-white/20 text-[10px] font-bold px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
                             >
                                 {selectedIds.length === filteredProducts.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
                             </button>
-                            <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
+                            <p className="text-sm font-bold flex items-center gap-3 border-l border-white/10 pl-4">
+                                <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-primary/20">{selectedIds.length}</span>
                                 itens no total
                             </p>
                         </div>
@@ -296,14 +306,14 @@ export default function ProductManager() {
                         <div className="flex items-center gap-6">
                             <button
                                 onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
-                                className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
+                                className="text-[10px] font-bold hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleBulkDelete}
                                 disabled={selectedIds.length === 0}
-                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                             >
                                 <Trash2 size={18} /> Apagar Agora
                             </button>
@@ -352,18 +362,18 @@ export default function ProductManager() {
                             </div>
                         </div>
 
-                        <h3 className="text-lg font-black text-secondary mb-1 uppercase truncate">{product.name}</h3>
-                        <p className="text-[10px] font-black text-primary mb-2">PR-{String((product.seqId || 0) + 1999).padStart(4, '0')}</p>
+                        <h3 className="text-lg font-bold text-secondary mb-1 uppercase truncate">{product.name}</h3>
+                        <p className="text-[10px] font-bold text-primary mb-2">PR-{String((product.seqId || 0) + 1999).padStart(4, '0')}</p>
                         <p className="text-gray-400 text-xs font-bold mb-4 line-clamp-2 h-8">{product.description || 'Sem descrição'}</p>
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
                             <div>
-                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Estoque</p>
-                                <p className={`text-sm font-black ${product.stock <= 5 ? 'text-red-500' : 'text-secondary'}`}>{product.stock} un</p>
+                                <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Estoque</p>
+                                <p className={`text-sm font-bold ${product.stock <= 5 ? 'text-red-500' : 'text-secondary'}`}>{product.stock} un</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Preço</p>
-                                <p className="text-lg font-black text-primary">R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Preço</p>
+                                <p className="text-lg font-bold text-primary">R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                     </motion.div>
@@ -379,10 +389,10 @@ export default function ProductManager() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         className="bg-white rounded-[40px] p-8 w-full max-w-lg relative z-10 shadow-2xl"
                     >
-                        <h2 className="text-3xl font-black text-secondary mb-8">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</h2>
+                        <h2 className="text-3xl font-bold text-secondary mb-8">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</h2>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nome do Produto</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nome do Produto</label>
                                 <input
 
                                     value={formData.name}
@@ -392,7 +402,7 @@ export default function ProductManager() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -402,7 +412,7 @@ export default function ProductManager() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Preço</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Preço</label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
                                         <input
@@ -419,7 +429,7 @@ export default function ProductManager() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Estoque</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Estoque</label>
                                     <input
                                         type="number"
 
@@ -433,7 +443,7 @@ export default function ProductManager() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Categoria</label>
                                 <select
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -446,8 +456,8 @@ export default function ProductManager() {
                                 </select>
                             </div>
                             <div className="flex gap-4 pt-6">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
-                                <button type="button" onClick={handleSubmit} className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Produto</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-8 py-4 rounded-2xl font-bold text-gray-400 uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all">Cancelar</button>
+                                <button type="button" onClick={handleSubmit} className="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all">Salvar Produto</button>
                             </div>
                         </form>
                     </motion.div>
@@ -464,30 +474,30 @@ export default function ProductManager() {
                         className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-secondary text-white px-8 py-5 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-10 min-w-[500px]"
                     >
                         <div className="flex items-center gap-4">
-                            <button onClick={handleSelectAll} className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest">
+                            <button onClick={handleSelectAll} className="bg-white/10 hover:bg-white/20 text-[10px] font-bold px-5 py-2 rounded-xl transition-all uppercase tracking-widest">
                                 {selectedIds.length === filteredProducts.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
                             </button>
-                            <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                <span className="bg-green-600 px-4 py-1.5 rounded-full text-xs font-black shadow-lg">{selectedIds.length}</span>
+                            <p className="text-sm font-bold flex items-center gap-3 border-l border-white/10 pl-4">
+                                <span className="bg-green-600 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">{selectedIds.length}</span>
                                 selecionados
                             </p>
                         </div>
                         <div className="h-10 w-px bg-white/10 ml-auto"></div>
                         <div className="flex items-center gap-6">
-                            <button onClick={() => { setSelectedIds([]); setIsBulkMode(false); }} className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]">
+                            <button onClick={() => { setSelectedIds([]); setIsBulkMode(false); }} className="text-[10px] font-bold hover:text-gray-300 transition-colors uppercase tracking-[0.2em]">
                                 Cancelar
                             </button>
                             {tab === 'trash' ? (
                                 <>
-                                    <button onClick={handleBulkRestore} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
+                                    <button onClick={handleBulkRestore} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
                                         <RefreshCcw size={18} /> Restaurar
                                     </button>
-                                    <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
+                                    <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
                                         <Trash2 size={18} /> Excluir Permanente
                                     </button>
                                 </>
                             ) : (
-                                <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
+                                <button onClick={handleBulkDelete} disabled={selectedIds.length === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}>
                                     <Trash2 size={18} /> Mover para Lixeira
                                 </button>
                             )}

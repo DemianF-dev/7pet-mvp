@@ -88,7 +88,7 @@ const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({ isOpen, onClose }) 
                                 filteredLogs.map((log, idx) => (
                                     <div key={idx} className="p-3 bg-slate-800/40 rounded-xl border border-slate-800/60 flex flex-col gap-1">
                                         <div className="flex items-center justify-between">
-                                            <span className={`font-black uppercase tracking-tighter ${log.type === 'error' ? 'text-red-400' :
+                                            <span className={`font-bold uppercase tracking-tighter ${log.type === 'error' ? 'text-red-400' :
                                                     log.type === 'request' ? 'text-indigo-400' :
                                                         'text-slate-400'
                                                 }`}>
@@ -121,7 +121,7 @@ const StatBox = ({ icon, label, value, color }: { icon: React.ReactNode, label: 
     <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800/50">
         <div className="flex items-center gap-2 text-slate-500 mb-1">
             {icon}
-            <span className="text-[10px] uppercase font-black tracking-widest">{label}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest">{label}</span>
         </div>
         <div className={`text-xs font-bold truncate ${color}`}>{value}</div>
     </div>
@@ -130,7 +130,7 @@ const StatBox = ({ icon, label, value, color }: { icon: React.ReactNode, label: 
 const FilterBtn = ({ active, children, onClick }: { active: boolean, children: React.ReactNode, onClick: () => void }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-slate-300'
+        className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-slate-300'
             }`}
     >
         {children}

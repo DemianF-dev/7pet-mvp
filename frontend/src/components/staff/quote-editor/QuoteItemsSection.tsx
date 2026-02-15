@@ -8,6 +8,7 @@ interface QuoteItem {
     quantity: number;
     price: number;
     serviceId?: string;
+    productId?: string;
     performerId?: string;
     discount?: number;
 }
@@ -44,7 +45,7 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
     return (
         <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-black text-secondary dark:text-white">Itens e Serviços</h3>
+                <h3 className="text-xl font-bold text-secondary dark:text-white">Itens e Serviços</h3>
                 <button
                     onClick={onAddItem}
                     className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-bold rounded-xl hover:bg-primary/20 transition-all text-sm"
@@ -62,7 +63,7 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                         className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-gray-50/50 dark:bg-gray-700/20 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 relative group"
                     >
                         <div className="md:col-span-3 relative service-dropdown-container">
-                            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2 px-2">Descrição / Serviço</label>
+                            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2 px-2">Descrição / Serviço</label>
                             <input
                                 type="text"
                                 value={serviceSearch[index] !== undefined ? serviceSearch[index] : item.description}
@@ -91,8 +92,11 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                                                 type="button"
                                                 onClick={() => {
                                                     onItemChange(index, 'description', service.name);
-                                                    onItemChange(index, 'price', service.basePrice);
+                                                    onItemChange(index, 'price', service.price || service.basePrice);
                                                     onItemChange(index, 'serviceId', service.id);
+                                                    if (service.type === 'PRODUCT') {
+                                                        onItemChange(index, 'productId', service.id);
+                                                    }
                                                     onItemChange(index, 'performerId', service.responsibleId || '');
                                                     setServiceSearch({ ...serviceSearch, [index]: service.name });
                                                     setShowServiceDropdown({ ...showServiceDropdown, [index]: false });
@@ -102,12 +106,13 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                                                 <div className="flex-1">
                                                     <p className="font-bold text-sm text-secondary dark:text-white group-hover:text-primary transition-colors">{service.name}</p>
                                                     <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-2">
-                                                        <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md">{service.species}</span>
+                                                        <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md">{service.species || 'Ambos'}</span>
                                                         {service.category && <span className="text-primary/60">{service.category}</span>}
+                                                        {service.type === 'PRODUCT' && <span className="bg-orange-100 text-orange-600 px-1 rounded text-[8px]">PRODUTO</span>}
                                                     </p>
                                                 </div>
-                                                <span className="text-sm font-black text-primary ml-4 whitespace-nowrap">
-                                                    R$ {service.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                <span className="text-sm font-bold text-primary ml-4 whitespace-nowrap">
+                                                    R$ {(service.price || service.basePrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                 </span>
                                             </button>
                                         ))
@@ -120,7 +125,7 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                             )}
                         </div>
                         <div className="md:col-span-2">
-                            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2 px-2">Profissional</label>
+                            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2 px-2">Profissional</label>
                             <select
                                 value={item.performerId || ''}
                                 onChange={(e) => onItemChange(index, 'performerId', e.target.value)}
@@ -144,12 +149,12 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                                             description.includes('busca');
 
                                         if (isLogistics) {
-                                            return u.division?.toUpperCase().includes('LOGISTICA') || u.role === 'TTM';
+                                            return (u.division?.toUpperCase() || '').includes('LOGISTICA') || u.role === 'TTM';
                                         }
 
                                         // Everything else (Banhos, Tosas, Extras, even if no category) 
                                         // is considered SPA and should only show SPA staff
-                                        return u.division?.toUpperCase().includes('SPA') || ['SPA', 'BANHADOR', 'TOSADOR'].includes(u.role);
+                                        return (u.division?.toUpperCase() || '').includes('SPA') || ['SPA', 'BANHADOR', 'TOSADOR'].includes(u.role);
                                     })
                                     .map(u => u && (
                                         <option key={u.id} value={u.id}>
@@ -159,7 +164,7 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                             </select>
                         </div>
                         <div className="md:col-span-1 text-center">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Qtd</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-2">Qtd</label>
                             <input
                                 type="number"
                                 value={item.quantity}
@@ -168,7 +173,7 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Preço Unit.</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-2">Preço Unit.</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">R$</span>
                                 <input
@@ -181,7 +186,7 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                             </div>
                         </div>
                         <div className="md:col-span-1">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2">Desc (%)</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-2">Desc (%)</label>
                             <input
                                 type="number"
                                 value={item.discount || 0}
@@ -193,8 +198,8 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-2 text-right">Subtotal</label>
-                            <div className="px-3 py-1.5 text-xs font-black text-secondary dark:text-white bg-gray-100/50 dark:bg-gray-700/50 rounded-2xl h-[34px] flex items-center justify-end">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-2 text-right">Subtotal</label>
+                            <div className="px-3 py-1.5 text-xs font-bold text-secondary dark:text-white bg-gray-100/50 dark:bg-gray-700/50 rounded-2xl h-[34px] flex items-center justify-end">
                                 R$ {((item.price * item.quantity) * (1 - (item.discount || 0) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
@@ -216,11 +221,53 @@ const QuoteItemsSection: React.FC<QuoteItemsSectionProps> = ({
                 )}
             </div>
 
-            <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center px-4">
-                <span className="text-lg font-bold text-secondary dark:text-white">Valor Total Calculado</span>
-                <div className="text-right">
-                    <span className="text-3xl font-black text-primary">R$ {totalAmount.toFixed(2)}</span>
-                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mt-1">Este valor será enviado ao cliente</p>
+            <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-700 space-y-4 px-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Breakdown SPA */}
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Resumo SPA</p>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-bold text-gray-400">Subtotal SPA:</span>
+                            <span className="font-bold text-secondary dark:text-white">
+                                R$ {items.filter(it => !it.description.toLowerCase().includes('transporte') && !it.description.includes('🔄') && !it.description.includes('📦') && !it.description.includes('🏠'))
+                                    .reduce((acc, it) => acc + (it.price * it.quantity * (1 - (it.discount || 0) / 100)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-bold text-gray-400">Total Descontos:</span>
+                            <span className="font-bold text-red-500">
+                                - R$ {items.filter(it => !it.description.toLowerCase().includes('transporte') && !it.description.includes('🔄') && !it.description.includes('📦') && !it.description.includes('🏠'))
+                                    .reduce((acc, it) => acc + (it.price * it.quantity * (it.discount || 0) / 100), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Breakdown Transporte */}
+                    <div className="space-y-2 border-l border-gray-100 dark:border-gray-700 md:pl-8">
+                        <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Resumo Transporte</p>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-bold text-gray-400">Subtotal Transp:</span>
+                            <span className="font-bold text-secondary dark:text-white">
+                                R$ {items.filter(it => it.description.toLowerCase().includes('transporte') || it.description.includes('🔄') || it.description.includes('📦') || it.description.includes('🏠'))
+                                    .reduce((acc, it) => acc + (it.price * it.quantity * (1 - (it.discount || 0) / 100)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-bold text-gray-400">Total Descontos:</span>
+                            <span className="font-bold text-red-500">
+                                - R$ {items.filter(it => it.description.toLowerCase().includes('transporte') || it.description.includes('🔄') || it.description.includes('📦') || it.description.includes('🏠'))
+                                    .reduce((acc, it) => acc + (it.price * it.quantity * (it.discount || 0) / 100), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <span className="text-lg font-bold text-secondary dark:text-white">Valor Total Final</span>
+                    <div className="text-right">
+                        <span className="text-3xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</span>
+                        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.2em] mt-1">Este valor será enviado ao cliente</p>
+                    </div>
                 </div>
             </div>
         </section>

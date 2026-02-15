@@ -187,6 +187,16 @@ export default function CustomerManager() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => {
+                                queryClient.invalidateQueries({ queryKey: queryKeys.customers.list(tab) });
+                            }}
+                            className="p-3 bg-white rounded-2xl hover:bg-gray-50 text-secondary transition-all shadow-sm border border-gray-100"
+                            title="Atualizar Lista"
+                        >
+                            <RefreshCcw size={18} className={isFetching ? 'animate-spin' : ''} />
+                        </button>
+
                         <div className="flex bg-[var(--color-bg-tertiary)] p-1 rounded-[var(--radius-xl)] border border-[var(--color-border)]">
                             <button
                                 onClick={() => { setTab('active'); setSelectedIds([]); }}
@@ -226,12 +236,12 @@ export default function CustomerManager() {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleSelectAll}
-                                className="bg-white/10 hover:bg-white/20 text-[10px] font-black px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
+                                className="bg-white/10 hover:bg-white/20 text-[10px] font-bold px-5 py-2 rounded-xl transition-all uppercase tracking-widest flex items-center gap-2"
                             >
                                 {selectedIds.length === filteredCustomers.length ? 'Desmarcar Todos' : 'Selecionar Tudo'}
                             </button>
-                            <p className="text-sm font-black flex items-center gap-3 border-l border-white/10 pl-4">
-                                <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-black shadow-lg shadow-primary/20">{selectedIds.length}</span>
+                            <p className="text-sm font-bold flex items-center gap-3 border-l border-white/10 pl-4">
+                                <span className="bg-primary px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-primary/20">{selectedIds.length}</span>
                                 itens no total
                             </p>
                         </div>
@@ -239,14 +249,14 @@ export default function CustomerManager() {
                         <div className="flex items-center gap-6">
                             <button
                                 onClick={() => { setSelectedIds([]); setIsBulkMode(false); }}
-                                className="text-[10px] font-black hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
+                                className="text-[10px] font-bold hover:text-gray-300 transition-colors uppercase tracking-[0.2em]"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleBulkDelete}
                                 disabled={selectedIds.length === 0}
-                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-xl transition-all ${selectedIds.length > 0 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                             >
                                 <Trash2 size={18} /> Apagar Agora
                             </button>
@@ -334,13 +344,13 @@ export default function CustomerManager() {
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="font-black text-secondary uppercase tracking-tighter text-lg">{customer.name}</span>
-                                                    <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                    <span className="font-bold text-secondary uppercase tracking-tighter text-lg">{customer.name}</span>
+                                                    <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-widest">
                                                         CL-{String(((customer as any).user?.staffId ?? (customer as any).user?.seqId) || 1000).padStart(4, '0')}
                                                     </span>
                                                 </div>
                                                 {(customer as any).pets && (customer as any).pets.length > 0 && (
-                                                    <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
+                                                    <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">
                                                         {(customer as any).pets.length} Pet{(customer as any).pets.length > 1 ? 's' : ''}
                                                     </span>
                                                 )}
@@ -359,7 +369,7 @@ export default function CustomerManager() {
                                         </td>
                                         <td className="px-8 py-6 text-center">
                                             <div className="flex flex-col gap-2 items-center">
-                                                <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${customer.type === 'RECORRENTE' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                <span className={`px-4 py-2 rounded-2xl text-[10px] font-bold uppercase tracking-widest ${customer.type === 'RECORRENTE' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
                                                     {customer.type === 'RECORRENTE' ? (
                                                         <span className="flex items-center gap-1">
                                                             <Star size={12} className="fill-current" />
@@ -368,7 +378,7 @@ export default function CustomerManager() {
                                                     ) : 'AVULSO'}
                                                 </span>
                                                 {(customer as any).recurrenceDiscount && (customer as any).recurrenceDiscount > 0 && (
-                                                    <span className="text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[9px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                                                         {(customer as any).recurrenceDiscount}% OFF
                                                     </span>
                                                 )}
@@ -494,7 +504,7 @@ export default function CustomerManager() {
                             className="bg-[var(--color-text-primary)] text-white px-6 py-4 rounded-[var(--radius-3xl)] shadow-[var(--shadow-2xl)] border border-white/10 flex items-center justify-between gap-8 md:min-w-[480px] max-w-full backdrop-blur-xl"
                         >
                             <div className="flex items-center gap-4">
-                                <Badge variant="default" className="bg-white text-[var(--color-text-primary)] h-8 px-4 font-black">
+                                <Badge variant="default" className="bg-white text-[var(--color-text-primary)] h-8 px-4 font-bold">
                                     {selectedIds.length}
                                 </Badge>
                                 <span className="text-xs font-[var(--font-weight-black)] text-white/50 uppercase tracking-widest">

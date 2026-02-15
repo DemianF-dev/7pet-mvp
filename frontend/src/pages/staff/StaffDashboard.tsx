@@ -30,6 +30,8 @@ import { SpotlightCard } from '../../components/ui/SpotlightCard';
 import DashboardGreeting from '../../components/DashboardGreeting';
 import { GoalProgressCard } from '../../components/staff/GoalProgressCard';
 import { Card, Badge, IconButton, Button } from '../../components/ui';
+import { FinancialWidget } from '../../components/staff/FinancialWidget';
+import { LiveStatusBoard } from '../../components/staff/LiveStatusBoard';
 
 interface DashboardMetrics {
     todayAppointments: number;
@@ -219,44 +221,21 @@ export default function StaffDashboard() {
                             </div>
                         </section>
                     )}
+
                     {/* 💰 Financial Section (Admin/Management Only) */}
                     {isMaster && (
-                        <section className="space-y-4">
-                            <div className="flex items-center gap-2 ml-1">
-                                <DollarSign size={18} className="text-emerald-500" />
-                                <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Performance Financeira</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {[
-                                    { label: 'Faturamento Hoje', value: metrics?.revenue?.day || 0, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-                                    { label: 'Faturamento Semana', value: metrics?.revenue?.week || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10' },
-                                    { label: 'Faturamento Mês', value: metrics?.revenue?.month || 0, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' },
-                                ].map((fin, idx) => (
-                                    <SpotlightCard key={idx} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{fin.label}</p>
-                                                <h3 className={`text-2xl font-bold ${fin.color}`}>{formatCurrency(fin.value)}</h3>
-                                            </div>
-                                            <div className={`p-3 ${fin.bg} rounded-xl`}>
-                                                <DollarSign size={20} className={fin.color} />
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 flex items-center gap-2">
-                                            <div className="h-1 flex-1 bg-gray-50 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: '70%' }}
-                                                    className={`h-full ${fin.color.replace('text', 'bg')}`}
-                                                />
-                                            </div>
-                                            <span className="text-[10px] font-bold text-gray-400">Objetivo</span>
-                                        </div>
-                                    </SpotlightCard>
-                                ))}
-                            </div>
-                        </section>
+                        <FinancialWidget
+                            revenue={{
+                                day: metrics?.revenue?.day || 0,
+                                week: metrics?.revenue?.week || 0,
+                                month: metrics?.revenue?.month || 0
+                            }}
+                            loading={isLoading}
+                        />
                     )}
+
+                    {/* 🔴 Live Status Board */}
+                    <LiveStatusBoard />
 
                     {/* 🚀 Operational Section */}
                     <section className="space-y-4">

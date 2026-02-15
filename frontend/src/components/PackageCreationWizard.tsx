@@ -112,7 +112,7 @@ export default function PackageCreationWizard({ customerId, contractId, type, on
                             <Package size={20} />
                         </div>
                         <div>
-                            <h2 className="font-black text-heading uppercase tracking-tight">Gerar Pacote Mensal</h2>
+                            <h2 className="font-bold text-heading uppercase tracking-tight">Gerar Pacote Mensal</h2>
                             <p className="text-xs text-body-secondary font-medium">{type} • Passo {step} de 3</p>
                         </div>
                     </div>
@@ -248,7 +248,7 @@ export default function PackageCreationWizard({ customerId, contractId, type, on
                                     <span className="text-sm font-bold text-heading flex items-center gap-2">
                                         <DollarSign size={16} /> Total Estimado
                                     </span>
-                                    <span className="text-lg font-black text-accent tracking-tighter">
+                                    <span className="text-lg font-bold text-accent tracking-tighter">
                                         R$ {subtotal.toFixed(2)}
                                     </span>
                                 </div>

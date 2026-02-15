@@ -166,7 +166,7 @@ export default function MobileCalendarCompactView({
                             style={{ paddingBottom: 'var(--safe-area-bottom)' }}
                         >
                             <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
-                                <h3 className="text-lg font-black text-[var(--color-text-primary)] uppercase tracking-widest">
+                                <h3 className="text-lg font-bold text-[var(--color-text-primary)] uppercase tracking-widest">
                                     Filtros
                                 </h3>
                                 <button
@@ -179,7 +179,7 @@ export default function MobileCalendarCompactView({
 
                             <div className="p-6 space-y-6 overflow-y-auto">
                                 <div>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
                                         <Users size={14} />
                                         Equipe
                                     </label>
@@ -210,14 +210,14 @@ export default function MobileCalendarCompactView({
                                 </div>
 
                                 <div>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
                                         <Trash2 size={14} />
                                         Status
                                     </label>
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => onTabChange('active')}
-                                            className={`py-3 rounded-xl text-xs font-black uppercase ${tab === 'active'
+                                            className={`py-3 rounded-xl text-xs font-bold uppercase ${tab === 'active'
                                                 ? 'bg-[var(--color-accent-primary)] text-white shadow-lg shadow-[var(--color-accent-primary)]/20'
                                                 : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                                 }`}
@@ -226,7 +226,7 @@ export default function MobileCalendarCompactView({
                                         </button>
                                         <button
                                             onClick={() => onTabChange('trash')}
-                                            className={`py-3 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 ${tab === 'trash'
+                                            className={`py-3 rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-2 ${tab === 'trash'
                                                 ? 'bg-[var(--color-error)] text-white shadow-lg shadow-[var(--color-error)]/20'
                                                 : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                                 }`}
@@ -238,7 +238,7 @@ export default function MobileCalendarCompactView({
                                 </div>
 
                                 <div>
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-[0.2em] mb-3">
                                         <CheckSquare size={14} />
                                         Múltipla Seleção
                                     </label>
@@ -247,7 +247,7 @@ export default function MobileCalendarCompactView({
                                             onBulkModeToggle();
                                             setIsFilterOpen(false);
                                         }}
-                                        className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isBulkMode
+                                        className={`w-full py-4 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${isBulkMode
                                             ? 'bg-purple-600 text-white shadow-lg'
                                             : 'bg-[var(--color-fill-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
                                             }`}
@@ -260,7 +260,7 @@ export default function MobileCalendarCompactView({
                             <div className="p-6">
                                 <button
                                     onClick={() => setIsFilterOpen(false)}
-                                    className="w-full bg-[var(--color-accent-primary)] text-white py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-[var(--color-accent-primary)]/20"
+                                    className="w-full bg-[var(--color-accent-primary)] text-white py-4 rounded-xl font-bold text-sm uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-[var(--color-accent-primary)]/20"
                                 >
                                     Aplicar Filtros
                                 </button>
@@ -280,7 +280,7 @@ export default function MobileCalendarCompactView({
                         style={{ paddingBottom: 'calc(var(--safe-area-bottom) + var(--space-2))' }}
                     >
                         <div className="flex items-center gap-3">
-                            <span className="bg-[var(--color-accent-primary)] text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black">
+                            <span className="bg-[var(--color-accent-primary)] text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold">
                                 {selectedIds.length}
                             </span>
                             <span className="text-[var(--color-text-secondary)] text-xs font-bold">Selecionados</span>
@@ -289,7 +289,7 @@ export default function MobileCalendarCompactView({
                             {tab === 'trash' && onBulkRestore && (
                                 <button
                                     onClick={onBulkRestore}
-                                    className="px-5 py-2.5 bg-[var(--color-success)] rounded-xl text-white text-[10px] font-black uppercase tracking-wider"
+                                    className="px-5 py-2.5 bg-[var(--color-success)] rounded-xl text-white text-[10px] font-bold uppercase tracking-wider"
                                 >
                                     Restaurar
                                 </button>
@@ -297,7 +297,7 @@ export default function MobileCalendarCompactView({
                             {onBulkDelete && (
                                 <button
                                     onClick={onBulkDelete}
-                                    className="px-5 py-2.5 bg-[var(--color-error)] rounded-xl text-white text-[10px] font-black uppercase tracking-wider"
+                                    className="px-5 py-2.5 bg-[var(--color-error)] rounded-xl text-white text-[10px] font-bold uppercase tracking-wider"
                                 >
                                     {tab === 'trash' ? 'Excluir' : 'Lixeira'}
                                 </button>

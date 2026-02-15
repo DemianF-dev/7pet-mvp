@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { FormField } from './FormField';
+import { cn } from '@/lib/utils';
 
 /**
  * Input Component
@@ -139,52 +140,41 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
     disabled,
     id,
     rows = 4,
+    required,
     ...props
 }, ref) => {
     const inputId = id || `textarea-${Math.random().toString(36).substring(7)}`;
 
     return (
-        <div className={`${fullWidth ? 'w-full' : 'inline-block'}`}>
-            {label && (
-                <label
-                    htmlFor={inputId}
-                    className="block mb-1.5 text-[var(--font-size-footnote)] font-[var(--font-weight-medium)] text-[var(--color-text-secondary)]"
-                >
-                    {label}
-                </label>
-            )}
+        <FormField
+            label={label}
+            description={helperText}
+            error={error}
+            id={inputId}
+            required={required}
+            className={fullWidth ? 'w-full' : 'inline-block'}
+        >
             <textarea
                 ref={ref}
                 id={inputId}
                 rows={rows}
                 disabled={disabled}
-                className={`
-                    w-full
-                    px-4 py-3
-                    text-[var(--font-size-body)]
-                    bg-[var(--color-bg-surface)]
-                    text-[var(--color-text-primary)]
-                    placeholder:text-[var(--color-text-tertiary)]
-                    border border-[var(--color-border)]
-                    rounded-[var(--radius-lg)]
-                    transition-all duration-[var(--duration-fast)]
-                    focus:outline-none focus:border-[var(--color-accent-primary)] focus:ring-[3px] focus:ring-[var(--color-accent-primary)]/20
-                    disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--color-fill-quaternary)]
-                    resize-none
-                    ${error ? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/20' : ''}
-                    ${className}
-                `.replace(/\s+/g, ' ').trim()}
+                className={cn(
+                    "w-full px-4 py-3",
+                    "text-[var(--font-size-body)] leading-relaxed",
+                    "bg-[var(--color-bg-surface)] text-[var(--color-text-primary)]",
+                    "placeholder:text-[var(--color-text-quaternary)]",
+                    "border border-[var(--color-border)] rounded-[var(--radius-lg)]",
+                    "transition-all duration-[var(--duration-fast)]",
+                    "focus:outline-none focus:border-[var(--color-accent-primary)] focus:ring-4 focus:ring-[var(--color-accent-primary)]/10",
+                    "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--color-fill-quaternary)]",
+                    "resize-none",
+                    error && "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/10",
+                    className
+                )}
                 {...props}
             />
-            {(helperText || error) && (
-                <p
-                    className={`mt-1.5 text-[var(--font-size-caption1)] ${error ? 'text-[var(--color-error)]' : 'text-[var(--color-text-tertiary)]'
-                        }`}
-                >
-                    {error || helperText}
-                </p>
-            )}
-        </div>
+        </FormField>
     );
 });
 

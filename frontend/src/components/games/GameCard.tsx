@@ -54,7 +54,7 @@ export default function GameCard({ game, onClick }: GameCardProps) {
                     {game.difficulty && (
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-[var(--color-fill-secondary)] rounded-full border border-[var(--color-border)]">
                             <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest">Dificuldade</span>
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${game.difficulty === 'easy' ? 'text-green-500' : game.difficulty === 'medium' ? 'text-orange-500' : 'text-red-500'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${game.difficulty === 'easy' ? 'text-green-500' : game.difficulty === 'medium' ? 'text-orange-500' : 'text-red-500'}`}>
                                 {game.difficulty === 'easy' ? 'Fácil' : game.difficulty === 'medium' ? 'Médio' : 'Difícil'}
                             </span>
                         </div>
@@ -62,7 +62,7 @@ export default function GameCard({ game, onClick }: GameCardProps) {
                     {game.estimatedTime && (
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-[var(--color-fill-secondary)] rounded-full border border-[var(--color-border)]">
                             <span className="text-[10px]">⏱️</span>
-                            <span className="text-[10px] font-black text-[var(--color-text-secondary)] uppercase tracking-widest">
+                            <span className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">
                                 {game.estimatedTime}
                             </span>
                         </div>

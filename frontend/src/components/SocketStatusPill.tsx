@@ -72,7 +72,7 @@ const SocketStatusPill: React.FC = () => {
                         `}
                     >
                         {config.icon}
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-primary)] opacity-70">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] opacity-70">
                             Socket: {config.label}
                         </span>
                     </motion.button>
@@ -121,7 +121,7 @@ const SocketStatusPill: React.FC = () => {
                                     <div className="mt-1 flex justify-between text-[9px] opacity-60">
                                         <span>Tentativas: {attempts}</span>
                                         {isDisabled && (
-                                            <span className="text-destructive font-black">Circuit Breaker ATIVO</span>
+                                            <span className="text-destructive font-bold">Circuit Breaker ATIVO</span>
                                         )}
                                     </div>
                                 </div>

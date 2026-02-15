@@ -31,7 +31,7 @@ export default function AgendaLOG() {
 
     // State
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [view, setView] = useState<'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT'>('WEEK');
+    const [view, setView] = useState<'KANBAN' | 'DAY' | 'WEEK' | 'MONTH' | 'COMPACT'>('MONTH');
     const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState<AgendaFilters>({
         module: 'LOG',
@@ -45,28 +45,39 @@ export default function AgendaLOG() {
         { enabled: true }
     );
 
-    const weekStart = useMemo(() => {
+    const fetchRange = useMemo(() => {
         const start = new Date(selectedDate);
-        start.setDate(start.getDate() - start.getDay());
-        return start.toISOString().split('T')[0];
-    }, [selectedDate]);
-
-    const weekEnd = useMemo(() => {
         const end = new Date(selectedDate);
-        end.setDate(end.getDate() + (6 - end.getDay()));
-        return end.toISOString().split('T')[0];
-    }, [selectedDate]);
+
+        if (view === 'MONTH') {
+            // Fetch the whole month plus surrounding days for the grid
+            start.setDate(1);
+            start.setDate(start.getDate() - 7);
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0);
+            end.setDate(end.getDate() + 7);
+        } else {
+            // Fetch standard week
+            start.setDate(start.getDate() - start.getDay());
+            end.setDate(end.getDate() + (6 - end.getDay()));
+        }
+
+        return {
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
+        };
+    }, [selectedDate, view]);
 
     const agendaWeekQuery = useAgendaWeek(
-        weekStart,
-        weekEnd,
-        'LOG',
+        fetchRange.start,
+        fetchRange.end,
+        filters.module,
         { enabled: !isMobile }
     );
 
     const dashboardQuery = useAgendaDashboard(
         selectedDate.toISOString().split('T')[0],
-        { start: weekStart, end: weekEnd },
+        fetchRange,
         filters
     );
 
@@ -125,7 +136,7 @@ export default function AgendaLOG() {
         <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
             <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-black text-secondary flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-secondary flex items-center gap-2">
                         <CalendarIcon className="text-primary h-6 w-6" /> Agenda LOG
                     </h1>
                 </div>
@@ -138,7 +149,7 @@ export default function AgendaLOG() {
                     </button>
                     <button
                         onClick={() => openAppointmentModal({ preFill: { startAt: new Date().toISOString(), category: 'LOG' } })}
-                        className="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                     >
                         Novo Agendamento
                     </button>
@@ -197,14 +208,16 @@ export default function AgendaLOG() {
                 preFill={preFill}
             />
 
-            <AppointmentDetailsModal
-                isOpen={detailsModalOpen}
-                onClose={closeDetailsModal}
-                onSuccess={handleRefresh}
-                appointment={selectedAppointment}
-                onModify={(apt) => openAppointmentModal({ appointment: apt })}
-                onCopy={(apt) => openAppointmentModal({ appointment: apt, isCopy: true })}
-            />
+            {detailsModalOpen && selectedAppointment && (
+                <AppointmentDetailsModal
+                    isOpen={detailsModalOpen}
+                    onClose={closeDetailsModal}
+                    onSuccess={handleRefresh}
+                    appointment={selectedAppointment}
+                    onModify={(apt) => openAppointmentModal({ appointment: apt })}
+                    onCopy={(apt) => openAppointmentModal({ appointment: apt, isCopy: true })}
+                />
+            )}
         </div>
     );
 }

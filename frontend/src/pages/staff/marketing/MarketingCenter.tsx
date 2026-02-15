@@ -158,7 +158,7 @@ export default function MarketingCenter() {
                         <BackButton />
                         <div>
                             <Breadcrumbs />
-                            <h1 className="text-2xl font-black text-[var(--color-text-primary)]">Central de Notificações</h1>
+                            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Central de Notificações</h1>
                         </div>
                     </div>
                     <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-2xl text-blue-600 text-xs font-bold border border-blue-500/20">
@@ -233,7 +233,7 @@ export default function MarketingCenter() {
                                     <button
                                         onClick={() => setStep(2)}
                                         disabled={!title || !body}
-                                        className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black text-sm transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                                        className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
                                     >
                                         Próximo: Público <ChevronRight size={18} />
                                     </button>
@@ -399,7 +399,7 @@ export default function MarketingCenter() {
                                         (targetType === 'ROLES' && targetRoles.length === 0) ||
                                         (targetType === 'USERS' && selectedUserIds.length === 0)
                                     }
-                                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black text-sm transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
                                 >
                                     Próximo: Revisão <ChevronRight size={18} />
                                 </button>
@@ -429,7 +429,7 @@ export default function MarketingCenter() {
                                     <div className="p-4 bg-[var(--color-bg-primary)] rounded-2xl border border-[var(--color-border)] space-y-3">
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Público</span>
-                                            <span className="font-black text-blue-600">
+                                            <span className="font-bold text-blue-600">
                                                 {targetType === 'ALL' && 'Todo o Sistema'}
                                                 {targetType === 'CLIENTS' && 'Apenas Clientes'}
                                                 {targetType === 'ROLES' && `${targetRoles.length} Cargos selecionados`}
@@ -438,7 +438,7 @@ export default function MarketingCenter() {
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Prioridade</span>
-                                            <span className={`px-2 py-0.5 rounded-lg font-black text-[10px] ${priority === 'HIGH' ? 'bg-red-500/10 text-red-500' :
+                                            <span className={`px-2 py-0.5 rounded-lg font-bold text-[10px] ${priority === 'HIGH' ? 'bg-red-500/10 text-red-500' :
                                                 priority === 'MEDIUM' ? 'bg-orange-500/10 text-orange-500' :
                                                     'bg-blue-500/10 text-blue-500'
                                                 }`}>
@@ -458,7 +458,7 @@ export default function MarketingCenter() {
                                         <button
                                             onClick={handleSend}
                                             disabled={isSending}
-                                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-black shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+                                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-bold shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 transition-all disabled:opacity-50"
                                         >
                                             <Send size={20} />
                                             {isSending ? 'Processando envio...' : 'Confirmar e Enviar Agora'}
@@ -503,7 +503,7 @@ export default function MarketingCenter() {
                                                 <span className="text-[8px] text-slate-500 ml-auto font-medium">Agora</span>
                                             </div>
                                             <div className="space-y-0.5">
-                                                <p className="text-xs font-black text-slate-900 leading-tight">
+                                                <p className="text-xs font-bold text-slate-900 leading-tight">
                                                     {title || 'Seu título aqui...'}
                                                 </p>
                                                 <p className="text-[10px] text-slate-600 font-medium leading-snug line-clamp-3">

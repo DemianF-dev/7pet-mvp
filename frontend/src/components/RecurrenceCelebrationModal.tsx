@@ -74,7 +74,7 @@ export default function RecurrenceCelebrationModal({ isOpen, onClose, onConfirm 
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -20 }}
                                     >
-                                        <h2 className="text-2xl font-black text-secondary mb-2">Família Crescendo! 🐶</h2>
+                                        <h2 className="text-2xl font-bold text-secondary mb-2">Família Crescendo! 🐶</h2>
                                         <p className="text-gray-500 mb-8 font-medium">O cliente decidiu virar recorrente! Qual será a frequência de visitas desse anjo?</p>
 
                                         <div className="space-y-3">
@@ -89,7 +89,7 @@ export default function RecurrenceCelebrationModal({ isOpen, onClose, onConfirm 
                                                     className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all group ${selectedFreq === opt.value ? 'border-primary bg-primary/10' : 'border-gray-100 hover:border-pink-500 hover:bg-pink-50'}`}
                                                 >
                                                     <span className={`font-bold group-hover:text-pink-600 ${selectedFreq === opt.value ? 'text-primary' : 'text-gray-700'}`}>{opt.label}</span>
-                                                    <span className={`text-xs font-black px-3 py-1 rounded-lg transition-colors ${selectedFreq === opt.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-pink-200 group-hover:text-pink-700'}`}>
+                                                    <span className={`text-xs font-bold px-3 py-1 rounded-lg transition-colors ${selectedFreq === opt.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-pink-200 group-hover:text-pink-700'}`}>
                                                         {opt.discount}
                                                     </span>
                                                 </button>
@@ -107,7 +107,7 @@ export default function RecurrenceCelebrationModal({ isOpen, onClose, onConfirm 
                                         animate={{ opacity: 1, scale: 1 }}
                                         className="py-8"
                                     >
-                                        <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-4">
+                                        <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-4">
                                             PARABÉNS EQUIPE!
                                         </h2>
                                         <p className="text-lg text-gray-600 font-bold mb-6">

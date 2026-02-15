@@ -108,7 +108,7 @@ export default function LandingPage() {
                                             <div className="w-16 h-16 bg-[#25D366]/10 rounded-2xl flex items-center justify-center text-[#25D366] mx-auto mb-4">
                                                 <MessageCircle size={32} />
                                             </div>
-                                            <h3 className="text-2xl font-black text-secondary">Escolha o App</h3>
+                                            <h3 className="text-2xl font-bold text-secondary">Escolha o App</h3>
                                             <p className="text-gray-500 text-sm mt-2">Por qual WhatsApp você deseja enviar a mensagem?</p>
                                         </div>
 

@@ -8,6 +8,8 @@ import { ChevronLeft, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { gameService, UserStats, LeaderboardEntry } from '../../services/gameService';
+import Skeleton from '../../components/Skeleton';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 // Game catalog
 const GAMES: GameMetadata[] = [
@@ -58,6 +60,7 @@ export default function PausaPage() {
     const { user } = useAuthStore();
     const [stats, setStats] = useState<UserStats | null>(null);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENTE';
@@ -68,8 +71,11 @@ export default function PausaPage() {
         }
 
         // Fetch stats and leaderboard
-        gameService.getUserStats().then(setStats).catch(console.error);
-        gameService.getLeaderboard().then(setLeaderboard).catch(console.error);
+        setIsLoading(true);
+        Promise.all([
+            gameService.getUserStats().then(setStats).catch(console.error),
+            gameService.getLeaderboard().then(setLeaderboard).catch(console.error)
+        ]).finally(() => setIsLoading(false));
 
     }, [user, navigate]);
 
@@ -116,11 +122,23 @@ export default function PausaPage() {
                 </div>
 
                 {/* User Stats Card */}
-                {stats && (
+                {isLoading ? (
+                    <GlassSurface className="flex items-center gap-6 px-6 py-3 rounded-full border border-border-subtle bg-bg-surface/40 backdrop-blur-md">
+                        <div className="flex flex-col items-end gap-1">
+                            <Skeleton className="w-8 h-3 rounded" />
+                            <Skeleton className="w-12 h-6 rounded" />
+                        </div>
+                        <div className="w-px h-8 bg-border-subtle/50" />
+                        <div className="flex flex-col items-start gap-1">
+                            <Skeleton className="w-12 h-3 rounded" />
+                            <Skeleton className="w-16 h-6 rounded" />
+                        </div>
+                    </GlassSurface>
+                ) : stats && (
                     <GlassSurface className="flex items-center gap-6 px-6 py-3 rounded-full border border-border-subtle bg-bg-surface/40 backdrop-blur-md">
                         <div className="flex flex-col items-end">
                             <span className="text-xs uppercase font-bold text-text-tertiary tracking-wider">Nível</span>
-                            <span className="text-2xl font-black text-accent-primary">{stats.level}</span>
+                            <span className="text-2xl font-bold text-accent-primary">{stats.level}</span>
                         </div>
                         <div className="w-px h-8 bg-border-subtle/50" />
                         <div className="flex flex-col items-start">
@@ -163,7 +181,15 @@ export default function PausaPage() {
                         🏆 Top Jogadores
                     </h2>
                     <GlassSurface className="rounded-xl border border-border-subtle overflow-hidden bg-bg-surface/50">
-                        {leaderboard.length === 0 ? (
+                        {isLoading ? (
+                            <ListSkeleton
+                                rowCount={5}
+                                hasHeader={false}
+                                hasAvatar={true}
+                                hasActions={false}
+                                className="bg-transparent border-none shadow-none"
+                            />
+                        ) : leaderboard.length === 0 ? (
                             <div className="p-8 text-center text-text-tertiary text-sm">
                                 Ninguém jogou ainda.<br />Seja o primeiro!
                             </div>

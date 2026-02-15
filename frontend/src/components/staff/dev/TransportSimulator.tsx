@@ -175,7 +175,7 @@ const TransportSimulator: React.FC = () => {
                                 <Calculator size={28} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                <h3 className="text-2xl font-bold text-white tracking-tight">
                                     Simulador de Transporte
                                 </h3>
                                 <p className="text-purple-300/60 text-sm font-mono">

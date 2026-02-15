@@ -46,7 +46,7 @@ export const DangerousActionModal: React.FC<DangerousActionModalProps> = ({
                             <AlertTriangle size={32} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">{title}</h3>
+                            <h3 className="text-2xl font-bold text-white uppercase tracking-tight">{title}</h3>
                             <p className="text-[10px] text-red-500/60 font-mono uppercase tracking-[0.2em] font-bold mt-1">
                                 Critical Confirmation Required
                             </p>
@@ -59,7 +59,7 @@ export const DangerousActionModal: React.FC<DangerousActionModalProps> = ({
 
                     <div className="space-y-8">
                         <div className="bg-black/40 p-6 rounded-[28px] border border-white/5 shadow-inner">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-4">
                                 Type <span className="text-red-500">CONFIRMAR</span> to proceed
                             </label>
                             <input
@@ -91,7 +91,7 @@ export const DangerousActionModal: React.FC<DangerousActionModalProps> = ({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 py-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black uppercase tracking-widest text-[10px] rounded-[20px] border border-white/5 transition-all"
+                                className="flex-1 py-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase tracking-widest text-[10px] rounded-[20px] border border-white/5 transition-all"
                             >
                                 Abandon Action
                             </button>
@@ -104,7 +104,7 @@ export const DangerousActionModal: React.FC<DangerousActionModalProps> = ({
                                     }
                                 }}
                                 disabled={!isValid}
-                                className={`flex-1 py-5 rounded-[20px] font-black uppercase tracking-widest text-[10px] transition-all ${isValid
+                                className={`flex-1 py-5 rounded-[20px] font-bold uppercase tracking-widest text-[10px] transition-all ${isValid
                                     ? 'bg-red-600 text-white shadow-xl shadow-red-600/30 hover:scale-[1.02] active:scale-95'
                                     : 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-white/5'
                                     }`}

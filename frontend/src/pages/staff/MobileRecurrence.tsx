@@ -52,7 +52,7 @@ export const MobileRecurrence = ({
                 <div className="flex bg-gray-100 dark:bg-zinc-800 p-1.5 rounded-[20px]">
                     <button
                         onClick={() => onTabChange('SPA')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'SPA'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'SPA'
                             ? 'bg-white dark:bg-zinc-700 text-blue-600 shadow-sm'
                             : 'text-gray-400'
                             }`}
@@ -61,7 +61,7 @@ export const MobileRecurrence = ({
                     </button>
                     <button
                         onClick={() => onTabChange('TRANSPORTE')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'TRANSPORTE'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[14px] text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'TRANSPORTE'
                             ? 'bg-white dark:bg-zinc-700 text-orange-600 shadow-sm'
                             : 'text-gray-400'
                             }`}
@@ -87,7 +87,7 @@ export const MobileRecurrence = ({
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Sincronizando contratos...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando contratos...</p>
                         </div>
                     ) : contracts.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center px-10">
@@ -104,8 +104,8 @@ export const MobileRecurrence = ({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-0.5">
-                                            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">{contract.customer?.name}</h3>
-                                            <Badge variant={contract.status === 'ATIVO' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0 font-black leading-none h-auto">
+                                            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase truncate">{contract.customer?.name}</h3>
+                                            <Badge variant={contract.status === 'ATIVO' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0 font-bold leading-none h-auto">
                                                 {contract.status}
                                             </Badge>
                                         </div>
@@ -114,13 +114,13 @@ export const MobileRecurrence = ({
                                 </div>
 
                                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800/50 rounded-xl mb-4">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Frequência</span>
-                                    <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">{contract.frequency}</span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Frequência</span>
+                                    <span className="text-[10px] font-bold text-gray-900 dark:text-white uppercase tracking-widest">{contract.frequency}</span>
                                 </div>
 
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onOpenWizard(contract.customerId, contract.id); }}
-                                    className="w-full h-12 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+                                    className="w-full h-12 bg-blue-600 text-white rounded-xl font-bold uppercase text-xs tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
                                 >
                                     Gerar Novo Pacote <ChevronRight size={16} />
                                 </button>

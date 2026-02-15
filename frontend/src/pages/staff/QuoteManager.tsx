@@ -20,10 +20,11 @@ import {
     DollarSign,
     Settings,
     Plus,
+    RefreshCw,
 } from 'lucide-react';
 import AppointmentDetailsModal from '../../components/staff/AppointmentDetailsModal';
 import CustomerDetailsModal from '../../components/staff/CustomerDetailsModal';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import api from '../../services/api';
 import { getQuoteStatusColor } from '../../utils/statusColors';
 import CascadeDeleteModal from '../../components/modals/CascadeDeleteModal';
@@ -37,6 +38,7 @@ import { Stack } from '../../components/layout/LayoutHelpers';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileQuotes } from './MobileQuotes';
 import { useRegisterMobileAction } from '../../hooks/useMobileActions';
+import QuoteTypeSelectorModal from '../../components/modals/QuoteTypeSelectorModal';
 
 interface QuoteItem {
     id: string;
@@ -57,6 +59,7 @@ interface Quote {
     items: QuoteItem[];
     petId?: string;
     pet?: { name: string };
+    isRecurring?: boolean;
     desiredAt?: string;
     scheduledAt?: string;
     transportAt?: string;
@@ -93,8 +96,12 @@ export default function QuoteManager() {
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [valueRange, setValueRange] = useState({ min: 0, max: 0 });
 
-    // Register Mobile FAB Action
-    useRegisterMobileAction('new_quote', () => setIsManualQuoteModalOpen(true));
+    // Type Selector State
+    const [isTypeSelectorOpen, setIsTypeSelectorOpen] = useState(false);
+    const [initialQuoteType, setInitialQuoteType] = useState<'SPA' | 'TRANSPORTE' | 'SPA_TRANSPORTE'>('SPA');
+
+    // Register Mobile FAB Action - Opens Type Selector first
+    useRegisterMobileAction('new_quote', () => setIsTypeSelectorOpen(true));
 
     // React Query Hooks
     const { data: quotes = [], isLoading } = useQuotes(view);
@@ -134,7 +141,11 @@ export default function QuoteManager() {
     const handleBulkDelete = async (ids: string[]) => {
         if (!window.confirm(`Deseja excluir ${ids.length} orçamentos?`)) return;
         bulkDeleteMutation.mutate(ids, {
-            onSuccess: () => setSelectedIds([])
+            onSuccess: () => setSelectedIds([]),
+            onError: () => {
+                // Hook useBulkDeleteQuotes already shows a toast. 
+                // We could add more logic here if we wanted to highlight specific rows.
+            }
         });
     };
 
@@ -158,7 +169,18 @@ export default function QuoteManager() {
 
     const handleDelete = (id: string) => {
         if (!window.confirm('Mover orçamento para a lixeira?')) return;
-        deleteMutation.mutate(id);
+
+        deleteMutation.mutate(id, {
+            onError: (error: any) => {
+                // Se o erro for 409 (Conflict), significa que tem dependências
+                // O hook useDeleteQuote já terá mostrado o toast com o erro.
+                if (error.response?.status === 409) {
+                    if (window.confirm('Deseja abrir as opções de exclusão em cascata?')) {
+                        setSelectedQuoteForDelete(id);
+                    }
+                }
+            }
+        });
     };
 
     const handlePermanentDelete = (id: string) => {
@@ -286,7 +308,7 @@ export default function QuoteManager() {
             sortable: true,
             className: 'w-24',
             render: (quote) => (
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     OC-{String((quote.seqId || 0) + 1000).padStart(4, '0')}
                 </span>
             )
@@ -299,7 +321,7 @@ export default function QuoteManager() {
                 <div className="flex flex-col">
                     <button
                         onClick={(e) => { e.stopPropagation(); setViewCustomerData(quote.customerId); }}
-                        className="font-black text-secondary uppercase tracking-tight text-sm hover:text-primary transition-colors text-left truncate"
+                        className="font-bold text-secondary uppercase tracking-tight text-sm hover:text-primary transition-colors text-left truncate"
                     >
                         {quote.customer?.name || 'Cliente'}
                     </button>
@@ -319,10 +341,10 @@ export default function QuoteManager() {
             sortable: true,
             render: (quote) => (
                 <div className="flex flex-col items-center">
-                    <span className="text-[11px] font-black text-secondary uppercase tracking-widest">
+                    <span className="text-[11px] font-bold text-secondary uppercase tracking-widest">
                         {quote.desiredAt ? new Date(quote.desiredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'Sem data'}
                     </span>
-                    <Badge variant="neutral" size="sm" className="mt-1 font-black text-[9px] uppercase">
+                    <Badge variant="neutral" size="sm" className="mt-1 font-bold text-[9px] uppercase">
                         {quote.type?.replace('_', ' ') || 'SPA'}
                     </Badge>
                 </div>
@@ -334,12 +356,17 @@ export default function QuoteManager() {
             sortable: true,
             className: 'text-center',
             render: (quote) => (
-                <Badge
-                    variant="neutral"
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getQuoteStatusColor(quote.status)}`}
-                >
-                    {quote.status}
-                </Badge>
+                <div className="flex flex-col items-center gap-1">
+                    <Badge
+                        variant="neutral"
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest ${getQuoteStatusColor(quote.status)}`}
+                    >
+                        {quote.status}
+                    </Badge>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                        {quote.isRecurring ? 'RECORRENTE' : 'AVULSO'}
+                    </span>
+                </div>
             )
         },
         {
@@ -348,7 +375,7 @@ export default function QuoteManager() {
             sortable: true,
             className: 'text-right',
             render: (quote) => (
-                <span className="font-black text-secondary text-base">
+                <span className="font-bold text-secondary text-base">
                     R$ {(quote.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
             )
@@ -360,6 +387,15 @@ export default function QuoteManager() {
             render: (quote) => (
                 <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
                     <IconButton icon={Edit} onClick={() => navigate(`/staff/quotes/${quote.id}`)} variant="ghost" size="sm" aria-label="Editar Orçamento" />
+                    <IconButton icon={Trash2} onClick={() => handleDelete(quote.id)} variant="ghost" size="sm" aria-label="Excluir Orçamento" />
+                    <IconButton
+                        icon={Archive}
+                        onClick={() => handleDuplicate(quote.id)}
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Duplicar Orçamento"
+                        title="Duplicar"
+                    />
                 </div>
             )
         }
@@ -395,7 +431,7 @@ export default function QuoteManager() {
                     view={view}
                     onViewChange={setView}
                     onNewQuote={() => setIsManualQuoteModalOpen(true)}
-                    onOpenDetails={(id) => navigate(`/staff/quotes/edit/${id}`)}
+                    onOpenDetails={(id) => navigate(`/staff/quotes/${id}`)}
                     onBulkDelete={handleBulkDelete}
                     onBulkRestore={handleBulkRestore}
                     onBatchBill={handleBatchBill}
@@ -414,7 +450,7 @@ export default function QuoteManager() {
                             <div className="flex flex-col gap-1">
                                 <Breadcrumbs />
                                 <div className="flex items-center gap-3">
-                                    <h1 className="text-3xl font-black text-secondary tracking-tight">Orçamentos</h1>
+                                    <h1 className="text-3xl font-bold text-secondary tracking-tight">Orçamentos</h1>
                                     <Badge variant="neutral" className="h-6 px-2 font-bold opacity-60">
                                         {filteredQuotes.length} REF
                                     </Badge>
@@ -422,10 +458,17 @@ export default function QuoteManager() {
                             </div>
 
                             <div className="flex items-center gap-2">
+                                <IconButton
+                                    icon={RefreshCw}
+                                    onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                                    variant="secondary"
+                                    aria-label="Atualizar Lista"
+                                    title="Atualizar"
+                                />
                                 <IconButton icon={DollarSign} onClick={handleBatchBill} variant="secondary" className="bg-orange-500/10 text-orange-600" aria-label="Faturamento em Lote" />
                                 <IconButton icon={Settings} onClick={() => navigate('/staff/transport-config')} variant="secondary" aria-label="Configurações de Transporte" />
                                 <Button
-                                    onClick={() => setIsManualQuoteModalOpen(true)}
+                                    onClick={() => setIsTypeSelectorOpen(true)}
                                     variant="primary"
                                     icon={Plus}
                                     className="shadow-xl shadow-primary/20 h-12"
@@ -449,7 +492,7 @@ export default function QuoteManager() {
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="bg-transparent border-none py-1 px-4 text-[10px] font-black uppercase tracking-wider text-gray-500 focus:ring-0 appearance-none cursor-pointer"
+                                        className="bg-transparent border-none py-1 px-4 text-[10px] font-bold uppercase tracking-wider text-gray-500 focus:ring-0 appearance-none cursor-pointer"
                                     >
                                         <option value="ALL">TODOS</option>
                                         {statuses.map(s => <option key={s} value={s}>{s}</option>)}
@@ -461,13 +504,13 @@ export default function QuoteManager() {
                             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-end md:self-auto">
                                 <button
                                     onClick={() => setView('active')}
-                                    className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${view === 'active' ? 'bg-white text-secondary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${view === 'active' ? 'bg-white text-secondary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Ativos
                                 </button>
                                 <button
                                     onClick={() => setView('trash')}
-                                    className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${view === 'trash' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${view === 'trash' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     <Trash2 size={12} /> Lixeira
                                 </button>
@@ -480,17 +523,55 @@ export default function QuoteManager() {
                         isEmpty={filteredQuotes.length === 0}
                         emptyState={<EmptyState title="Nenhum orçamento encontrado" description="Tente outros termos de busca." icon={Archive} />}
                     >
-                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative">
                             <ResponsiveTable
                                 columns={columns}
                                 data={sortedQuotes}
-                                onRowClick={(quote) => navigate(`/staff/quotes/edit/${quote.id}`)}
+                                onRowClick={(quote) => navigate(`/staff/quotes/${quote.id}`)}
                                 selectable={true}
                                 selectedIds={selectedIds}
                                 onSelectRow={toggleSelect}
                                 onSelectAll={handleSelectAll}
                                 keyExtractor={(quote) => quote.id}
                             />
+
+                            {/* Bulk Action Bar */}
+                            <AnimatePresence>
+                                {selectedIds.length > 0 && (
+                                    <motion.div
+                                        initial={{ y: 50, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        exit={{ y: 50, opacity: 0 }}
+                                        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-secondary text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-6 min-w-[600px]"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="bg-primary text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                                                {selectedIds.length}
+                                            </span>
+                                            <p className="text-sm font-bold">Orçamentos Selecionados</p>
+                                        </div>
+                                        <div className="h-6 w-px bg-white/10"></div>
+                                        <button
+                                            onClick={() => handleBulkDuplicate(selectedIds)}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2"
+                                        >
+                                            <Archive size={16} /> DUPLICAR
+                                        </button>
+                                        <button
+                                            onClick={() => handleBulkDelete(selectedIds)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2"
+                                        >
+                                            <Trash2 size={16} /> EXCLUIR
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedIds([])}
+                                            className="text-white/50 hover:text-white text-xs font-bold"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </QueryState>
                 </Stack>
@@ -514,10 +595,21 @@ export default function QuoteManager() {
                 )}
             </AnimatePresence>
 
+            <QuoteTypeSelectorModal
+                isOpen={isTypeSelectorOpen}
+                onClose={() => setIsTypeSelectorOpen(false)}
+                onSelect={(type) => {
+                    setInitialQuoteType(type);
+                    setIsTypeSelectorOpen(false);
+                    setIsManualQuoteModalOpen(true);
+                }}
+            />
+
             <ManualQuoteModal
                 isOpen={isManualQuoteModalOpen}
                 onClose={() => setIsManualQuoteModalOpen(false)}
                 onSuccess={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}
+                initialType={initialQuoteType}
             />
 
             <CascadeDeleteModal

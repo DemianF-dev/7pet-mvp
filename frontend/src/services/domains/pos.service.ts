@@ -71,4 +71,9 @@ export class POSService {
         const response = await this.api.post(`/pos/orders/${id}/cancel`, { reason });
         return response.data;
     }
+
+    async listRecentOrders(): Promise<any[]> {
+        const response = await this.api.get('/pos/orders');
+        return response.data;
+    }
 }

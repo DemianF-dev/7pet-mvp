@@ -187,16 +187,48 @@ const TransportOnlyEditor: React.FC<TransportOnlyEditorProps> = ({ quote, onUpda
         // Save first ensuring backend is synced
         await handleSave(true);
 
-        if (isRecurring) {
-            setShowWizard(true);
-        } else {
-            if (window.confirm('Confirma o agendamento desta viagem?')) {
-                onSchedule(); // Call generic schedule for single trip
-            }
+        // Always show wizard to allow driver selection and time confirmation
+        setShowWizard(true);
+    };
+
+    const handleUndoQuote = async () => {
+        if (!window.confirm('Deseja desfazer este orçamento? O status voltará para CALCULADO.')) return;
+
+        setIsLoading(true);
+        try {
+            await api.patch(`/quotes/${quote.id}`, {
+                status: 'CALCULADO'
+            });
+            toast.success('Orçamento revertido para CALCULADO');
+            onUpdate();
+        } catch (error: any) {
+            console.error('Erro ao desfazer orçamento:', error);
+            toast.error('Erro ao desfazer orçamento');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancelQuote = async () => {
+        if (!window.confirm('Tem certeza que deseja CANCELAR este orçamento?')) return;
+
+        setIsLoading(true);
+        try {
+            await api.patch(`/quotes/${quote.id}`, {
+                status: 'REJEITADO'
+            });
+            toast.success('Orçamento cancelado (REJEITADO)');
+            onUpdate();
+        } catch (error: any) {
+            console.error('Erro ao cancelar orçamento:', error);
+            toast.error('Erro ao cancelar orçamento');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleUndoSchedule = async () => {
+
         if (!undoReason.trim()) {
             toast.error('Informe uma justificativa para desfazer o agendamento.');
             return;
@@ -211,7 +243,7 @@ const TransportOnlyEditor: React.FC<TransportOnlyEditorProps> = ({ quote, onUpda
             toast.success('Agendamentos removidos e status revertido para APROVADO');
             setIsUndoModalOpen(false);
             setUndoReason('');
-            
+
             // Wait a moment for DB consistency before refreshing
             setTimeout(() => {
                 onUpdate();
@@ -236,22 +268,41 @@ const TransportOnlyEditor: React.FC<TransportOnlyEditorProps> = ({ quote, onUpda
                     <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie rotas, motoristas e agendamentos de transporte.</p>
                 </div>
                 {!readOnly && (
-                    <div className="ml-auto flex gap-3">
+                    <div className="ml-auto flex flex-wrap gap-2">
                         {quote.status === 'AGENDADO' && (
                             <button
                                 onClick={() => setIsUndoModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-200 transition-all text-xs"
+                                className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-600 font-bold rounded-xl hover:bg-orange-200 transition-all text-[10px] uppercase tracking-wider"
                             >
                                 <RefreshCcw size={14} /> Desfazer Agendamentos
                             </button>
                         )}
-                        <button
-                            onClick={() => handleSave()}
-                            disabled={isLoading}
-                            className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95 disabled:opacity-50 text-xs"
-                        >
-                            <Save size={16} /> Salvar Alterações
-                        </button>
+                        {(quote.status === 'APROVADO' || quote.status === 'AGENDADO' || quote.status === 'ENVIADO') && (
+                            <button
+                                onClick={handleUndoQuote}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all text-[10px] uppercase tracking-wider"
+                            >
+                                <RefreshCcw size={14} /> Desfazer Orçamento
+                            </button>
+                        )}
+                        {(quote.status !== 'ENCERRADO' && quote.status !== 'REJEITADO') && (
+                            <button
+                                onClick={handleCancelQuote}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 bg-opacity-10 dark:bg-opacity-20 font-bold rounded-xl hover:bg-opacity-20 transition-all text-[10px] uppercase tracking-wider"
+                            >
+                                <X size={14} /> Cancelar
+                            </button>
+                        )}
+
+                        {quote.status !== 'ENCERRADO' && (
+                            <button
+                                onClick={() => handleSave()}
+                                disabled={isLoading}
+                                className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-widest"
+                            >
+                                <Save size={16} /> {quote.status === 'AGENDADO' ? 'Alterar' : 'Salvar Alterações'}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -667,14 +718,16 @@ const TransportOnlyEditor: React.FC<TransportOnlyEditorProps> = ({ quote, onUpda
                         <Save size={18} />
                         Salvar Observações
                     </button>
-                    <button
-                        onClick={handleScheduleClick}
-                        disabled={isLoading || !calculation}
-                        className="flex items-center gap-2 px-8 py-3 bg-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-500/20 hover:bg-green-600 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                    >
-                        <Calendar size={18} />
-                        Agendar {isRecurring ? 'Recorrência' : 'Viagem'}
-                    </button>
+                    {quote.status !== 'AGENDADO' && quote.status !== 'ENCERRADO' && (
+                        <button
+                            onClick={handleScheduleClick}
+                            disabled={isLoading || !calculation}
+                            className="flex items-center gap-2 px-8 py-3 bg-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-500/20 hover:bg-green-600 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            <Calendar size={18} />
+                            Agendar {isRecurring ? 'Recorrência' : 'Viagem'}
+                        </button>
+                    )}
                 </div>
             )}
 

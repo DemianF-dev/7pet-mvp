@@ -31,7 +31,36 @@ router.get('/', async (req: Request, res: Response) => {
                 include: { items: true }
             },
             appointment: {
-                include: { pet: true, services: true }
+                include: {
+                    pet: true,
+                    services: true,
+                    posOrder: {
+                        select: {
+                            id: true,
+                            seqId: true,
+                            status: true,
+                            finalAmount: true
+                        }
+                    }
+                }
+            },
+            lines: {
+                include: {
+                    appointment: {
+                        include: {
+                            pet: true,
+                            services: true,
+                            posOrder: {
+                                select: {
+                                    id: true,
+                                    seqId: true,
+                                    status: true,
+                                    finalAmount: true
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         orderBy: { createdAt: 'desc' }

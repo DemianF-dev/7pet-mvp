@@ -125,21 +125,26 @@ export default function WebMonthGrid({
                                             key={appt.id}
                                             onClick={(e) => { e.stopPropagation(); onAppointmentClick(appt); }}
                                             className={`
-                                                px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1.5 cursor-pointer truncate
-                                                hover:brightness-95 hover:scale-[1.01] transition-all relative group/event
+                                                px-2 py-1 rounded-lg text-[11px] font-[var(--font-weight-black)] border shadow-sm flex items-center gap-2 cursor-pointer truncate
+                                                hover:brightness-95 hover:scale-[1.02] transition-all relative group/event uppercase tracking-tight
                                                 ${statusClass}
                                             `}
                                             title={`${time} - ${appt.pet.name} (${appt.customer.name}) - ${appt.status}`}
-                                            style={appt.performer?.color ? { borderLeft: `3px solid ${appt.performer.color}` } : { borderLeft: '3px solid transparent' }}
+                                            style={appt.performer?.color ? { borderLeft: `4px solid ${appt.performer.color}` } : { borderLeft: '4px solid transparent' }}
                                         >
-                                            <span className="opacity-70 tabular-nums shrink-0">{time}</span>
+                                            <span className="opacity-60 tabular-nums shrink-0 font-bold">{time}</span>
                                             <div
-                                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                                className="w-2 h-2 rounded-full shrink-0 shadow-sm"
                                                 style={{ backgroundColor: appt.performer?.color || (appt.pet.species?.toUpperCase().includes('GATO') ? '#F472B6' : '#60A5FA') }}
                                             ></div>
-                                            <span className="font-bold truncate">
-                                                {appt.customer?.type === 'RECORRENTE' ? '(R)' : '(A)'} {appt.customer.name.split(' ')[0]} - {appt.pet.name}
-                                            </span>
+                                            <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                                                <span className="truncate">
+                                                    {appt.pet.name}
+                                                </span>
+                                                <span className="text-[9px] font-bold opacity-40 shrink-0">
+                                                    R${((appt.services || (appt.service ? [appt.service] : [])).reduce((acc: number, s: any) => acc + Number(s.basePrice || 0), 0)).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                                                </span>
+                                            </div>
                                         </div>
                                     );
                                 })}

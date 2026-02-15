@@ -1,5 +1,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { Haptics } from '../../utils/haptics';
+import { cn } from '../../lib/utils';
 
 /**
  * Button Component
@@ -99,6 +101,14 @@ export function Button({
                 ${className}
             `.replace(/\s+/g, ' ').trim()}
             disabled={disabled || loading}
+            onClick={(e) => {
+                if (variant === 'destructive') {
+                    Haptics.heavy();
+                } else {
+                    Haptics.light();
+                }
+                props.onClick?.(e);
+            }}
             {...props}
         >
             {loading ? (

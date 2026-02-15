@@ -15,6 +15,7 @@ import { MasterGate } from '../../components/security/MasterGate';
 import { DevCockpitPanel } from '../../components/staff/dev/DevCockpitPanel';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileStaffProfile } from './hr/MobileStaffProfile';
+import { FinancialTab } from '../../components/staff/profile/financial/FinancialTab';
 
 export default function StaffProfile() {
     const { isMobile } = useIsMobile();
@@ -43,6 +44,15 @@ export default function StaffProfile() {
         password: '',
         confirmPassword: ''
     });
+
+    const [activeTab, setActiveTab] = useState('personal');
+    const [fullProfile, setFullProfile] = useState<any>(null);
+
+    React.useEffect(() => {
+        api.get('/staff/me/profile')
+            .then(res => setFullProfile(res.data))
+            .catch(err => console.error('Error loading full profile', err));
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -124,6 +134,44 @@ export default function StaffProfile() {
                     </motion.div>
                 </div>
 
+            </div>
+
+            {/* Tabs Navigation */}
+            <div className="flex gap-4 mb-8 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('personal')}
+                    className={`pb-3 px-4 text-sm font-bold transition-colors border-b-2 ${activeTab === 'personal'
+                        ? 'border-indigo-600 text-indigo-600'
+                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                        }`}
+                >
+                    Dados Pessoais
+                </button>
+                <button
+                    onClick={() => setActiveTab('financial')}
+                    className={`pb-3 px-4 text-sm font-bold transition-colors border-b-2 ${activeTab === 'financial'
+                        ? 'border-emerald-600 text-emerald-600'
+                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                        }`}
+                >
+                    Financeiro & Contrato
+                </button>
+            </div>
+
+            {activeTab === 'financial' ? (
+                fullProfile ? (
+                    <FinancialTab
+                        staff={fullProfile}
+                        isManager={false} // Employee view is read-only usually, or limited
+                        onUpdate={() => {
+                            // Refresh profile if needed
+                            api.get('/staff/me/profile').then(res => setFullProfile(res.data));
+                        }}
+                    />
+                ) : (
+                    <div className="p-8 text-center text-slate-400">Carregando informações financeiras...</div>
+                )
+            ) : (
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Information Sections */}
                     <div className="lg:col-span-2 space-y-8">
@@ -445,7 +493,7 @@ export default function StaffProfile() {
                                                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Windows Hello / FaceID / Digital</div>
                                             </div>
                                         </div>
-                                        <span className="px-2 py-1 bg-slate-200 text-slate-500 rounded-md text-[8px] font-black uppercase">Não Ativado</span>
+                                        <span className="px-2 py-1 bg-slate-200 text-slate-500 rounded-md text-[8px] font-bold uppercase">Não Ativado</span>
                                     </div>
 
                                     <button
@@ -526,16 +574,20 @@ export default function StaffProfile() {
                         </div>
                     </div>
 
-                </form>
+                </div>
 
-                {/* Developer Settings (Restricted) - Moved OUT of the form and grid to use full width */}
-                <MasterGate>
-                    <div className="mt-12 w-full">
-                        <DevCockpitPanel />
-                    </div>
-                </MasterGate>
-            </div>
-        </main>
+                </form>
+    )
+}
+
+{/* Developer Settings (Restricted) - Moved OUT of the form and grid to use full width */ }
+<MasterGate>
+    <div className="mt-12 w-full">
+        <DevCockpitPanel />
+    </div>
+</MasterGate>
+            </div >
+        </main >
     );
 
 };

@@ -174,11 +174,11 @@ export async function adminAdjustHourBank(req: Request, res: Response) {
 
 export async function processHourBankInPeriod(req: Request, res: Response) {
     try {
-        const { staffId, payPeriodId, action, bonusMultiplier } = req.body;
+        const { staffId, staffPayPeriodId, action, bonusMultiplier } = req.body;
         const adminUserId = (req as any).user.id;
 
-        if (!staffId || !payPeriodId || !action) {
-            return res.status(400).json({ error: 'staffId, payPeriodId e action são obrigatórios' });
+        if (!staffId || !staffPayPeriodId || !action) {
+            return res.status(400).json({ error: 'staffId, staffPayPeriodId e action são obrigatórios' });
         }
 
         if (!['pay', 'discount', 'bonus', 'accumulate'].includes(action)) {
@@ -187,7 +187,7 @@ export async function processHourBankInPeriod(req: Request, res: Response) {
 
         const result = await timeTrackingService.processHourBankInPeriod(
             staffId,
-            payPeriodId,
+            staffPayPeriodId,
             action,
             adminUserId,
             bonusMultiplier

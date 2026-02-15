@@ -252,8 +252,8 @@ export default function StrategyManager() {
                                         </div>
 
                                         <div className="p-6 pt-2 flex gap-3">
-                                            <Button type="button" onClick={() => setIsModalOpen(false)} variant="outline" className="flex-1 font-black text-[10px] h-12">CANCELAR</Button>
-                                            <Button type="submit" variant="primary" className="flex-1 font-black text-[10px] h-12 uppercase tracking-widest">{editingId ? 'SALVAR' : 'CRIAR'}</Button>
+                                            <Button type="button" onClick={() => setIsModalOpen(false)} variant="outline" className="flex-1 font-bold text-[10px] h-12">CANCELAR</Button>
+                                            <Button type="submit" variant="primary" className="flex-1 font-bold text-[10px] h-12 uppercase tracking-widest">{editingId ? 'SALVAR' : 'CRIAR'}</Button>
                                         </div>
                                     </form>
                                 </Card>
@@ -462,7 +462,7 @@ export default function StrategyManager() {
                                         </div>
 
                                         <div className="space-y-4 pt-4 border-t border-[var(--color-border-subtle)]">
-                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-tertiary)]">Responsabilidade</h4>
+                                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-tertiary)]">Responsabilidade</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <Select
                                                     label="Por Departamento"
@@ -477,7 +477,7 @@ export default function StrategyManager() {
                                                     ]}
                                                 />
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-tertiary)] ml-1">Por Colaborador</label>
+                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] ml-1">Por Colaborador</label>
                                                     <div className="h-32 overflow-y-auto p-3 border border-[var(--color-border-subtle)] rounded-[var(--radius-xl)] bg-[var(--color-fill-secondary)] custom-scrollbar">
                                                         {staffList.map(staff => (
                                                             <label key={staff.id} className="flex items-center gap-3 p-2 hover:bg-[var(--color-bg-surface)] rounded-lg cursor-pointer transition-colors group">
@@ -514,7 +514,7 @@ export default function StrategyManager() {
                                         <Button
                                             type="submit"
                                             variant="primary"
-                                            className="flex-1 font-black tracking-widest"
+                                            className="flex-1 font-bold tracking-widest"
                                         >
                                             {editingId ? 'SALVAR ALTERAÇÕES' : 'CRIAR META'}
                                         </Button>

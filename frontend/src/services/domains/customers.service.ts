@@ -15,6 +15,8 @@ export interface Customer {
         seqId: number;
         staffId?: number;
         email: string;
+        role?: string;
+        staffProfile?: { id: string };
     };
     _count: {
         appointments: number;

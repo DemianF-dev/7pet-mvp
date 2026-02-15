@@ -9,7 +9,8 @@ import {
     CheckCircle,
     Clock,
     XCircle,
-    X
+    X,
+    RefreshCw
 } from 'lucide-react';
 import api from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -321,9 +322,16 @@ export default function FinancialReports() {
                                 </div>
                                 <button
                                     onClick={fetchReports}
-                                    className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary/20 transition-all"
+                                    className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary/20 transition-all flex items-center justify-center"
                                 >
                                     <Filter size={18} />
+                                </button>
+                                <button
+                                    onClick={fetchReports}
+                                    className="p-3 bg-white border border-gray-100 rounded-xl text-secondary hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center"
+                                    title="Atualizar Relatórios"
+                                >
+                                    <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
                                 </button>
                             </div>
 
@@ -453,6 +461,6 @@ export default function FinancialReports() {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }

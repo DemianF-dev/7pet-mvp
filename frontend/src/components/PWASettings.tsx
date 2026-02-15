@@ -340,7 +340,7 @@ const PWASettings: React.FC = () => {
 
                         <button
                             onClick={() => setIsDiagnosticsOpen(true)}
-                            className="w-full py-4 bg-slate-800 text-primary font-black rounded-2xl text-[10px] uppercase tracking-widest border border-slate-700 hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-slate-800 text-primary font-bold rounded-2xl text-[10px] uppercase tracking-widest border border-slate-700 hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
                         >
                             <Terminal size={16} />
                             Abrir Mobile Diagnostics

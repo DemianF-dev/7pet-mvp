@@ -32,6 +32,8 @@ interface QuoteDependencies {
         dueDate: string;
     };
     canDelete: boolean;
+    isBlocked: boolean;
+    blockingReasons: string[];
     warnings: string[];
 }
 
@@ -116,7 +118,7 @@ export default function CascadeDeleteModal({ isOpen, onClose, quoteId, onSuccess
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-gray-100">
                         <div>
-                            <h2 className="text-2xl font-black text-secondary">Excluir Orçamento</h2>
+                            <h2 className="text-2xl font-bold text-secondary">Excluir Orçamento</h2>
                             {dependencies && (
                                 <p className="text-sm text-gray-500 mt-1">Orçamento #{dependencies.quote.seqId}</p>
                             )}
@@ -138,8 +140,32 @@ export default function CascadeDeleteModal({ isOpen, onClose, quoteId, onSuccess
                             </div>
                         ) : dependencies ? (
                             <>
+                                {/* Blocking Reasons */}
+                                {dependencies.isBlocked && (
+                                    <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-3xl p-6">
+                                        <div className="flex items-start gap-4">
+                                            <div className="bg-red-500 p-2 rounded-2xl shrink-0">
+                                                <X className="text-white" size={24} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-extrabold text-red-900 text-lg mb-2">Exclusão Bloqueada</p>
+                                                <div className="space-y-3">
+                                                    {dependencies.blockingReasons.map((reason, i) => (
+                                                        <div key={i} className="bg-white/50 p-4 rounded-2xl border border-red-100 text-sm text-red-800 font-bold leading-relaxed shadow-sm">
+                                                            {reason}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <p className="mt-4 text-xs text-red-700/70 font-bold uppercase tracking-widest">
+                                                    ⚠️ Para proteger a integridade dos dados, registros com faturas pagas ou serviços em andamento não podem ser removidos.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Warnings */}
-                                {dependencies.warnings.length > 0 && (
+                                {dependencies.warnings.length > 0 && !dependencies.isBlocked && (
                                     <div className="mb-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4">
                                         <div className="flex items-start gap-3">
                                             <AlertTriangle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
@@ -155,145 +181,148 @@ export default function CascadeDeleteModal({ isOpen, onClose, quoteId, onSuccess
                                     </div>
                                 )}
 
-                                {/* Main Question */}
-                                <div className="mb-6">
-                                    <p className="text-lg font-bold text-gray-900 mb-2">
-                                        O que deseja excluir junto com este orçamento?
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        Selecione os itens relacionados que também devem ir para a lixeira:
-                                    </p>
-                                </div>
+                                {dependencies.canDelete && (
+                                    <div className="mb-6">
+                                        <p className="text-lg font-bold text-gray-900 mb-2">
+                                            O que deseja excluir junto com este orçamento?
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                            Selecione os itens relacionados que também devem ir para a lixeira:
+                                        </p>
+                                    </div>
+                                )}
 
-                                {/* Options */}
-                                <div className="space-y-3 mb-6">
-                                    {/* SPA Appointments */}
-                                    {dependencies.appointments.spa.length > 0 && (
-                                        <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary/50 transition-all">
-                                            <div className="pt-0.5">
-                                                {deleteSpaAppointments ? (
-                                                    <CheckSquare className="text-primary" size={20} />
-                                                ) : (
-                                                    <Square className="text-gray-400" size={20} />
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={deleteSpaAppointments}
-                                                    onChange={(e) => setDeleteSpaAppointments(e.target.checked)}
-                                                    className="sr-only"
-                                                />
-                                                <p className="font-bold text-gray-900">
-                                                    {dependencies.appointments.spa.length} Agendamento(s) SPA
-                                                </p>
-                                                <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                                                    {dependencies.appointments.spa.slice(0, 2).map((apt) => (
-                                                        <li key={apt.id} className="flex items-center gap-2">
-                                                            <Calendar size={14} />
-                                                            {new Date(apt.startAt).toLocaleDateString()} - {apt.status}
-                                                            {apt.services.length > 0 && ` (${apt.services.join(', ')})`}
-                                                        </li>
-                                                    ))}
-                                                    {dependencies.appointments.spa.length > 2 && (
-                                                        <li className="text-xs text-gray-500">... e mais {dependencies.appointments.spa.length - 2}</li>
+                                {dependencies.canDelete && (
+                                    <div className="space-y-3 mb-6">
+                                        {/* SPA Appointments */}
+                                        {dependencies.appointments.spa.length > 0 && (
+                                            <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary/50 transition-all">
+                                                <div className="pt-0.5">
+                                                    {deleteSpaAppointments ? (
+                                                        <CheckSquare className="text-primary" size={20} />
+                                                    ) : (
+                                                        <Square className="text-gray-400" size={20} />
                                                     )}
-                                                </ul>
-                                            </div>
-                                        </label>
-                                    )}
-
-                                    {/* Transport Appointments */}
-                                    {dependencies.appointments.transport.length > 0 && (
-                                        <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary/50 transition-all">
-                                            <div className="pt-0.5">
-                                                {deleteTransportAppointments ? (
-                                                    <CheckSquare className="text-primary" size={20} />
-                                                ) : (
-                                                    <Square className="text-gray-400" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={deleteTransportAppointments}
-                                                    onChange={(e) => setDeleteTransportAppointments(e.target.checked)}
-                                                    className="sr-only"
-                                                />
-                                                <p className="font-bold text-gray-900">
-                                                    {dependencies.appointments.transport.length} Agendamento(s) de Transporte
-                                                </p>
-                                                <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                                                    {dependencies.appointments.transport.slice(0, 2).map((apt) => (
-                                                        <li key={apt.id} className="flex items-center gap-2">
-                                                            <Calendar size={14} />
-                                                            {new Date(apt.startAt).toLocaleDateString()} - {apt.origin} → {apt.destination}
-                                                        </li>
-                                                    ))}
-                                                    {dependencies.appointments.transport.length > 2 && (
-                                                        <li className="text-xs text-gray-500">... e mais {dependencies.appointments.transport.length - 2}</li>
-                                                    )}
-                                                </ul>
-                                            </div>
-                                        </label>
-                                    )}
-
-                                    {/* Invoice */}
-                                    {dependencies.invoice && (
-                                        <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary/50 transition-all">
-                                            <div className="pt-0.5">
-                                                {deleteInvoice ? (
-                                                    <CheckSquare className="text-primary" size={20} />
-                                                ) : (
-                                                    <Square className="text-gray-400" size={20} />
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={deleteInvoice}
-                                                    onChange={(e) => setDeleteInvoice(e.target.checked)}
-                                                    className="sr-only"
-                                                />
-                                                <p className="font-bold text-gray-900">Fatura/Cobrança</p>
-                                                <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                                                    <DollarSign size={14} />
-                                                    R$ {dependencies.invoice.amount.toFixed(2)} - {dependencies.invoice.status}
-                                                    <span className="text-xs">
-                                                        (Vencimento: {new Date(dependencies.invoice.dueDate).toLocaleDateString()})
-                                                    </span>
                                                 </div>
-                                            </div>
-                                        </label>
-                                    )}
-                                </div>
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={deleteSpaAppointments}
+                                                        onChange={(e) => setDeleteSpaAppointments(e.target.checked)}
+                                                        className="sr-only"
+                                                    />
+                                                    <p className="font-bold text-gray-900">
+                                                        {dependencies.appointments.spa.length} Agendamento(s) SPA
+                                                    </p>
+                                                    <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                                                        {dependencies.appointments.spa.slice(0, 2).map((apt) => (
+                                                            <li key={apt.id} className="flex items-center gap-2">
+                                                                <Calendar size={14} />
+                                                                {new Date(apt.startAt).toLocaleDateString()} - {apt.status}
+                                                                {apt.services.length > 0 && ` (${apt.services.join(', ')})`}
+                                                            </li>
+                                                        ))}
+                                                        {dependencies.appointments.spa.length > 2 && (
+                                                            <li className="text-xs text-gray-500">... e mais {dependencies.appointments.spa.length - 2}</li>
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            </label>
+                                        )}
 
-                                {/* Actions */}
+                                        {/* Transport Appointments */}
+                                        {dependencies.appointments.transport.length > 0 && (
+                                            <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary/50 transition-all">
+                                                <div className="pt-0.5">
+                                                    {deleteTransportAppointments ? (
+                                                        <CheckSquare className="text-primary" size={20} />
+                                                    ) : (
+                                                        <Square className="text-gray-400" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={deleteTransportAppointments}
+                                                        onChange={(e) => setDeleteTransportAppointments(e.target.checked)}
+                                                        className="sr-only"
+                                                    />
+                                                    <p className="font-bold text-gray-900">
+                                                        {dependencies.appointments.transport.length} Agendamento(s) de Transporte
+                                                    </p>
+                                                    <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                                                        {dependencies.appointments.transport.slice(0, 2).map((apt) => (
+                                                            <li key={apt.id} className="flex items-center gap-2">
+                                                                <Calendar size={14} />
+                                                                {new Date(apt.startAt).toLocaleDateString()} - {apt.origin} → {apt.destination}
+                                                            </li>
+                                                        ))}
+                                                        {dependencies.appointments.transport.length > 2 && (
+                                                            <li className="text-xs text-gray-500">... e mais {dependencies.appointments.transport.length - 2}</li>
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            </label>
+                                        )}
+
+                                        {/* Invoice */}
+                                        {dependencies.invoice && (
+                                            <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary/50 transition-all">
+                                                <div className="pt-0.5">
+                                                    {deleteInvoice ? (
+                                                        <CheckSquare className="text-primary" size={20} />
+                                                    ) : (
+                                                        <Square className="text-gray-400" size={20} />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={deleteInvoice}
+                                                        onChange={(e) => setDeleteInvoice(e.target.checked)}
+                                                        className="sr-only"
+                                                    />
+                                                    <p className="font-bold text-gray-900">Fatura/Cobrança</p>
+                                                    <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                                                        <DollarSign size={14} />
+                                                        R$ {dependencies.invoice.amount.toFixed(2)} - {dependencies.invoice.status}
+                                                        <span className="text-xs">
+                                                            (Vencimento: {new Date(dependencies.invoice.dueDate).toLocaleDateString()})
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="flex gap-4">
                                     <button
                                         onClick={onClose}
                                         disabled={isDeleting}
-                                        className="flex-1 px-6 py-4 rounded-2xl font-black text-gray-600 hover:bg-gray-100 transition-all disabled:opacity-50"
+                                        className="flex-1 px-6 py-4 rounded-2xl font-bold text-gray-600 hover:bg-gray-100 transition-all disabled:opacity-50"
                                     >
-                                        Cancelar
+                                        {dependencies.isBlocked ? 'Fechar' : 'Cancelar'}
                                     </button>
-                                    <button
-                                        onClick={handleConfirm}
-                                        disabled={isDeleting}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-black shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
-                                    >
-                                        {isDeleting ? (
-                                            <>
-                                                <RefreshCcw className="animate-spin" size={18} />
-                                                Excluindo...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Trash2 size={18} />
-                                                Mover para Lixeira
-                                            </>
-                                        )}
-                                    </button>
+                                    {!dependencies.isBlocked && (
+                                        <button
+                                            onClick={handleConfirm}
+                                            disabled={isDeleting}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
+                                        >
+                                            {isDeleting ? (
+                                                <>
+                                                    <RefreshCcw className="animate-spin" size={18} />
+                                                    Excluindo...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 size={18} />
+                                                    Mover para Lixeira
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             </>
                         ) : null}

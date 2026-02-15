@@ -1,5 +1,17 @@
 # Implementation Plan - Client Chat & Feed Stability
 
+## Billing V2 Implementation Plan (Sprint 1)
+
+> [!CAUTION]
+> **Status: BLOCKED**
+> Database migrations failed due to environment configuration issues (`P1001` Connection Refused / `Validation Error`).
+> Schema changes are defined but not applied to the database.
+> Frontend and Backend code is implemented but will fail at runtime until DB is migrated.
+
+## Goal Description
+
+solve stability issues on the Feed/Mural pages.
+
 ## Objective
 
 Implement a simplified chat interface for clients to communicate with support staff and resolve stability issues on the Feed/Mural pages.

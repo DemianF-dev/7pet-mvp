@@ -191,7 +191,7 @@ export const MobileFeed = () => {
                                 {(widgets?.popularPosts || []).slice(0, 2).map((post: Post) => (
                                     <div key={post.id} className="flex gap-2 items-start">
                                         <div 
-                                            className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-black text-white"
+                                            className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
                                             style={{ backgroundColor: post.author.color || '#3b82f6' }}
                                         >
                                             {post.author.name.charAt(0).toUpperCase()}
@@ -217,7 +217,7 @@ export const MobileFeed = () => {
                 {/* 4. Posts List */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 px-2">
-                        <h2 className="text-sm font-black text-gray-800 dark:text-white">Feed</h2>
+                        <h2 className="text-sm font-bold text-gray-800 dark:text-white">Feed</h2>
                         <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700"></div>
                     </div>
                     
@@ -246,11 +246,11 @@ export const MobileFeed = () => {
                     <div className="fixed inset-0 z-[100] bg-white dark:bg-zinc-900 flex flex-col p-6 animate-in slide-in-from-bottom duration-300">
                         <header className="flex justify-between items-center mb-8">
                             <button onClick={() => setIsComposeOpen(false)} className="text-sm font-bold text-gray-400 uppercase tracking-widest">Fechar</button>
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Novo Post</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-tight">Novo Post</h3>
                             <button
                                 onClick={() => createPostMutation.mutate(newPostContent)}
                                 disabled={!newPostContent.trim() || createPostMutation.isPending}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest disabled:opacity-50"
                             >
                                 {createPostMutation.isPending ? '...' : 'Publicar'}
                             </button>
@@ -320,13 +320,13 @@ const MobilePostCard = ({ post, user }: { post: Post; user: any }) => {
             <div className="p-4 space-y-4">
                 <div className="flex items-center gap-3">
                     <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white text-xs shadow-sm"
+                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-xs shadow-sm"
                         style={{ backgroundColor: post.author.color || '#3b82f6' }}
                     >
                         {post.author.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <h4 className="text-xs font-black text-blue-600 uppercase leading-none mb-0.5">{post.author.name}</h4>
+                        <h4 className="text-xs font-bold text-blue-600 uppercase leading-none mb-0.5">{post.author.name}</h4>
                         <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold uppercase">
                             <Calendar size={10} />
                             {new Date(post.createdAt).toLocaleDateString()}
@@ -341,7 +341,7 @@ const MobilePostCard = ({ post, user }: { post: Post; user: any }) => {
                 <div className="flex items-center gap-6 pt-3 border-t border-gray-100 dark:border-zinc-800">
                     <button
                         onClick={() => likeMutation.mutate()}
-                        className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-colors ${hasLiked ? 'text-pink-500' : 'text-gray-400'
+                        className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${hasLiked ? 'text-pink-500' : 'text-gray-400'
                             }`}
                     >
                         <Heart size={14} fill={hasLiked ? 'currentColor' : 'none'} />
@@ -349,7 +349,7 @@ const MobilePostCard = ({ post, user }: { post: Post; user: any }) => {
                     </button>
                     <button
                         onClick={() => setIsCommenting(!isCommenting)}
-                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400"
                     >
                         <MessageCircle size={14} />
                         {post.comments.length > 0 && post.comments.length} Comentar
@@ -367,11 +367,11 @@ const MobilePostCard = ({ post, user }: { post: Post; user: any }) => {
                     >
                         {post.comments.map(c => (
                             <div key={c.id} className="flex gap-2">
-                                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center text-[8px] font-black shrink-0">
+                                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center text-[8px] font-bold shrink-0">
                                     {c.author.name[0].toUpperCase()}
                                 </div>
                                 <div className="bg-white dark:bg-zinc-800 p-2 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-zinc-700 max-w-[85%]">
-                                    <span className="block text-[9px] font-black text-blue-600 uppercase mb-0.5">{c.author.name}</span>
+                                    <span className="block text-[9px] font-bold text-blue-600 uppercase mb-0.5">{c.author.name}</span>
                                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{c.content}</p>
                                 </div>
                             </div>

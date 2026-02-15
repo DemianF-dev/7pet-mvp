@@ -114,7 +114,7 @@ export const MobileChat = () => {
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Sincronizando Mensagens...</p>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando Mensagens...</p>
                     </div>
                 ) : filteredConversations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center px-10">
@@ -144,7 +144,7 @@ export const MobileChat = () => {
                 <div className="fixed inset-0 z-[110] bg-white dark:bg-zinc-950 flex flex-col animate-in slide-in-from-bottom duration-300">
                     {/* Modal Header */}
                     <div className="h-16 shrink-0 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl">
-                        <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Novo Papo</h2>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-tight">Novo Papo</h2>
                         <button
                             onClick={() => setShowNewChatModal(false)}
                             className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-full text-gray-500 active:scale-90 transition-all"
@@ -193,9 +193,9 @@ export const MobileChat = () => {
                                             )}
                                         </div>
                                         <div className="flex-1 text-left min-w-0">
-                                            <p className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">{u.name}</p>
+                                            <p className="text-sm font-bold text-gray-900 dark:text-white uppercase truncate">{u.name}</p>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{u.email}</p>
-                                            <span className="inline-block px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[8px] font-black uppercase mt-1">
+                                            <span className="inline-block px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[8px] font-bold uppercase mt-1">
                                                 {u.role || u.division || 'STAFF'}
                                             </span>
                                         </div>

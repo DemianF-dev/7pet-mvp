@@ -65,13 +65,13 @@ export const MobileProducts = () => {
                     <div className="flex bg-gray-100 dark:bg-zinc-900 p-1 rounded-2xl">
                         <button
                             onClick={() => setTab('active')}
-                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-white dark:bg-zinc-800 text-primary shadow-sm' : 'text-gray-400'}`}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'active' ? 'bg-white dark:bg-zinc-800 text-primary shadow-sm' : 'text-gray-400'}`}
                         >
                             Ativos
                         </button>
                         <button
                             onClick={() => setTab('trash')}
-                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'trash' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-400'}`}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${tab === 'trash' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-400'}`}
                         >
                             Lixeira
                         </button>
@@ -94,7 +94,7 @@ export const MobileProducts = () => {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Carregando estoque...</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Carregando estoque...</p>
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <EmptyState
@@ -117,9 +117,9 @@ export const MobileProducts = () => {
                                             <Package size={28} />
                                         </div>
                                         <div>
-                                            <h3 className="font-black text-secondary dark:text-white uppercase leading-tight">{product.name}</h3>
-                                            <p className="text-[10px] font-black text-primary mt-0.5">PR-{String((product.seqId || 0) + 1999).padStart(4, '0')}</p>
-                                            <Badge variant="neutral" className="mt-2 px-2 py-0.5 text-[9px] font-black">{product.category}</Badge>
+                                            <h3 className="font-bold text-secondary dark:text-white uppercase leading-tight">{product.name}</h3>
+                                            <p className="text-[10px] font-bold text-primary mt-0.5">PR-{String((product.seqId || 0) + 1999).padStart(4, '0')}</p>
+                                            <Badge variant="neutral" className="mt-2 px-2 py-0.5 text-[9px] font-bold">{product.category}</Badge>
                                         </div>
                                     </div>
                                     <IconButton icon={MoreHorizontal} variant="ghost" className="text-gray-400" aria-label="Opções do produto" />
@@ -127,24 +127,24 @@ export const MobileProducts = () => {
 
                                 <div className="grid grid-cols-2 gap-4 mt-2">
                                     <div className="bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-2xl">
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Estoque</p>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Estoque</p>
                                         <div className="flex items-center gap-2">
-                                            <span className={`text-lg font-black ${product.stock <= 5 ? 'text-red-500' : 'text-secondary dark:text-white'}`}>
+                                            <span className={`text-lg font-bold ${product.stock <= 5 ? 'text-red-500' : 'text-secondary dark:text-white'}`}>
                                                 {product.stock}
                                             </span>
                                             <span className="text-[10px] font-bold text-gray-400">unidades</span>
                                         </div>
                                         {product.stock <= 5 && (
-                                            <div className="flex items-center gap-1 mt-1 text-[9px] font-black text-red-500">
+                                            <div className="flex items-center gap-1 mt-1 text-[9px] font-bold text-red-500">
                                                 <AlertTriangle size={10} /> ESTOQUE BAIXO
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-2xl">
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Preço Venda</p>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Preço Venda</p>
                                         <div className="flex flex-col">
-                                            <span className="text-lg font-black text-primary">
+                                            <span className="text-lg font-bold text-primary">
                                                 R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                             <span className="text-[9px] font-bold text-gray-400">unidade</span>
@@ -157,7 +157,7 @@ export const MobileProducts = () => {
                                         variant="outline"
                                         size="sm"
                                         fullWidth
-                                        className="rounded-xl font-black text-[10px]"
+                                        className="rounded-xl font-bold text-[10px]"
                                         icon={Edit2}
                                     >
                                         EDITAR
@@ -166,7 +166,7 @@ export const MobileProducts = () => {
                                         variant="primary"
                                         size="sm"
                                         fullWidth
-                                        className="rounded-xl font-black text-[10px]"
+                                        className="rounded-xl font-bold text-[10px]"
                                         icon={ArrowUpRight}
                                     >
                                         DETALHES

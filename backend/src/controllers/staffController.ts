@@ -258,9 +258,12 @@ export const staffController = {
                     id: true,
                     startAt: true,
                     status: true,
+                    category: true,
                     pet: { select: { name: true } },
                     customer: { select: { name: true } },
-                    services: { select: { name: true } }
+                    services: { select: { name: true, basePrice: true } },
+                    transportLegs: { select: { legType: true, price: true } },
+                    transportSnapshot: true
                 }
             });
 
@@ -356,6 +359,24 @@ export const staffController = {
             if (!transport) return res.status(404).json({ error: 'Não encontrado' });
             return res.json(transport);
         } catch (error: any) {
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
+    async getMyProfile(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.id;
+            const profile = await prisma.staffProfile.findUnique({
+                where: { userId },
+                include: { user: true }
+            });
+
+            if (!profile) {
+                return res.status(404).json({ error: 'Perfil de colaborador não encontrado.' });
+            }
+            return res.json(profile);
+        } catch (error: any) {
+            console.error('Error fetching my profile:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }

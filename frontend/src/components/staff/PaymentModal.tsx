@@ -111,7 +111,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess, invoice }: Pa
                     <div className="mb-6 bg-blue-50 p-4 rounded-2xl border border-blue-100">
                         <div className="flex justify-between items-end mb-1">
                             <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Total a Receber</span>
-                            <span className="text-2xl font-black text-blue-600">R$ {remaining.toFixed(2)}</span>
+                            <span className="text-2xl font-bold text-blue-600">R$ {remaining.toFixed(2)}</span>
                         </div>
                         <div className="text-[10px] text-blue-400 font-medium text-right">
                             Total Fatura: R$ {invoice.amount.toFixed(2)}
@@ -222,7 +222,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess, invoice }: Pa
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-green-500 hover:bg-green-600 text-white font-black uppercase tracking-widest text-xs py-4 rounded-xl shadow-lg shadow-green-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold uppercase tracking-widest text-xs py-4 rounded-xl shadow-lg shadow-green-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? 'Processando...' : (
                                 <>

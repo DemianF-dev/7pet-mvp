@@ -214,7 +214,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                         </button>
                     )}
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-500/20 overflow-hidden">
+                        <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20 overflow-hidden">
                             {conversation?.participants.find(p => p.user.id !== user?.id)?.user.name.charAt(0).toUpperCase() || 'BP'}
                         </div>
                         <div className="flex flex-col">
@@ -223,7 +223,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                                     conversation?.participants.find(p => p.user.id !== user?.id)?.user.name ||
                                     'Canal de Atendimento'}
                             </span>
-                            <span className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                                 Online agora
                             </span>
@@ -237,7 +237,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                             title="Chamar Atenção"
                             className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-full transition-colors flex items-center gap-1"
                         >
-                            <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest mr-1">Atenção</span>
+                            <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest mr-1">Atenção</span>
                             <AlertCircle size={18} />
                         </button>
                     )}
@@ -342,7 +342,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                                 <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
                                         <div className={`p-4 rounded-2xl relative shadow-sm transition-all hover:shadow-md ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-tl-none'}`}>
-                                            {!isMe && <span className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-blue-600 dark:text-blue-400">{m.sender?.name}</span>}
+                                            {!isMe && <span className="text-[10px] font-bold uppercase tracking-wider block mb-1.5 text-blue-600 dark:text-blue-400">{m.sender?.name}</span>}
 
                                             {/* File Rendering */}
                                             {m.fileUrl && (
@@ -358,7 +358,7 @@ export default function ChatWindow({ conversationId, onBack, className = '' }: C
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="text-sm font-bold truncate">{m.fileName}</p>
-                                                                <p className="text-[10px] opacity-70 font-black uppercase tracking-tighter">{m.fileType?.split('/')[1] || 'DOC'}</p>
+                                                                <p className="text-[10px] opacity-70 font-bold uppercase tracking-tighter">{m.fileType?.split('/')[1] || 'DOC'}</p>
                                                             </div>
                                                         </a>
                                                     )}

@@ -297,10 +297,10 @@ export default function Sidebar() {
                     {!isCollapsed && (
                         <div className="grid grid-cols-2 items-center px-1">
                             <div className="flex flex-col">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-heading/90 leading-none">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-heading/90 leading-none">
                                     {format(currentTime, "EEE, dd MMM", { locale: ptBR })}
                                 </p>
-                                <p className="text-[14px] font-black text-accent font-mono leading-none mt-1">
+                                <p className="text-[14px] font-bold text-accent font-mono leading-none mt-1">
                                     {format(currentTime, "HH:mm")}
                                 </p>
                             </div>
@@ -384,7 +384,7 @@ function SidebarGroup({ label, children, isCollapsed }: { label: string, childre
     return (
         <div className="mb-6 last:mb-2 relative z-10">
             {!isCollapsed && (
-                <h3 className="px-4 mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--sidebar-group-label)] opacity-70">
+                <h3 className="px-4 mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--sidebar-group-label)] opacity-70">
                     {label}
                 </h3>
             )}

@@ -23,6 +23,7 @@ interface Transaction {
     createdAt: string;
     notes?: string;
     quote?: { id: string; seqId: number; status: string };
+    order?: { id: string; seqId: number; status: string };
 }
 
 interface CustomerFinancialSectionProps {
@@ -135,7 +136,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
         <section className={`bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 ${balance < -500 ? 'ring-2 ring-red-500/20' : ''}`}>
             {/* Header & Main Info */}
             <div className="flex items-center justify-between mb-8">
-                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                     <DollarSign size={16} /> Gestão Financeira Integrada
                 </h3>
                 <div className="flex gap-2">
@@ -153,19 +154,19 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                 } border border-gray-100 shadow-sm`}>
                 <div className="flex items-center justify-between relative z-10">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 px-1">
                             Saldo em Carteira
                         </p>
-                        <p className={`text-3xl font-black tracking-tighter ${balanceColor === 'success' ? 'text-emerald-600' :
+                        <p className={`text-3xl font-bold tracking-tighter ${balanceColor === 'success' ? 'text-emerald-600' :
                             balanceColor === 'error' ? 'text-red-600' :
                                 'text-secondary'
                             }`}>
-                            <span className="text-xl mr-1 font-black opacity-60">R$</span>{Math.abs(balance).toFixed(2).replace('.', ',')}
+                            <span className="text-xl mr-1 font-bold opacity-60">R$</span>{Math.abs(balance).toFixed(2).replace('.', ',')}
                         </p>
                         <div className="flex items-center gap-2 mt-2 px-1">
-                            {balance > 0 && <span className="text-[9px] font-black uppercase text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Crédito</span>}
-                            {balance < 0 && <span className="text-[9px] font-black uppercase text-red-600 bg-red-100 px-2 py-0.5 rounded-full">Débito</span>}
-                            {balance === 0 && <span className="text-[9px] font-black uppercase text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">Zerado</span>}
+                            {balance > 0 && <span className="text-[9px] font-bold uppercase text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Crédito</span>}
+                            {balance < 0 && <span className="text-[9px] font-bold uppercase text-red-600 bg-red-100 px-2 py-0.5 rounded-full">Débito</span>}
+                            {balance === 0 && <span className="text-[9px] font-bold uppercase text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">Zerado</span>}
                         </div>
                     </div>
                     {activeSubTab === 'SALDO' && (
@@ -191,7 +192,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                     <button
                         key={tab.id}
                         onClick={() => setActiveSubTab(tab.id as FinancialTab)}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeSubTab === tab.id
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeSubTab === tab.id
                             ? 'bg-white text-primary shadow-sm ring-1 ring-gray-100'
                             : 'text-gray-400 hover:text-secondary hover:bg-white/50'
                             }`}
@@ -224,18 +225,31 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                         <div key={t.id} className="flex items-start justify-between p-5 bg-gray-50/50 border border-gray-100 rounded-[24px] hover:bg-white hover:shadow-md transition-all group">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${t.type === 'DEBIT' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                    <span className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${t.type === 'DEBIT' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
                                                         {t.type === 'DEBIT' ? 'Débito' : 'Crédito'}
                                                     </span>
-                                                    {t.category && <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">{t.category}</span>}
+                                                    {t.category && <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">{t.category}</span>}
                                                 </div>
-                                                <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">{t.description}</p>
-                                                <div className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-300 font-bold uppercase">
-                                                    <Calendar size={10} />
-                                                    {new Date(t.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">{t.description}</p>
+
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-300 font-bold uppercase">
+                                                        <Calendar size={10} />
+                                                        {new Date(t.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+
+                                                    {t.order && (
+                                                        <button
+                                                            onClick={() => setSelectedOrderId(t.order?.id)}
+                                                            className="flex items-center gap-1.5 text-[10px] text-blue-500 font-black uppercase bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors"
+                                                        >
+                                                            <Receipt size={10} />
+                                                            Cupom #{t.order.seqId}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <p className={`text-xl font-black ${t.type === 'DEBIT' ? 'text-red-500' : 'text-emerald-500'}`}>
+                                            <p className={`text-xl font-bold ${t.type === 'DEBIT' ? 'text-red-500' : 'text-emerald-500'}`}>
                                                 {t.type === 'DEBIT' ? '+' : '-'} <span className="text-xs mr-0.5">R$</span>{t.amount.toFixed(2).replace('.', ',')}
                                             </p>
                                         </div>
@@ -262,18 +276,18 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                                     <CreditCard size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                    <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                         Fatura #{String(inv.seqId || inv.id.slice(0, 4)).padStart(4, '0')}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-[10px] font-bold text-gray-400">Vence: {new Date(inv.dueDate).toLocaleDateString()}</span>
                                                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${inv.status === 'PAGO' ? 'text-emerald-500' : 'text-orange-500'}`}>{inv.status}</span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${inv.status === 'PAGO' ? 'text-emerald-500' : 'text-orange-500'}`}>{inv.status}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <p className="text-lg font-black text-secondary">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                <p className="text-lg font-bold text-secondary">R$ {inv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                 <ChevronRight size={18} className="text-gray-300 group-hover:text-primary transition-colors" />
                                             </div>
                                         </div>
@@ -300,18 +314,18 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                                     <ShoppingCart size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                    <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                         Cupom PDV #{String(order.seqId).padStart(4, '0')}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-[10px] font-bold text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</span>
                                                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{order.status}</span>
+                                                        <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{order.status}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <p className="text-lg font-black text-secondary">R$ {order.finalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                <p className="text-lg font-bold text-secondary">R$ {order.finalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                 <ChevronRight size={18} className="text-gray-300 group-hover:text-primary transition-colors" />
                                             </div>
                                         </div>
@@ -335,13 +349,13 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                                     <FileText size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                    <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                         Orçamento #{String(q.seqId).padStart(4, '0')}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-[10px] font-bold text-gray-400">R$ {q.totalAmount?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{q.status}</span>
+                                                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{q.status}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -382,13 +396,13 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                                     <Calendar size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-secondary group-hover:text-primary transition-colors">
+                                                    <p className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">
                                                         {new Date(appt.startAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{appt.category}</span>
                                                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${appt.status === 'FINALIZADO' ? 'text-emerald-500' : 'text-primary'}`}>{appt.status}</span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${appt.status === 'FINALIZADO' ? 'text-emerald-500' : 'text-primary'}`}>{appt.status}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -400,7 +414,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                                     title="Copiar / Refazer"
                                                 >
                                                     <History size={16} />
-                                                    <span className="text-[9px] font-black uppercase tracking-tight">Refazer</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-tight">Refazer</span>
                                                 </button>
                                                 <button
                                                     onClick={() => setSelectedAppointmentData(appt)}
@@ -481,6 +495,10 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                         invoiceId={selectedInvoiceId}
                         onClose={() => setSelectedInvoiceId(null)}
                         onUpdate={fetchData}
+                        onViewOrder={(orderId) => {
+                            setSelectedInvoiceId(null);
+                            setSelectedOrderId(orderId);
+                        }}
                     />
                 )}
 
@@ -489,7 +507,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
                         <div className="bg-white rounded-[40px] p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
                             <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-2xl font-black text-secondary tracking-tight">Novo <span className="text-primary">Ajuste</span></h3>
+                                <h3 className="text-2xl font-bold text-secondary tracking-tight">Novo <span className="text-primary">Ajuste</span></h3>
                                 <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
                                     <X size={24} />
                                 </button>
@@ -497,13 +515,13 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
 
                             <div className="space-y-6">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tipo de Fluxo</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Tipo de Fluxo</label>
                                     <div className="flex gap-2">
                                         {(['DEBIT', 'CREDIT'] as const).map(type => (
                                             <button
                                                 key={type}
                                                 onClick={() => setTransType(type)}
-                                                className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border ${transType === type
+                                                className={`flex-1 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all border ${transType === type
                                                     ? type === 'DEBIT' ? 'bg-red-500 border-red-500 text-white shadow-lg' : 'bg-emerald-600 border-emerald-600 text-white shadow-lg'
                                                     : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
                                             >
@@ -514,7 +532,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Valor (R$)</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Valor (R$)</label>
                                     <div className="relative">
                                         <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
                                         <input
@@ -522,14 +540,14 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
                                             step="0.01"
                                             value={amount}
                                             onChange={e => setAmount(e.target.value)}
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-black focus:ring-2 focus:ring-primary/10 transition-all outline-none text-lg"
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-12 pr-5 py-4 text-secondary font-bold focus:ring-2 focus:ring-primary/10 transition-all outline-none text-lg"
                                             placeholder="0,00"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
                                     <input
                                         type="text"
                                         value={description}
@@ -541,7 +559,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
 
                                 <button
                                     onClick={handleAddTransaction}
-                                    className="w-full py-5 bg-primary text-white rounded-2xl font-black uppercase text-sm tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
+                                    className="w-full py-5 bg-primary text-white rounded-2xl font-bold uppercase text-sm tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
                                 >
                                     Confirmar Ajuste
                                 </button>

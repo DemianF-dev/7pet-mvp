@@ -53,7 +53,7 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({ goal }) => {
                                 Meta Ativa
                             </Badge>
                             {isExceeded && (
-                                <Badge variant="success" size="sm" className="bg-emerald-500 text-white font-black text-[8px] uppercase tracking-widest animate-pulse border-none">
+                                <Badge variant="success" size="sm" className="bg-emerald-500 text-white font-bold text-[8px] uppercase tracking-widest animate-pulse border-none">
                                     <Trophy size={10} className="mr-1" /> Batida!
                                 </Badge>
                             )}
@@ -98,7 +98,7 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({ goal }) => {
                             <span className={`text-4xl font-[var(--font-weight-black)] tracking-tighter ${isExceeded ? 'text-emerald-500' : 'text-[var(--color-text-primary)]'}`}>
                                 {displayPercentage}%
                             </span>
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-tertiary)] mt-1">Progresso</span>
+                            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-tertiary)] mt-1">Progresso</span>
                         </div>
                     </div>
 
@@ -118,13 +118,13 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({ goal }) => {
                 {/* Metrics Summary */}
                 <div className="mt-8 grid grid-cols-2 gap-4 pb-4 border-b border-[var(--color-border-subtle)]">
                     <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">Atual</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">Atual</p>
                         <p className="text-xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">
                             {goal.currentValue} <span className="text-[10px] text-[var(--color-text-tertiary)] ml-0.5">{goal.unit}</span>
                         </p>
                     </div>
                     <div className="space-y-1 text-right">
-                        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">Objetivo</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">Objetivo</p>
                         <p className="text-xl font-[var(--font-weight-black)] text-[var(--color-text-primary)]">
                             {goal.targetValue} <span className="text-[10px] text-[var(--color-text-tertiary)] ml-0.5">{goal.unit}</span>
                         </p>
@@ -138,7 +138,7 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({ goal }) => {
                         <span>Expira em {new Date(goal.endDate).toLocaleDateString('pt-BR')}</span>
                     </div>
                     {!isExceeded && (
-                        <div className="flex items-center gap-1.5 text-orange-500 font-black uppercase tracking-tighter bg-orange-50 px-2 py-0.5 rounded-full">
+                        <div className="flex items-center gap-1.5 text-orange-500 font-bold uppercase tracking-tighter bg-orange-50 px-2 py-0.5 rounded-full">
                             <TrendingUp size={12} strokeWidth={3} />
                             <span>Faltam {(goal.targetValue - goal.currentValue).toFixed(0)}</span>
                         </div>

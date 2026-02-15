@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Card from '../ui/Card';
+import { ListSkeleton } from '../skeletons/ListSkeleton';
 
 export interface Column<T> {
     header: string;
@@ -54,11 +55,13 @@ export function ResponsiveTable<T>({
 
     if (isLoading) {
         return (
-            <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="h-16 bg-[var(--color-bg-tertiary)] rounded-2xl animate-pulse" />
-                ))}
-            </div>
+            <ListSkeleton
+                className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-sm"
+                rowCount={6}
+                hasHeader={true}
+                hasAvatar={false}
+                hasActions={false}
+            />
         );
     }
 
@@ -91,7 +94,7 @@ export function ResponsiveTable<T>({
                                 <th
                                     key={idx}
                                     onClick={() => col.sortable && onSort ? onSort(col.sortKey || (col.key as string)) : undefined}
-                                    className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-tertiary)] ${col.className || ''} ${col.sortable ? 'cursor-pointer hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] transition-colors select-none' : ''}`}
+                                    className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-tertiary)] ${col.className || ''} ${col.sortable ? 'cursor-pointer hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] transition-colors select-none' : ''}`}
                                 >
                                     <div className="flex items-center gap-1.5">
                                         {col.header}
@@ -174,8 +177,8 @@ export function ResponsiveTable<T>({
                                     )}
                                     <div className="space-y-1 overflow-hidden">
                                         {columns.filter(c => !c.mobileHidden).map((col, idx) => (
-                                            <div key={idx} className={`${idx === 0 ? 'font-black text-[var(--color-text-primary)]' : 'text-xs text-[var(--color-text-secondary)]'} truncate`}>
-                                                {idx > 0 && <span className="opacity-40 uppercase text-[8px] font-black tracking-widest mr-2">{col.header}:</span>}
+                                            <div key={idx} className={`${idx === 0 ? 'font-bold text-[var(--color-text-primary)]' : 'text-xs text-[var(--color-text-secondary)]'} truncate`}>
+                                                {idx > 0 && <span className="opacity-40 uppercase text-[8px] font-bold tracking-widest mr-2">{col.header}:</span>}
                                                 {col.render ? col.render(item) : (item as any)[col.key]}
                                             </div>
                                         ))}

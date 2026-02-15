@@ -130,11 +130,11 @@ export const MobileCustomers = () => {
                                                 <User size={24} />
                                             </div>
                                             <div>
-                                                <h3 className="text-base font-black text-gray-900 dark:text-white leading-tight uppercase">
+                                                <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight uppercase">
                                                     {customer.name}
                                                 </h3>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${customer.type === 'RECORRENTE'
+                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${customer.type === 'RECORRENTE'
                                                             ? 'bg-purple-100 text-purple-700'
                                                             : 'bg-gray-100 text-gray-500'
                                                         }`}>

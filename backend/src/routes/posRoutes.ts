@@ -17,6 +17,7 @@ router.post('/session/open', posController.openSession);
 router.post('/session/close/:id', posController.closeSession);
 
 // Orders
+router.get('/orders', posController.listRecentOrders);
 router.get('/orders/:id', posController.getOrder);
 router.post('/orders', posController.createOrder);
 router.post('/orders/:id/payments', posController.addPayment);

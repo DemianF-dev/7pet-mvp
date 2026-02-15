@@ -23,6 +23,14 @@
 - [x] Frontend: Notification Context (Socket.io)
 - [x] Frontend: Notification Bell Component
 - [x] Frontend: Sound Effects & Toasts
+- [x] Backend: Create `billingRoutes.ts`
+- [x] Backend: Create `billingController.ts`
+- [x] Backend: Register routes in `index.ts`
+- [x] Frontend: Create `BillingManagerV2.tsx`
+- [x] Frontend: Create substructure (`NewInvoice`, `InvoicesList`, `LedgerView`)
+- [x] Frontend: Update `App.tsx` routes
+- [x] Frontend: Update `StaffSidebar`
+- [/] Database: Run Migration (BLOCKED: Prisma Validation/Connection Error)
 
 # Production Readiness
 

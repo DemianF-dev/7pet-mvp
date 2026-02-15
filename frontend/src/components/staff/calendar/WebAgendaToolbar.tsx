@@ -75,14 +75,14 @@ export default function WebAgendaToolbar({
                     <div className="flex flex-col">
                         <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">{breadcrumb}</span>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-black text-gray-800 dark:text-white capitalize leading-none">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white capitalize leading-none">
                                 {capitalizedMonth}
                             </h2>
                             <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 ml-2">
                                 <button onClick={onPrevDate} className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded-md text-gray-500 transition-all">
                                     <ChevronLeft size={16} />
                                 </button>
-                                <button onClick={onToday} className="px-3 text-[10px] font-black uppercase hover:text-primary transition-colors">
+                                <button onClick={onToday} className="px-3 text-[10px] font-bold uppercase hover:text-primary transition-colors">
                                     Hoje
                                 </button>
                                 <button onClick={onNextDate} className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded-md text-gray-500 transition-all">

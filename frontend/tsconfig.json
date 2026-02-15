@@ -16,7 +16,7 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
-/* Linting - Gradualmente habilitando type safety */
+        /* Linting - Gradualmente habilitando type safety */
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
@@ -32,7 +32,13 @@
             "vite/client",
             "vite-plugin-pwa/client",
             "vite-plugin-pwa/react"
-        ]
+        ],
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        }
     },
     "include": [
         "src"

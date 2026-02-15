@@ -23,7 +23,8 @@ export type AppointmentStatus =
     | 'CANCELADO'
     | 'NO_SHOW';
 
-export const getQuoteStatusColor = (status: string) => {
+export const getQuoteStatusColor = (status: string | undefined | null) => {
+    if (!status) return 'bg-gray-100 text-gray-600 border-gray-200';
     switch (status.toUpperCase()) {
         case 'SOLICITADO':
             return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -50,7 +51,8 @@ export const getQuoteStatusColor = (status: string) => {
     }
 };
 
-export const getAppointmentStatusColor = (status: string) => {
+export const getAppointmentStatusColor = (status: string | undefined | null) => {
+    if (!status) return 'bg-gray-100 text-gray-600 border-gray-200';
     switch (status.toUpperCase()) {
         case 'PENDENTE':
             return 'bg-orange-100 text-orange-700 border-orange-200';

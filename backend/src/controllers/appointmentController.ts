@@ -2,9 +2,10 @@ import { Response } from 'express';
 import * as appointmentService from '../services/appointmentService';
 import { notificationService } from '../services/notificationService';
 import { z } from 'zod';
-import { AppointmentStatus, TransportPeriod, AppointmentCategory } from '@prisma/client';
+import { AppointmentStatus, TransportPeriod, AppointmentCategory, AuditAction } from '@prisma/client';
 import Logger from '../lib/logger';
 import * as auditService from '../services/auditService';
+import { AuditContext } from '../services/auditService';
 import { logInfo, logError } from '../utils/logger';
 
 const appointmentSchema = z.object({
@@ -47,10 +48,11 @@ export const create = async (req: any, res: Response) => {
 
         const appointment = await appointmentService.create(data, isStaff);
 
-        // If appointment was created from a quote, update quote status to AGENDAR
+        // If appointment was created from a quote, update quote status (sync)
         if (validatedData.quoteId) {
-            await appointmentService.updateQuoteStatus(validatedData.quoteId, appointment.id);
+            await appointmentService.syncQuoteStatus(validatedData.quoteId, req.user.id);
         }
+
 
         res.status(201).json(appointment);
     } catch (error: any) {
@@ -99,6 +101,9 @@ export const list = async (req: any, res: Response) => {
         if (req.query.status) {
             filters.status = req.query.status as AppointmentStatus;
         }
+        if (req.query.billingStatus) {
+            filters.billingStatus = req.query.billingStatus;
+        }
 
         const appointments = await appointmentService.list(filters, { skip, take: limit });
         const total = await appointmentService.count(filters);
@@ -142,13 +147,39 @@ export const update = async (req: any, res: Response) => {
         const { id } = req.params;
         const data = req.body;
         const appointmentBefore = await appointmentService.get(id);
+        if (!appointmentBefore) return res.status(404).json({ error: 'Agendamento não encontrado' });
+
+        // --- LOCK LOGIC ---
+        const isBilled = ['INVOICED', 'PAID'].includes(appointmentBefore.billingStatus);
+        const isAdmin = ['ADMIN', 'MASTER'].includes(req.user.role);
+
+        if (isBilled && !isAdmin) {
+            return res.status(403).json({
+                error: 'Este agendamento já foi faturado ou pago e não pode ser editado. Entre em contato com um administrador.',
+                code: 'BILLING_LOCKED'
+            });
+        }
+
+        if (isBilled && isAdmin && !req.body.adminOverrideReason) {
+            return res.status(400).json({
+                error: 'Alterações em agendamentos faturados exigem uma justificativa.',
+                code: 'OVERRIDE_REASON_REQUIRED'
+            });
+        }
+        // ------------------
+
         const updated = await appointmentService.update(id, data, req.user.id);
 
         // Log Reschedule if date changed
-        if (data.startAt && appointmentBefore && data.startAt.getTime() !== appointmentBefore.startAt.getTime()) {
-            await auditService.logAppointmentEvent((req as any).audit, updated as any, 'APPOINTMENT_RESCHEDULED',
-                `Agendamento de ${(updated as any).pet.name} reagendado para ${updated.startAt.toLocaleString('pt-BR')}`,
-                { from: appointmentBefore.startAt, to: updated.startAt }
+        if (data.startAt && appointmentBefore.startAt && new Date(data.startAt).getTime() !== appointmentBefore.startAt.getTime()) {
+            await auditService.logAppointmentEvent((req as any).audit as AuditContext, updated as any, AuditAction.APPOINTMENT_RESCHEDULED,
+                `Agendamento de ${(updated as any).pet.name} reagendado para ${updated.startAt ? updated.startAt.toLocaleString('pt-BR') : 'Sem data'}`,
+                { from: appointmentBefore?.startAt, to: updated.startAt, reason: req.body.adminOverrideReason }
+            );
+        } else if (isBilled && isAdmin) {
+            await auditService.logAppointmentEvent((req as any).audit as AuditContext, updated as any, AuditAction.APPOINTMENT_UPDATED,
+                `Agendamento faturado de ${(updated as any).pet.name} editado pelo admin: ${req.body.adminOverrideReason}`,
+                { before: appointmentBefore, after: updated, reason: req.body.adminOverrideReason }
             );
         }
 
@@ -203,6 +234,19 @@ export const updateStatus = async (req: any, res: Response) => {
         }
 
         const { reason } = req.body;
+
+        // --- LOCK LOGIC ---
+        const isBilled = ['INVOICED', 'PAID'].includes(appointment.billingStatus);
+        const isAdmin = ['ADMIN', 'MASTER'].includes(req.user.role);
+
+        if (isBilled && !isAdmin && status === 'CANCELADO') {
+            return res.status(403).json({
+                error: 'Este agendamento já foi faturado ou pago e não pode ser cancelado diretamente.',
+                code: 'BILLING_LOCKED'
+            });
+        }
+        // ------------------
+
         const updated = await appointmentService.updateStatus(id, status as AppointmentStatus, req.user.id, reason);
 
         // Audit Log
@@ -210,7 +254,7 @@ export const updateStatus = async (req: any, res: Response) => {
         if (status === 'CANCELADO') action = 'APPOINTMENT_CANCELLED';
         if (status === 'NO_SHOW') action = 'APPOINTMENT_NO_SHOW';
 
-        await auditService.logAppointmentEvent((req as any).audit, updated, action,
+        await auditService.logAppointmentEvent((req as any).audit as AuditContext, updated, action,
             `Status do agendamento de ${updated.pet.name} alterado para ${status}`,
             { oldStatus: appointment.status, newStatus: status, reason }
         );
@@ -326,6 +370,19 @@ export const duplicate = async (req: any, res: Response) => {
 // Agenda & Calendar Controllers
 // -------------------------------------------------------------------------
 
+export const getDay = async (req: any, res: Response) => {
+    try {
+        const { date, ...filters } = req.query;
+        if (!date) return res.status(400).json({ error: 'Data não informada' });
+
+        const result = await appointmentService.getDay(date as string, filters);
+        res.json(result);
+    } catch (err: any) {
+        logError('Error in getDay controller', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 export const getWeek = async (req: any, res: Response) => {
     try {
         const { startDate, endDate, module } = req.query;
@@ -371,3 +428,67 @@ export const search = async (req: any, res: Response) => {
     }
 };
 
+/**
+ * Adiciona um serviço a um agendamento existente
+ * PATCH /appointments/:id/services/add
+ */
+export const addService = async (req: any, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { serviceId, price, discount } = req.body;
+
+        if (!serviceId || price === undefined) {
+            return res.status(400).json({ error: 'serviceId e price são obrigatórios' });
+        }
+
+        const updated = await appointmentService.addServiceToAppointment(
+            id,
+            serviceId,
+            parseFloat(price),
+            parseFloat(discount || 0)
+        );
+
+        // Audit log
+        await auditService.logAppointmentEvent(
+            { source: 'SYSTEM', actorUserId: req.user?.id || 'SYSTEM' },
+            updated,
+            'APPOINTMENT_STATUS_CHANGED',
+            `Serviço adicionado: ${serviceId}`
+        );
+
+        res.json(updated);
+    } catch (error: any) {
+        logError('AppointmentController error adding service', error, { appointmentId: req.params.id });
+        res.status(500).json({ error: error.message || 'Erro ao adicionar serviço' });
+    }
+};
+
+/**
+ * Remove um serviço de um agendamento
+ * PATCH /appointments/:id/services/remove
+ */
+export const removeService = async (req: any, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { serviceId } = req.body;
+
+        if (!serviceId) {
+            return res.status(400).json({ error: 'serviceId é obrigatório' });
+        }
+
+        const updated = await appointmentService.removeServiceFromAppointment(id, serviceId);
+
+        // Audit log
+        await auditService.logAppointmentEvent(
+            { source: 'SYSTEM', actorUserId: req.user?.id || 'SYSTEM' },
+            updated,
+            'APPOINTMENT_STATUS_CHANGED',
+            `Serviço removido: ${serviceId}`
+        );
+
+        res.json(updated);
+    } catch (error: any) {
+        logError('AppointmentController error removing service', error, { appointmentId: req.params.id });
+        res.status(500).json({ error: error.message || 'Erro ao remover serviço' });
+    }
+};

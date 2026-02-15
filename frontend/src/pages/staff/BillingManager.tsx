@@ -234,14 +234,14 @@ export default function BillingManager() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'PAGO': return 'bg-green-100 text-green-700';
-            case 'PENDENTE': return 'bg-yellow-100 text-yellow-700 font-black';
+            case 'PENDENTE': return 'bg-yellow-100 text-yellow-700 font-bold';
             case 'VENCIDO': return 'bg-red-100 text-red-700 font-extrabold ring-1 ring-red-200';
             case 'ATRASADO': return 'bg-red-100 text-red-700 font-extrabold ring-1 ring-red-200'; // Mapping VENCIDO
             case 'MONITORAR': return 'bg-blue-100 text-blue-700';
             case 'NEGOCIADO': return 'bg-purple-100 text-purple-700';
             case 'ENCERRADO': return 'bg-gray-200 text-gray-600';
             case 'RECEBIDO': return 'bg-green-100 text-green-700 px-3 py-1.5';
-            case 'FATURAR': return 'bg-orange-100 text-orange-700 font-black ring-1 ring-orange-200';
+            case 'FATURAR': return 'bg-orange-100 text-orange-700 font-bold ring-1 ring-orange-200';
             default: return 'bg-gray-100 text-gray-700';
         }
     };
@@ -274,16 +274,16 @@ export default function BillingManager() {
                                 <FileText size={20} />
                             </div>
                             <div>
-                                <p className="font-black text-secondary uppercase text-[13px]">{invoice.customer.name}</p>
+                                <p className="font-bold text-secondary uppercase text-[13px]">{invoice.customer.name}</p>
                                 <div className="flex items-center gap-2">
                                     <p className="text-[10px] font-bold text-gray-400">Ref: {invoice.quoteId ? 'Orçamento' : 'Serviço'}</p>
                                     {invoice.quote?.seqId && (
-                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest">
                                             OR-{String(invoice.quote.seqId).padStart(4, '0')}
                                         </span>
                                     )}
                                     {invoice.appointment?.seqId && (
-                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                        <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest">
                                             AG-{String(invoice.appointment.seqId).padStart(4, '0')}
                                         </span>
                                     )}
@@ -300,7 +300,7 @@ export default function BillingManager() {
                     </div>
 
                     {/* Amount */}
-                    <div className="col-span-2 font-black text-secondary">
+                    <div className="col-span-2 font-bold text-secondary">
                         R$ {invoice.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
 
@@ -312,7 +312,7 @@ export default function BillingManager() {
                     {/* Status */}
                     <div className="col-span-2">
                         <div className="flex items-center justify-between">
-                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${getStatusColor(invoice.status)}`}>
+                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${getStatusColor(invoice.status)}`}>
                                 {invoice.status === 'PAGO' ? 'RECEBIDO' : invoice.status === 'VENCIDO' ? 'ATRASADO' : invoice.status}
                             </span>
                             <button
@@ -416,7 +416,7 @@ export default function BillingManager() {
                             className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-secondary text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-8 min-w-[500px]"
                         >
                             <div className="flex items-center gap-2">
-                                <span className="bg-primary text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center">
+                                <span className="bg-primary text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
                                     {selectedIds.length}
                                 </span>
                                 <p className="text-sm font-bold">Faturas Selecionadas</p>
@@ -424,13 +424,13 @@ export default function BillingManager() {
                             <div className="h-6 w-px bg-white/10"></div>
                             <button
                                 onClick={handleBulkPayment}
-                                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2"
                             >
                                 <DollarSign size={16} /> RECEBER EM MASSA
                             </button>
                             <button
                                 onClick={handleBulkDelete}
-                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2"
+                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2"
                             >
                                 <Trash2 size={16} /> EXCLUIR EM MASSA
                             </button>
@@ -445,7 +445,7 @@ export default function BillingManager() {
                 </AnimatePresence>
 
                 {/* Header with controls */}
-                <div className="bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                <div className="bg-gray-50 text-gray-400 text-[10px] font-bold uppercase tracking-widest">
                     <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center border-b border-gray-100">
                         {/* Checkbox */}
                         <div className="col-span-1">
@@ -499,13 +499,13 @@ export default function BillingManager() {
                 {/* Footer with totals */}
                 <div className="bg-gray-50 border-t border-gray-100">
                     <div className="grid grid-cols-12 gap-4 px-6 py-6 items-center">
-                        <div className="col-span-6 text-right font-black text-gray-400 uppercase text-[10px] tracking-widest">
+                        <div className="col-span-6 text-right font-bold text-gray-400 uppercase text-[10px] tracking-widest">
                             Totais na Tela:
                         </div>
-                        <div className="col-span-2 font-black text-secondary text-base">
+                        <div className="col-span-2 font-bold text-secondary text-base">
                             R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
-                        <div className="col-span-2 font-black text-green-600 text-base">
+                        <div className="col-span-2 font-bold text-green-600 text-base">
                             R$ {totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
                         <div className="col-span-2"></div>

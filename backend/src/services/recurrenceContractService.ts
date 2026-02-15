@@ -55,6 +55,48 @@ export const getContractById = async (id: string) => {
     });
 };
 
+export const getContractDetails = async (id: string) => {
+    const contract = await prisma.recurrenceContract.findUnique({
+        where: { id },
+        include: {
+            customer: true,
+            invoices: {
+                orderBy: { createdAt: 'desc' },
+                take: 12, // Last 12 invoices
+                include: {
+                    lines: true
+                }
+            }
+        }
+    });
+
+    if (!contract) return null;
+
+    // Fetch appointments linked to invoices of this contract
+    // This is an indirect link since appointments are linked to invoices, and invoices to contracts
+    const invoiceIds = contract.invoices.map(i => i.id);
+
+    // Find appointments linked to these invoices
+    const linkedAppointments = await prisma.appointment.findMany({
+        where: {
+            appointmentInvoiceLink: {
+                invoiceId: { in: invoiceIds }
+            }
+        },
+        orderBy: { startAt: 'desc' },
+        take: 20,
+        include: {
+            services: true,
+            pet: true
+        }
+    });
+
+    return {
+        ...contract,
+        recentAppointments: linkedAppointments
+    };
+};
+
 export const listContracts = async (filters: {
     type?: RecurrenceType,
     status?: ContractStatus,
@@ -119,8 +161,10 @@ export const updateContractStatus = async (id: string, status: ContractStatus, r
 export default {
     createContract,
     getContractById,
+    getContractDetails,
     listContracts,
     updateContract,
     updateContractStatus
 };
+
 
