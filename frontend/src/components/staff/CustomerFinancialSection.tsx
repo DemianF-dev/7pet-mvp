@@ -240,7 +240,7 @@ export default function CustomerFinancialSection({ customerId }: CustomerFinanci
 
                                                     {t.order && (
                                                         <button
-                                                            onClick={() => setSelectedOrderId(t.order?.id)}
+                                                            onClick={() => setSelectedOrderId(t.order?.id || null)}
                                                             className="flex items-center gap-1.5 text-[10px] text-blue-500 font-black uppercase bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors"
                                                         >
                                                             <Receipt size={10} />

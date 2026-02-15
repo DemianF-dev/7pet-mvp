@@ -103,6 +103,10 @@ export default function AppointmentDetailsModal({ isOpen, onClose, onSuccess, ap
         window.open(url, '_blank');
     };
 
+    const handlePrint = () => {
+        window.print();
+    };
+
     const handleEditPerformer = async () => {
         setIsEditingPerformer(true);
         setSelectedPerformerId(localAppointment.performerId || '');

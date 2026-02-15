@@ -544,6 +544,7 @@ const POS: React.FC = () => {
           </div>
           {cart.length > 0 && (
             <IconButton
+              aria-label="Esvaziar carrinho"
               icon={Trash2}
               variant="ghost"
               className="text-white hover:bg-white/10"
@@ -626,13 +627,14 @@ const POS: React.FC = () => {
                 <div>
                   <p className="font-bold text-gray-900 text-sm">{selectedCustomer.name}</p>
                   {selectedCustomer.petName && (
-                    <Badge variant="secondary" size="sm" className="mt-1 bg-blue-50 text-blue-600 border-none">
+                    <Badge variant="neutral" size="sm" className="mt-1 bg-blue-50 text-blue-600 border-none">
                       Pet: {selectedCustomer.petName}
                     </Badge>
                   )}
                 </div>
               </div>
               <IconButton
+                aria-label="Remover cliente"
                 icon={X}
                 size="sm"
                 variant="ghost"
@@ -762,6 +764,7 @@ const POS: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <IconButton
+              aria-label="Histórico de vendas"
               icon={History}
               onClick={() => { setActiveView('recent'); loadRecentOrders(); }}
               variant={activeView === 'recent' ? 'primary' : 'secondary'}
@@ -850,7 +853,7 @@ const POS: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-6 px-1">
                     <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest">Histórico de Vendas</h2>
-                    <Badge variant="outline" className="text-[10px] uppercase">{recentOrders.length} registros</Badge>
+                    <Badge variant="neutral" className="text-[10px] uppercase">{recentOrders.length} registros</Badge>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {recentOrders.map((order) => (
