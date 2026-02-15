@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260202-0421",
+  "version": "BETA20260215-1318",
   "stage": "BETA",
-  "timestamp": "2026-02-02T04:21:01.000Z",
-  "commit": "6b398ed",
-  "buildNumber": 168,
-  "releaseNotes": "Auto-generated from commit: fix: quote calculations, transport summary and backend synchronization. Also fixed build errors in BrainService and index.ts."
+  "timestamp": "2026-02-15T13:18:22.000Z",
+  "commit": "8c3bf91",
+  "buildNumber": 169,
+  "releaseNotes": "Auto-generated from commit: feat: refactor payroll models to StaffPay* and add deploy script"
 }
