@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260215-1347",
+  "version": "BETA20260215-1432",
   "stage": "BETA",
-  "timestamp": "2026-02-15T13:47:11.000Z",
-  "commit": "f613a1a",
-  "buildNumber": 170,
-  "releaseNotes": "Auto-generated from commit: fix: resolve syntax error in StaffProfile.tsx"
+  "timestamp": "2026-02-15T14:32:04.000Z",
+  "commit": "2049e0c",
+  "buildNumber": 171,
+  "releaseNotes": "Auto-generated from commit: fix(frontend): resolve tsc build errors and missing aria-labels"
 }
