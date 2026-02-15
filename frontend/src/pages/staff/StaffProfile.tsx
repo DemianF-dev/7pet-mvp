@@ -573,22 +573,16 @@ export default function StaffProfile() {
                             </a>
                         </div>
                     </div>
-
-                </div>
-
                 </form>
-    )
-}
+            )}
 
-{/* Developer Settings (Restricted) - Moved OUT of the form and grid to use full width */ }
-<MasterGate>
-    <div className="mt-12 w-full">
-        <DevCockpitPanel />
-    </div>
-</MasterGate>
-            </div >
-        </main >
+            {/* Developer Settings (Restricted) - Moved OUT of the form and grid to use full width */}
+            <MasterGate>
+                <div className="mt-12 w-full">
+                    <DevCockpitPanel />
+                </div>
+            </MasterGate>
+        </main>
     );
-
 };
 
