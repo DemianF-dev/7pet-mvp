@@ -1,8 +1,8 @@
 {
-  "version": "BETA20260215-1318",
+  "version": "BETA20260215-1347",
   "stage": "BETA",
-  "timestamp": "2026-02-15T13:18:22.000Z",
-  "commit": "8c3bf91",
-  "buildNumber": 169,
-  "releaseNotes": "Auto-generated from commit: feat: refactor payroll models to StaffPay* and add deploy script"
+  "timestamp": "2026-02-15T13:47:11.000Z",
+  "commit": "f613a1a",
+  "buildNumber": 170,
+  "releaseNotes": "Auto-generated from commit: fix: resolve syntax error in StaffProfile.tsx"
 }
