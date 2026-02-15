@@ -11,6 +11,11 @@ Esta skill deve ser utilizada sempre que o usuário solicitar o deploy de altera
 
 Sempre siga estas fases rigorosamente:
 
+### FASE 0: Automação (Novo)
+
+Para facilitar, você pode simplesmente rodar o script oficial:
+`powershell .\scripts\deploy-7pet.ps1`
+
 ### FASE 1: Integridade Local (Obrigatório)
 
 Antes de qualquer push, garanta que o código compila.

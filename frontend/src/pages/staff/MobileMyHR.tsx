@@ -100,10 +100,10 @@ export const MobileMyHR = () => {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-3xl"></div>
 
                     <div className="relative z-10 flex flex-col items-center text-center py-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-2">
                             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </p>
-                        <h2 className="text-5xl font-black mb-1">
+                        <h2 className="text-5xl font-bold mb-1">
                             {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </h2>
                         <p className="text-xs font-bold opacity-70 mb-6 uppercase tracking-widest">
@@ -113,17 +113,17 @@ export const MobileMyHR = () => {
                         {hasCheckedOut ? (
                             <div className="bg-white/10 px-6 py-3 rounded-2xl flex items-center gap-2 mb-6">
                                 <CheckCircle size={20} className="text-green-400" />
-                                <span className="font-black text-xs uppercase tracking-widest">Expediente Encerrado</span>
+                                <span className="font-bold text-xs uppercase tracking-widest">Expediente Encerrado</span>
                             </div>
                         ) : isWorkingNow ? (
                             <div className="bg-white/10 px-6 py-3 rounded-2xl flex items-center gap-2 mb-6">
                                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                <span className="font-black text-xs uppercase tracking-widest">Em Jornada de Trabalho</span>
+                                <span className="font-bold text-xs uppercase tracking-widest">Em Jornada de Trabalho</span>
                             </div>
                         ) : (
                             <div className="bg-white/10 px-6 py-3 rounded-2xl flex items-center gap-2 mb-6">
                                 <Clock size={20} className="text-blue-400" />
-                                <span className="font-black text-xs uppercase tracking-widest">Aguardando Início</span>
+                                <span className="font-bold text-xs uppercase tracking-widest">Aguardando Início</span>
                             </div>
                         )}
 
@@ -131,7 +131,7 @@ export const MobileMyHR = () => {
                             <button
                                 onClick={isWorkingNow ? handleCheckOut : handleCheckIn}
                                 disabled={actionLoading}
-                                className={`w-full py-4 rounded-2xl font-black text-lg uppercase tracking-wider flex items-center justify-center gap-3 transition-all active:scale-95 ${isWorkingNow ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-primary text-white shadow-lg shadow-primary/30'
+                                className={`w-full py-4 rounded-2xl font-bold text-lg uppercase tracking-wider flex items-center justify-center gap-3 transition-all active:scale-95 ${isWorkingNow ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-primary text-white shadow-lg shadow-primary/30'
                                     }`}
                             >
                                 {actionLoading ? (
@@ -156,7 +156,7 @@ export const MobileMyHR = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === tab.id
                                     ? 'bg-white dark:bg-zinc-800 text-primary shadow-sm'
                                     : 'text-gray-400'
                                 }`}
@@ -179,7 +179,7 @@ export const MobileMyHR = () => {
                                 className="space-y-3"
                             >
                                 <div className="flex items-center justify-between px-2 mb-4">
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Histórico Recente</h3>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Histórico Recente</h3>
                                 </div>
                                 {attendanceHistory.length === 0 ? (
                                     <div className="py-10 text-center text-gray-400">Nenhum registro encontrado.</div>
@@ -191,7 +191,7 @@ export const MobileMyHR = () => {
                                                     <Calendar size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-secondary dark:text-white uppercase leading-tight">
+                                                    <p className="text-sm font-bold text-secondary dark:text-white uppercase leading-tight">
                                                         {new Date(rec.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-gray-400 mt-0.5">
@@ -200,7 +200,7 @@ export const MobileMyHR = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-xs font-black text-secondary dark:text-white">
+                                                <p className="text-xs font-bold text-secondary dark:text-white">
                                                     {rec.checkInAt ? new Date(rec.checkInAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                 </p>
                                                 <p className="text-[10px] font-bold text-gray-400">
@@ -228,11 +228,11 @@ export const MobileMyHR = () => {
                                                 <Activity size={20} />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-black text-secondary dark:text-white uppercase leading-tight">{exec.service?.name}</p>
+                                                <p className="text-sm font-bold text-secondary dark:text-white uppercase leading-tight">{exec.service?.name}</p>
                                                 <p className="text-[10px] font-bold text-gray-400 mt-0.5">{exec.appointment?.pet?.name} • {new Date(exec.executedAt).toLocaleDateString('pt-BR')}</p>
                                             </div>
                                         </div>
-                                        <Badge variant="neutral" className="text-[9px] font-black uppercase tracking-widest">SPA</Badge>
+                                        <Badge variant="neutral" className="text-[9px] font-bold uppercase tracking-widest">SPA</Badge>
                                     </div>
                                 ))}
                                 {transportLegs.map(leg => (
@@ -243,23 +243,23 @@ export const MobileMyHR = () => {
                                                     <Activity size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-secondary dark:text-white uppercase leading-tight">
+                                                    <p className="text-sm font-bold text-secondary dark:text-white uppercase leading-tight">
                                                         {leg.legType === 'pickup' ? 'Busca (Leva)' : 'Entrega (Traz)'}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-gray-400 mt-0.5">{new Date(leg.completedAt).toLocaleDateString('pt-BR')}</p>
                                                 </div>
                                             </div>
-                                            <Badge variant="neutral" className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">TRANSPORTE</Badge>
+                                            <Badge variant="neutral" className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap">TRANSPORTE</Badge>
                                         </div>
                                         <div className="pt-2 border-t border-gray-50 dark:border-zinc-800 flex justify-between gap-4">
                                             <div className="flex-1">
-                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Pet / Tutor</p>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Pet / Tutor</p>
                                                 <p className="text-[10px] font-bold text-secondary dark:text-white truncate">
                                                     {leg.appointment?.pet?.name || '-'} / {leg.appointment?.customer?.name || '-'}
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Orçamento</p>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Orçamento</p>
                                                 <p className="text-[10px] font-bold text-secondary dark:text-white">
                                                     #{leg.appointment?.quote?.seqId || '---'}
                                                 </p>
@@ -285,14 +285,14 @@ export const MobileMyHR = () => {
                                                 <Wallet size={24} />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-black text-secondary dark:text-white uppercase leading-tight">Período Fechado</p>
+                                                <p className="text-sm font-bold text-secondary dark:text-white uppercase leading-tight">Período Fechado</p>
                                                 <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
-                                                    {new Date(statement.payPeriod.startDate).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                                                    {new Date(statement.staffPayPeriod.startDate).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-black text-green-600">R$ {statement.totalDue.toFixed(2)}</p>
+                                            <p className="text-lg font-bold text-green-600">R$ {statement.totalDue.toFixed(2)}</p>
                                             <div className="flex justify-end gap-2 mt-1">
                                                 <IconButton icon={FileText} size="sm" variant="ghost" className="text-gray-400" aria-label="Ver detalhes" />
                                                 <ChevronRight size={16} className="text-gray-300" />

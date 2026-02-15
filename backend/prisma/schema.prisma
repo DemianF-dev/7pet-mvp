@@ -1,52 +1,63 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["relationJoins"]
   binaryTargets   = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.0.x"]
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 model Appointment {
-  id                      String                  @id
+  id                      String                    @id
   customerId              String
   petId                   String
-  startAt                 DateTime
-  status                  AppointmentStatus       @default(PENDENTE)
+  startAt                 DateTime?
+  status                  AppointmentStatus         @default(PENDENTE)
   cancellationReason      String?
   noShowReason            String?
   deletedAt               DateTime?
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime
-  notified24h             Boolean                 @default(false)
-  notified1h              Boolean                 @default(false)
-  category                AppointmentCategory     @default(SPA)
-  seqId                   Int                     @unique @default(autoincrement())
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  notified24h             Boolean                   @default(false)
+  notified1h              Boolean                   @default(false)
+  category                AppointmentCategory       @default(SPA)
+  seqId                   Int                       @unique @default(autoincrement())
   performerId             String?
   quoteId                 String?
   logisticsStatus         String?
-  logisticsLastRemindedAt DateTime?               @db.Timestamp(6)
+  logisticsLastRemindedAt DateTime?                 @db.Timestamp(6)
   recurringPackageId      String?
   dropoffProviderId       String?
   pickupProviderId        String?
-  posOrderId              String?                 @unique
-  customer                Customer                @relation(fields: [customerId], references: [id])
-  dropoffProvider         User?                   @relation("Appointment_dropoffProvider", fields: [dropoffProviderId], references: [id])
-  performer               User?                   @relation(fields: [performerId], references: [id])
-  pet                     Pet                     @relation(fields: [petId], references: [id])
-  pickupProvider          User?                   @relation("Appointment_pickupProvider", fields: [pickupProviderId], references: [id])
-  posOrder                Order?                  @relation(fields: [posOrderId], references: [id])
-  quote                   Quote?                  @relation(fields: [quoteId], references: [id])
-  recurringPackage        RecurringPackage?       @relation(fields: [recurringPackageId], references: [id])
+  posOrderId              String?                   @unique
+  billingStatus           BillingStatus             @default(UNBILLED)
+  planId                  String?
+  recurrenceGroupKey      String?
+  sourceQuoteId           String?
+  transportMode           TransportMode?
+  metadata                Json?
+  transportSnapshotId     String?
+  customer                Customer                  @relation(fields: [customerId], references: [id])
+  dropoffProvider         User?                     @relation("Appointment_dropoffProvider", fields: [dropoffProviderId], references: [id])
+  performer               User?                     @relation(fields: [performerId], references: [id])
+  pet                     Pet                       @relation(fields: [petId], references: [id])
+  pickupProvider          User?                     @relation("Appointment_pickupProvider", fields: [pickupProviderId], references: [id])
+  schedulePlan            SchedulePlan?             @relation(fields: [planId], references: [id])
+  posOrder                Order?                    @relation(fields: [posOrderId], references: [id])
+  quote                   Quote?                    @relation(fields: [quoteId], references: [id])
+  recurringPackage        RecurringPackage?         @relation(fields: [recurringPackageId], references: [id])
+  transportSnapshot       TransportPricingSnapshot? @relation(fields: [transportSnapshotId], references: [id])
   appointmentInvoiceLink  AppointmentInvoiceLink?
   debitCreditNotes        DebitCreditNote[]
   invoice                 Invoice?
+  invoiceLines            InvoiceLine[]
   serviceExecutions       ServiceExecution[]
   statusHistory           StatusHistory[]
   transportDetails        TransportDetails?
+  transportLegs           TransportLeg[]            @relation("Appointment_transportLegs")
   transportLegExecutions  TransportLegExecution[]
-  services                Service[]               @relation("AppointmentToService")
+  services                Service[]                 @relation("AppointmentToService")
 
   @@index([category, deletedAt, startAt])
   @@index([category])
@@ -319,12 +330,15 @@ model Customer {
   debitCreditNotes          DebitCreditNote[]
   financialTransactions     FinancialTransaction[]
   invoices                  Invoice[]
+  ledgerEntries             LedgerEntry[]
   posOrders                 Order[]
   packageInvoices           PackageInvoice[]
   pets                      Pet[]
   quotes                    Quote[]
   recurrenceContracts       RecurrenceContract[]
   recurringPackages         RecurringPackage[]
+  routePresets              RoutePreset[]
+  schedulePlans             SchedulePlan[]
 
   @@index([deletedAt])
   @@index([legacyBitrixId])
@@ -376,24 +390,31 @@ model DebitCreditNote {
 
 model FinancialTransaction {
   id               String   @id @default(uuid())
-  customerId       String
+  customerId       String?
   type             String
   amount           Float
   description      String
   category         String?
   relatedQuoteId   String?
   relatedInvoiceId String?
+  relatedOrderId   String?
+  relatedPayStatementId String?
   createdBy        String
   createdAt        DateTime @default(now())
   notes            String?
-  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   invoice          Invoice? @relation(fields: [relatedInvoiceId], references: [id])
   quote            Quote?   @relation(fields: [relatedQuoteId], references: [id])
+  order            Order?   @relation(fields: [relatedOrderId], references: [id])
+
+   payStatement     StaffPayStatement? @relation(fields: [relatedPayStatementId], references: [id])
 
   @@index([category])
   @@index([createdAt])
   @@index([customerId])
   @@index([type])
+  @@index([relatedOrderId])
+  @@index([relatedPayStatementId])
 }
 
 model Goal {
@@ -447,22 +468,69 @@ model Invoice {
   customerId            String
   appointmentId         String?                @unique
   amount                Float
-  status                InvoiceStatus          @default(PENDENTE)
+  status                InvoiceStatus          @default(DRAFT)
   dueDate               DateTime
   createdAt             DateTime               @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
   billingPeriod         String?
   notes                 String?
+  createdByUserId       String?
+  currency              String                 @default("BRL")
+  discountTotal         Float                  @default(0)
+  periodEnd             DateTime?
+  periodStart           DateTime?
+  subtotal              Float                  @default(0)
   financialTransactions FinancialTransaction[]
   appointment           Appointment?           @relation(fields: [appointmentId], references: [id])
   customer              Customer               @relation(fields: [customerId], references: [id])
+  lines                 InvoiceLine[]
+  ledgerEntries         LedgerEntry[]
   paymentRecords        PaymentRecord[]
   quotes                Quote[]
 
   @@index([deletedAt])
   @@index([dueDate])
   @@index([status])
+}
+
+model InvoiceLine {
+  id            String       @id @default(uuid())
+  invoiceId     String
+  description   String
+  quantity      Float        @default(1)
+  unitPrice     Float
+  lineTotal     Float
+  kind          String?
+  appointmentId String?
+  createdAt     DateTime     @default(now())
+  productId     String?
+  serviceId     String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  invoice       Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product       Product?     @relation(fields: [productId], references: [id])
+  service       Service?     @relation(fields: [serviceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([appointmentId])
+}
+
+model LedgerEntry {
+  id              String          @id @default(uuid())
+  customerId      String
+  type            String
+  amount          Float
+  direction       LedgerDirection
+  invoiceId       String?
+  reference       String?
+  createdByUserId String?
+  createdAt       DateTime        @default(now())
+  customer        Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+
+  @@index([customerId])
+  @@index([invoiceId])
+  @@index([type])
 }
 
 model Message {
@@ -568,55 +636,72 @@ model Participant {
   @@index([userId])
 }
 
-model PayAdjustment {
+model StaffPayAdjustment {
   id          String       @id @default(uuid())
-  payPeriodId String
+  staffPayPeriodId String?
   staffId     String
+
+  date        DateTime?    @default(now())
+  updatedAt   DateTime     @updatedAt
   type        String
   amount      Float
   direction   String
   reason      String
   createdById String
   createdAt   DateTime     @default(now())
-  payPeriod   PayPeriod    @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
-  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staffPayPeriod StaffPayPeriod? @relation(fields: [staffPayPeriodId], references: [id], onDelete: SetNull)
+  staff       StaffProfile   @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
-  @@index([payPeriodId])
+  orderId     String?
+  order       Order?       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  staffPayStatementId String?
+  staffPayStatement StaffPayStatement? @relation(fields: [staffPayStatementId], references: [id])
+
+  @@index([staffPayPeriodId])
+  @@index([orderId])
   @@index([staffId])
+  @@index([staffPayStatementId])
 }
 
-model PayPeriod {
-  id          String          @id @default(uuid())
-  startDate   DateTime        @db.Date
-  endDate     DateTime        @db.Date
+model StaffPayPeriod {
+  id          String               @id @default(uuid())
+  startDate   DateTime             @db.Date
+  endDate     DateTime             @db.Date
   type        String
-  status      String          @default("draft")
+  status      String               @default("draft")
   createdById String
   closedById  String?
   closedAt    DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  adjustments PayAdjustment[]
-  statements  PayStatement[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  adjustments StaffPayAdjustment[]
+  statements  StaffPayStatement[]
 
   @@index([startDate, endDate])
   @@index([status])
 }
 
-model PayStatement {
-  id               String       @id @default(uuid())
-  payPeriodId      String
+model StaffPayStatement {
+  id               String               @id @default(uuid())
+  staffPayPeriodId String
   staffId          String
-  baseTotal        Float        @default(0)
-  adjustmentsTotal Float        @default(0)
-  totalDue         Float        @default(0)
+  baseTotal        Float                @default(0)
+  adjustmentsTotal Float                @default(0)
+  totalDue         Float                @default(0)
   detailsJson      Json?
-  generatedAt      DateTime     @default(now())
-  payPeriod        PayPeriod    @relation(fields: [payPeriodId], references: [id], onDelete: Cascade)
-  staff            StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  generatedAt      DateTime             @default(now())
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  status           String               @default("DRAFT")
+  paidAt           DateTime?
 
-  @@unique([payPeriodId, staffId])
-  @@index([payPeriodId])
+  staffPayPeriod   StaffPayPeriod       @relation(fields: [staffPayPeriodId], references: [id], onDelete: Cascade)
+  staff            StaffProfile         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  transactions     FinancialTransaction[]
+  payAdjustments   StaffPayAdjustment[]
+
+  @@unique([staffPayPeriodId, staffId])
+  @@index([staffPayPeriodId])
   @@index([staffId])
 }
 
@@ -692,6 +777,7 @@ model Pet {
   customer                Customer           @relation(fields: [customerId], references: [id])
   quotes                  Quote[]
   recurringPackages       RecurringPackage[]
+  routePresets            RoutePreset[]
 
   @@index([customerId])
   @@index([customerId], map: "idx_pet_customerid")
@@ -727,6 +813,7 @@ model Product {
   deletedAt          DateTime?
   sku                String?             @unique
   inventoryMovements InventoryMovement[]
+  InvoiceLine        InvoiceLine[]
   orderItems         OrderItem[]
   quoteItems         QuoteItem[]
 
@@ -746,43 +833,43 @@ model PushSubscription {
 }
 
 model Quote {
-  id                       String                 @id @default(uuid())
+  id                       String                     @id @default(uuid())
   customerId               String
   petId                    String?
-  status                   QuoteStatus            @default(SOLICITADO)
-  totalAmount              Float                  @default(0)
+  status                   QuoteStatus                @default(SOLICITADO)
+  totalAmount              Float                      @default(0)
   desiredAt                DateTime?
-  createdAt                DateTime               @default(now())
-  updatedAt                DateTime               @updatedAt
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
   deletedAt                DateTime?
-  transportDestination     String?                @default("7Pet")
+  transportDestination     String?                    @default("7Pet")
   transportOrigin          String?
   transportPeriod          TransportPeriod?
-  type                     QuoteType              @default(SPA)
+  type                     QuoteType                  @default(SPA)
   hairLength               String?
-  hasKnots                 Boolean                @default(false)
-  hasParasites             Boolean                @default(false)
+  hasKnots                 Boolean                    @default(false)
+  hasParasites             Boolean                    @default(false)
   knotRegions              String?
-  petQuantity              Int                    @default(1)
+  petQuantity              Int                        @default(1)
   transportReturnAddress   String?
-  seqId                    Int                    @unique @default(autoincrement())
+  seqId                    Int                        @unique @default(autoincrement())
   scheduledAt              DateTime?
   transportAt              DateTime?
   invoiceId                String?
   parasiteComments         String?
   parasiteTypes            String?
-  wantsMedicatedBath       Boolean                @default(false)
+  wantsMedicatedBath       Boolean                    @default(false)
   transportType            TransportType?
   transportLevaAt          DateTime?
   transportTrazAt          DateTime?
   notes                    String?
-  isRecurring              Boolean                @default(false)
+  isRecurring              Boolean                    @default(false)
   frequency                PackageFrequency?
   packageDiscount          Float?
   cardFeePercent           Float?
   taxPercent               Float?
   recurringPackageId       String?
-  transportDiscountPercent Float?                 @default(0)
+  transportDiscountPercent Float?                     @default(0)
   transportLevaTotalAfter  Float?
   transportLevaTotalBefore Float?
   transportMode            String?
@@ -792,21 +879,45 @@ model Quote {
   transportTotalBefore     Float?
   transportTrazTotalAfter  Float?
   transportTrazTotalBefore Float?
+  metadata                 Json?
+  activeSnapshotId         String?
+  recurrenceType           String?
+  transportWeeklyFrequency Int?
   appointments             Appointment[]
   financialTransactions    FinancialTransaction[]
-  customer                 Customer               @relation(fields: [customerId], references: [id])
-  invoice                  Invoice?               @relation(fields: [invoiceId], references: [id])
-  pet                      Pet?                   @relation(fields: [petId], references: [id])
-  recurringPackage         RecurringPackage?      @relation(fields: [recurringPackageId], references: [id])
+  activeSnapshot           TransportPricingSnapshot?  @relation("QuoteActiveSnapshot", fields: [activeSnapshotId], references: [id])
+  customer                 Customer                   @relation(fields: [customerId], references: [id])
+  invoice                  Invoice?                   @relation(fields: [invoiceId], references: [id])
+  pet                      Pet?                       @relation(fields: [petId], references: [id])
+  recurringPackage         RecurringPackage?          @relation(fields: [recurringPackageId], references: [id])
   items                    QuoteItem[]
+  schedulePlan             SchedulePlan?
   statusHistory            StatusHistory[]
-  transportLegs            TransportLeg[]
+  transportLegs            TransportLeg[]             @relation("Quote_transportLegs")
+  snapshots                TransportPricingSnapshot[] @relation("QuoteSnapshots")
 
   @@index([customerId])
   @@index([deletedAt])
   @@index([isRecurring])
   @@index([status])
   @@index([customerId], map: "idx_quote_customerid")
+}
+
+model SchedulePlan {
+  id              String             @id @default(uuid())
+  quoteId         String             @unique
+  customerId      String
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  status          SchedulePlanStatus @default(DRAFT)
+  createdByUserId String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  appointments    Appointment[]
+  customer        Customer           @relation(fields: [customerId], references: [id])
+  quote           Quote              @relation(fields: [quoteId], references: [id])
+
+  @@index([customerId])
 }
 
 model QuoteItem {
@@ -931,6 +1042,7 @@ model Service {
   notes            String?
   bathCategory     String?
   groomingType     String?
+  InvoiceLine      InvoiceLine[]
   OrderItem        OrderItem[]
   PackageItem      PackageItem[]
   QuoteItem        QuoteItem[]
@@ -994,15 +1106,22 @@ model StaffProfile {
   hiringDate               DateTime?
   attendanceRecords        AttendanceRecord[]
   goalAssignments          GoalAssignment[]
-  payAdjustments           PayAdjustment[]
-  payStatements            PayStatement[]
+  payAdjustments           StaffPayAdjustment[]
+  payStatements            StaffPayStatement[]
   serviceExecutions        ServiceExecution[]
   user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   transportLegExecutions   TransportLegExecution[]
+  soldOrders               Order[]                 @relation("Order_seller")
+  fixedSalary              Float?                  @default(0)
+  commissionPercent        Float?                  @default(0)
+  benefits                 Json?                   @default("{}")
+  bankAccountType          String?
 
   @@index([department])
   @@index([isActive])
 }
+
+
 
 model StatusHistory {
   id            String       @id
@@ -1053,26 +1172,30 @@ model TransportLegExecution {
 }
 
 model TransportLeg {
-  id                 String   @id @default(uuid())
-  quoteId            String
-  kind               String
-  originAddress      String
-  destinationAddress String
-  distanceKm         Float
-  durationMin        Int
-  chargeKm           Float
-  chargeMin          Int
-  kmRate             Float
-  minRate            Float
-  subtotal           Float
+  id                 String            @id @default(uuid())
+  quoteId            String?
+  kind               String?
+  originAddress      String?
+  destinationAddress String?
+  distanceKm         Float?
+  durationMin        Int?
+  subtotal           Float?
   assignedProviderId String?
-  createdAt          DateTime @default(now())
-  assignedProvider   User?    @relation(fields: [assignedProviderId], references: [id])
-  quote              Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  createdAt          DateTime          @default(now())
+  appointmentId      String?
+  kms                Float?
+  legType            TransportLegType?
+  minutes            Int?
+  price              Float?
+  providerId         String?
+  appointment        Appointment?      @relation("Appointment_transportLegs", fields: [appointmentId], references: [id], onDelete: Cascade)
+  provider           User?             @relation("User_transportLegs", fields: [providerId], references: [id])
+  quote              Quote?            @relation("Quote_transportLegs", fields: [quoteId], references: [id], onDelete: Cascade)
 
+  @@index([appointmentId])
   @@index([quoteId])
-  @@index([assignedProviderId])
-  @@index([kind])
+  @@index([providerId])
+  @@index([legType])
 }
 
 model RouteCache {
@@ -1091,24 +1214,27 @@ model RouteCache {
 }
 
 model TransportSettings {
-  id                   String   @id @default(uuid())
-  handlingTimeLeva     Int      @default(0)
-  handlingTimeTraz     Int      @default(0)
-  updatedAt            DateTime @updatedAt
-  kmPriceLargada       Float    @default(2.0)
-  kmPriceLeva          Float    @default(2.0)
-  kmPriceTraz          Float    @default(2.0)
-  kmPriceRetorno       Float    @default(2.0)
-  minPriceLargada      Float    @default(1.5)
-  minPriceLeva         Float    @default(1.5)
-  minPriceTraz         Float    @default(1.5)
-  minPriceRetorno      Float    @default(1.5)
-  handlingTimeLargada  Int      @default(0)
-  handlingTimeRetorno  Int      @default(0)
-  kmRate               Float    @default(2.0)
-  minRate              Float    @default(1.5)
-  providerSharePercent Float    @default(60.0)
-  taxPercent           Float    @default(5.0)
+  id                            String   @id @default(uuid())
+  handlingTimeLeva              Int      @default(0)
+  handlingTimeTraz              Int      @default(0)
+  updatedAt                     DateTime @updatedAt
+  kmPriceLargada                Float    @default(2.0)
+  kmPriceLeva                   Float    @default(2.0)
+  kmPriceTraz                   Float    @default(2.0)
+  kmPriceRetorno                Float    @default(2.0)
+  minPriceLargada               Float    @default(1.5)
+  minPriceLeva                  Float    @default(1.5)
+  minPriceTraz                  Float    @default(1.5)
+  minPriceRetorno               Float    @default(1.5)
+  handlingTimeLargada           Int      @default(0)
+  handlingTimeRetorno           Int      @default(0)
+  kmRate                        Float    @default(2.0)
+  minRate                       Float    @default(1.5)
+  providerSharePercent          Float    @default(60.0)
+  taxPercent                    Float    @default(5.0)
+  additionalPetSurchargePercent Float    @default(20.0)
+  knotPrice                     Float?   @default(0)
+  medicatedBathPrice            Float?   @default(0)
 }
 
 model User {
@@ -1139,15 +1265,15 @@ model User {
   role                    String?
   plainPassword           String?
   division                String                       @default("CLIENTE")
-  allowCustomerProfile    Boolean                      @default(false)
   isEligible              Boolean                      @default(false)
   active                  Boolean                      @default(true)
   isSupportAgent          Boolean                      @default(false)
   allowedGames            Json?                        @default("[]")
   pauseMenuEnabled        Boolean                      @default(false)
-  xp                      Int                          @default(0)
-  level                   Int                          @default(1)
   lastSeenAt              DateTime?
+  allowCustomerProfile    Boolean                      @default(false)
+  level                   Int                          @default(1)
+  xp                      Int                          @default(0)
   dropoffAppointments     Appointment[]                @relation("Appointment_dropoffProvider")
   appointments            Appointment[]
   pickupAppointments      Appointment[]                @relation("Appointment_pickupProvider")
@@ -1162,14 +1288,14 @@ model User {
   messages                Message[]
   notifications           Notification[]
   participants            Participant[]
+  pauseSessions           PauseSession[]
   posts                   Post[]
   pushSubscriptions       PushSubscription[]
   quoteItems              QuoteItem[]
   reactions               Reaction[]
   assignedServices        Service[]
   staffProfile            StaffProfile?
-  pauseSessions           PauseSession[]
-  transportLegs           TransportLeg[]
+  transportLegs           TransportLeg[]               @relation("User_transportLegs")
   notificationPreferences UserNotificationPreference[]
 
   @@index([division])
@@ -1231,6 +1357,11 @@ model Order {
   customer        Customer?        @relation(fields: [customerId], references: [id])
   items           OrderItem[]
   payments        OrderPayment[]
+  payAdjustments  StaffPayAdjustment[]
+  sellerId        String?
+  seller          StaffProfile?    @relation("Order_seller", fields: [sellerId], references: [id])
+  paymentCondition String?         @default("À Vista")
+  financialTransactions FinancialTransaction[]
 
   @@index([status])
   @@index([customerId])
@@ -1311,6 +1442,88 @@ model ServicePriceConfig {
   @@index([category, isActive])
 }
 
+model PauseGame {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  slug        String         @unique
+  active      Boolean        @default(true)
+  baseXp      Int            @default(10)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  sessions    PauseSession[]
+
+  @@index([slug])
+}
+
+model PauseSession {
+  id        String    @id @default(uuid())
+  userId    String
+  gameId    String
+  startTime DateTime  @default(now())
+  endTime   DateTime?
+  score     Float?    @default(0)
+  xpEarned  Int?      @default(0)
+  createdAt DateTime  @default(now())
+  game      PauseGame @relation(fields: [gameId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([startTime])
+}
+
+model RoutePreset {
+  id          String        @id @default(uuid())
+  customerId  String
+  petId       String?
+  name        String
+  type        TransportType
+  origin      String?
+  destination String?
+  stops       Json?
+  routeJson   Json?
+  version     Int           @default(1)
+  lastUsedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  pet         Pet?          @relation(fields: [petId], references: [id])
+
+  @@index([customerId])
+  @@index([customerId, lastUsedAt])
+}
+
+model TransportPricingSnapshot {
+  id                 String        @id @default(uuid())
+  quoteId            String
+  createdAt          DateTime      @default(now())
+  totalAmount        Float
+  data               Json
+  hash               String?
+  reason             String?
+  linkedAppointments Appointment[]
+  activeForQuote     Quote[]       @relation("QuoteActiveSnapshot")
+  quote              Quote         @relation("QuoteSnapshots", fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+enum TransportLegType {
+  PARTIDA
+  LEVA
+  LEVA2
+  TRAZ
+  TRAZ2
+  RETORNO
+}
+
+enum TransportMode {
+  SOLO_LEVA
+  SOLO_TRAZ
+  LEVA_E_TRAZ
+}
+
 enum AppointmentCategory {
   SPA
   LOGISTICA
@@ -1323,6 +1536,13 @@ enum AppointmentStatus {
   FINALIZADO
   CANCELADO
   NO_SHOW
+  PLANNED
+}
+
+enum SchedulePlanStatus {
+  DRAFT
+  CONFIRMADO
+  CANCELADO
 }
 
 enum AuditAction {
@@ -1366,6 +1586,12 @@ enum AuditAction {
   APPOINTMENT_UPDATED
   ORDER_CANCELLED
   ORDER_RETURNED
+  INVOICE_ISSUED
+  INVOICE_PAID
+  INVOICE_VOIDED
+  BILLING_CREDIT_NOTE
+  PAYMENT_CREATED
+  LEDGER_ADJUSTMENT
 }
 
 enum AuditSeverity {
@@ -1395,6 +1621,8 @@ enum AuditTargetType {
   SERVICE
   PRODUCT
   ORDER
+  INVOICE
+  LEDGER_ENTRY
 }
 
 enum BillingAction {
@@ -1426,6 +1654,15 @@ enum InvoiceStatus {
   NEGOCIADO
   ENCERRADO
   FATURAR
+  DRAFT
+  ISSUED
+  VOID
+  PAID
+}
+
+enum LedgerDirection {
+  DEBIT
+  CREDIT
 }
 
 enum PackageFrequency {
@@ -1501,6 +1738,7 @@ enum OrderPaymentMethod {
   CREDIT_CARD_INSTALLMENT
   DEFERRED
   FUTURE
+  PAYROLL_DEDUCTION
   OTHER
 }
 
@@ -1537,6 +1775,8 @@ enum PackageInvoiceStatus {
   PARCIAL
   CANCELADA
   VENCIDA
+  ABERTA
+  FECHADA
 }
 
 enum InvoiceSourceType {
@@ -1544,33 +1784,12 @@ enum InvoiceSourceType {
   AJUSTE_MANUAL
 }
 
-model PauseGame {
-  id          String         @id @default(uuid())
-  title       String
-  description String?
-  slug        String         @unique // e.g., "zen-espuma"
-  active      Boolean        @default(true)
-  baseXp      Int            @default(10)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  sessions    PauseSession[]
-
-  @@index([slug])
+enum BillingStatus {
+  UNBILLED
+  INVOICED
+  PAID
 }
 
-model PauseSession {
-  id        String    @id @default(uuid())
-  userId    String
-  gameId    String
-  startTime DateTime  @default(now())
-  endTime   DateTime?
-  score     Float?    @default(0)
-  xpEarned  Int?      @default(0)
-  createdAt DateTime  @default(now())
-  game      PauseGame @relation(fields: [gameId], references: [id])
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([gameId])
-  @@index([startTime])
-}
+
+

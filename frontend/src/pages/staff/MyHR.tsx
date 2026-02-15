@@ -18,7 +18,7 @@ interface PayStatement {
     adjustmentsTotal: number;
     totalDue: number;
     generatedAt: string;
-    payPeriod: {
+    staffPayPeriod: {
         startDate: string;
         endDate: string;
         type: string;
@@ -199,7 +199,7 @@ export default function MyHR() {
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-2xl font-black text-heading">Meu RH</h1>
+                    <h1 className="text-2xl font-bold text-heading">Meu RH</h1>
                     <p className="text-body-secondary">
                         {profile.department.toUpperCase()} • {profile.payModel === 'daily' ? 'Diária' : 'Pernada'}
                     </p>
@@ -232,10 +232,10 @@ export default function MyHR() {
                         {/* Today Card */}
                         <div className={`surface-card p-8 text-center ${isWorkingNow ? 'ring-2 ring-success' : ''}`}>
                             <div className="mb-6">
-                                <p className="text-xs font-black text-muted uppercase tracking-widest mb-2">
+                                <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">
                                     {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                                 </p>
-                                <p className="text-5xl font-black text-heading">
+                                <p className="text-5xl font-bold text-heading">
                                     {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
@@ -273,7 +273,7 @@ export default function MyHR() {
                                 <button
                                     onClick={isWorkingNow ? handleCheckOut : handleCheckIn}
                                     disabled={actionLoading}
-                                    className={`w-full max-w-xs mx-auto py-5 rounded-2xl font-black text-lg uppercase tracking-wider flex items-center justify-center gap-3 transition-all ${isWorkingNow
+                                    className={`w-full max-w-xs mx-auto py-5 rounded-2xl font-bold text-lg uppercase tracking-wider flex items-center justify-center gap-3 transition-all ${isWorkingNow
                                         ? 'bg-error hover:bg-error/90 text-white'
                                         : 'bg-success hover:bg-success/90 text-white'
                                         } ${actionLoading ? 'opacity-50' : ''}`}
@@ -312,22 +312,22 @@ export default function MyHR() {
                             {isTransport ? (
                                 <>
                                     <div className="surface-card p-4 text-center">
-                                        <p className="text-3xl font-black text-heading">{monthlyPickups}</p>
+                                        <p className="text-3xl font-bold text-heading">{monthlyPickups}</p>
                                         <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Levas (Mês)</p>
                                     </div>
                                     <div className="surface-card p-4 text-center">
-                                        <p className="text-3xl font-black text-heading">{monthlyDropoffs}</p>
+                                        <p className="text-3xl font-bold text-heading">{monthlyDropoffs}</p>
                                         <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Traz (Mês)</p>
                                     </div>
                                 </>
                             ) : (
                                 <>
                                     <div className="surface-card p-4 text-center">
-                                        <p className="text-3xl font-black text-heading">{monthlyDailies}</p>
+                                        <p className="text-3xl font-bold text-heading">{monthlyDailies}</p>
                                         <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Diárias (Mês)</p>
                                     </div>
                                     <div className="surface-card p-4 text-center">
-                                        <p className="text-3xl font-black text-heading">{monthlyServiceAppointments}</p>
+                                        <p className="text-3xl font-bold text-heading">{monthlyServiceAppointments}</p>
                                         <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Agendamentos (Mês)</p>
                                     </div>
                                 </>
@@ -357,7 +357,7 @@ export default function MyHR() {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-[10px] font-black uppercase bg-fill-secondary px-2 py-1 rounded-md">SPA</span>
+                                                <span className="text-[10px] font-bold uppercase bg-fill-secondary px-2 py-1 rounded-md">SPA</span>
                                             </div>
                                         </div>
                                     ))}
@@ -372,7 +372,7 @@ export default function MyHR() {
                                                     <div>
                                                         <p className="font-bold text-heading text-sm">
                                                             {leg.legType === 'pickup' ? 'Leva (Busca)' : 'Traz (Entrega)'}
-                                                            {leg.notes?.includes('Largada') && <span className="ml-2 text-[10px] text-orange-500 font-black tracking-widest bg-orange-50 px-2 py-0.5 rounded-md">LARGADA</span>}
+                                                            {leg.notes?.includes('Largada') && <span className="ml-2 text-[10px] text-orange-500 font-bold tracking-widest bg-orange-50 px-2 py-0.5 rounded-md">LARGADA</span>}
                                                         </p>
                                                         <p className="text-xs text-muted">
                                                             {formatDate(leg.completedAt)} • {new Date(leg.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -380,7 +380,7 @@ export default function MyHR() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <span className="text-[10px] font-black uppercase bg-info/10 text-info px-2 py-1 rounded-md">Logística</span>
+                                                    <span className="text-[10px] font-bold uppercase bg-info/10 text-info px-2 py-1 rounded-md">Logística</span>
                                                 </div>
                                             </div>
 
@@ -426,19 +426,19 @@ export default function MyHR() {
                                 <div key={statement.id} className="surface-card p-5 flex items-center justify-between">
                                     <div>
                                         <p className="font-bold text-heading">
-                                            {formatDate(statement.payPeriod.startDate)} - {formatDate(statement.payPeriod.endDate)}
+                                            {formatDate(statement.staffPayPeriod.startDate)} - {formatDate(statement.staffPayPeriod.endDate)}
                                         </p>
                                         <p className="text-sm text-muted">
-                                            {statement.payPeriod.type === 'monthly' ? 'Mensal' : statement.payPeriod.type}
+                                            {statement.staffPayPeriod.type === 'monthly' ? 'Mensal' : statement.staffPayPeriod.type}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="text-right">
-                                            <p className="text-xl font-black text-success">
+                                            <p className="text-xl font-bold text-success">
                                                 R$ {statement.totalDue.toFixed(2)}
                                             </p>
                                             <p className="text-xs text-muted">
-                                                {statement.payPeriod.status === 'closed' ? '✅ Fechado' : '📝 Rascunho'}
+                                                {statement.staffPayPeriod.status === 'closed' ? '✅ Fechado' : '📝 Rascunho'}
                                             </p>
                                         </div>
                                         <a

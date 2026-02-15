@@ -308,7 +308,7 @@ export async function createPayPeriod(data: {
     type: 'weekly' | 'biweekly' | 'monthly' | 'custom';
     createdById: string;
 }) {
-    return prisma.payPeriod.create({
+    return prisma.staffPayPeriod.create({
         data: {
             startDate: data.startDate,
             endDate: data.endDate,
@@ -320,7 +320,7 @@ export async function createPayPeriod(data: {
 }
 
 export async function getPayPeriods(status?: string) {
-    return prisma.payPeriod.findMany({
+    return prisma.staffPayPeriod.findMany({
         where: status ? { status } : undefined,
         include: {
             statements: { include: { staff: { include: { user: { select: { name: true } } } } } },
@@ -336,13 +336,13 @@ export async function closePayPeriod(periodId: string, userId: string) {
         data: {
             actorUserId: userId,
             action: 'pay_period.close',
-            entityType: 'PayPeriod',
+            entityType: 'StaffPayPeriod',
             entityId: periodId,
             metaJson: {}
         }
     });
 
-    return prisma.payPeriod.update({
+    return prisma.staffPayPeriod.update({
         where: { id: periodId },
         data: {
             status: 'closed',
@@ -353,7 +353,7 @@ export async function closePayPeriod(periodId: string, userId: string) {
 }
 
 export async function reopenPayPeriod(periodId: string, userId: string) {
-    const period = await prisma.payPeriod.findUnique({ where: { id: periodId } });
+    const period = await prisma.staffPayPeriod.findUnique({ where: { id: periodId } });
     if (!period) throw new Error('Período não encontrado');
     if (period.status !== 'closed') throw new Error('Período não está fechado');
 
@@ -362,13 +362,13 @@ export async function reopenPayPeriod(periodId: string, userId: string) {
         data: {
             actorUserId: userId,
             action: 'pay_period.reopen',
-            entityType: 'PayPeriod',
+            entityType: 'StaffPayPeriod',
             entityId: periodId,
             metaJson: { reason: 'Reabertura manual pela diretoria' }
         }
     });
 
-    return prisma.payPeriod.update({
+    return prisma.staffPayPeriod.update({
         where: { id: periodId },
         data: {
             status: 'draft',
@@ -383,7 +383,7 @@ export async function reopenPayPeriod(periodId: string, userId: string) {
 // ============================================
 
 export async function createPayAdjustment(data: {
-    payPeriodId: string;
+    staffPayPeriodId: string;
     staffId: string;
     type: 'advance' | 'bonus' | 'discount' | 'benefit' | 'correction';
     amount: number;
@@ -392,14 +392,14 @@ export async function createPayAdjustment(data: {
     createdById: string;
 }) {
     // Check period is draft
-    const period = await prisma.payPeriod.findUnique({ where: { id: data.payPeriodId } });
+    const period = await prisma.staffPayPeriod.findUnique({ where: { id: data.staffPayPeriodId } });
     if (period?.status === 'closed') {
         throw new Error('Período já fechado. Não é possível adicionar ajustes.');
     }
 
-    return prisma.payAdjustment.create({
+    return prisma.staffPayAdjustment.create({
         data: {
-            payPeriodId: data.payPeriodId,
+            staffPayPeriodId: data.staffPayPeriodId,
             staffId: data.staffId,
             type: data.type,
             amount: Math.abs(data.amount),
@@ -410,10 +410,10 @@ export async function createPayAdjustment(data: {
     });
 }
 
-export async function getPayAdjustments(payPeriodId: string, staffId?: string) {
-    return prisma.payAdjustment.findMany({
+export async function getPayAdjustments(staffPayPeriodId: string, staffId?: string) {
+    return prisma.staffPayAdjustment.findMany({
         where: {
-            payPeriodId,
+            staffPayPeriodId,
             ...(staffId && { staffId })
         },
         include: {
@@ -427,8 +427,8 @@ export async function getPayAdjustments(payPeriodId: string, staffId?: string) {
 // PAY STATEMENT GENERATION
 // ============================================
 
-export async function generatePayStatements(payPeriodId: string) {
-    const period = await prisma.payPeriod.findUnique({ where: { id: payPeriodId } });
+export async function generatePayStatements(staffPayPeriodId: string) {
+    const period = await prisma.staffPayPeriod.findUnique({ where: { id: staffPayPeriodId } });
     if (!period) throw new Error('Período não encontrado');
 
     const staffProfiles = await prisma.staffProfile.findMany({
@@ -441,12 +441,12 @@ export async function generatePayStatements(payPeriodId: string) {
         const statement = await calculateStaffStatement(staff, period);
 
         // Upsert statement
-        const saved = await prisma.payStatement.upsert({
+        const saved = await prisma.staffPayStatement.upsert({
             where: {
-                payPeriodId_staffId: { payPeriodId, staffId: staff.id }
+                staffPayPeriodId_staffId: { staffPayPeriodId, staffId: staff.id }
             },
             create: {
-                payPeriodId,
+                staffPayPeriodId,
                 staffId: staff.id,
                 baseTotal: statement.baseTotal,
                 adjustmentsTotal: statement.adjustmentsTotal,
@@ -471,6 +471,7 @@ export async function generatePayStatements(payPeriodId: string) {
 async function calculateStaffStatement(
     staff: {
         id: string;
+        userId: string;
         department: string;
         payModel: string;
         dailyRate: number | null;
@@ -533,18 +534,23 @@ async function calculateStaffStatement(
         });
         details.servicesExecuted = executions;
     } else if (staff.department === 'transport') {
-        // --- MOTORIST RULE (60% of Net Value) ---
-        // Rule: (TransportValue - 6% taxes) * 60%
+        // --- MOTORIST RULE V2 (Leg Based) ---
+        // Rule: (LegPrice - 6% taxes) * 60%
 
-        const legs = await prisma.transportLegExecution.findMany({
+        const legs = await prisma.transportLeg.findMany({
             where: {
-                staffId: staff.id,
-                completedAt: { gte: period.startDate, lte: period.endDate }
+                providerId: staff.userId,
+                appointment: {
+                    status: 'FINALIZADO',
+                    startAt: { gte: period.startDate, lte: period.endDate }
+                }
             },
             include: {
                 appointment: {
                     include: {
-                        quote: { include: { items: true } }
+                        pet: true,
+                        customer: true,
+                        quote: true
                     }
                 }
             }
@@ -555,47 +561,25 @@ async function calculateStaffStatement(
         let logs: string[] = [];
 
         for (const leg of legs) {
-            // Find transport price in quote
-            const quote = leg.appointment?.quote;
-            if (!quote) continue;
-
-            const isLargada = leg.notes?.includes('Largada') || leg.appointment?.logisticsStatus === 'CANCELED_WITH_TRAVEL';
+            const isLargada = leg.legType === 'PARTIDA'; // Simplified, could use more logic if needed
 
             if (isLargada) {
                 // FIXED LARGADA FEE RULE
-                // Get from settings or use a default (e.g. 1.50 as seen in schema default)
-                // For simplicity and speed, let's use a common value or check staff rate
                 const largadaFee = staff.perLegRate || 1.50;
                 totalCommission += largadaFee;
-                logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId} - TAXA DE LARGADA (Canceled with travel). Comm ${largadaFee.toFixed(2)}`);
+                logs.push(`Pernada ${leg.id.substring(0, 4)}: Quote ${leg.appointment?.quote?.seqId} - TAXA DE LARGADA. Comm R$ ${largadaFee.toFixed(2)}`);
                 continue;
             }
 
-            // Find items related to transport
-            const transportItems = quote.items.filter(i =>
-                i.description.toLowerCase().includes('transporte') ||
-                i.description.toLowerCase().includes('leva') ||
-                i.description.toLowerCase().includes('traz')
-            );
-
-            const totalTransportPrice = transportItems.reduce((sum, item) => sum + item.price, 0);
-
-            let legsCount = 1;
-            if (quote.transportType === 'ROUND_TRIP') {
-                legsCount = 2;
-            }
-
-            const grossValuePerLeg = totalTransportPrice / legsCount;
-
             // Apply Tax 6%
-            const netValuePerLeg = grossValuePerLeg * 0.94;
+            const netValue = (leg.price || 0) * 0.94;
 
             // Apply Commission 60%
-            const driverCommission = netValuePerLeg * 0.60;
+            const driverCommission = netValue * 0.60;
 
             totalCommission += driverCommission;
 
-            logs.push(`Leg ${leg.id.substring(0, 4)}: Quote ${quote.seqId}, Type ${(quote as any).transportType} (${legsCount} legs). TotalPrice ${totalTransportPrice}. LegGross ${grossValuePerLeg.toFixed(2)}. Net ${netValuePerLeg.toFixed(2)}. Comm ${driverCommission.toFixed(2)} - Pet: ${(leg as any).appointment?.pet?.name}, Client: ${(leg as any).appointment?.customer?.name}`);
+            logs.push(`Pernada ${leg.id.substring(0, 4)}: Quote ${leg.appointment?.quote?.seqId}, Tipo ${leg.legType}. Valor Base R$ ${(leg.price || 0).toFixed(2)}. Net R$ ${netValue.toFixed(2)}. Comm R$ ${driverCommission.toFixed(2)} - Pet: ${leg.appointment?.pet?.name}, Cliente: ${leg.appointment?.customer?.name}`);
         }
 
         baseTotal = totalCommission;
@@ -603,26 +587,16 @@ async function calculateStaffStatement(
         details.totalCommission = totalCommission;
 
         // Add detailed production list for transparency
-        details.productionDetails = legs.map((leg: any) => {
-            const quote = leg.appointment?.quote;
-            const transportItems = (quote as any)?.items.filter((i: any) =>
-                i.description.toLowerCase().includes('transporte') ||
-                i.description.toLowerCase().includes('leva') ||
-                i.description.toLowerCase().includes('traz')
-            ) || [];
-            const totalTransportPrice = transportItems.reduce((sum: number, item: any) => sum + item.price, 0);
-
-            return {
-                date: leg.completedAt,
-                quoteSeqId: (quote as any)?.seqId,
-                petName: leg.appointment?.pet?.name,
-                customerName: leg.appointment?.customer?.name,
-                legType: leg.legType,
-                isLargada: leg.notes?.includes('Largada'),
-                totalTTM: totalTransportPrice,
-                notes: leg.notes
-            };
-        });
+        details.productionDetails = legs.map((leg: any) => ({
+            date: leg.appointment?.startAt || leg.createdAt,
+            quoteSeqId: leg.appointment?.quote?.seqId,
+            petName: leg.appointment?.pet?.name,
+            customerName: leg.appointment?.customer?.name,
+            legType: leg.legType,
+            isLargada: leg.legType === 'PARTIDA',
+            legPrice: leg.price,
+            notes: `Leg ID: ${leg.id.substring(0, 8)}`
+        }));
 
     } else if (staff.payModel === 'per_leg') {
         // Legacy/Generic Per Leg Model (if not Transport Department)
@@ -730,9 +704,9 @@ async function calculateStaffStatement(
     }
 
     // Calculate adjustments
-    const adjustments = await prisma.payAdjustment.findMany({
+    const adjustments = await prisma.staffPayAdjustment.findMany({
         where: {
-            payPeriodId: period.id,
+            staffPayPeriodId: period.id,
             staffId: staff.id
         }
     });
@@ -761,23 +735,23 @@ async function calculateStaffStatement(
     };
 }
 
-export async function getPayStatements(payPeriodId: string) {
-    return prisma.payStatement.findMany({
-        where: { payPeriodId },
+export async function getPayStatements(staffPayPeriodId: string) {
+    return prisma.staffPayStatement.findMany({
+        where: { staffPayPeriodId },
         include: {
             staff: { include: { user: { select: { id: true, name: true, email: true, phone: true } } } },
-            payPeriod: true
+            staffPayPeriod: true
         },
         orderBy: { totalDue: 'desc' }
     });
 }
 
 export async function getPayStatement(id: string) {
-    return prisma.payStatement.findUnique({
+    return prisma.staffPayStatement.findUnique({
         where: { id },
         include: {
             staff: { include: { user: { select: { id: true, name: true, email: true, phone: true } } } },
-            payPeriod: { include: { adjustments: true } }
+            staffPayPeriod: { include: { adjustments: true } }
         }
     });
 }
@@ -789,9 +763,9 @@ export async function getMyPayStatements(userId: string) {
 
     if (!staffProfile) return [];
 
-    return prisma.payStatement.findMany({
+    return prisma.staffPayStatement.findMany({
         where: { staffId: staffProfile.id },
-        include: { payPeriod: true },
+        include: { staffPayPeriod: true },
         orderBy: { generatedAt: 'desc' }
     });
 }

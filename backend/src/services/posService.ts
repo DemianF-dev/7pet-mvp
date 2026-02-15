@@ -83,6 +83,8 @@ export const closeCashSession = async (id: string, data: {
 export const createOrder = async (data: {
     customerId?: string;
     cashSessionId: string;
+    sellerId?: string;
+    paymentCondition?: string;
     items: Array<{
         productId?: string;
         serviceId?: string;
@@ -108,6 +110,8 @@ export const createOrder = async (data: {
                 id: randomUUID(),
                 customerId: data.customerId,
                 cashSessionId: data.cashSessionId,
+                sellerId: data.sellerId,
+                paymentCondition: data.paymentCondition || 'À Vista',
                 status: OrderStatus.OPEN,
                 totalAmount,
                 discountAmount,
@@ -115,8 +119,8 @@ export const createOrder = async (data: {
                 items: {
                     create: data.items.map(item => ({
                         id: randomUUID(),
-                        productId: item.productId,
-                        serviceId: item.serviceId,
+                        productId: item.productId || null,
+                        serviceId: item.serviceId || null,
                         description: item.description,
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
@@ -135,6 +139,19 @@ export const createOrder = async (data: {
             });
         }
 
+        // Create Financial Transaction (DEBIT) for the sale immediately if customer is present
+        if (data.customerId) {
+            await financialService.createTransaction({
+                customerId: data.customerId,
+                type: 'DEBIT',
+                amount: finalAmount,
+                description: `Venda PDV #${order.seqId}`,
+                category: 'PDV',
+                relatedOrderId: order.id,
+                createdBy: data.sellerId || 'SYSTEM',
+            }, tx);
+        }
+
         return order;
     });
 };
@@ -147,7 +164,16 @@ export const addPayment = async (orderId: string, payments: Array<{
 }>) => {
     const order = await prisma.order.findUnique({
         where: { id: orderId },
-        include: { payments: true }
+        include: {
+            payments: true,
+            appointment: {
+                include: {
+                    invoice: true,
+                    quote: true,
+                    invoiceLines: true
+                }
+            }
+        }
     });
 
     if (!order) throw new Error('Pedido não encontrado');
@@ -159,9 +185,38 @@ export const addPayment = async (orderId: string, payments: Array<{
     return prisma.$transaction(async (tx) => {
         // Create payments
         for (const p of payments) {
+            const paymentId = randomUUID();
+
+            if (p.method === 'PAYROLL_DEDUCTION') {
+                if (!order.customerId) throw new Error('Pagamento em folha requer um cliente identificado.');
+
+                const customer = await tx.customer.findUnique({
+                    where: { id: order.customerId },
+                    include: { user: { include: { staffProfile: true } } }
+                });
+
+                if (!customer?.user?.staffProfile) {
+                    throw new Error('Cliente não é colaborador. Pagamento em folha indisponível.');
+                }
+
+                await tx.staffPayAdjustment.create({
+                    data: {
+                        id: randomUUID(),
+                        staffId: customer.user.staffProfile.id,
+                        staffPayPeriodId: null,
+                        type: 'POS_PURCHASE',
+                        amount: p.amount,
+                        direction: 'DEBIT',
+                        reason: `Compra PDV #${order.seqId}`,
+                        orderId: order.id,
+                        createdById: 'SYSTEM'
+                    }
+                });
+            }
+
             await tx.orderPayment.create({
                 data: {
-                    id: randomUUID(),
+                    id: paymentId,
                     orderId,
                     method: p.method,
                     amount: p.amount,
@@ -170,6 +225,34 @@ export const addPayment = async (orderId: string, payments: Array<{
                     paidAt: new Date()
                 }
             });
+
+            // Registrar Crédito Individual no Financeiro
+            if (order.customerId) {
+                await financialService.createTransaction({
+                    customerId: order.customerId,
+                    type: 'CREDIT',
+                    amount: p.amount,
+                    description: `Pagamento Cupom #${order.seqId} (${p.method})`,
+                    category: 'PDV',
+                    relatedOrderId: order.id,
+                    createdBy: 'SYSTEM',
+                }, tx);
+            }
+
+            // Sync with Invoice (if exists, directly or via quote, or via invoice lines)
+            const invoiceId = order.appointment?.invoice?.id ||
+                order.appointment?.quote?.invoiceId ||
+                order.appointment?.invoiceLines?.[0]?.invoiceId;
+            if (invoiceId) {
+                await tx.paymentRecord.create({
+                    data: {
+                        invoiceId,
+                        amount: p.amount,
+                        method: p.method as string,
+                        paidAt: new Date()
+                    }
+                });
+            }
         }
 
         // Check if fully paid
@@ -177,8 +260,38 @@ export const addPayment = async (orderId: string, payments: Array<{
             const updatedOrder = await tx.order.update({
                 where: { id: orderId },
                 data: { status: OrderStatus.PAID },
-                include: { items: true, payments: true, cashSession: true }
+                include: { items: true, payments: true, cashSession: true, appointment: true }
             });
+
+            // Handle Appointment Billing Status Sync
+            if (updatedOrder.appointment) {
+                await tx.appointment.update({
+                    where: { id: updatedOrder.appointment.id },
+                    data: { billingStatus: 'PAID' }
+                });
+
+                // Sync Invoice Status if found (directly, via quote, or via invoice lines)
+                const invoiceId = order.appointment?.invoice?.id ||
+                    order.appointment?.quote?.invoiceId ||
+                    order.appointment?.invoiceLines?.[0]?.invoiceId;
+                if (invoiceId) {
+                    // Verificamos se a fatura já atingiu o valor total com este pagamento final
+                    const invoice = await tx.invoice.findUnique({
+                        where: { id: invoiceId },
+                        include: { paymentRecords: true }
+                    });
+
+                    if (invoice) {
+                        const totalInvoicePaid = invoice.paymentRecords.reduce((s, pr) => s + pr.amount, 0);
+                        if (totalInvoicePaid >= invoice.amount) {
+                            await tx.invoice.update({
+                                where: { id: invoiceId },
+                                data: { status: 'PAGO' }
+                            });
+                        }
+                    }
+                }
+            }
 
             // Handle Inventory Low (Baixa de Estoque)
             for (const item of updatedOrder.items) {
@@ -201,32 +314,8 @@ export const addPayment = async (orderId: string, payments: Array<{
                 }
             }
 
-            // Handle Financial Transactions (Credit/Debit based on Payment Method)
-            if (updatedOrder.customerId) {
-                // 1. Log the SALE aspect (The customer "spent" this money)
-                // We use type DEBIT because it increases the customer's debt/usage in the financial ledger
-                await financialService.createTransaction({
-                    customerId: updatedOrder.customerId,
-                    type: 'DEBIT',
-                    amount: updatedOrder.finalAmount,
-                    description: `Compra PDV #${updatedOrder.seqId}`,
-                    category: 'PDV', // Changed from PAYMENT to PDV for filtering
-                    createdBy: updatedOrder.cashSession.openedById,
-                }, tx);
-
-                for (const p of updatedOrder.payments) {
-                    // 2. Log the PAYMENT aspect (The customer "paid" this money)
-                    // We use type CREDIT because it reduces the customer's debt
-                    await financialService.createTransaction({
-                        customerId: updatedOrder.customerId,
-                        type: 'CREDIT',
-                        amount: p.amount,
-                        description: `Pagamento PDV #${updatedOrder.seqId} (${p.method})`,
-                        category: 'PDV', // Changed from PAYMENT to PDV for filtering
-                        createdBy: updatedOrder.cashSession.openedById,
-                    }, tx);
-                }
-            }
+            // O Débito da venda agora é registrado imediatamente no createOrder para permitir conciliação parcial
+            // Os Créditos são registrados individualmente acima para cada pagamento realizado
 
             return updatedOrder;
         }
@@ -332,28 +421,29 @@ export const searchPOSItems = async (query: string) => {
     try {
         const startTime = Date.now();
 
-        if (!query || query.length < 2) {
-            return { products: [], services: [] };
+        // Build product where clause
+        const whereProducts: any = { deletedAt: null };
+        if (query && query.trim().length > 0) {
+            whereProducts.OR = [
+                { name: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } },
+                { sku: { contains: query, mode: 'insensitive' } }
+            ];
         }
 
-        // Use simple case-insensitive contains for better performance
-        const searchPattern = `%${query}%`;
+        // Build service where clause
+        const whereServices: any = { deletedAt: null };
+        if (query && query.trim().length > 0) {
+            whereServices.OR = [
+                { name: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } }
+            ];
+        }
 
         // Parallel queries for speed
         const [products, services] = await Promise.all([
             prisma.product.findMany({
-                where: {
-                    AND: [
-                        { deletedAt: null },
-                        {
-                            OR: [
-                                { name: { contains: query, mode: 'insensitive' } },
-                                { description: { contains: query, mode: 'insensitive' } },
-                                { sku: { contains: query, mode: 'insensitive' } }
-                            ]
-                        }
-                    ]
-                },
+                where: whereProducts,
                 select: {
                     id: true,
                     name: true,
@@ -363,24 +453,14 @@ export const searchPOSItems = async (query: string) => {
                     sku: true,
                     category: true
                 },
-                take: 15
+                take: 50
             }).catch(err => {
                 logError('POS Service product search failed', err, { query });
                 return [];
             }),
 
             prisma.service.findMany({
-                where: {
-                    AND: [
-                        { deletedAt: null },
-                        {
-                            OR: [
-                                { name: { contains: query, mode: 'insensitive' } },
-                                { description: { contains: query, mode: 'insensitive' } }
-                            ]
-                        }
-                    ]
-                },
+                where: whereServices,
                 select: {
                     id: true,
                     name: true,
@@ -389,7 +469,7 @@ export const searchPOSItems = async (query: string) => {
                     duration: true,
                     category: true
                 },
-                take: 15
+                take: 50
             }).catch(err => {
                 logError('POS Service service search failed', err, { query });
                 return [];
@@ -416,7 +496,13 @@ export const getCheckoutDataFromAppointment = async (appointmentId: string) => {
         where: { id: appointmentId },
         include: {
             services: true,
-            customer: true,
+            customer: {
+                include: {
+                    user: {
+                        include: { staffProfile: true }
+                    }
+                }
+            },
             pet: true,
             quote: { include: { items: true } }
         }
@@ -458,9 +544,25 @@ export const getCheckoutDataFromAppointment = async (appointmentId: string) => {
     return {
         customerId: appointment.customerId,
         customerName: appointment.customer.name,
+        isStaff: !!appointment.customer?.user?.staffProfile,
         petName: appointment.pet.name,
         appointmentId: appointment.id,
         items
     };
+};
+
+export const listRecentOrders = async (limit: number = 20) => {
+    return prisma.order.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+            customer: { select: { name: true, phone: true } },
+            items: true,
+            payments: true,
+            cashSession: {
+                include: { openedBy: { select: { name: true } } }
+            }
+        }
+    });
 };
 

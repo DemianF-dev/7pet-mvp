@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 interface PayStatement {
     id: string;
-    payPeriodId: string;
+    staffPayPeriodId: string;
     staffId: string;
     baseTotal: number;
     adjustmentsTotal: number;
@@ -23,7 +23,7 @@ interface PayStatement {
             phone: string | null;
         };
     };
-    payPeriod: {
+    staffPayPeriod: {
         id: string;
         startDate: string;
         endDate: string;
@@ -87,7 +87,7 @@ const PayStatementDetail: React.FC = () => {
                 <div>
                     <h1 style={{ margin: 0, marginBottom: '0.5rem' }}>Detalhes do Fechamento</h1>
                     <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-                        {statement.staff.user.name} • {statement.staff.department.toUpperCase()}
+                        {statement.staff.user.name} • {(statement.staff.department || '').toUpperCase()}
                     </p>
                 </div>
                 <button className="btn-secondary" onClick={() => navigate(-1)}>
@@ -121,20 +121,20 @@ const PayStatementDetail: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                     <div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Início</p>
-                        <p style={{ margin: 0, fontWeight: 500 }}>{formatDate(statement.payPeriod.startDate)}</p>
+                        <p style={{ margin: 0, fontWeight: 500 }}>{formatDate(statement.staffPayPeriod.startDate)}</p>
                     </div>
                     <div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Fim</p>
-                        <p style={{ margin: 0, fontWeight: 500 }}>{formatDate(statement.payPeriod.endDate)}</p>
+                        <p style={{ margin: 0, fontWeight: 500 }}>{formatDate(statement.staffPayPeriod.endDate)}</p>
                     </div>
                     <div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Tipo</p>
-                        <p style={{ margin: 0, fontWeight: 500 }}>{statement.payPeriod.type.toUpperCase()}</p>
+                        <p style={{ margin: 0, fontWeight: 500 }}>{(statement.staffPayPeriod.type || '').toUpperCase()}</p>
                     </div>
                     <div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Status</p>
-                        <span className={`badge badge-${statement.payPeriod.status === 'closed' ? 'success' : 'warning'}`}>
-                            {statement.payPeriod.status === 'closed' ? 'Fechado' : 'Rascunho'}
+                        <span className={`badge badge-${statement.staffPayPeriod.status === 'closed' ? 'success' : 'warning'}`}>
+                            {statement.staffPayPeriod.status === 'closed' ? 'Fechado' : 'Rascunho'}
                         </span>
                     </div>
                 </div>
